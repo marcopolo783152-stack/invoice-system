@@ -45,9 +45,13 @@ export default function Home() {
     setShowPreview(true);
     setShowSearch(false);
 
-    // Save invoice to storage
-    saveInvoice(data);
-    setInvoiceCount(getInvoicesCount());
+    // Save invoice to storage (async)
+    saveInvoice(data).then(() => {
+      setInvoiceCount(getInvoicesCount());
+    }).catch((error) => {
+      console.error('Error saving invoice:', error);
+      alert('Invoice saved locally but cloud sync failed. Check Firebase configuration.');
+    });
 
     // Scroll to preview
     setTimeout(() => {

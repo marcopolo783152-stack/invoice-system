@@ -1,0 +1,155 @@
+/**
+ * FIREBASE STORAGE SERVICE
+ * 
+ * Cloud-based invoice storage that syncs across all devices
+ */
+
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  getDocs, 
+  query, 
+  orderBy,
+  Timestamp 
+} from 'firebase/firestore';
+import { db, isFirebaseConfigured } from './firebase';
+import { InvoiceData } from './calculations';
+
+export interface SavedInvoice {
+  id: string;
+  invoiceNumber: string;
+  customerName: string;
+  date: string;
+  totalAmount: number;
+  data: InvoiceData;
+  createdAt: Date;
+}
+
+const COLLECTION_NAME = 'invoices';
+
+/**
+ * Save invoice to Firebase
+ */
+export async function saveInvoiceToCloud(
+  invoiceNumber: string,
+  customerName: string,
+  totalAmount: number,
+  data: InvoiceData
+): Promise<string> {
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase not configured. Please set up your Firebase project.');
+  }
+
+  try {
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+      invoiceNumber,
+      customerName,
+      date: data.date,
+      totalAmount,
+      data,
+      createdAt: Timestamp.now()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving invoice to cloud:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all invoices from Firebase
+ */
+export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
+  if (!isFirebaseConfigured()) {
+    return [];
+  }
+
+  try {
+    const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    const invoices: SavedInvoice[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      invoices.push({
+        id: doc.id,
+        invoiceNumber: data.invoiceNumber,
+        customerName: data.customerName,
+        date: data.date,
+        totalAmount: data.totalAmount,
+        data: data.data,
+        createdAt: data.createdAt.toDate()
+      });
+    });
+    
+    return invoices;
+  } catch (error) {
+    console.error('Error getting invoices from cloud:', error);
+    return [];
+  }
+}
+
+/**
+ * Update invoice in Firebase
+ */
+export async function updateInvoiceInCloud(
+  id: string,
+  invoiceNumber: string,
+  customerName: string,
+  totalAmount: number,
+  data: InvoiceData
+): Promise<void> {
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase not configured.');
+  }
+
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    await updateDoc(docRef, {
+      invoiceNumber,
+      customerName,
+      date: data.date,
+      totalAmount,
+      data
+    });
+  } catch (error) {
+    console.error('Error updating invoice in cloud:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete invoice from Firebase
+ */
+export async function deleteInvoiceFromCloud(id: string): Promise<void> {
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase not configured.');
+  }
+
+  try {
+    await deleteDoc(doc(db, COLLECTION_NAME, id));
+  } catch (error) {
+    console.error('Error deleting invoice from cloud:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete multiple invoices from Firebase
+ */
+export async function deleteMultipleInvoicesFromCloud(ids: string[]): Promise<void> {
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase not configured.');
+  }
+
+  try {
+    const deletePromises = ids.map(id => deleteDoc(doc(db, COLLECTION_NAME, id)));
+    await Promise.all(deletePromises);
+  } catch (error) {
+    console.error('Error deleting multiple invoices from cloud:', error);
+    throw error;
+  }
+}

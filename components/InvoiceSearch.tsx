@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { searchInvoices, getAllInvoices, deleteInvoice, SavedInvoice } from '@/lib/invoice-storage';
+import { searchInvoices, getAllInvoices, deleteInvoice, deleteMultipleInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
@@ -27,23 +27,20 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
 
   useEffect(() => {
-    // Load all invoices on mount
-    setResults(getAllInvoices().sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ));
+    // Load all invoices on mount (async)
+    getAllInvoices().then(invoices => {
+      setResults(invoices.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ));
+    });
   }, []);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (query.trim() === '') {
-      setResults(getAllInvoices().sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ));
-    } else {
-      setResults(searchInvoices(query).sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ));
-    }
+    const invoices = await searchInvoices(query);
+    setResults(invoices.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    ));
   };
 
   const handleViewInvoice = (invoice: SavedInvoice) => {
@@ -67,8 +64,8 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     );
 
     if (confirmed) {
-      deleteInvoice(id);
-      handleSearch(searchQuery);
+      await deleteInvoice(id);
+      await handleSearch(searchQuery);
       setSelectedInvoice(null);
       setSelectedIds(prev => prev.filter(sid => sid !== id));
       alert('Invoice deleted successfully.');
@@ -101,8 +98,8 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     );
 
     if (confirmed) {
-      selectedIds.forEach(id => deleteInvoice(id));
-      handleSearch(searchQuery);
+      await deleteMultipleInvoices(selectedIds);
+      await handleSearch(searchQuery);
       setSelectedInvoice(null);
       setSelectedIds([]);
       alert(`${selectedIds.length} invoice(s) deleted successfully.`);
