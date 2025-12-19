@@ -66,32 +66,42 @@ const firebaseConfig = {
 8. **Copy all these values**
 9. Click **"Continue to console"**
 
-## Step 5: Update Configuration File
+## Step 5: Update Environment Variables
 
-1. Open file: `lib/firebase.ts`
-2. Replace the placeholder values with your actual Firebase config:
+1. Open file: `.env.local` in your project root
+2. Fill in your Firebase values:
 
-```typescript
-const firebaseConfig = {
-  apiKey: "YOUR_ACTUAL_API_KEY",
-  authDomain: "YOUR_ACTUAL_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_ACTUAL_PROJECT_ID",
-  storageBucket: "YOUR_ACTUAL_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_ACTUAL_SENDER_ID",
-  appId: "YOUR_ACTUAL_APP_ID"
-};
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyC...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=marco-polo-invoices.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=marco-polo-invoices
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=marco-polo-invoices.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abc123
 ```
 
 3. Save the file
-4. Rebuild and deploy: `npm run build`
-5. Push to GitHub: `git push origin main`
 
-## Step 6: Test Cloud Sync
+## Step 6: Add to Vercel
 
-1. Create an invoice on Device A
-2. Open the invoice system on Device B (different computer/phone)
-3. Click **"Search Invoices"**
-4. You should see the invoice from Device A!
+1. Go to your Vercel project dashboard
+2. Click **Settings** → **Environment Variables**
+3. Add each variable:
+   - Key: `NEXT_PUBLIC_FIREBASE_API_KEY`
+   - Value: Your API key
+   - Click **Add**
+4. Repeat for all 6 variables
+5. Redeploy your project
+
+## Step 7: Test Cloud Sync
+
+1. Rebuild locally: `npm run build`
+2. Push to GitHub: `git push origin main`
+3. Wait for Vercel deployment
+4. Create an invoice on Device A
+5. Open the invoice system on Device B (different computer/phone)
+6. Click **"Search Invoices"**
+7. You should see the invoice from Device A!
 
 ## Features After Setup
 
