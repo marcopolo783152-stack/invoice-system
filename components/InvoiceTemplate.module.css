@@ -7,8 +7,7 @@
 
 .invoice {
   width: 210mm;
-  min-height: 297mm;
-  max-height: 297mm;
+  min-height: auto;
   margin: 0 auto;
   padding: 10mm;
   background: white;
@@ -16,7 +15,6 @@
   font-family: 'Arial', 'Helvetica', sans-serif;
   font-size: 9pt;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 /* Header Section */
