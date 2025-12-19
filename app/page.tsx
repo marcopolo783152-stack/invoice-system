@@ -14,6 +14,7 @@ import InvoiceSearch from '@/components/InvoiceSearch';
 import { InvoiceData, calculateInvoice, validateInvoiceData } from '@/lib/calculations';
 import { printInvoice, generatePDF } from '@/lib/pdf-utils';
 import { saveInvoice, getInvoicesCount, SavedInvoice } from '@/lib/invoice-storage';
+import { sendInvoiceEmail, prepareInvoiceForEmail, isEmailConfigured } from '@/lib/email-service';
 import { businessConfig } from '@/config/business';
 import styles from './page.module.css';
 
@@ -68,6 +69,63 @@ export default function Home() {
       } catch (error) {
         alert('Failed to generate PDF. Please try using Print instead.');
       }
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!invoiceRef.current || !invoiceData) return;
+
+    // Check if email is configured
+    if (!isEmailConfigured()) {
+      alert('Email service is not configured yet.\\n\\nPlease set up EmailJS to enable email functionality.\\n\\nSee email-service.ts for setup instructions.');
+      return;
+    }
+
+    // Check if customer has email
+    const customerEmail = prompt(
+      `Send Invoice ${invoiceData.invoiceNumber} to Customer\\n\\n` +
+      `Customer: ${invoiceData.soldTo.name}\\n\\n` +
+      `Enter customer email address:`
+    );
+
+    if (!customerEmail) return;
+
+    // Validate email format
+    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+    if (!emailRegex.test(customerEmail)) {
+      alert('Invalid email address. Please try again.');
+      return;
+    }
+
+    // Prepare invoice HTML for email
+    const invoiceHTML = prepareInvoiceForEmail(invoiceRef.current);
+
+    // Send email
+    const sending = confirm(
+      `Send invoice to ${customerEmail}?\\n\\n` +
+      `Invoice: ${invoiceData.invoiceNumber}\\n` +
+      `Customer: ${invoiceData.soldTo.name}\\n\\n` +
+      `Click OK to send.`
+    );
+
+    if (!sending) return;
+
+    try {
+      const success = await sendInvoiceEmail(
+        customerEmail,
+        invoiceData.soldTo.name,
+        invoiceData.invoiceNumber,
+        invoiceHTML
+      );
+
+      if (success) {
+        alert(`Invoice sent successfully to ${customerEmail}!`);
+      } else {
+        alert('Failed to send invoice. Please check your email configuration.');
+      }
+    } catch (error) {
+      alert('Error sending invoice. Please try again later.');
+      console.error('Email error:', error);
     }
   };
 
@@ -160,6 +218,9 @@ export default function Home() {
                 </button>
                 <button onClick={handleDownloadPDF} className={styles.pdfBtn}>
                   📄 Download PDF
+                </button>
+                <button onClick={handleSendEmail} className={styles.emailBtn}>
+                  📧 Email Invoice
                 </button>
                 <button onClick={handleNewInvoice} className={styles.newBtn}>
                   ➕ New Invoice

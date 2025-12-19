@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { searchInvoices, getAllInvoices, deleteInvoice, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
+import { requestSecurityConfirmation } from '@/lib/email-service';
 import styles from './InvoiceSearch.module.css';
 
 interface InvoiceSearchProps {
@@ -53,12 +54,24 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     onSelectInvoice(invoice);
   };
 
-  const handleDeleteInvoice = (id: string) => {
-    if (confirm('Are you sure you want to delete this invoice?')) {
+  const handleDeleteInvoice = async (id: string) => {
+    const invoice = results.find(inv => inv.id === id);
+    if (!invoice) return;
+
+    if (!confirm('Are you sure you want to delete this invoice?')) return;
+
+    // Request security confirmation
+    const confirmed = await requestSecurityConfirmation(
+      'Delete Invoice',
+      `Invoice #${invoice.data.invoiceNumber} - ${invoice.data.soldTo.name}`
+    );
+
+    if (confirmed) {
       deleteInvoice(id);
-      handleSearch(searchQuery); // Refresh results
+      handleSearch(searchQuery);
       setSelectedInvoice(null);
       setSelectedIds(prev => prev.filter(sid => sid !== id));
+      alert('Invoice deleted successfully.');
     }
   };
 
@@ -76,14 +89,23 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     }
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) return;
     
-    if (confirm(`Delete ${selectedIds.length} selected invoice(s)? This cannot be undone.`)) {
+    if (!confirm(`Delete ${selectedIds.length} selected invoice(s)? This cannot be undone.`)) return;
+
+    // Request security confirmation
+    const confirmed = await requestSecurityConfirmation(
+      'Bulk Delete Invoices',
+      `Deleting ${selectedIds.length} invoice(s)`
+    );
+
+    if (confirmed) {
       selectedIds.forEach(id => deleteInvoice(id));
       handleSearch(searchQuery);
       setSelectedInvoice(null);
       setSelectedIds([]);
+      alert(`${selectedIds.length} invoice(s) deleted successfully.`);
     }
   };
 
@@ -96,6 +118,14 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     if (!confirm(`Export ${results.length} invoice(s) as PDF files in a ZIP?\n\nThis may take a few moments.`)) {
       return;
     }
+
+    // Request security confirmation
+    const confirmed = await requestSecurityConfirmation(
+      'Export All Invoices',
+      `Exporting ${results.length} invoice(s) as PDF`
+    );
+
+    if (!confirmed) return;
 
     setIsExporting(true);
     setExportProgress({ current: 0, total: results.length, status: 'Starting...', percentage: 0 });

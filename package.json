@@ -17,6 +17,7 @@
     "capacitor:build": "npm run build && cap sync && cap open android"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "compression": "^1.8.1",
     "date-fns": "^3.0.6",
     "express": "^5.2.1",

@@ -181,6 +181,17 @@
   box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
 }
 
+.emailBtn {
+  background: #FF9800;
+  color: white;
+}
+
+.emailBtn:hover {
+  background: #F57C00;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
 .newBtn {
   background: #4CAF50;
   color: white;
