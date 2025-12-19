@@ -375,6 +375,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
                   onChange={(e) =>
                     handleItemChange(item.id, 'widthFeet', Number(e.target.value))
                   }
+                  onFocus={(e) => e.target.select()}
                   min="0"
                   required
                   className={styles.input}
@@ -388,6 +389,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
                   onChange={(e) =>
                     handleItemChange(item.id, 'widthInches', Number(e.target.value))
                   }
+                  onFocus={(e) => e.target.select()}
                   min="0"
                   max="11"
                   required
@@ -404,6 +406,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
                       onChange={(e) =>
                         handleItemChange(item.id, 'lengthFeet', Number(e.target.value))
                       }
+                      onFocus={(e) => e.target.select()}
                       min="0"
                       required
                       className={styles.input}
@@ -417,6 +420,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
                       onChange={(e) =>
                         handleItemChange(item.id, 'lengthInches', Number(e.target.value))
                       }
+                      onFocus={(e) => e.target.select()}
                       min="0"
                       max="11"
                       required
@@ -436,6 +440,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
                     onChange={(e) =>
                       handleItemChange(item.id, 'pricePerSqFt', Number(e.target.value))
                     }
+                    onFocus={(e) => e.target.select()}
                     min="0"
                     step="0.01"
                     required
@@ -451,6 +456,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
                     onChange={(e) =>
                       handleItemChange(item.id, 'fixedPrice', Number(e.target.value))
                     }
+                    onFocus={(e) => e.target.select()}
                     min="0"
                     step="0.01"
                     required
@@ -474,6 +480,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
             type="number"
             value={discountPercentage}
             onChange={(e) => setDiscountPercentage(Number(e.target.value))}
+            onFocus={(e) => e.target.select()}
             min="0"
             max="100"
             step="0.01"
