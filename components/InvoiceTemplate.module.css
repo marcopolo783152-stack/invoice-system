@@ -21,9 +21,62 @@
 
 /* Header Section */
 .header {
+  display: flex;
+  align-items: flex-start;
   margin-bottom: 15px;
   border-bottom: 2px solid #000;
   padding-bottom: 10px;
+  position: relative;
+  padding-left: 110px;
+}
+
+.logoSection {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.logoCircle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #d4af37;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.logoCircle::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid #d4af37;
+  opacity: 0.5;
+}
+
+.logoText {
+  font-size: 24px;
+  font-weight: bold;
+  color: #d4af37;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+  letter-spacing: 2px;
+}
+
+.logoSubtext {
+  font-size: 7px;
+  color: white;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+.businessInfo {
+  flex: 1;
 }
 
 .businessInfo h1 {

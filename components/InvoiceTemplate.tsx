@@ -54,6 +54,12 @@ export default function InvoiceTemplate({
     <div className={styles.invoice}>
       {/* Header Section */}
       <div className={styles.header}>
+        <div className={styles.logoSection}>
+          <div className={styles.logoCircle}>
+            <div className={styles.logoText}>MPR</div>
+            <div className={styles.logoSubtext}>ORIENTAL RUGS</div>
+          </div>
+        </div>
         <div className={styles.businessInfo}>
           <h1>{businessInfo.name}</h1>
           <p>{businessInfo.address}</p>
