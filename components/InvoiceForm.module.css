@@ -1,0 +1,253 @@
+/**
+ * INVOICE FORM STYLES
+ */
+
+.form {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.form h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.form h3 {
+  margin: 30px 0 15px 0;
+  color: #555;
+  font-size: 18px;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 5px;
+}
+
+.formGroup {
+  margin-bottom: 15px;
+  flex: 1;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+  font-size: 14px;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.invoiceNumberGroup {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.invoiceNumberGroup .input {
+  flex: 1;
+}
+
+.generateBtn,
+.settingsBtn {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.generateBtn:hover,
+.settingsBtn:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.counterManager {
+  margin-top: 10px;
+  padding: 15px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.counterManager p {
+  margin: 0 0 10px 0;
+  font-weight: bold;
+  color: #333;
+}
+
+.counterManager small {
+  display: block;
+  margin-top: 8px;
+  color: #666;
+  font-style: italic;
+}
+
+.counterControls {
+  display: flex;
+  gap: 10px;
+}
+
+.counterControls .input {
+  flex: 1;
+}
+
+.setCounterBtn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background: #FF9800;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.setCounterBtn:hover {
+  background: #F57C00;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.row {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.row .formGroup {
+  flex: 1;
+  min-width: 150px;
+}
+
+/* Items Section */
+.itemsContainer {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  background: white;
+  margin-bottom: 15px;
+}
+
+.itemRow {
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: #fafafa;
+}
+
+.itemRow:last-child {
+  margin-bottom: 0;
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.itemHeader span {
+  font-weight: bold;
+  color: #333;
+  font-size: 16px;
+}
+
+/* Buttons */
+.addBtn,
+.removeBtn,
+.submitBtn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addBtn {
+  background: #2196F3;
+  color: white;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.addBtn:hover {
+  background: #1976D2;
+}
+
+.removeBtn {
+  background: #f44336;
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.removeBtn:hover {
+  background: #d32f2f;
+}
+
+.submitBtn {
+  background: #4CAF50;
+  color: white;
+  width: 100%;
+  font-size: 16px;
+  padding: 15px;
+  margin-top: 20px;
+}
+
+.submitBtn:hover {
+  background: #45a049;
+}
+
+.addBtn:active,
+.removeBtn:active,
+.submitBtn:active {
+  transform: scale(0.98);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .row {
+    flex-direction: column;
+  }
+
+  .row .formGroup {
+    min-width: 100%;
+  }
+}
+
+@media print {
+  .form {
+    display: none;
+  }
+}
