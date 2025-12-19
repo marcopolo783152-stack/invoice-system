@@ -1,5 +1,7 @@
 # Rug Business Invoice System
 
+**Latest Update:** Email functionality and security features added!
+
 Professional, production-ready invoice system with a **single shared codebase** for:
 - 🌐 **Web Application**
 - 📱 **Android APK**
