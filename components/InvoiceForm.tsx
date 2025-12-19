@@ -45,6 +45,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
       state: '',
       zip: '',
       phone: '',
+      email: '',
     }
   );
   const [items, setItems] = useState<InvoiceItem[]>(
@@ -243,6 +244,18 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
             onChange={(e) =>
               setSoldTo({ ...soldTo, phone: e.target.value })
             }
+            className={styles.input}
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label>Email:</label>
+          <input
+            type="email"
+            value={soldTo.email || ''}
+            onChange={(e) =>
+              setSoldTo({ ...soldTo, email: e.target.value })
+            }
+            placeholder="customer@example.com"
             className={styles.input}
           />
         </div>

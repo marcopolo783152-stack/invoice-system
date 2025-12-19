@@ -34,6 +34,7 @@ export interface InvoiceData {
     state: string;
     zip: string;
     phone: string;
+    email?: string;
   };
   items: InvoiceItem[];
   mode: InvoiceMode;
