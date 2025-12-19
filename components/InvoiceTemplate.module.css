@@ -322,6 +322,42 @@
   }
 }
 
+/* Signature Section */
+.signatureSection {
+  margin-top: 30px;
+  padding: 20px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.signatureLabel {
+  font-size: 10pt;
+  font-weight: bold;
+  color: #333;
+}
+
+.signatureImage {
+  border-bottom: 2px solid #000;
+  padding-bottom: 5px;
+  min-height: 80px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.signatureImage img {
+  max-width: 400px;
+  max-height: 80px;
+  height: auto;
+}
+
+.signatureDate {
+  font-size: 9pt;
+  color: #666;
+  margin-top: 5px;
+}
+
 /* Screen View Only - Add shadow for better visibility */
 @media screen {
   .invoice {

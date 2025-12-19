@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
+import SignaturePad from './SignaturePad';
 import styles from './InvoiceForm.module.css';
 
 interface InvoiceFormProps {
@@ -55,6 +56,8 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
     initialData?.discountPercentage || 0
   );
   const [notes, setNotes] = useState(initialData?.notes || '');
+  const [signature, setSignature] = useState(initialData?.signature || '');
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
 
   function createEmptyItem(): InvoiceItem {
     return {
@@ -118,8 +121,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
       items,
       mode,
       discountPercentage: mode.startsWith('retail') ? discountPercentage : undefined,
-      notes,
-    };
+      notes,      signature,    };
 
     onSubmit(invoiceData);
   };
@@ -490,9 +492,48 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
         />
       </div>
 
+      {/* Customer Signature */}
+      <div className={styles.formGroup}>
+        <label>Customer Signature:</label>
+        <div className={styles.signatureSection}>
+          {signature ? (
+            <div className={styles.signaturePreview}>
+              <img src={signature} alt="Customer signature" />
+              <button
+                type="button"
+                onClick={() => setShowSignaturePad(true)}
+                className={styles.changeSignatureBtn}
+              >
+                ✏️ Change Signature
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowSignaturePad(true)}
+              className={styles.addSignatureBtn}
+            >
+              ✍️ Add Customer Signature
+            </button>
+          )}
+        </div>
+      </div>
+
       <button type="submit" className={styles.submitBtn}>
         Generate Invoice
       </button>
+
+      {/* Signature Pad Modal */}
+      {showSignaturePad && (
+        <SignaturePad
+          onSave={(signatureData) => {
+            setSignature(signatureData);
+            setShowSignaturePad(false);
+          }}
+          onCancel={() => setShowSignaturePad(false)}
+          existingSignature={signature}
+        />
+      )}
     </form>
   );
 }

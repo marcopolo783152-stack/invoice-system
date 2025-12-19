@@ -40,6 +40,7 @@ export interface InvoiceData {
   mode: InvoiceMode;
   discountPercentage?: number;  // Optional, only for retail modes
   notes?: string;
+  signature?: string;  // Base64 encoded signature image
 }
 
 export interface CalculatedItem extends InvoiceItem {

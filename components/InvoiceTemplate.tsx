@@ -228,6 +228,17 @@ export default function InvoiceTemplate({
           </table>
         </div>
       </div>
+
+      {/* Customer Signature */}
+      {data.signature && (
+        <div className={styles.signatureSection}>
+          <div className={styles.signatureLabel}>Customer Signature:</div>
+          <div className={styles.signatureImage}>
+            <img src={data.signature} alt="Customer signature" />
+          </div>
+          <div className={styles.signatureDate}>Date: {data.date}</div>
+        </div>
+      )}
     </div>
   );
 }
