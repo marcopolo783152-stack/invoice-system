@@ -54,12 +54,6 @@ export default function InvoiceTemplate({
     <div className={styles.invoice}>
       {/* Header Section */}
       <div className={styles.header}>
-        <div className={styles.logoSection}>
-          <div className={styles.logoCircle}>
-            <div className={styles.logoText}>MPR</div>
-            <div className={styles.logoSubtext}>ORIENTAL RUGS</div>
-          </div>
-        </div>
         <div className={styles.businessInfo}>
           <h1>{businessInfo.name}</h1>
           <p>{businessInfo.address}</p>
@@ -70,6 +64,31 @@ export default function InvoiceTemplate({
           {businessInfo.fax && <p>Fax: {businessInfo.fax}</p>}
           {businessInfo.website && <p>Website: {businessInfo.website}</p>}
           {businessInfo.email && <p>Email: {businessInfo.email}</p>}
+        </div>
+        <div className={styles.logoSection}>
+          <div className={styles.logoCircle}>
+            <div className={styles.logoOrnate}>
+              <svg viewBox="0 0 200 200" className={styles.logoSvg}>
+                {/* Ornate decorative border */}
+                <circle cx="100" cy="100" r="95" fill="url(#grad1)" stroke="#d4af37" strokeWidth="3"/>
+                <circle cx="100" cy="100" r="88" fill="none" stroke="#d4af37" strokeWidth="1" opacity="0.5"/>
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#d4af37" strokeWidth="2"/>
+                {/* Center text */}
+                <text x="100" y="95" textAnchor="middle" fill="#d4af37" fontSize="42" fontWeight="bold" fontFamily="serif">MPR</text>
+                {/* Circular text */}
+                <path id="circlePath" d="M 100,20 A 80,80 0 1,1 99.9,20" fill="none"/>
+                <text fontSize="11" fill="#d4af37" fontWeight="600" letterSpacing="2">
+                  <textPath href="#circlePath" startOffset="12%">POLO • ORIENTAL • RUGS • MARCO</textPath>
+                </text>
+                <defs>
+                  <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#667eea" stopOpacity="1" />
+                    <stop offset="100%" stopColor="#764ba2" stopOpacity="1" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 

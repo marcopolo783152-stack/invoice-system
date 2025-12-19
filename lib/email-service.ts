@@ -105,6 +105,19 @@ export async function requestSecurityConfirmation(
   action: string,
   details: string
 ): Promise<boolean> {
+  // Check if email is configured
+  if (!isEmailConfigured()) {
+    // Allow operation without email confirmation if not configured
+    const proceed = confirm(
+      `⚠️ Email security is not configured yet.\n\n` +
+      `Action: ${action}\n` +
+      `Details: ${details}\n\n` +
+      `Do you want to proceed without email confirmation?\n\n` +
+      `(Set up EmailJS to enable secure confirmations)`
+    );
+    return proceed;
+  }
+
   try {
     // Send confirmation code to admin email
     const confirmationCode = await sendSecurityConfirmation(action, details);
@@ -132,8 +145,9 @@ export async function requestSecurityConfirmation(
       return false;
     }
   } catch (error) {
-    alert('Failed to send confirmation email. Please check your email configuration.');
-    return false;
+    alert('Failed to send confirmation email. Proceeding without confirmation.');
+    const proceed = confirm(`Do you want to proceed with: ${action}?`);
+    return proceed;
   }
 }
 
