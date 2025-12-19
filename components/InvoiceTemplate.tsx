@@ -176,9 +176,6 @@ export default function InvoiceTemplate({
             <p>1. All Sales are final</p>
             <p>2. No refunds. Exchanges only within one week of purchase.</p>
           </div>
-          <div className={styles.signature}>
-            <p>Authorized Signature: _______________________________</p>
-          </div>
         </div>
 
         <div className={styles.totalsSection}>
