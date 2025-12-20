@@ -47,6 +47,14 @@ export default function InvoiceTemplate({
     email: 'marcopolorugs@aol.com',
   },
 }: InvoiceTemplateProps) {
+  // Format date as mm/dd/yyyy
+  function formatDateMMDDYYYY(dateString: string) {
+    const d = new Date(dateString);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+  }
   const isRetail = data.mode.startsWith('retail');
   const isPerSqFt = data.mode.includes('per-sqft');
 
@@ -95,7 +103,7 @@ export default function InvoiceTemplate({
               </tr>
               <tr>
                 <td className={styles.label}>Date:</td>
-                <td className={styles.value}>{data.date}</td>
+                <td className={styles.value}>{formatDateMMDDYYYY(data.date)}</td>
               </tr>
               <tr>
                 <td className={styles.label}>Terms:</td>

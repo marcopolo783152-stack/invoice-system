@@ -145,13 +145,11 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const d = new Date(dateString);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
   };
 
   return (
@@ -283,87 +281,62 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
           ) : (
             results
               .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-              
-            results.map((invoice) => {
-              const calculations = calculateInvoice(invoice.data);
-          
-          {/* Bottom Pagination */}
-          {results.length > itemsPerPage && (
-            <div className={styles.paginationBottom}>
-              <button 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className={styles.pageBtn}
-              >
-                ◀️ Previous
-              </button>
-              <span className={styles.pageInfo}>
-                Page {currentPage} of {Math.ceil(results.length / itemsPerPage)}
-              </span>
-              <button 
-                onClick={() => setCurrentPage(p => Math.min(Math.ceil(results.length / itemsPerPage), p + 1))}
-                disabled={currentPage >= Math.ceil(results.length / itemsPerPage)}
-                className={styles.pageBtn}
-              >
-                Next ▶️
-              </button>
-            </div>
-          )}
-              const isSelected = selectedInvoice?.id === invoice.id;
-              const isChecked = selectedIds.includes(invoice.id);
-              
-              return (
-                <div
-                  key={invoice.id}
-                  className={`${styles.resultItem} ${isSelected ? styles.selected : ''} ${isChecked ? styles.checked : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      handleToggleSelect(invoice.id);
-                    }}
-                    className={styles.checkbox}
-                  />
-                  <div 
-                    className={styles.itemContent}
-                    onClick={() => handleViewInvoice(invoice)}
+              .map((invoice) => {
+                const calculations = calculateInvoice(invoice.data);
+                const isSelected = selectedInvoice?.id === invoice.id;
+                const isChecked = selectedIds.includes(invoice.id);
+                return (
+                  <div
+                    key={invoice.id}
+                    className={`${styles.resultItem} ${isSelected ? styles.selected : ''} ${isChecked ? styles.checked : ''}`}
                   >
-                  <div className={styles.resultHeader}>
-                    <span className={styles.invoiceNumber}>
-                      {invoice.data.invoiceNumber}
-                    </span>
-                    <span className={styles.invoiceDate}>
-                      {invoice.data.date}
-                    </span>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleToggleSelect(invoice.id);
+                      }}
+                      className={styles.checkbox}
+                    />
+                    <div 
+                      className={styles.itemContent}
+                      onClick={() => handleViewInvoice(invoice)}
+                    >
+                    <div className={styles.resultHeader}>
+                      <span className={styles.invoiceNumber}>
+                        {invoice.data.invoiceNumber}
+                      </span>
+                      <span className={styles.invoiceDate}>
+                        {invoice.data.date}
+                      </span>
+                    </div>
+                    <div className={styles.customerName}>
+                      {invoice.data.soldTo.name}
+                    </div>
+                    <div className={styles.resultDetails}>
+                      {invoice.data.soldTo.phone && (
+                        <span>📞 {invoice.data.soldTo.phone}</span>
+                      )}
+                      {invoice.data.soldTo.address && (
+                        <span>📍 {invoice.data.soldTo.address}</span>
+                      )}
+                    </div>
+                    <div className={styles.resultFooter}>
+                      <span className={styles.total}>
+                        {formatCurrency(calculations.totalDue)}
+                      </span>
+                      <span className={styles.itemCount}>
+                        {invoice.data.items.length} item{invoice.data.items.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className={styles.timestamp}>
+                      Created: {formatDate(invoice.createdAt)}
+                    </div>
+                    </div>
                   </div>
-                  <div className={styles.customerName}>
-                    {invoice.data.soldTo.name}
-                  </div>
-                  <div className={styles.resultDetails}>
-                    {invoice.data.soldTo.phone && (
-                      <span>📞 {invoice.data.soldTo.phone}</span>
-                    )}
-                    {invoice.data.soldTo.address && (
-                      <span>📍 {invoice.data.soldTo.address}</span>
-                    )}
-                  </div>
-                  <div className={styles.resultFooter}>
-                    <span className={styles.total}>
-                      {formatCurrency(calculations.totalDue)}
-                    </span>
-                    <span className={styles.itemCount}>
-                      {invoice.data.items.length} item{invoice.data.items.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <div className={styles.timestamp}>
-                    Created: {formatDate(invoice.createdAt)}
-                  </div>
-                  </div>
-                </div>
-              );
-            })
+                );
+              })
           )}
         </div>
 
