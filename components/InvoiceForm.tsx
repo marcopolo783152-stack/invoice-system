@@ -28,10 +28,18 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
   const [showCounterManager, setShowCounterManager] = useState(false);
   const [counterValue, setCounterValue] = useState('');
 
-  // Auto-generate invoice number on mount if not provided
+  // Load or generate invoice number on mount
   useEffect(() => {
     if (!initialData?.invoiceNumber) {
-      setInvoiceNumber(generateInvoiceNumber());
+      // Try to get saved invoice number from localStorage
+      const savedNumber = localStorage.getItem('currentInvoiceNumber');
+      if (savedNumber) {
+        setInvoiceNumber(savedNumber);
+      } else {
+        const newNumber = generateInvoiceNumber();
+        setInvoiceNumber(newNumber);
+        localStorage.setItem('currentInvoiceNumber', newNumber);
+      }
     }
   }, [initialData]);
   const [date, setDate] = useState(
@@ -97,7 +105,9 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
   };
 
   const handleGenerateNewNumber = () => {
-    setInvoiceNumber(generateInvoiceNumber());
+    const newNumber = generateInvoiceNumber();
+    setInvoiceNumber(newNumber);
+    localStorage.setItem('currentInvoiceNumber', newNumber);
   };
 
   const handleSetCounter = () => {
@@ -239,13 +249,14 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
           />
         </div>
         <div className={styles.formGroup}>
-          <label>Phone:</label>
+          <label>Phone:*</label>
           <input
             type="tel"
             value={soldTo.phone}
             onChange={(e) =>
               setSoldTo({ ...soldTo, phone: e.target.value })
             }
+            required
             className={styles.input}
           />
         </div>
@@ -263,13 +274,14 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
         </div>
       </div>
       <div className={styles.formGroup}>
-        <label>Address:</label>
+        <label>Address:*</label>
         <input
           type="text"
           value={soldTo.address}
           onChange={(e) =>
             setSoldTo({ ...soldTo, address: e.target.value })
           }
+          required
           className={styles.input}
         />
       </div>

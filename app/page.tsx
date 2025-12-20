@@ -48,6 +48,8 @@ export default function Home() {
     // Save invoice to storage (async)
     saveInvoice(data).then(() => {
       setInvoiceCount(getInvoicesCount());
+      // Clear the saved invoice number so a new one is generated for next invoice
+      localStorage.removeItem('currentInvoiceNumber');
     }).catch((error) => {
       console.error('Error saving invoice:', error);
       alert('Invoice saved locally but cloud sync failed. Check Firebase configuration.');
