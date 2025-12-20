@@ -123,6 +123,12 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate signature is present
+    if (!signature) {
+      alert('Customer signature is required. Please add a signature before generating the invoice.');
+      return;
+    }
+
     const invoiceData: InvoiceData = {
       invoiceNumber,
       date,
@@ -513,7 +519,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
 
       {/* Customer Signature */}
       <div className={styles.formGroup}>
-        <label>Customer Signature:</label>
+        <label>Customer Signature:*</label>
         <div className={styles.signatureSection}>
           {signature ? (
             <div className={styles.signaturePreview}>

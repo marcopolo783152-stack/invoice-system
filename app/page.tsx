@@ -13,7 +13,7 @@ import InvoiceTemplate from '@/components/InvoiceTemplate';
 import InvoiceSearch from '@/components/InvoiceSearch';
 import { InvoiceData, calculateInvoice, validateInvoiceData } from '@/lib/calculations';
 import { printInvoice, generatePDF } from '@/lib/pdf-utils';
-import { saveInvoice, getInvoicesCount, SavedInvoice } from '@/lib/invoice-storage';
+import { saveInvoice, getInvoicesCount, getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { sendInvoiceEmail, prepareInvoiceForEmail, isEmailConfigured } from '@/lib/email-service';
 import { businessConfig } from '@/config/business';
 import styles from './page.module.css';
@@ -27,7 +27,12 @@ export default function Home() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    setInvoiceCount(getInvoicesCount());
+    // Update count from Firebase/localStorage
+    const updateCount = async () => {
+      const invoices = await getAllInvoices();
+      setInvoiceCount(invoices.length);
+    };
+    updateCount();
   }, [showPreview]);
 
   const handleFormSubmit = (data: InvoiceData) => {
@@ -46,8 +51,10 @@ export default function Home() {
     setShowSearch(false);
 
     // Save invoice to storage (async)
-    saveInvoice(data).then(() => {
-      setInvoiceCount(getInvoicesCount());
+    saveInvoice(data).then(async () => {
+      // Update count from Firebase
+      const invoices = await getAllInvoices();
+      setInvoiceCount(invoices.length);
       // Clear the saved invoice number so a new one is generated for next invoice
       localStorage.removeItem('currentInvoiceNumber');
     }).catch((error) => {
