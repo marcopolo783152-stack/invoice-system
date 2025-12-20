@@ -49,6 +49,12 @@ export default function InvoiceTemplate({
 }: InvoiceTemplateProps) {
   // Format date as mm/dd/yyyy
   function formatDateMMDDYYYY(dateString: string) {
+    // If dateString is in yyyy-mm-dd, parse as local date
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [yyyy, mm, dd] = dateString.split('-');
+      return `${mm}/${dd}/${yyyy}`;
+    }
+    // Otherwise, fallback to Date parsing
     const d = new Date(dateString);
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
