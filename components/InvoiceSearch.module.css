@@ -532,6 +532,8 @@
   .pageInfo {
     text-align: center;
   }
+}
+
 @media print {
   .container {
     display: none;
