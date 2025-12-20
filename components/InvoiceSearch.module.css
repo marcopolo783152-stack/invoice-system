@@ -416,6 +416,100 @@
   margin: 0;
 }
 
+/* Pagination Styles */
+.paginationTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.paginationBottom {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  margin-top: 20px;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+.paginationControls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pageBtn {
+  padding: 8px 16px;
+  background: white;
+  border: 2px solid #2196F3;
+  color: #2196F3;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: #2196F3;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+.pageBtn:disabled {
+  background: #f5f5f5;
+  border-color: #ccc;
+  color: #999;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pageNumber {
+  padding: 8px 16px;
+  background: #2196F3;
+  color: white;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pageInfo {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.itemsPerPageSelect {
+  padding: 8px 12px;
+  border: 2px solid #2196F3;
+  border-radius: 6px;
+  background: white;
+  color: #2196F3;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.itemsPerPageSelect:hover {
+  background: #f0f8ff;
+}
+
+.itemsPerPageSelect:focus {
+  outline: none;
+  border-color: #1976D2;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .content {
@@ -425,8 +519,18 @@
   .previewPanel {
     flex: 1;
   }
-}
 
+  .paginationTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .paginationControls {
+    justify-content: center;
+  }
+
+  .pageInfo {
+    text-align: center;
 @media print {
   .container {
     display: none;

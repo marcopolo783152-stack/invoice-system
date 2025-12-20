@@ -25,6 +25,8 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   useEffect(() => {
     // Load all invoices on mount (async)
@@ -37,6 +39,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page on new search
     const invoices = await searchInvoices(query);
     setResults(invoices.sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -214,6 +217,59 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
           {results.length} invoice{results.length !== 1 ? 's' : ''} found
         </span>
       </div>
+{/* Pagination Controls */}
+      {results.length > 0 && (
+        <div className={styles.paginationTop}>
+          <div className={styles.pageInfo}>
+            Page {currentPage} of {Math.ceil(results.length / itemsPerPage)} 
+            {' '}• Showing {Math.min((currentPage - 1) * itemsPerPage + 1, results.length)}-{Math.min(currentPage * itemsPerPage, results.length)} of {results.length}
+          </div>
+          <div className={styles.paginationControls}>
+            <button 
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className={styles.pageBtn}
+            >
+              ⏮️ First
+            </button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={styles.pageBtn}
+            >
+              ◀️ Previous
+            </button>
+            <span className={styles.pageNumber}>Page {currentPage}</span>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(Math.ceil(results.length / itemsPerPage), p + 1))}
+              disabled={currentPage >= Math.ceil(results.length / itemsPerPage)}
+              className={styles.pageBtn}
+            >
+              Next ▶️
+            </button>
+            <button 
+              onClick={() => setCurrentPage(Math.ceil(results.length / itemsPerPage))}
+              disabled={currentPage >= Math.ceil(results.length / itemsPerPage)}
+              className={styles.pageBtn}
+            >
+              Last ⏭️
+            </button>
+          </div>
+          <select 
+            value={itemsPerPage} 
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className={styles.itemsPerPageSelect}
+          >
+            <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
+            <option value={100}>100 per page</option>
+            <option value={200}>200 per page</option>
+          </select>
+        </div>
+      )}
 
       <div className={styles.content}>
         <div className={styles.resultsList}>
@@ -225,8 +281,34 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
               </small>
             </div>
           ) : (
+            results
+              .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+              
             results.map((invoice) => {
               const calculations = calculateInvoice(invoice.data);
+          
+          {/* Bottom Pagination */}
+          {results.length > itemsPerPage && (
+            <div className={styles.paginationBottom}>
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className={styles.pageBtn}
+              >
+                ◀️ Previous
+              </button>
+              <span className={styles.pageInfo}>
+                Page {currentPage} of {Math.ceil(results.length / itemsPerPage)}
+              </span>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(results.length / itemsPerPage), p + 1))}
+                disabled={currentPage >= Math.ceil(results.length / itemsPerPage)}
+                className={styles.pageBtn}
+              >
+                Next ▶️
+              </button>
+            </div>
+          )}
               const isSelected = selectedInvoice?.id === invoice.id;
               const isChecked = selectedIds.includes(invoice.id);
               
