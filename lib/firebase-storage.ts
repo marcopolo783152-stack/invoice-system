@@ -39,7 +39,7 @@ export async function saveInvoiceToCloud(
   totalAmount: number,
   data: InvoiceData
 ): Promise<string> {
-  if (!isFirebaseConfigured()) {
+  if (!isFirebaseConfigured() || !db) {
     throw new Error('Firebase not configured. Please set up your Firebase project.');
   }
 
@@ -63,7 +63,7 @@ export async function saveInvoiceToCloud(
  * Get all invoices from Firebase
  */
 export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
-  if (!isFirebaseConfigured()) {
+  if (!isFirebaseConfigured() || !db) {
     return [];
   }
 
@@ -102,7 +102,7 @@ export async function updateInvoiceInCloud(
   totalAmount: number,
   data: InvoiceData
 ): Promise<void> {
-  if (!isFirebaseConfigured()) {
+  if (!isFirebaseConfigured() || !db) {
     throw new Error('Firebase not configured.');
   }
 
@@ -125,7 +125,7 @@ export async function updateInvoiceInCloud(
  * Delete invoice from Firebase
  */
 export async function deleteInvoiceFromCloud(id: string): Promise<void> {
-  if (!isFirebaseConfigured()) {
+  if (!isFirebaseConfigured() || !db) {
     throw new Error('Firebase not configured.');
   }
 
@@ -141,12 +141,12 @@ export async function deleteInvoiceFromCloud(id: string): Promise<void> {
  * Delete multiple invoices from Firebase
  */
 export async function deleteMultipleInvoicesFromCloud(ids: string[]): Promise<void> {
-  if (!isFirebaseConfigured()) {
+  if (!isFirebaseConfigured() || !db) {
     throw new Error('Firebase not configured.');
   }
 
   try {
-    const deletePromises = ids.map(id => deleteDoc(doc(db, COLLECTION_NAME, id)));
+    const deletePromises = ids.map(id => deleteDoc(doc(db!, COLLECTION_NAME, id)));
     await Promise.all(deletePromises);
   } catch (error) {
     console.error('Error deleting multiple invoices from cloud:', error);

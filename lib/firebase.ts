@@ -4,8 +4,8 @@
  * Cloud database for syncing invoices across all devices
  */
 
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -17,12 +17,6 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase (only once)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const db = getFirestore(app);
-
-export { db };
-
 /**
  * Check if Firebase is configured
  */
@@ -32,3 +26,14 @@ export function isFirebaseConfigured(): boolean {
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   );
 }
+
+// Initialize Firebase only if configured
+let app: FirebaseApp | undefined;
+let db: Firestore | undefined;
+
+if (isFirebaseConfigured()) {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  db = getFirestore(app);
+}
+
+export { db };
