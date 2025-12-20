@@ -1,6 +1,6 @@
 # Rug Business Invoice System
 
-**Latest Update:** Email functionality and security features added!
+**Latest Update:** Firebase cloud storage enabled - sync across all devices worldwide!
 
 Professional, production-ready invoice system with a **single shared codebase** for:
 - 🌐 **Web Application**
