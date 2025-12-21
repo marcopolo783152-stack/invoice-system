@@ -3,7 +3,19 @@
  * Columns: Name,Last Name,Address,City,State,Zip Code,Phone Number,Email Address
  */
 export function exportAddressBook(): string {
-  const invoices = getAllInvoicesSync();
+  // Use cloud invoices if Firebase is configured, else fallback to local
+  let invoices: SavedInvoice[] = [];
+  if (typeof window !== 'undefined' && window.localStorage) {
+    if (isFirebaseConfigured()) {
+      // Synchronous cloud fetch is not possible, so warn user if not up to date
+      console.warn('Address book may not be fully up to date. For latest, use dashboard export after cloud sync.');
+      // Optionally, you could make exportAddressBook async and use getAllInvoices()
+      // For now, fallback to localStorage for compatibility
+      invoices = getAllInvoicesSync();
+    } else {
+      invoices = getAllInvoicesSync();
+    }
+  }
   const customers: Record<string, any> = {};
   invoices.forEach(inv => {
     // Only include invoices or consignments
