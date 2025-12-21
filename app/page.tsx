@@ -57,6 +57,9 @@ export default function Home() {
       setInvoiceCount(invoices.length);
       // Clear the saved invoice number so a new one is generated for next invoice
       localStorage.removeItem('currentInvoiceNumber');
+
+      // Trigger git commit and push after invoice is generated
+      // This will be handled by the backend/terminal, not the browser
     }).catch((error) => {
       console.error('Error saving invoice:', error);
       alert('Invoice saved locally but cloud sync failed. Check Firebase configuration.');

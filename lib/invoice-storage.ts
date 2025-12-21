@@ -6,28 +6,32 @@ export function exportAddressBook(): string {
   const invoices = getAllInvoicesSync();
   const customers: Record<string, any> = {};
   invoices.forEach(inv => {
-    const soldTo = inv.data.soldTo;
-    // Use phone+name as unique key
-    const key = `${soldTo.name}|${soldTo.phone}`;
-    if (!customers[key]) {
-      // Split name into first/last if possible
-      let firstName = soldTo.name;
-      let lastName = '';
-      if (soldTo.name.includes(' ')) {
-        const parts = soldTo.name.split(' ');
-        firstName = parts[0];
-        lastName = parts.slice(1).join(' ');
+    // Only include invoices or consignments
+    const docType = inv.data.documentType || inv.documentType;
+    if (docType === 'INVOICE' || docType === 'CONSIGNMENT') {
+      const soldTo = inv.data.soldTo;
+      // Use phone+name as unique key
+      const key = `${soldTo.name}|${soldTo.phone}`;
+      if (!customers[key]) {
+        // Split name into first/last if possible
+        let firstName = soldTo.name;
+        let lastName = '';
+        if (soldTo.name.includes(' ')) {
+          const parts = soldTo.name.split(' ');
+          firstName = parts[0];
+          lastName = parts.slice(1).join(' ');
+        }
+        customers[key] = {
+          firstName,
+          lastName,
+          address: soldTo.address,
+          city: soldTo.city,
+          state: soldTo.state,
+          zip: soldTo.zip,
+          phone: soldTo.phone,
+          email: soldTo.email || '',
+        };
       }
-      customers[key] = {
-        firstName,
-        lastName,
-        address: soldTo.address,
-        city: soldTo.city,
-        state: soldTo.state,
-        zip: soldTo.zip,
-        phone: soldTo.phone,
-        email: soldTo.email || '',
-      };
     }
   });
   // CSV header
