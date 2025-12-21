@@ -87,6 +87,12 @@ export default function InvoiceTemplate({
           />
         </div>
       </div>
+      {/* Document Title */}
+      <div className={styles.documentTitle}>
+        <h2 style={{ textAlign: 'center', margin: '10px 0 20px 0', letterSpacing: 2 }}>
+          {data.documentType === 'CONSIGNMENT' ? 'CONSIGNMENT OUT' : 'INVOICE'}
+        </h2>
+      </div>
 
       {/* Customer and Invoice Info Section */}
       <div className={styles.infoSection}>

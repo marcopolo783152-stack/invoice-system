@@ -22,6 +22,7 @@ export interface SavedInvoice {
   data: InvoiceData;
   createdAt: string;
   updatedAt: string;
+  documentType?: 'INVOICE' | 'CONSIGNMENT'; // For future compatibility
 }
 
 /**

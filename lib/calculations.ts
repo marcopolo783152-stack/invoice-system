@@ -23,7 +23,10 @@ export interface InvoiceItem {
   fixedPrice?: number;    // Used in per-rug modes
 }
 
+export type DocumentType = 'INVOICE' | 'CONSIGNMENT';
+
 export interface InvoiceData {
+  documentType?: DocumentType; // 'INVOICE' (default) or 'CONSIGNMENT'
   invoiceNumber: string;
   date: string;
   terms: string;

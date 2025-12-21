@@ -27,6 +27,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [filterTab, setFilterTab] = useState<'ALL' | 'INVOICE' | 'CONSIGNMENT'>('ALL');
 
   useEffect(() => {
     // Load all invoices on mount (async)
@@ -152,10 +153,23 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     return `${mm}/${dd}/${yyyy}`;
   };
 
+  // Filter results by tab
+  const filteredResults = results.filter(inv => {
+    if (filterTab === 'ALL') return true;
+    if (filterTab === 'INVOICE') return (inv.data.documentType || inv.documentType) !== 'CONSIGNMENT';
+    if (filterTab === 'CONSIGNMENT') return (inv.data.documentType || inv.documentType) === 'CONSIGNMENT';
+    return true;
+  });
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h2>Search Invoices</h2>
+        <div className={styles.filterTabs} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <button onClick={() => setFilterTab('ALL')} className={filterTab === 'ALL' ? styles.activeTab : ''}>All</button>
+          <button onClick={() => setFilterTab('INVOICE')} className={filterTab === 'INVOICE' ? styles.activeTab : ''}>Invoices</button>
+          <button onClick={() => setFilterTab('CONSIGNMENT')} className={filterTab === 'CONSIGNMENT' ? styles.activeTab : ''}>Consignments</button>
+        </div>
         <div className={styles.headerActions}>
           <button 
             onClick={handleSelectAll} 
@@ -212,15 +226,15 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
           autoFocus
         />
         <span className={styles.resultCount}>
-          {results.length} invoice{results.length !== 1 ? 's' : ''} found
+          {filteredResults.length} record{filteredResults.length !== 1 ? 's' : ''} found
         </span>
       </div>
 {/* Pagination Controls */}
-      {results.length > 0 && (
+      {filteredResults.length > 0 && (
         <div className={styles.paginationTop}>
           <div className={styles.pageInfo}>
-            Page {currentPage} of {Math.ceil(results.length / itemsPerPage)} 
-            {' '}• Showing {Math.min((currentPage - 1) * itemsPerPage + 1, results.length)}-{Math.min(currentPage * itemsPerPage, results.length)} of {results.length}
+            Page {currentPage} of {Math.ceil(filteredResults.length / itemsPerPage)} 
+            {' '}• Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredResults.length)}-{Math.min(currentPage * itemsPerPage, filteredResults.length)} of {filteredResults.length}
           </div>
           <div className={styles.paginationControls}>
             <button 
@@ -271,15 +285,15 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
 
       <div className={styles.content}>
         <div className={styles.resultsList}>
-          {results.length === 0 ? (
+          {filteredResults.length === 0 ? (
             <div className={styles.noResults}>
-              <p>No invoices found</p>
+              <p>No records found</p>
               <small>
-                {searchQuery ? 'Try a different search term' : 'Create your first invoice to get started'}
+                {searchQuery ? 'Try a different search term' : 'Create your first invoice or consignment to get started'}
               </small>
             </div>
           ) : (
-            results
+            filteredResults
               .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
               .map((invoice) => {
                 const calculations = calculateInvoice(invoice.data);
@@ -310,6 +324,9 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                       <span className={styles.invoiceDate}>
                         {invoice.data.date}
                       </span>
+                      {(invoice.data.documentType === 'CONSIGNMENT' || invoice.documentType === 'CONSIGNMENT') && (
+                        <span className={styles.consignBadge}>Consignment</span>
+                      )}
                     </div>
                     <div className={styles.customerName}>
                       {invoice.data.soldTo.name}

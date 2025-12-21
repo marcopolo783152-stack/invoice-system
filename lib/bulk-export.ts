@@ -57,6 +57,7 @@ async function generatePDFBlob(invoiceElement: HTMLElement): Promise<Blob> {
 /**
  * Create temporary invoice element for rendering
  */
+
 function createInvoiceElement(invoice: SavedInvoice): HTMLElement {
   // Create a temporary container
   const container = document.createElement('div');
@@ -68,6 +69,7 @@ function createInvoiceElement(invoice: SavedInvoice): HTMLElement {
   document.body.appendChild(container);
 
   const calculations = calculateInvoice(invoice.data);
+  const isConsignment = invoice.data.documentType === 'CONSIGNMENT' || invoice.documentType === 'CONSIGNMENT';
 
   // Build invoice HTML
   container.innerHTML = `
@@ -86,10 +88,14 @@ function createInvoiceElement(invoice: SavedInvoice): HTMLElement {
         </div>
         <div style="text-align: right;">
           <div style="font-size: 8pt; margin-bottom: 8px;">
-            <strong>Invoice #:</strong> ${invoice.data.invoiceNumber}<br>
+            <strong>${isConsignment ? 'Consignment #:' : 'Invoice #:'}</strong> ${invoice.data.invoiceNumber}<br>
             <strong>Date:</strong> ${invoice.data.date}
           </div>
         </div>
+      </div>
+      <!-- Document Title -->
+      <div style="text-align:center; margin: 10px 0 20px 0; letter-spacing:2px;">
+        <span style="font-size: 15pt; font-weight: bold;">${isConsignment ? 'CONSIGNMENT OUT' : 'INVOICE'}</span>
       </div>
 
       <!-- Customer Info -->
@@ -167,7 +173,11 @@ function createInvoiceElement(invoice: SavedInvoice): HTMLElement {
       <!-- Terms -->
       <div style="margin-top: 20px; padding: 8px; border: 1px solid #000; font-size: 7pt;">
         <div style="font-weight: bold; margin-bottom: 3px;">Terms & Conditions:</div>
-        <div>All items subject to prior sale. All sales are final. No returns or exchanges accepted. Payment due upon receipt.</div>
+        <div>
+          ${isConsignment
+            ? 'All items remain property of Marco Polo Oriental Rugs until sold. Payment due upon sale or return. Items not sold within 90 days may be returned.'
+            : 'All items subject to prior sale. All sales are final. No returns or exchanges accepted. Payment due upon receipt.'}
+        </div>
       </div>
     </div>
   `;

@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { InvoiceData, InvoiceItem, InvoiceMode, RugShape } from '@/lib/calculations';
+import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
 import SignaturePad from './SignaturePad';
 import styles from './InvoiceForm.module.css';
@@ -19,6 +19,7 @@ interface InvoiceFormProps {
 }
 
 export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps) {
+  const [documentType, setDocumentType] = useState<DocumentType>(initialData?.documentType || 'INVOICE');
   const [mode, setMode] = useState<InvoiceMode>(
     initialData?.mode || 'retail-per-rug'
   );
@@ -130,6 +131,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
     }
 
     const invoiceData: InvoiceData = {
+      documentType,
       invoiceNumber,
       date,
       terms,
@@ -137,7 +139,9 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
       items,
       mode,
       discountPercentage: mode.startsWith('retail') ? discountPercentage : undefined,
-      notes,      signature,    };
+      notes,
+      signature,
+    };
 
     onSubmit(invoiceData);
   };
@@ -147,7 +151,27 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <h2>Invoice Details</h2>
+      <div className={styles.formGroup}>
+        <label>Document Type:</label>
+        <select
+          value={documentType}
+          onChange={e => {
+            const value = e.target.value as DocumentType;
+            setDocumentType(value);
+            // Autofill consignment terms if selected
+            if (value === 'CONSIGNMENT') {
+              setTerms('Consignment: All items remain property of Marco Polo Oriental Rugs until sold. Payment due upon sale or return. Items not sold within 90 days may be returned.');
+            } else {
+              setTerms('Due on Receipt');
+            }
+          }}
+          className={styles.select}
+        >
+          <option value="INVOICE">Invoice</option>
+          <option value="CONSIGNMENT">Consignment</option>
+        </select>
+      </div>
+      <h2>{documentType === 'CONSIGNMENT' ? 'Consignment Out Details' : 'Invoice Details'}</h2>
 
       {/* Mode Selection */}
       <div className={styles.formGroup}>
