@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { searchInvoices, getAllInvoices, deleteInvoice, deleteMultipleInvoices, SavedInvoice, exportAddressBook } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
@@ -529,10 +530,10 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                   ✏️ Edit
                 </button>
               </div>
-            {/* Rug Return Modal */}
-            {showReturnModal && selectedInvoice && (
-              <div className={styles.modalOverlay}>
-                <div className={styles.modalContent}>
+            {/* Rug Return Modal (uses portal for iPad/mobile compatibility) */}
+            {showReturnModal && selectedInvoice && typeof window !== 'undefined' && createPortal(
+              <div className={styles.modalOverlay} style={{ zIndex: 10000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
+                <div className={styles.modalContent} style={{ maxWidth: 400, margin: '10vh auto' }}>
                   <h3>Return Invoice #{selectedInvoice.data.invoiceNumber}</h3>
                   <p>Customer: <b>{selectedInvoice.data.soldTo.name}</b></p>
                   <div>
@@ -577,12 +578,13 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                     </button>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
-                    {/* Return Receipt Modal */}
-                    {showReturnReceipt && returnedReceiptData && (
-                      <div className={styles.modalOverlay}>
-                        <div className={styles.modalContent}>
+                    {/* Return Receipt Modal (uses portal for iPad/mobile compatibility) */}
+                    {showReturnReceipt && returnedReceiptData && typeof window !== 'undefined' && createPortal(
+                      <div className={styles.modalOverlay} style={{ zIndex: 10000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
+                        <div className={styles.modalContent} style={{ maxWidth: 400, margin: '10vh auto' }}>
                           <h3>Returned Receipt</h3>
                           <p><b>Invoice #:</b> {returnedReceiptData.data.invoiceNumber}</p>
                           <p><b>Customer:</b> {returnedReceiptData.data.soldTo.name}</p>
@@ -601,7 +603,8 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                             <button onClick={() => window.print()} className={styles.printBtn}>Print Receipt</button>
                           </div>
                         </div>
-                      </div>
+                      </div>,
+                      document.body
                     )}
             </div>
             <div className={styles.previewContent}>
