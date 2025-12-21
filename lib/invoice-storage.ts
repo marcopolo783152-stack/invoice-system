@@ -133,18 +133,24 @@ export function getAllInvoicesSync(): SavedInvoice[] {
 
 /**
  * Save an invoice (to both Firebase and localStorage)
+ * If the customer is Martinez, force invoice number to MP00000002
  */
 export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
   const invoices = getAllInvoicesSync();
-  
+
+  // Force invoice number for Martinez
+  if (data.soldTo && typeof data.soldTo.name === 'string' && data.soldTo.name.trim().toLowerCase() === 'martinez') {
+    data.invoiceNumber = 'MP00000002';
+  }
+
   // Check if invoice already exists (by invoice number)
   const existingIndex = invoices.findIndex(
     inv => inv.data.invoiceNumber === data.invoiceNumber
   );
-  
+
   const now = new Date().toISOString();
   let savedInvoice: SavedInvoice;
-  
+
   if (existingIndex >= 0) {
     // Update existing invoice
     savedInvoice = {
@@ -153,7 +159,7 @@ export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
       updatedAt: now,
     };
     invoices[existingIndex] = savedInvoice;
-    
+
     // Update in Firebase
     if (isFirebaseConfigured()) {
       try {
@@ -177,7 +183,7 @@ export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
       updatedAt: now,
     };
     invoices.push(savedInvoice);
-    
+
     // Save to Firebase
     if (isFirebaseConfigured()) {
       try {
@@ -193,10 +199,10 @@ export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
       }
     }
   }
-  
+
   // Always save to localStorage as backup
   localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
-  
+
   return savedInvoice;
 }
 
