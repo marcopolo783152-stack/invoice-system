@@ -51,13 +51,13 @@ function ReturnedReceipt({ receiptData }: { receiptData: any }) {
     </div>
   );
 }
+"use client";
+
 /**
  * INVOICE SEARCH COMPONENT
  * 
  * Search and view saved invoices
  */
-
-'use client';
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
