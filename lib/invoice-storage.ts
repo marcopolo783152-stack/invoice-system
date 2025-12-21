@@ -299,6 +299,10 @@ export async function deleteInvoice(id: string): Promise<boolean> {
   // Update localStorage
   localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
   return true;
+}
+
+// Move the following functions out of deleteInvoice
+
 /**
  * Restore an invoice from the bin (deleted_invoices)
  */
@@ -317,6 +321,7 @@ export function restoreInvoiceFromBin(id: string): boolean {
   localStorage.setItem('deleted_invoices', JSON.stringify(bin));
   return true;
 }
+
 /**
  * Get all deleted invoices in the bin
  */
@@ -326,7 +331,6 @@ export function getDeletedInvoices(): SavedInvoice[] {
   } catch {
     return [];
   }
-}
 }
 
 /**
