@@ -63,19 +63,17 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
 
     if (!confirm('Are you sure you want to delete this invoice?')) return;
 
-    // Request security confirmation
-    const confirmed = await requestSecurityConfirmation(
-      'Delete Invoice',
-      `Invoice #${invoice.data.invoiceNumber} - ${invoice.data.soldTo.name}`
-    );
-
-    if (confirmed) {
-      await deleteInvoice(id);
-      await handleSearch(searchQuery);
-      setSelectedInvoice(null);
-      setSelectedIds(prev => prev.filter(sid => sid !== id));
-      alert('Invoice deleted successfully.');
+    // Require security key before deletion
+    const key = prompt('Enter security key to delete invoice:');
+    if (key !== 'Marcopolo$') {
+      alert('Incorrect security key. Deletion cancelled.');
+      return;
     }
+    await deleteInvoice(id);
+    await handleSearch(searchQuery);
+    setSelectedInvoice(null);
+    setSelectedIds(prev => prev.filter(sid => sid !== id));
+    alert('Invoice deleted successfully.');
   };
 
   const handleToggleSelect = (id: string) => {
@@ -97,19 +95,17 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     
     if (!confirm(`Delete ${selectedIds.length} selected invoice(s)? This cannot be undone.`)) return;
 
-    // Request security confirmation
-    const confirmed = await requestSecurityConfirmation(
-      'Bulk Delete Invoices',
-      `Deleting ${selectedIds.length} invoice(s)`
-    );
-
-    if (confirmed) {
-      await deleteMultipleInvoices(selectedIds);
-      await handleSearch(searchQuery);
-      setSelectedInvoice(null);
-      setSelectedIds([]);
-      alert(`${selectedIds.length} invoice(s) deleted successfully.`);
+    // Require security key before bulk deletion
+    const key = prompt('Enter security key to delete selected invoices:');
+    if (key !== 'Marcopolo$') {
+      alert('Incorrect security key. Bulk deletion cancelled.');
+      return;
     }
+    await deleteMultipleInvoices(selectedIds);
+    await handleSearch(searchQuery);
+    setSelectedInvoice(null);
+    setSelectedIds([]);
+    alert(`${selectedIds.length} invoice(s) deleted successfully.`);
   };
 
   const handleExportAll = async () => {
@@ -408,6 +404,9 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                       {(invoice.data.documentType === 'CONSIGNMENT' || invoice.documentType === 'CONSIGNMENT') && (
                         <span className={styles.consignBadge}>Consignment</span>
                       )}
+                      {invoice.data.returned && (
+                        <span className={styles.returnedBadge}>Returned</span>
+                      )}
                     </div>
                     <div className={styles.customerName}>
                       {invoice.data.soldTo.name}
@@ -460,7 +459,81 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                 >
                   🗑️ Delete
                 </button>
+                <button
+                  onClick={() => setShowReturnModal(true)}
+                  className={styles.returnBtn}
+                >
+                  ↩️ Return
+                </button>
+                <button
+                  onClick={() => {
+                    onSelectInvoice(selectedInvoice);
+                    if (onClose) onClose();
+                  }}
+                  className={styles.editBtn}
+                >
+                  ✏️ Edit
+                </button>
               </div>
+              // Rug Return Modal State
+              const [showReturnModal, setShowReturnModal] = useState(false);
+              const [returnNote, setReturnNote] = useState('');
+              const [returnProcessing, setReturnProcessing] = useState(false);
+
+              // Handle rug return
+              const handleReturnInvoice = async () => {
+                if (!selectedInvoice) return;
+                if (!confirm('Are you sure you want to process a return for this invoice?')) return;
+                setReturnProcessing(true);
+                try {
+                  // Mark invoice as returned (add a returnNote and set a returned flag)
+                  const updated = {
+                    ...selectedInvoice,
+                    data: {
+                      ...selectedInvoice.data,
+                      returnNote: returnNote || 'Returned by customer',
+                      returned: true,
+                    },
+                    updatedAt: new Date().toISOString(),
+                  };
+                  // Save as an update (reuse saveInvoice logic)
+                  // Import saveInvoice dynamically to avoid circular deps
+                  const { saveInvoice } = await import('@/lib/invoice-storage');
+                  await saveInvoice(updated.data);
+                  alert('Invoice marked as returned.');
+                  setShowReturnModal(false);
+                  setReturnNote('');
+                  setReturnProcessing(false);
+                  await handleSearch(searchQuery);
+                } catch (err) {
+                  alert('Error processing return.');
+                  setReturnProcessing(false);
+                }
+              };
+                    {/* Rug Return Modal */}
+                    {showReturnModal && selectedInvoice && (
+                      <div className={styles.modalOverlay}>
+                        <div className={styles.modalContent}>
+                          <h3>Return Invoice #{selectedInvoice.data.invoiceNumber}</h3>
+                          <p>Customer: <b>{selectedInvoice.data.soldTo.name}</b></p>
+                          <textarea
+                            placeholder="Return note (optional)"
+                            value={returnNote}
+                            onChange={e => setReturnNote(e.target.value)}
+                            rows={3}
+                            className={styles.textarea}
+                          />
+                          <div className={styles.modalActions}>
+                            <button onClick={handleReturnInvoice} disabled={returnProcessing} className={styles.returnBtn}>
+                              {returnProcessing ? 'Processing...' : 'Confirm Return'}
+                            </button>
+                            <button onClick={() => setShowReturnModal(false)} className={styles.cancelBtn}>
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
             </div>
             <div className={styles.previewContent}>
               <div className={styles.previewSection}>
@@ -469,6 +542,9 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                 <p><strong>Date:</strong> {selectedInvoice.data.date}</p>
                 <p><strong>Terms:</strong> {selectedInvoice.data.terms}</p>
                 <p><strong>Mode:</strong> {selectedInvoice.data.mode}</p>
+                {selectedInvoice.data.returned && (
+                  <p className={styles.returnedInfo}><strong>Status:</strong> Returned<br/>{selectedInvoice.data.returnNote && (<span><strong>Note:</strong> {selectedInvoice.data.returnNote}</span>)}</p>
+                )}
               </div>
               <div className={styles.previewSection}>
                 <h4>Customer</h4>
