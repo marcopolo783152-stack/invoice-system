@@ -21,7 +21,6 @@ interface InvoiceSearchProps {
 export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearchProps) {
   const [showAddressBookPreview, setShowAddressBookPreview] = useState(false);
   const [excludedAddressRows, setExcludedAddressRows] = useState<number[]>([]);
-  const [showAddressBookPreview, setShowAddressBookPreview] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<SavedInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null);
