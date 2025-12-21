@@ -1,3 +1,5 @@
+
+"use client";
 // ReturnedReceipt component for professional returned receipt
 function ReturnedReceipt({ receiptData }: { receiptData: any }) {
   if (!receiptData) return null;
@@ -51,7 +53,6 @@ function ReturnedReceipt({ receiptData }: { receiptData: any }) {
     </div>
   );
 }
-"use client";
 
 /**
  * INVOICE SEARCH COMPONENT
