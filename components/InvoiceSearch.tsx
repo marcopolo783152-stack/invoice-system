@@ -35,30 +35,48 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnNote, setReturnNote] = useState('');
   const [returnProcessing, setReturnProcessing] = useState(false);
+  const [returnItems, setReturnItems] = useState<string[]>([]); // item ids
+  const [showReturnReceipt, setShowReturnReceipt] = useState(false);
+  const [returnedReceiptData, setReturnedReceiptData] = useState<any>(null);
 
   // Handle rug return
   const handleReturnInvoice = async () => {
     if (!selectedInvoice) return;
-    if (!confirm('Are you sure you want to process a return for this invoice?')) return;
+    if (returnItems.length === 0) {
+      alert('Please select at least one item to return.');
+      return;
+    }
+    if (!confirm('Are you sure you want to process a return for the selected item(s)?')) return;
     setReturnProcessing(true);
     try {
-      // Mark invoice as returned (add a returnNote and set a returned flag)
+      // Mark only selected items as returned
+      const updatedItems = selectedInvoice.data.items.map(item =>
+        returnItems.includes(item.id)
+          ? { ...item, returned: true, returnNote: returnNote || 'Returned by customer' }
+          : item
+      );
       const updated = {
         ...selectedInvoice,
         data: {
           ...selectedInvoice.data,
+          items: updatedItems,
           returnNote: returnNote || 'Returned by customer',
-          returned: true,
+          returned: updatedItems.every(i => i.returned),
         },
         updatedAt: new Date().toISOString(),
       };
       // Save as an update (reuse saveInvoice logic)
-      // Import saveInvoice dynamically to avoid circular deps
       const { saveInvoice } = await import('@/lib/invoice-storage');
       await saveInvoice(updated.data);
-      alert('Invoice marked as returned.');
+      setReturnedReceiptData({
+        ...updated,
+        returnedItems: updatedItems.filter(i => i.returned),
+        returnNote: returnNote || 'Returned by customer',
+      });
+      setShowReturnReceipt(true);
       setShowReturnModal(false);
       setReturnNote('');
+      setReturnItems([]);
       setReturnProcessing(false);
       await handleSearch(searchQuery);
     } catch (err) {
@@ -517,6 +535,32 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                 <div className={styles.modalContent}>
                   <h3>Return Invoice #{selectedInvoice.data.invoiceNumber}</h3>
                   <p>Customer: <b>{selectedInvoice.data.soldTo.name}</b></p>
+                  <div>
+                    <b>Select items to return:</b>
+                    <ul className={styles.returnItemList}>
+                      {selectedInvoice.data.items.map(item => (
+                        <li key={item.id}>
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={returnItems.includes(item.id)}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setReturnItems([...returnItems, item.id]);
+                                } else {
+                                  setReturnItems(returnItems.filter(id => id !== item.id));
+                                }
+                              }}
+                              disabled={item.returned}
+                            />
+                            <span style={{ textDecoration: item.returned ? 'line-through' : undefined }}>
+                              {item.sku} - {item.description} {item.returned && '(Already Returned)'}
+                            </span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                   <textarea
                     placeholder="Return note (optional)"
                     value={returnNote}
@@ -535,6 +579,30 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                 </div>
               </div>
             )}
+                    {/* Return Receipt Modal */}
+                    {showReturnReceipt && returnedReceiptData && (
+                      <div className={styles.modalOverlay}>
+                        <div className={styles.modalContent}>
+                          <h3>Returned Receipt</h3>
+                          <p><b>Invoice #:</b> {returnedReceiptData.data.invoiceNumber}</p>
+                          <p><b>Customer:</b> {returnedReceiptData.data.soldTo.name}</p>
+                          <p><b>Date:</b> {new Date().toLocaleDateString()}</p>
+                          <p><b>Returned Items:</b></p>
+                          <ul>
+                            {returnedReceiptData.returnedItems.map((item: any) => (
+                              <li key={item.id}>
+                                {item.sku} - {item.description}
+                              </li>
+                            ))}
+                          </ul>
+                          <p><b>Return Note:</b> {returnedReceiptData.returnNote}</p>
+                          <div className={styles.modalActions}>
+                            <button onClick={() => setShowReturnReceipt(false)} className={styles.closeBtn}>Close</button>
+                            <button onClick={() => window.print()} className={styles.printBtn}>Print Receipt</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
             </div>
             <div className={styles.previewContent}>
               <div className={styles.previewSection}>
