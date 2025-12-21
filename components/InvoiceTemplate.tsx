@@ -105,6 +105,9 @@ export default function InvoiceTemplate({
           </p>
           {data.soldTo.phone && <p>Phone: {data.soldTo.phone}</p>}
           {data.soldTo.email && <p>Email: {data.soldTo.email}</p>}
+          {data.servedBy && (
+            <p><b>Served by:</b> {data.servedBy}</p>
+          )}
         </div>
         <div className={styles.invoiceInfo}>
           <table>

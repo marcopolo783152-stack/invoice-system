@@ -13,6 +13,7 @@ import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import InvoiceSearch from '@/components/InvoiceSearch';
 const Login = dynamic(() => import('@/components/Login'), { ssr: false });
+const UserManagement = dynamic(() => import('@/components/UserManagement'), { ssr: false });
 import { InvoiceData, calculateInvoice, validateInvoiceData } from '@/lib/calculations';
 import { printInvoice, generatePDF } from '@/lib/pdf-utils';
 import { saveInvoice, getInvoicesCount, getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
@@ -27,14 +28,33 @@ export default function Home() {
   const [errors, setErrors] = useState<string[]>([]);
   const [invoiceCount, setInvoiceCount] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [users, setUsers] = useState([
+    { username: "admin@marcopolo.com", password: "Marcopolo$", role: "admin" }
+  ]);
+  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check auth on mount
+    // Check auth and users on mount
     if (typeof window !== 'undefined') {
       setIsAuthenticated(localStorage.getItem('mp-invoice-auth') === '1');
+      const storedUsers = localStorage.getItem('mp-invoice-users');
+      if (storedUsers) {
+        try { setUsers(JSON.parse(storedUsers)); } catch {}
+      }
+      const storedUser = localStorage.getItem('mp-invoice-user');
+      if (storedUser) {
+        try { setCurrentUser(JSON.parse(storedUser)); } catch {}
+      }
     }
   }, []);
+
+  useEffect(() => {
+    // Save users to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mp-invoice-users', JSON.stringify(users));
+    }
+  }, [users]);
 
   useEffect(() => {
     // Update count from Firebase/localStorage
@@ -187,12 +207,22 @@ export default function Home() {
   const calculations = invoiceData ? calculateInvoice(invoiceData) : null;
 
   if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
+    return <Login onLogin={() => {
+      setIsAuthenticated(true);
+      const storedUser = localStorage.getItem('mp-invoice-user');
+      if (storedUser) {
+        try { setCurrentUser(JSON.parse(storedUser)); } catch {}
+      }
+    }} />;
   }
 
   return (
     <main className={styles.main}>
       <div className={styles.container}>
+        {/* User Management for admin */}
+        {currentUser?.role === 'admin' && (
+          <UserManagement users={users} setUsers={setUsers} />
+        )}
         <header className={styles.header}>
           <div>
             <h1>Rug Business Invoice System</h1>
@@ -223,7 +253,7 @@ export default function Home() {
         {/* Invoice Form */}
         {!showSearch && !showPreview && (
           <div className={styles.formSection}>
-            <InvoiceForm onSubmit={handleFormSubmit} initialData={invoiceData || undefined} />
+            <InvoiceForm onSubmit={handleFormSubmit} initialData={invoiceData || undefined} currentUser={currentUser} />
           </div>
         )}
 
@@ -263,6 +293,7 @@ export default function Home() {
                 data={invoiceData}
                 calculations={calculations}
                 businessInfo={businessConfig}
+                currentUser={currentUser}
               />
             </div>
 

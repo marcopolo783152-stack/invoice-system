@@ -1,0 +1,59 @@
+.userMgmtContainer {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  padding: 24px 20px;
+  margin: 24px auto;
+  max-width: 400px;
+}
+.userForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.userForm input, .userForm select {
+  padding: 8px 10px;
+  border: 1px solid #bdbdbd;
+  border-radius: 5px;
+  font-size: 15px;
+}
+.userForm button {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.userList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.userList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 15px;
+}
+.deleteBtn {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 13px;
+  margin-left: 10px;
+  cursor: pointer;
+}
+.error {
+  color: #d32f2f;
+  font-size: 14px;
+  margin-top: 4px;
+}

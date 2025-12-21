@@ -16,10 +16,11 @@ import styles from './InvoiceForm.module.css';
 interface InvoiceFormProps {
   onSubmit: (data: InvoiceData) => void;
   initialData?: Partial<InvoiceData>;
+  currentUser?: { username: string; role: string } | null;
 }
 
 // This form supports both creating and editing invoices. When editing, all fields (customer info, items, etc.) are pre-filled and can be updated.
-export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps) {
+export default function InvoiceForm({ onSubmit, initialData, currentUser }: InvoiceFormProps) {
   const [documentType, setDocumentType] = useState<DocumentType>(initialData?.documentType || 'INVOICE');
   const [mode, setMode] = useState<InvoiceMode>(
     initialData?.mode || 'retail-per-rug'
@@ -131,7 +132,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
       return;
     }
 
-    const invoiceData: InvoiceData = {
+    const invoiceData: InvoiceData & { servedBy?: string } = {
       documentType,
       invoiceNumber,
       date,
@@ -142,6 +143,7 @@ export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps)
       discountPercentage: mode.startsWith('retail') ? discountPercentage : undefined,
       notes,
       signature,
+      servedBy: currentUser?.username || undefined,
     };
 
     onSubmit(invoiceData);

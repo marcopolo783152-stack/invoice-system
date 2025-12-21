@@ -1,23 +1,36 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./Login.module.css";
 
-export default function Login({ onLogin }: { onLogin: () => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([
+    { username: "admin@marcopolo.com", password: "Marcopolo$", role: "admin" }
+  ]);
+
+  useEffect(() => {
+    // Load users from localStorage if present
+    const stored = localStorage.getItem("mp-invoice-users");
+    if (stored) {
+      try {
+        setUsers(JSON.parse(stored));
+      } catch {}
+    }
+  }, []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     setTimeout(() => {
-      if (
-        username.trim().toLowerCase() === "admin@marcopolo.com" &&
-        password === "Marcopolo$"
-      ) {
+      const user = users.find(
+        u => u.username.trim().toLowerCase() === username.trim().toLowerCase() && u.password === password
+      );
+      if (user) {
         localStorage.setItem("mp-invoice-auth", "1");
+        localStorage.setItem("mp-invoice-user", JSON.stringify(user));
         onLogin();
       } else {
         setError("Invalid username or password");

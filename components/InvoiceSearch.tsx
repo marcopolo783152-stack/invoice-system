@@ -32,7 +32,8 @@ function ReturnedReceipt({ receiptData }: { receiptData: any }) {
         <b>Date:</b> {new Date().toLocaleDateString()}<br />
         <b>Customer:</b> {data.soldTo.name}<br />
         <b>Address:</b> {data.soldTo.address}, {data.soldTo.city}, {data.soldTo.state} {data.soldTo.zip}<br />
-        <b>Phone:</b> {data.soldTo.phone} {data.soldTo.email && (<span>| <b>Email:</b> {data.soldTo.email}</span>)}
+        <b>Phone:</b> {data.soldTo.phone} {data.soldTo.email && (<span>| <b>Email:</b> {data.soldTo.email}</span>)}<br />
+        {data.servedBy && (<span><b>Served by:</b> {data.servedBy}</span>)}
       </div>
       <div style={{ marginBottom: 12 }}>
         <b>Returned Items:</b>
