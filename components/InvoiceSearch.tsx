@@ -330,6 +330,11 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                     </div>
                     <div className={styles.customerName}>
                       {invoice.data.soldTo.name}
+                      {(invoice.data.documentType === 'CONSIGNMENT' || invoice.documentType === 'CONSIGNMENT') && (
+                        <span className={styles.givenTo}>
+                          &nbsp;| <b>Given To:</b> {invoice.data.soldTo.name}
+                        </span>
+                      )}
                     </div>
                     <div className={styles.resultDetails}>
                       {invoice.data.soldTo.phone && (
