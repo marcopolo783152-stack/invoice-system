@@ -22,6 +22,8 @@ import { businessConfig } from '@/config/business';
 import styles from './page.module.css';
 
 export default function Home() {
+    // Settings dropdown state
+    const [showSettings, setShowSettings] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -279,8 +281,6 @@ export default function Home() {
             </div>
           </div>
         </header>
-  // Settings dropdown state
-  const [showSettings, setShowSettings] = useState(false);
 
         {/* Error Messages */}
         {errors.length > 0 && (
