@@ -1,3 +1,56 @@
+// ReturnedReceipt component for professional returned receipt
+function ReturnedReceipt({ receiptData }: { receiptData: any }) {
+  if (!receiptData) return null;
+  const { data, returnedItems, returnNote } = receiptData;
+  const businessInfo = {
+    name: 'MARCO POLO ORIENTAL RUGS, INC.',
+    address: '3260 DUKE ST',
+    city: 'ALEXANDRIA',
+    state: 'VA',
+    zip: '22314',
+    phone: '703-461-0207',
+    fax: '703-461-0208',
+    website: 'www.marcopolorugs.com',
+    email: 'marcopolorugs@aol.com',
+  };
+  return (
+    <div style={{ fontFamily: 'Arial, sans-serif', background: '#fff', color: '#222', padding: 24, maxWidth: 480, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+        <img src="/LOGO.png" alt="Logo" style={{ height: 60, marginRight: 16 }} />
+        <div>
+          <h2 style={{ margin: 0 }}>{businessInfo.name}</h2>
+          <div style={{ fontSize: 14 }}>{businessInfo.address}, {businessInfo.city}, {businessInfo.state} {businessInfo.zip}</div>
+          <div style={{ fontSize: 14 }}>Phone: {businessInfo.phone} | Fax: {businessInfo.fax}</div>
+          <div style={{ fontSize: 14 }}>{businessInfo.website} | {businessInfo.email}</div>
+        </div>
+      </div>
+      <h3 style={{ textAlign: 'center', margin: '16px 0', letterSpacing: 2 }}>RETURNED RECEIPT</h3>
+      <div style={{ marginBottom: 12 }}>
+        <b>Invoice #:</b> {data.invoiceNumber}<br />
+        <b>Date:</b> {new Date().toLocaleDateString()}<br />
+        <b>Customer:</b> {data.soldTo.name}<br />
+        <b>Address:</b> {data.soldTo.address}, {data.soldTo.city}, {data.soldTo.state} {data.soldTo.zip}<br />
+        <b>Phone:</b> {data.soldTo.phone} {data.soldTo.email && (<span>| <b>Email:</b> {data.soldTo.email}</span>)}
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <b>Returned Items:</b>
+        <ul style={{ margin: 0, paddingLeft: 20 }}>
+          {returnedItems.map((item: any) => (
+            <li key={item.id}>
+              {item.sku} - {item.description}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <b>Return Note:</b> {returnNote}
+      </div>
+      <div style={{ marginTop: 24, fontSize: 13, color: '#666' }}>
+        Thank you for your business. Please keep this receipt for your records.
+      </div>
+    </div>
+  );
+}
 /**
  * INVOICE SEARCH COMPONENT
  * 
@@ -584,20 +637,8 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                     {/* Return Receipt Modal (uses portal for iPad/mobile compatibility) */}
                     {showReturnReceipt && returnedReceiptData && typeof window !== 'undefined' && createPortal(
                       <div className={styles.modalOverlay} style={{ zIndex: 10000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
-                        <div className={styles.modalContent} style={{ maxWidth: 400, margin: '10vh auto' }}>
-                          <h3>Returned Receipt</h3>
-                          <p><b>Invoice #:</b> {returnedReceiptData.data.invoiceNumber}</p>
-                          <p><b>Customer:</b> {returnedReceiptData.data.soldTo.name}</p>
-                          <p><b>Date:</b> {new Date().toLocaleDateString()}</p>
-                          <p><b>Returned Items:</b></p>
-                          <ul>
-                            {returnedReceiptData.returnedItems.map((item: any) => (
-                              <li key={item.id}>
-                                {item.sku} - {item.description}
-                              </li>
-                            ))}
-                          </ul>
-                          <p><b>Return Note:</b> {returnedReceiptData.returnNote}</p>
+                        <div className={styles.modalContent} style={{ maxWidth: 520, margin: '5vh auto', background: '#fff' }}>
+                          <ReturnedReceipt receiptData={returnedReceiptData} />
                           <div className={styles.modalActions}>
                             <button onClick={() => setShowReturnReceipt(false)} className={styles.closeBtn}>Close</button>
                             <button onClick={() => window.print()} className={styles.printBtn}>Print Receipt</button>
