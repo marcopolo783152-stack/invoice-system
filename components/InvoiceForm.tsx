@@ -18,6 +18,7 @@ interface InvoiceFormProps {
   initialData?: Partial<InvoiceData>;
 }
 
+// This form supports both creating and editing invoices. When editing, all fields (customer info, items, etc.) are pre-filled and can be updated.
 export default function InvoiceForm({ onSubmit, initialData }: InvoiceFormProps) {
   const [documentType, setDocumentType] = useState<DocumentType>(initialData?.documentType || 'INVOICE');
   const [mode, setMode] = useState<InvoiceMode>(

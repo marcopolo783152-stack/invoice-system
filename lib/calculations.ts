@@ -21,6 +21,9 @@ export interface InvoiceItem {
   lengthInches: number;
   pricePerSqFt?: number;  // Used in per-sqft modes
   fixedPrice?: number;    // Used in per-rug modes
+  // Return support
+  returned?: boolean;
+  returnNote?: string;
 }
 
 export type DocumentType = 'INVOICE' | 'CONSIGNMENT';
