@@ -11,7 +11,20 @@ const DEFAULT_USERS: User[] = [
   { username: "admin@marcopolo.com", password: "Marcopolo$", role: "admin" },
 ];
 
-export default function UserManagement({ users, setUsers }: { users: User[]; setUsers: (u: User[]) => void }) {
+interface UserManagementProps {
+  users: {
+    username: string;
+    password: string;
+    role: "admin" | "seller" | "manager";
+  }[];
+  setUsers: (u: {
+    username: string;
+    password: string;
+    role: "admin" | "seller" | "manager";
+  }[]) => void;
+}
+
+export default function UserManagement({ users, setUsers }: UserManagementProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<User["role"]>("seller");

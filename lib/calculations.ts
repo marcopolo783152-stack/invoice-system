@@ -49,6 +49,7 @@ export interface InvoiceData {
   signature?: string;  // Base64 encoded signature image
   returned?: boolean; // True if invoice is a return
   returnNote?: string; // Reason or note for return
+  servedBy?: string; // User who served this invoice
 }
 
 export interface CalculatedItem extends InvoiceItem {

@@ -1,7 +1,13 @@
+
 "use client";
 import { useState, useEffect } from "react";
 import styles from "./Login.module.css";
 
+export interface LoginProps {
+  onLogin: () => void;
+}
+
+const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -65,4 +71,6 @@ import styles from "./Login.module.css";
       </form>
     </div>
   );
-}
+};
+
+export default Login;

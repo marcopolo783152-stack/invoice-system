@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import InvoiceSearch from '@/components/InvoiceSearch';
-const Login = dynamic(() => import('@/components/Login'), { ssr: false });
+const Login = dynamic(() => import('@/components/Login').then(mod => mod.default), { ssr: false });
 const UserManagement = dynamic(() => import('@/components/UserManagement'), { ssr: false });
 import { InvoiceData, calculateInvoice, validateInvoiceData } from '@/lib/calculations';
 import { printInvoice, generatePDF } from '@/lib/pdf-utils';
@@ -28,7 +28,11 @@ export default function Home() {
   const [errors, setErrors] = useState<string[]>([]);
   const [invoiceCount, setInvoiceCount] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [users, setUsers] = useState([
+  const [users, setUsers] = useState<{
+    username: string;
+    password: string;
+    role: "admin" | "seller" | "manager";
+  }[]>([
     { username: "admin@marcopolo.com", password: "Marcopolo$", role: "admin" }
   ]);
   const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
@@ -293,7 +297,6 @@ export default function Home() {
                 data={invoiceData}
                 calculations={calculations}
                 businessInfo={businessConfig}
-                currentUser={currentUser}
               />
             </div>
 

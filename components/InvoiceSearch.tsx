@@ -1,7 +1,7 @@
 
 "use client";
 // ReturnedReceipt component for professional returned receipt
-function ReturnedReceipt({ receiptData }: { receiptData: any }) {
+export function ReturnedReceipt({ receiptData }: { receiptData: any }) {
   if (!receiptData) return null;
   const { data, returnedItems, returnNote } = receiptData;
   const businessInfo = {
@@ -664,7 +664,15 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                           <ReturnedReceipt receiptData={returnedReceiptData} />
                           <div className={styles.modalActions}>
                             <button onClick={() => setShowReturnReceipt(false)} className={styles.closeBtn}>Close</button>
-                            <button onClick={() => window.print()} className={styles.printBtn}>Print Receipt</button>
+                            <button
+                              onClick={() => {
+                                const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(returnedReceiptData))}`;
+                                window.open(url, '_blank', 'noopener');
+                              }}
+                              className={styles.printBtn}
+                            >
+                              Print Receipt
+                            </button>
                           </div>
                         </div>
                       </div>,
