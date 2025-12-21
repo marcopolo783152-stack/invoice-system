@@ -20,6 +20,8 @@ interface InvoiceSearchProps {
 
 export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearchProps) {
   const [showAddressBookPreview, setShowAddressBookPreview] = useState(false);
+  const [excludedAddressRows, setExcludedAddressRows] = useState<number[]>([]);
+  const [showAddressBookPreview, setShowAddressBookPreview] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<SavedInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null);
@@ -172,12 +174,22 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     return { headers, rows };
   };
 
+  const getFilteredAddressBookRows = () => {
+    const { headers, rows } = getAddressBookRows();
+    const filteredRows = rows.filter((_, idx) => !excludedAddressRows.includes(idx));
+    return { headers, rows: filteredRows };
+  };
+
   const handleShowAddressBookPreview = () => {
     setShowAddressBookPreview(true);
   };
 
   const handleDownloadAddressBook = () => {
-    const csv = exportAddressBook();
+    const { headers, rows } = getFilteredAddressBookRows();
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+      csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+    });
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -188,6 +200,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     setShowAddressBookPreview(false);
+    setExcludedAddressRows([]);
   };
 
   return (
@@ -207,17 +220,21 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                       <table className={styles.addressBookTable}>
                         <thead>
                           <tr>
-                            {getAddressBookRows().headers.map((header, idx) => (
+                            {getFilteredAddressBookRows().headers.map((header, idx) => (
                               <th key={idx}>{header}</th>
                             ))}
+                            <th>Remove</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {getAddressBookRows().rows.map((row, idx) => (
+                          {getFilteredAddressBookRows().rows.map((row, idx) => (
                             <tr key={idx}>
                               {row.map((cell, cidx) => (
                                 <td key={cidx}>{cell}</td>
                               ))}
+                              <td>
+                                <button className={styles.removeBtn} onClick={() => setExcludedAddressRows([...excludedAddressRows, idx])}>Remove</button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -225,7 +242,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                     </div>
                     <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
                       <button className={styles.exportBtn} onClick={handleDownloadAddressBook}>Download CSV</button>
-                      <button className={styles.closeBtn} onClick={() => setShowAddressBookPreview(false)}>Close</button>
+                      <button className={styles.closeBtn} onClick={() => { setShowAddressBookPreview(false); setExcludedAddressRows([]); }}>Close</button>
                     </div>
                   </div>
                 </div>
