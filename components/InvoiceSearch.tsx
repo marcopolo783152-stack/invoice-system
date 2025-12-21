@@ -516,6 +516,27 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                       {invoice.data.returned && (
                         <span className={styles.returnedBadge}>Returned</span>
                       )}
+                      {/* View Returned Receipt button */}
+                      {invoice.data.items && invoice.data.items.some(i => i.returned) && (
+                        <button
+                          className={styles.receiptBtn}
+                          style={{ marginLeft: 8, fontSize: 12, padding: '2px 8px' }}
+                          title="View Returned Receipt"
+                          onClick={e => {
+                            e.stopPropagation();
+                            // Prepare receipt data for this invoice
+                            const returnedItems = invoice.data.items.filter(i => i.returned);
+                            setReturnedReceiptData({
+                              data: invoice.data,
+                              returnedItems,
+                              returnNote: invoice.data.returnNote || 'Returned by customer',
+                            });
+                            setShowReturnReceipt(true);
+                          }}
+                        >
+                          View Returned Receipt
+                        </button>
+                      )}
                     </div>
                     <div className={styles.customerName}>
                       {invoice.data.soldTo.name}
