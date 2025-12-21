@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { searchInvoices, getAllInvoices, deleteInvoice, deleteMultipleInvoices, SavedInvoice } from '@/lib/invoice-storage';
+import { searchInvoices, getAllInvoices, deleteInvoice, deleteMultipleInvoices, SavedInvoice, exportAddressBook } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
@@ -19,6 +19,7 @@ interface InvoiceSearchProps {
 }
 
 export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearchProps) {
+  const [showAddressBookPreview, setShowAddressBookPreview] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<SavedInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null);
@@ -161,10 +162,74 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     return true;
   });
 
+  // Download address book CSV
+  // Parse address book for preview
+  const getAddressBookRows = () => {
+    const csv = exportAddressBook();
+    const lines = csv.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+    const rows = lines.slice(1).map(line => line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(cell => cell.replace(/"/g, '')));
+    return { headers, rows };
+  };
+
+  const handleShowAddressBookPreview = () => {
+    setShowAddressBookPreview(true);
+  };
+
+  const handleDownloadAddressBook = () => {
+    const csv = exportAddressBook();
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'address-book.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowAddressBookPreview(false);
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h2>Search Invoices</h2>
+        <div style={{ marginBottom: 8 }}>
+          <button onClick={handleShowAddressBookPreview} className={styles.exportBtn} style={{ marginRight: 8 }}>
+            📤 Address Book (Preview & Download)
+          </button>
+        </div>
+              {showAddressBookPreview && (
+                <div className={styles.modalOverlay}>
+                  <div className={styles.modalContent}>
+                    <h3>Address Book Preview</h3>
+                    <div className={styles.addressBookTableWrapper}>
+                      <table className={styles.addressBookTable}>
+                        <thead>
+                          <tr>
+                            {getAddressBookRows().headers.map((header, idx) => (
+                              <th key={idx}>{header}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getAddressBookRows().rows.map((row, idx) => (
+                            <tr key={idx}>
+                              {row.map((cell, cidx) => (
+                                <td key={cidx}>{cell}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
+                      <button className={styles.exportBtn} onClick={handleDownloadAddressBook}>Download CSV</button>
+                      <button className={styles.closeBtn} onClick={() => setShowAddressBookPreview(false)}>Close</button>
+                    </div>
+                  </div>
+                </div>
+              )}
         <div className={styles.filterTabs} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <button onClick={() => setFilterTab('ALL')} className={filterTab === 'ALL' ? styles.activeTab : ''}>All</button>
           <button onClick={() => setFilterTab('INVOICE')} className={filterTab === 'INVOICE' ? styles.activeTab : ''}>Invoices</button>

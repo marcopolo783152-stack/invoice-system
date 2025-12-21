@@ -1,4 +1,43 @@
 /**
+ * Export address book as CSV (for Excel)
+ * Columns: Name,Last Name,Address,City,State,Zip Code,Phone Number,Email Address
+ */
+export function exportAddressBook(): string {
+  const invoices = getAllInvoicesSync();
+  const customers: Record<string, any> = {};
+  invoices.forEach(inv => {
+    const soldTo = inv.data.soldTo;
+    // Use phone+name as unique key
+    const key = `${soldTo.name}|${soldTo.phone}`;
+    if (!customers[key]) {
+      // Split name into first/last if possible
+      let firstName = soldTo.name;
+      let lastName = '';
+      if (soldTo.name.includes(' ')) {
+        const parts = soldTo.name.split(' ');
+        firstName = parts[0];
+        lastName = parts.slice(1).join(' ');
+      }
+      customers[key] = {
+        firstName,
+        lastName,
+        address: soldTo.address,
+        city: soldTo.city,
+        state: soldTo.state,
+        zip: soldTo.zip,
+        phone: soldTo.phone,
+        email: soldTo.email || '',
+      };
+    }
+  });
+  // CSV header
+  let csv = 'Name,Last Name,Address,City,State,Zip Code,Phone Number,Email Address\n';
+  Object.values(customers).forEach(cust => {
+    csv += `"${cust.firstName}","${cust.lastName}","${cust.address}","${cust.city}","${cust.state}","${cust.zip}","${cust.phone}","${cust.email}"\n`;
+  });
+  return csv;
+}
+/**
  * INVOICE STORAGE SYSTEM
  * 
  * Hybrid storage: Firebase (cloud) + localStorage (backup)
