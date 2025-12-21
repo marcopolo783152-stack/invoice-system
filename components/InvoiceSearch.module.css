@@ -629,8 +629,23 @@
   }
 }
 
+
 @media print {
-  .container {
-    display: none;
+  /* Hide everything except the returned receipt modal */
+  body > *:not(.print-receipt-center),
+  #__next > *:not(.print-receipt-center) {
+    display: none !important;
+  }
+  .print-receipt-center {
+    display: block !important;
+    background: #fff !important;
+    margin: 0 auto !important;
+    width: 210mm;
+    min-height: 297mm;
+    box-sizing: border-box;
+    page-break-after: always;
+  }
+  .modalOverlay, .modalContent, .modalActions {
+    display: none !important;
   }
 }
