@@ -31,6 +31,42 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [filterTab, setFilterTab] = useState<'ALL' | 'INVOICE' | 'CONSIGNMENT'>('ALL');
 
+  // Rug Return Modal State
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnNote, setReturnNote] = useState('');
+  const [returnProcessing, setReturnProcessing] = useState(false);
+
+  // Handle rug return
+  const handleReturnInvoice = async () => {
+    if (!selectedInvoice) return;
+    if (!confirm('Are you sure you want to process a return for this invoice?')) return;
+    setReturnProcessing(true);
+    try {
+      // Mark invoice as returned (add a returnNote and set a returned flag)
+      const updated = {
+        ...selectedInvoice,
+        data: {
+          ...selectedInvoice.data,
+          returnNote: returnNote || 'Returned by customer',
+          returned: true,
+        },
+        updatedAt: new Date().toISOString(),
+      };
+      // Save as an update (reuse saveInvoice logic)
+      // Import saveInvoice dynamically to avoid circular deps
+      const { saveInvoice } = await import('@/lib/invoice-storage');
+      await saveInvoice(updated.data);
+      alert('Invoice marked as returned.');
+      setShowReturnModal(false);
+      setReturnNote('');
+      setReturnProcessing(false);
+      await handleSearch(searchQuery);
+    } catch (err) {
+      alert('Error processing return.');
+      setReturnProcessing(false);
+    }
+  };
+
   useEffect(() => {
     // Load all invoices on mount (async)
     getAllInvoices().then(invoices => {
@@ -475,65 +511,30 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                   ✏️ Edit
                 </button>
               </div>
-              // Rug Return Modal State
-              const [showReturnModal, setShowReturnModal] = useState(false);
-              const [returnNote, setReturnNote] = useState('');
-              const [returnProcessing, setReturnProcessing] = useState(false);
-
-              // Handle rug return
-              const handleReturnInvoice = async () => {
-                if (!selectedInvoice) return;
-                if (!confirm('Are you sure you want to process a return for this invoice?')) return;
-                setReturnProcessing(true);
-                try {
-                  // Mark invoice as returned (add a returnNote and set a returned flag)
-                  const updated = {
-                    ...selectedInvoice,
-                    data: {
-                      ...selectedInvoice.data,
-                      returnNote: returnNote || 'Returned by customer',
-                      returned: true,
-                    },
-                    updatedAt: new Date().toISOString(),
-                  };
-                  // Save as an update (reuse saveInvoice logic)
-                  // Import saveInvoice dynamically to avoid circular deps
-                  const { saveInvoice } = await import('@/lib/invoice-storage');
-                  await saveInvoice(updated.data);
-                  alert('Invoice marked as returned.');
-                  setShowReturnModal(false);
-                  setReturnNote('');
-                  setReturnProcessing(false);
-                  await handleSearch(searchQuery);
-                } catch (err) {
-                  alert('Error processing return.');
-                  setReturnProcessing(false);
-                }
-              };
-                    {/* Rug Return Modal */}
-                    {showReturnModal && selectedInvoice && (
-                      <div className={styles.modalOverlay}>
-                        <div className={styles.modalContent}>
-                          <h3>Return Invoice #{selectedInvoice.data.invoiceNumber}</h3>
-                          <p>Customer: <b>{selectedInvoice.data.soldTo.name}</b></p>
-                          <textarea
-                            placeholder="Return note (optional)"
-                            value={returnNote}
-                            onChange={e => setReturnNote(e.target.value)}
-                            rows={3}
-                            className={styles.textarea}
-                          />
-                          <div className={styles.modalActions}>
-                            <button onClick={handleReturnInvoice} disabled={returnProcessing} className={styles.returnBtn}>
-                              {returnProcessing ? 'Processing...' : 'Confirm Return'}
-                            </button>
-                            <button onClick={() => setShowReturnModal(false)} className={styles.cancelBtn}>
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+            {/* Rug Return Modal */}
+            {showReturnModal && selectedInvoice && (
+              <div className={styles.modalOverlay}>
+                <div className={styles.modalContent}>
+                  <h3>Return Invoice #{selectedInvoice.data.invoiceNumber}</h3>
+                  <p>Customer: <b>{selectedInvoice.data.soldTo.name}</b></p>
+                  <textarea
+                    placeholder="Return note (optional)"
+                    value={returnNote}
+                    onChange={e => setReturnNote(e.target.value)}
+                    rows={3}
+                    className={styles.textarea}
+                  />
+                  <div className={styles.modalActions}>
+                    <button onClick={handleReturnInvoice} disabled={returnProcessing} className={styles.returnBtn}>
+                      {returnProcessing ? 'Processing...' : 'Confirm Return'}
+                    </button>
+                    <button onClick={() => setShowReturnModal(false)} className={styles.cancelBtn}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             </div>
             <div className={styles.previewContent}>
               <div className={styles.previewSection}>
