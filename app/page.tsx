@@ -234,12 +234,6 @@ export default function Home() {
             <div style={{ fontSize: 14, marginTop: 4 }}>
               <b>Logged in as:</b> {currentUser?.username || 'Unknown'} ({currentUser?.role || 'Unknown'})
               <span style={{ marginLeft: 16 }}><b>Admin:</b> admin@marcopolo.com</span>
-              <button onClick={() => {
-                setIsAuthenticated(false);
-                setCurrentUser(null);
-                localStorage.removeItem('mp-invoice-auth');
-                localStorage.removeItem('mp-invoice-user');
-              }} style={{ marginLeft: 16, padding: '2px 10px', fontSize: 13 }}>Logout</button>
             </div>
           </div>
           <div className={styles.headerActions}>
@@ -249,8 +243,44 @@ export default function Home() {
             <button onClick={handleNewInvoice} className={styles.newBtnHeader}>
               ➕ New Invoice
             </button>
+            {/* Settings Dropdown */}
+            <div style={{ position: 'relative', marginLeft: 10 }}>
+              <button
+                className={styles.settingsBtn}
+                style={{ padding: '10px 18px', borderRadius: 8, background: '#fff', color: '#764ba2', fontWeight: 600, border: 'none', fontSize: 16, cursor: 'pointer' }}
+                onClick={() => setShowSettings(s => !s)}
+              >
+                ⚙️ Settings
+              </button>
+              {showSettings && (
+                <div style={{ position: 'absolute', right: 0, top: 45, background: '#fff', color: '#222', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 220, zIndex: 1000, padding: 12 }}>
+                  <div style={{ padding: '8px 0', borderBottom: '1px solid #eee', fontWeight: 500 }}>
+                    {currentUser?.username} ({currentUser?.role})
+                  </div>
+                  <button
+                    style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 0', fontSize: 15, cursor: 'pointer' }}
+                    onClick={() => {
+                      setIsAuthenticated(false);
+                      setCurrentUser(null);
+                      localStorage.removeItem('mp-invoice-auth');
+                      localStorage.removeItem('mp-invoice-user');
+                      setShowSettings(false);
+                    }}
+                  >
+                    🚪 Logout
+                  </button>
+                  {currentUser?.role === 'admin' && (
+                    <div style={{ marginTop: 8 }}>
+                      <UserManagement users={users} setUsers={setUsers} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </header>
+  // Settings dropdown state
+  const [showSettings, setShowSettings] = useState(false);
 
         {/* Error Messages */}
         {errors.length > 0 && (
