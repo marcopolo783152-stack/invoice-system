@@ -16,7 +16,7 @@ function ReturnedReceipt({ receiptData }: { receiptData: any }) {
     email: 'marcopolorugs@aol.com',
   };
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', background: '#fff', color: '#222', padding: 24, maxWidth: 480, margin: '0 auto' }}>
+    <div className="print-receipt-center" style={{ fontFamily: 'Arial, sans-serif', background: '#fff', color: '#222', padding: 24, maxWidth: 480, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
         <img src="/LOGO.png" alt="Logo" style={{ height: 60, marginRight: 16 }} />
         <div>

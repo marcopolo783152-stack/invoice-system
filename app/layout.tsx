@@ -4,6 +4,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
+import './print.css';
 
 export const metadata: Metadata = {
   title: 'Rug Business Invoice System',
