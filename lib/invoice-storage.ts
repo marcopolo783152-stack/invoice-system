@@ -206,6 +206,11 @@ export async function searchInvoices(query: string): Promise<SavedInvoice[]> {
       return true;
     }
     
+      // Search by rug number (SKU) in items
+      if (Array.isArray(data.items) && data.items.some(item => item.sku && item.sku.toLowerCase().includes(searchTerm))) {
+        return true;
+      }
+    
     return false;
   });
 }
