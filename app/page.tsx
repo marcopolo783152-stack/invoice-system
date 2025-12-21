@@ -231,6 +231,16 @@ export default function Home() {
           <div>
             <h1>Rug Business Invoice System</h1>
             <p>Professional invoicing for Web, Android, and Windows</p>
+            <div style={{ fontSize: 14, marginTop: 4 }}>
+              <b>Logged in as:</b> {currentUser?.username || 'Unknown'} ({currentUser?.role || 'Unknown'})
+              <span style={{ marginLeft: 16 }}><b>Admin:</b> admin@marcopolo.com</span>
+              <button onClick={() => {
+                setIsAuthenticated(false);
+                setCurrentUser(null);
+                localStorage.removeItem('mp-invoice-auth');
+                localStorage.removeItem('mp-invoice-user');
+              }} style={{ marginLeft: 16, padding: '2px 10px', fontSize: 13 }}>Logout</button>
+            </div>
           </div>
           <div className={styles.headerActions}>
             <button onClick={handleShowSearch} className={styles.searchBtn}>
