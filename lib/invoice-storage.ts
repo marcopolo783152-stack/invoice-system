@@ -152,7 +152,7 @@ export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
   let savedInvoice: SavedInvoice;
 
   if (existingIndex >= 0) {
-    // Update existing invoice
+    // Only update in Firebase if the invoice has a valid Firestore ID (not a random local one)
     savedInvoice = {
       ...invoices[existingIndex],
       data,
@@ -160,8 +160,8 @@ export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
     };
     invoices[existingIndex] = savedInvoice;
 
-    // Update in Firebase
-    if (isFirebaseConfigured()) {
+    // Only update in Firebase if the ID is a valid Firestore ID (24+ chars)
+    if (isFirebaseConfigured() && savedInvoice.id && savedInvoice.id.length >= 20) {
       try {
         await updateInvoiceInCloud(
           savedInvoice.id,
@@ -174,33 +174,32 @@ export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
         console.error('Firebase update failed, saved locally:', error);
       }
     }
+    // else: skip cloud update to avoid "No document to update" error
   } else {
-    // Create new invoice
-    savedInvoice = {
-      id: Math.random().toString(36).substr(2, 9),
-      data,
-      createdAt: now,
-      updatedAt: now,
-    };
-    invoices.push(savedInvoice);
-
-    // Save to Firebase
+    // Create new invoice in Firebase first to get the Firestore ID
+    let firebaseId = '';
     if (isFirebaseConfigured()) {
       try {
-        const firebaseId = await saveInvoiceToCloud(
+        firebaseId = await saveInvoiceToCloud(
           data.invoiceNumber,
           data.soldTo.name,
           0, // Will be calculated
           data
         );
-        savedInvoice.id = firebaseId; // Use Firebase ID
       } catch (error) {
         console.error('Firebase save failed, saved locally:', error);
       }
     }
+    savedInvoice = {
+      id: firebaseId || Math.random().toString(36).substr(2, 9),
+      data,
+      createdAt: now,
+      updatedAt: now,
+    };
+    invoices.push(savedInvoice);
   }
 
-  // Always save to localStorage as backup
+  // Always save to localStorage as backup (with correct Firestore ID)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
 
   return savedInvoice;
