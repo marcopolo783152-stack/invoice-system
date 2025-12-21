@@ -113,6 +113,7 @@ export function calculateLineAmount(item: InvoiceItem, mode: InvoiceMode): numbe
  */
 export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   const isRetail = data.mode.startsWith('retail');
+  const isConsignment = data.documentType === 'CONSIGNMENT';
   const SALES_TAX_RATE = 0.06; // 6%
 
   // Calculate each line item
@@ -144,9 +145,9 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
 
   const subtotalAfterDiscount = subtotal - discount;
 
-  // Calculate sales tax (only for retail, applied after discount)
+  // Calculate sales tax (only for retail, applied after discount, but not for consignments)
   let salesTax = 0;
-  if (isRetail) {
+  if (isRetail && !isConsignment) {
     salesTax = subtotalAfterDiscount * SALES_TAX_RATE;
   }
 
