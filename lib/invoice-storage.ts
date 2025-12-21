@@ -275,11 +275,17 @@ export async function searchInvoices(query: string): Promise<SavedInvoice[]> {
  */
 export async function deleteInvoice(id: string): Promise<boolean> {
   const invoices = getAllInvoicesSync();
-  const filtered = invoices.filter(inv => inv.id !== id);
+  const idx = invoices.findIndex(inv => inv.id === id);
+  if (idx === -1) return false;
+  const [deletedInvoice] = invoices.splice(idx, 1);
 
-  if (filtered.length === invoices.length) {
-    return false; // Invoice not found
-  }
+  // Move to bin (deleted_invoices)
+  let bin: SavedInvoice[] = [];
+  try {
+    bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
+  } catch {}
+  bin.push(deletedInvoice);
+  localStorage.setItem('deleted_invoices', JSON.stringify(bin));
 
   // Delete from Firebase
   if (isFirebaseConfigured()) {
@@ -290,9 +296,37 @@ export async function deleteInvoice(id: string): Promise<boolean> {
     }
   }
 
-  // Delete from localStorage
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  // Update localStorage
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
   return true;
+/**
+ * Restore an invoice from the bin (deleted_invoices)
+ */
+export function restoreInvoiceFromBin(id: string): boolean {
+  let bin: SavedInvoice[] = [];
+  try {
+    bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
+  } catch {}
+  const idx = bin.findIndex(inv => inv.id === id);
+  if (idx === -1) return false;
+  const [restored] = bin.splice(idx, 1);
+  // Add back to invoices
+  const invoices = getAllInvoicesSync();
+  invoices.push(restored);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+  localStorage.setItem('deleted_invoices', JSON.stringify(bin));
+  return true;
+}
+/**
+ * Get all deleted invoices in the bin
+ */
+export function getDeletedInvoices(): SavedInvoice[] {
+  try {
+    return JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
+  } catch {
+    return [];
+  }
+}
 }
 
 /**
