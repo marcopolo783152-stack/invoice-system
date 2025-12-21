@@ -7,10 +7,12 @@
 
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import InvoiceSearch from '@/components/InvoiceSearch';
+const Login = dynamic(() => import('@/components/Login'), { ssr: false });
 import { InvoiceData, calculateInvoice, validateInvoiceData } from '@/lib/calculations';
 import { printInvoice, generatePDF } from '@/lib/pdf-utils';
 import { saveInvoice, getInvoicesCount, getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
@@ -24,9 +26,17 @@ export default function Home() {
   const [showSearch, setShowSearch] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [invoiceCount, setInvoiceCount] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    // Check auth on mount
+    if (typeof window !== 'undefined') {
+      setIsAuthenticated(localStorage.getItem('mp-invoice-auth') === '1');
+    }
+  }, []);
+
+  useEffect(() => {
     // Update count from Firebase/localStorage
     const updateCount = async () => {
       const invoices = await getAllInvoices();
@@ -175,6 +185,10 @@ export default function Home() {
   };
 
   const calculations = invoiceData ? calculateInvoice(invoiceData) : null;
+
+  if (!isAuthenticated) {
+    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <main className={styles.main}>
