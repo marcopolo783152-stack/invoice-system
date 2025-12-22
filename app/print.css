@@ -22,4 +22,38 @@
     display: none !important;
   }
 }
-/* (Reverted to original version: no special print-invoice-root or invoice print hiding) */
+@media print {
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .main, .container, .previewSection, .invoiceContainer, .invoice {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    position: static !important;
+    display: block !important;
+    z-index: 9999 !important;
+  }
+  /* Remove all scrollbars and force all content to print */
+  * {
+    overflow: visible !important;
+  }
+  /* Hide header, nav, and all UI except invoice preview and invoice */
+  .header, .headerActions, .actions, .actionButtons, .bottomActions, .searchSection, .formSection, .errors, .loginContainer, .loginForm, .searchBox, .paginationTop, .paginationControls, .resultsList, .previewPanel, .previewHeader, .previewActions, .previewContent, .previewSection, .noResults, .modalOverlay, .modalContent, .progressBar, .progressInfo, .progressTrack, .progressFill, .selectAllBtn, .deleteSelectedBtn, .exportBtn, .closeBtn, .returnBtn, .cancelBtn, .editBtn, .viewBtn, .deleteBtn, .newBtnHeader, .newBtn, .pdfBtn, .printBtn, .emailBtn {
+    display: none !important;
+  }
+}
