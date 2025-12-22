@@ -18,7 +18,9 @@ export default function ReturnedReceiptPrintPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const dataParam = params.get('data');
+      // Get all 'data' params and use the last one
+      const allDataParams = params.getAll('data');
+      const dataParam = allDataParams.length > 0 ? allDataParams[allDataParams.length - 1] : null;
       setData(parseData(dataParam));
     }
   }, []);
