@@ -170,41 +170,7 @@ export default function Home() {
   };
 
   const handlePrint = () => {
-    if (!invoiceRef.current) return;
-    const printContents = invoiceRef.current.innerHTML;
-    const printWindow = document.createElement('iframe');
-    printWindow.style.position = 'fixed';
-    printWindow.style.right = '0';
-    printWindow.style.bottom = '0';
-    printWindow.style.width = '0';
-    printWindow.style.height = '0';
-    printWindow.style.border = 'none';
-    document.body.appendChild(printWindow);
-    const doc = printWindow.contentWindow?.document;
-    if (doc) {
-      doc.open();
-      doc.write('<html><head><title>Print Invoice</title>');
-      doc.write(`
-        <style>
-          @page { size: A4; margin: 0; }
-          html, body { width: 210mm; height: 297mm; background: #fff; color: #222; font-family: Arial, sans-serif; margin: 0; padding: 0; }
-          .invoice { width: 190mm !important; min-height: 277mm !important; margin: 0 auto; padding: 10mm; background: #fff; }
-          @media print {
-            body { margin: 0; box-shadow: none; }
-            .invoice { box-shadow: none; }
-          }
-        </style>
-      `);
-      doc.write('</head><body>');
-      doc.write(printContents);
-      doc.write('</body></html>');
-      doc.close();
-      printWindow.contentWindow?.focus();
-      setTimeout(() => {
-        printWindow.contentWindow?.print();
-        setTimeout(() => document.body.removeChild(printWindow), 1000);
-      }, 300);
-    }
+    printInvoice();
   };
 
   const handleDownloadPDF = async () => {
