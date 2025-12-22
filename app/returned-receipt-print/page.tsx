@@ -30,11 +30,11 @@ export default function ReturnedReceiptPrintPage() {
       const dataParam = allDataParams.length > 0 ? allDataParams[allDataParams.length - 1] : null;
       let parsed = parseData(dataParam);
       if (!parsed || parsed._error) {
-        // Fallback: try to get from sessionStorage
+        // Fallback: try to get from localStorage (cross-tab)
         try {
-          const sessionData = sessionStorage.getItem('mp-invoice-print-data');
-          if (sessionData) {
-            parsed = JSON.parse(sessionData);
+          const localData = localStorage.getItem('mp-invoice-print-data');
+          if (localData) {
+            parsed = JSON.parse(localData);
           }
         } catch {}
       }
@@ -73,7 +73,13 @@ export default function ReturnedReceiptPrintPage() {
 
   // Use the professional ReturnedReceipt component for printing
   if (!data) {
-    return <div style={{ color: 'red', textAlign: 'center' }}>No receipt data found.</div>;
+    return (
+      <div style={{ color: 'red', textAlign: 'center', padding: 40 }}>
+        No receipt data found.<br />
+        <pre style={{ color: '#333', background: '#eee', padding: 12, marginTop: 16, maxWidth: 600, overflowX: 'auto' }}>{JSON.stringify(data, null, 2)}</pre>
+        <pre style={{ color: '#333', background: '#eee', padding: 12, marginTop: 16, maxWidth: 600, overflowX: 'auto' }}>localStorage: {typeof window !== 'undefined' ? localStorage.getItem('mp-invoice-print-data') : ''}</pre>
+      </div>
+    );
   }
   // Accept both flat and nested data, but prefer flat structure directly
   let receiptData = data;

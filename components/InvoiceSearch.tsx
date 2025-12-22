@@ -688,10 +688,10 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                                   returnedItems: returnedReceiptData.returnedItems || data.returnedItems || [],
                                   returnNote: returnedReceiptData.returnNote || data.returnNote || '',
                                 };
-                                // Store in sessionStorage for print page fallback
+                                // Store in localStorage for print page fallback (cross-tab)
                                 if (typeof window !== 'undefined') {
                                   try {
-                                    sessionStorage.setItem('mp-invoice-print-data', JSON.stringify(printData));
+                                    localStorage.setItem('mp-invoice-print-data', JSON.stringify(printData));
                                   } catch {}
                                 }
                                 const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(printData))}`;
