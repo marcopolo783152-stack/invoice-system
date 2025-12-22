@@ -11,12 +11,13 @@ import React, { useState, useEffect } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
 import SignaturePad from './SignaturePad';
-import styles from './InvoiceForm.module.css';
 
+interface InvoiceFormProps {
   onSubmit: (data: InvoiceData) => void;
   initialData?: Partial<InvoiceData>;
   currentUser?: { username: string; fullName: string; role: string } | null;
   users?: { username: string; fullName: string; role: string }[];
+}
 
 // This form supports both creating and editing invoices. When editing, all fields (customer info, items, etc.) are pre-filled and can be updated.
 export default function InvoiceForm({ onSubmit, initialData, currentUser, users }: InvoiceFormProps) {
