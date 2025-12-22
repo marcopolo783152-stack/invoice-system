@@ -171,7 +171,19 @@ export default function Home() {
 
   const handlePrint = () => {
     if (!invoiceRef.current) return;
-    const printContents = invoiceRef.current.innerHTML;
+    let printContents = printRef.current.innerHTML;
+    // Add inline style to logo image for print reliability
+    printContents = printContents.replace(
+      /<img([^>]*class=\"[^\"]*logoImage[^\"]*\"[^>]*)>/,
+      (match, attrs) => {
+        // Add inline style for max-width and max-height
+        if (attrs.includes('style=')) {
+          return `<img${attrs.replace(/style=\"/, 'style=\"max-width:180px;max-height:120px;width:auto !important;height:auto !important;object-fit:contain; ')}>`;
+        } else {
+          return `<img${attrs} style=\"max-width:180px;max-height:120px;width:auto !important;height:auto !important;object-fit:contain;\">`;
+        }
+      }
+    );
     const printWindow = document.createElement('iframe');
     printWindow.style.position = 'fixed';
     printWindow.style.right = '0';
@@ -184,7 +196,9 @@ export default function Home() {
     if (doc) {
       doc.open();
       doc.write('<html><head><title>Print Invoice</title>');
-      doc.write('<style>@media print { html, body { width: 210mm; min-height: 297mm; background: #fff; margin: 0; padding: 0; } .invoice { width: 190mm; min-height: 277mm; margin: 0 auto; background: #fff; color: #000; } }</style>');
+      // Inject print.css directly into the iframe
+      const printCss = `@media print { html, body { background: #fff !important; color: #000 !important; margin: 0; padding: 0; width: 210mm; min-height: 297mm; } .invoice, .print-receipt-center { width: 190mm; min-height: 277mm; margin: 0 auto; background: #fff; color: #000; } .invoice-logo, .print-logo, .logoImage { display: block; margin: 0 auto 16px auto; max-width: 180px; max-height: 120px; width: auto !important; height: auto !important; object-fit: contain; } .invoice { padding-top: 16px; } }`;
+      doc.write(`<style>${printCss}</style>`);
       doc.write('</head><body>');
       doc.write(printContents);
       doc.write('</body></html>');
