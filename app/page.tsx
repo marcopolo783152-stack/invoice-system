@@ -32,6 +32,25 @@ export default function Home() {
       localStorage.removeItem('mp-invoice-auth');
       localStorage.removeItem('mp-invoice-user');
     };
+
+    // Helper to detect if page is being closed (not reloaded)
+    function isWindowClosing(event: BeforeUnloadEvent) {
+      // If event.persisted is true, it's a reload (bfcache)
+      // If event.type is 'pagehide' and event.persisted, it's a reload
+      // If event.type is 'beforeunload', check if navigation type is reload
+      // Use performance.navigation for legacy, navigation API for modern
+      if (window.performance) {
+        const navs = window.performance.getEntriesByType && window.performance.getEntriesByType('navigation');
+        const nav = navs && navs.length > 0 ? navs[0] as PerformanceNavigationTiming : undefined;
+        if (nav && 'type' in nav) {
+          if (nav.type === 'reload') return false;
+          if (nav.type === 'navigate') return false;
+        }
+        // fallback for legacy
+        if ((window.performance as any).navigation && (window.performance as any).navigation.type === 1) return false;
+      }
+      return true;
+    }
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -62,19 +81,35 @@ export default function Home() {
         try { setCurrentUser(JSON.parse(storedUser)); } catch {}
       }
 
-      // Add event listeners for tab/window close and offline
-      const handleLogout = () => {
-        logout();
+      // --- Logout on window/tab close only (not reload) ---
+      const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+        // Only logout if not a reload
+        if (isWindowClosing(event)) {
+          logout();
+        }
       };
-      const handleOffline = () => {
-        logout();
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      // --- Logout after 2 hours of inactivity ---
+      let inactivityTimeout: ReturnType<typeof setTimeout> | undefined;
+      const resetInactivityTimer = () => {
+        if (inactivityTimeout) clearTimeout(inactivityTimeout);
+        inactivityTimeout = setTimeout(() => {
+          logout();
+        }, 2 * 60 * 60 * 1000); // 2 hours
       };
-      window.addEventListener('beforeunload', handleLogout);
-      window.addEventListener('offline', handleOffline);
+      // Reset timer on user activity
+      ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(evt => {
+        window.addEventListener(evt, resetInactivityTimer);
+      });
+      resetInactivityTimer();
 
       return () => {
-        window.removeEventListener('beforeunload', handleLogout);
-        window.removeEventListener('offline', handleOffline);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(evt => {
+          window.removeEventListener(evt, resetInactivityTimer);
+        });
+        if (inactivityTimeout) clearTimeout(inactivityTimeout);
       };
     }
   }, []);
