@@ -1,3 +1,27 @@
+/* Hide all UI except invoice when printing */
+@media print {
+  body {
+    background: #fff !important;
+    margin: 0;
+    padding: 0;
+  }
+  .invoice {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 auto !important;
+    box-sizing: border-box;
+    background: #fff !important;
+    color: #000 !important;
+    page-break-after: always;
+    box-shadow: none !important;
+    display: block !important;
+  }
+  /* Hide everything except the invoice */
+  #__next > *:not(.invoice),
+  body > *:not(.invoice) {
+    display: none !important;
+  }
+}
 @media print {
   body {
     background: #fff !important;
