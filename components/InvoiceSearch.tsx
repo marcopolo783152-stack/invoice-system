@@ -533,12 +533,14 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                             e.stopPropagation();
                             // Prepare receipt data for this invoice
                             const returnedItems = invoice.data.items.filter(i => i.returned);
-                            setReturnedReceiptData({
-                              data: invoice.data,
+                            // Always open in new tab for print-friendly view
+                            const printData = {
+                              ...invoice.data,
                               returnedItems,
                               returnNote: invoice.data.returnNote || 'Returned by customer',
-                            });
-                            setShowReturnReceipt(true);
+                            };
+                            const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(printData))}`;
+                            window.open(url, '_blank', 'noopener');
                           }}
                         >
                           View Returned Receipt
