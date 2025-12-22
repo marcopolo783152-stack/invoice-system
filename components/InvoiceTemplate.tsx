@@ -84,6 +84,22 @@ export default function InvoiceTemplate({
             src="/LOGO.png" 
             alt="Marco Polo Oriental Rugs" 
             className={styles.logoImage}
+            onError={e => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const fallback = document.createElement('div');
+              fallback.textContent = 'LOGO';
+              fallback.style.width = '120px';
+              fallback.style.height = '100px';
+              fallback.style.display = 'flex';
+              fallback.style.alignItems = 'center';
+              fallback.style.justifyContent = 'center';
+              fallback.style.background = '#eee';
+              fallback.style.color = '#888';
+              fallback.style.fontWeight = 'bold';
+              fallback.style.fontSize = '18px';
+              target.parentElement?.appendChild(fallback);
+            }}
           />
         </div>
       </div>
