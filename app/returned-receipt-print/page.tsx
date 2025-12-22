@@ -66,8 +66,18 @@ export default function ReturnedReceiptPrintPage() {
   if (!data) {
     return <div style={{ color: 'red', textAlign: 'center' }}>No receipt data found.</div>;
   }
-  // Wrap data in the expected structure for ReturnedReceipt
-  const receiptData = data.returnedItems ? { data, returnedItems: data.returnedItems, returnNote: data.returnNote } : { data, returnedItems: data.items?.filter((item: any) => item.returned) || [], returnNote: data.returnNote };
+  // Accept both flat and nested data
+  let receiptData;
+  if (data.soldTo && data.returnedItems) {
+    // Flat structure (from print button)
+    receiptData = { data, returnedItems: data.returnedItems, returnNote: data.returnNote };
+  } else if (data.data && data.returnedItems) {
+    // Nested structure (from modal)
+    receiptData = { data: data.data, returnedItems: data.returnedItems, returnNote: data.returnNote };
+  } else {
+    // Fallback: try to use as-is
+    receiptData = data;
+  }
   return (
     <div style={{ background: '#fff', minHeight: '100vh', padding: 40 }}>
       <div ref={printRef}>

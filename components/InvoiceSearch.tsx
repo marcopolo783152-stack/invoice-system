@@ -666,10 +666,18 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                             <button onClick={() => setShowReturnReceipt(false)} className={styles.closeBtn}>Close</button>
                             <button
                               onClick={() => {
-                                // Remove any nested 'data' property to avoid duplicate data params
-                                const cleanReceiptData = { ...returnedReceiptData };
-                                if (cleanReceiptData.data) delete cleanReceiptData.data;
-                                const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(cleanReceiptData))}`;
+                                // Always send the correct structure for print page
+                                let printData;
+                                if (returnedReceiptData.data && returnedReceiptData.returnedItems) {
+                                  printData = {
+                                    ...returnedReceiptData.data,
+                                    returnedItems: returnedReceiptData.returnedItems,
+                                    returnNote: returnedReceiptData.returnNote,
+                                  };
+                                } else {
+                                  printData = returnedReceiptData;
+                                }
+                                const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(printData))}`;
                                 window.open(url, '_blank', 'noopener');
                               }}
                               className={styles.printBtn}
