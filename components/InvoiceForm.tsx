@@ -13,6 +13,7 @@ import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/l
 
 
 import SignaturePad from './SignaturePad';
+import styles from './InvoiceForm.module.css';
 
 interface InvoiceFormProps {
   onSubmit: (data: InvoiceData) => void;
