@@ -13,7 +13,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([
-    { username: "admin@marcopolo.com", password: "Marcopolo$", role: "admin" }
+    { username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }
   ]);
 
   useEffect(() => {

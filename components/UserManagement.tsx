@@ -3,29 +3,23 @@ import styles from "./UserManagement.module.css";
 
 export interface User {
   username: string;
+  fullName: string;
   password: string;
   role: "admin" | "seller" | "manager";
 }
 
 const DEFAULT_USERS: User[] = [
-  { username: "admin@marcopolo.com", password: "Marcopolo$", role: "admin" },
+  { username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" },
 ];
 
 interface UserManagementProps {
-  users: {
-    username: string;
-    password: string;
-    role: "admin" | "seller" | "manager";
-  }[];
-  setUsers: (u: {
-    username: string;
-    password: string;
-    role: "admin" | "seller" | "manager";
-  }[]) => void;
+  users: User[];
+  setUsers: (u: User[]) => void;
 }
 
 export default function UserManagement({ users, setUsers }: UserManagementProps) {
   const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<User["role"]>("seller");
   const [error, setError] = useState("");
@@ -33,16 +27,17 @@ export default function UserManagement({ users, setUsers }: UserManagementProps)
   function handleAddUser(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!username || !password) {
-      setError("Username and password required");
+    if (!username || !fullName || !password) {
+      setError("All fields required");
       return;
     }
     if (users.some(u => u.username === username)) {
       setError("User already exists");
       return;
     }
-    setUsers([...users, { username, password, role }]);
+    setUsers([...users, { username, fullName, password, role }]);
     setUsername("");
+    setFullName("");
     setPassword("");
     setRole("seller");
   }
@@ -76,9 +71,16 @@ export default function UserManagement({ users, setUsers }: UserManagementProps)
       <form className={styles.userForm} onSubmit={handleAddUser}>
         <input
           type="email"
-          placeholder="Username"
+          placeholder="Username (email)"
           value={username}
           onChange={e => setUsername(e.target.value)}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Full Name"
+          value={fullName}
+          onChange={e => setFullName(e.target.value)}
           required
         />
         <input
@@ -117,7 +119,7 @@ export default function UserManagement({ users, setUsers }: UserManagementProps)
       <ul className={styles.userList}>
         {users.map(u => (
           <li key={u.username}>
-            {u.username} ({u.role})
+            {u.fullName} ({u.username}) [{u.role}]
             {u.role !== "admin" && (
               <button onClick={() => handleDeleteUser(u)} className={styles.deleteBtn}>Delete</button>
             )}

@@ -32,12 +32,13 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [users, setUsers] = useState<{
     username: string;
+    fullName: string;
     password: string;
     role: "admin" | "seller" | "manager";
   }[]>([
-    { username: "admin@marcopolo.com", password: "Marcopolo$", role: "admin" }
+    { username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }
   ]);
-  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ username: string; fullName: string; role: string } | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -225,16 +226,12 @@ export default function Home() {
   return (
     <main className={styles.main}>
       <div className={styles.container}>
-        {/* User Management for admin */}
-        {currentUser?.role === 'admin' && (
-          <UserManagement users={users} setUsers={setUsers} />
-        )}
         <header className={styles.header}>
           <div>
             <h1>Rug Business Invoice System</h1>
             <p>Professional invoicing for Web, Android, and Windows</p>
             <div style={{ fontSize: 14, marginTop: 4 }}>
-              <b>Logged in as:</b> {currentUser?.username || 'Unknown'} ({currentUser?.role || 'Unknown'})
+              <b>Logged in as:</b> {currentUser?.fullName || currentUser?.username || 'Unknown'} ({currentUser?.role || 'Unknown'})
               <span style={{ marginLeft: 16 }}><b>Admin:</b> admin@marcopolo.com</span>
             </div>
           </div>
@@ -257,7 +254,7 @@ export default function Home() {
               {showSettings && (
                 <div style={{ position: 'absolute', right: 0, top: 45, background: '#fff', color: '#222', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 220, zIndex: 1000, padding: 12 }}>
                   <div style={{ padding: '8px 0', borderBottom: '1px solid #eee', fontWeight: 500 }}>
-                    {currentUser?.username} ({currentUser?.role})
+                    {currentUser?.fullName || currentUser?.username} ({currentUser?.role})
                   </div>
                   <button
                     style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 0', fontSize: 15, cursor: 'pointer' }}
@@ -297,7 +294,7 @@ export default function Home() {
         {/* Invoice Form */}
         {!showSearch && !showPreview && (
           <div className={styles.formSection}>
-            <InvoiceForm onSubmit={handleFormSubmit} initialData={invoiceData || undefined} currentUser={currentUser} />
+            <InvoiceForm onSubmit={handleFormSubmit} initialData={invoiceData || undefined} currentUser={currentUser} users={users} />
           </div>
         )}
 

@@ -13,14 +13,20 @@ import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/l
 import SignaturePad from './SignaturePad';
 import styles from './InvoiceForm.module.css';
 
-interface InvoiceFormProps {
   onSubmit: (data: InvoiceData) => void;
   initialData?: Partial<InvoiceData>;
-  currentUser?: { username: string; role: string } | null;
-}
+  currentUser?: { username: string; fullName: string; role: string } | null;
+  users?: { username: string; fullName: string; role: string }[];
 
 // This form supports both creating and editing invoices. When editing, all fields (customer info, items, etc.) are pre-filled and can be updated.
-export default function InvoiceForm({ onSubmit, initialData, currentUser }: InvoiceFormProps) {
+export default function InvoiceForm({ onSubmit, initialData, currentUser, users }: InvoiceFormProps) {
+    const [servedBy, setServedBy] = useState(initialData?.servedBy || (currentUser?.fullName || currentUser?.username || ''));
+
+    useEffect(() => {
+      if (!initialData?.servedBy && currentUser) {
+        setServedBy(currentUser.fullName || currentUser.username);
+      }
+    }, [currentUser, initialData]);
   const [documentType, setDocumentType] = useState<DocumentType>(initialData?.documentType || 'INVOICE');
   const [mode, setMode] = useState<InvoiceMode>(
     initialData?.mode || 'retail-per-rug'
@@ -143,7 +149,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser }: Invo
       discountPercentage: mode.startsWith('retail') ? discountPercentage : undefined,
       notes,
       signature,
-      servedBy: currentUser?.username || undefined,
+      servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
     };
 
     onSubmit(invoiceData);
