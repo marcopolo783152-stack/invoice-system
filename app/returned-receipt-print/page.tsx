@@ -86,6 +86,11 @@ export default function ReturnedReceiptPrintPage() {
   return (
     <div style={{ background: '#fff', minHeight: '100vh', padding: 40 }}>
       <div ref={printRef}>
+        {/* DEBUG: Always show something printable */}
+        <div style={{ background: '#eef', color: '#222', padding: 20, marginBottom: 20 }}>
+          <div>Hello Print Test</div>
+          <div>Current Date: {new Date().toLocaleString()}</div>
+        </div>
         <ReturnedReceipt receiptData={receiptData} />
       </div>
       <div style={{ textAlign: 'center', marginTop: 32 }}>
