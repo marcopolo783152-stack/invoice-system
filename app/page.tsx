@@ -170,7 +170,31 @@ export default function Home() {
   };
 
   const handlePrint = () => {
-    printInvoice();
+    if (!invoiceRef.current) return;
+    const printContents = invoiceRef.current.innerHTML;
+    const printWindow = document.createElement('iframe');
+    printWindow.style.position = 'fixed';
+    printWindow.style.right = '0';
+    printWindow.style.bottom = '0';
+    printWindow.style.width = '0';
+    printWindow.style.height = '0';
+    printWindow.style.border = 'none';
+    document.body.appendChild(printWindow);
+    const doc = printWindow.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write('<html><head><title>Print Invoice</title>');
+      doc.write('<style>body{background:#fff;color:#222;font-family:Arial,sans-serif;}@media print{body{margin:0;}}</style>');
+      doc.write('</head><body>');
+      doc.write(printContents);
+      doc.write('</body></html>');
+      doc.close();
+      printWindow.contentWindow?.focus();
+      setTimeout(() => {
+        printWindow.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(printWindow), 1000);
+      }, 300);
+    }
   };
 
   const handleDownloadPDF = async () => {
