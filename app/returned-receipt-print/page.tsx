@@ -27,6 +27,10 @@ export default function ReturnedReceiptPrintPage() {
       const allDataParams = params.getAll('data');
       const dataParam = allDataParams.length > 0 ? allDataParams[allDataParams.length - 1] : null;
       setData(parseData(dataParam));
+      // Automatically trigger print dialog after rendering
+      setTimeout(() => {
+        window.print();
+      }, 500);
     }
   }, []);
 
