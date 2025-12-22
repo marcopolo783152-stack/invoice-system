@@ -24,6 +24,14 @@ import styles from './page.module.css';
 export default function Home() {
     // Settings dropdown state
     const [showSettings, setShowSettings] = useState(false);
+
+    // Logout function
+    const logout = () => {
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      localStorage.removeItem('mp-invoice-auth');
+      localStorage.removeItem('mp-invoice-user');
+    };
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -53,6 +61,21 @@ export default function Home() {
       if (storedUser) {
         try { setCurrentUser(JSON.parse(storedUser)); } catch {}
       }
+
+      // Add event listeners for tab/window close and offline
+      const handleLogout = () => {
+        logout();
+      };
+      const handleOffline = () => {
+        logout();
+      };
+      window.addEventListener('beforeunload', handleLogout);
+      window.addEventListener('offline', handleOffline);
+
+      return () => {
+        window.removeEventListener('beforeunload', handleLogout);
+        window.removeEventListener('offline', handleOffline);
+      };
     }
   }, []);
 
@@ -259,10 +282,7 @@ export default function Home() {
                   <button
                     style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 0', fontSize: 15, cursor: 'pointer' }}
                     onClick={() => {
-                      setIsAuthenticated(false);
-                      setCurrentUser(null);
-                      localStorage.removeItem('mp-invoice-auth');
-                      localStorage.removeItem('mp-invoice-user');
+                      logout();
                       setShowSettings(false);
                     }}
                   >
