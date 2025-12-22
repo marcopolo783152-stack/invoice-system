@@ -1,21 +1,25 @@
-import React from 'react';
 
-// Utility to parse query string data
-function parseData(search: string) {
+import React, { useEffect, useState } from 'react';
+
+function parseData(dataParam: string | null) {
+  if (!dataParam) return null;
   try {
-    const params = new URLSearchParams(search);
-    const data = params.get('data');
-    if (data) return JSON.parse(decodeURIComponent(data));
-  } catch {}
-  return null;
+    return JSON.parse(decodeURIComponent(dataParam));
+  } catch {
+    return null;
+  }
 }
 
-export default function ReturnedReceiptPrintPage({ searchParams }: { searchParams?: Record<string, string> }) {
-  // For Next.js App Router, use useSearchParams
-  let data: any = null;
-  if (typeof window !== 'undefined') {
-    data = parseData(window.location.search);
-  }
+export default function ReturnedReceiptPrintPage() {
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const dataParam = params.get('data');
+      setData(parseData(dataParam));
+    }
+  }, []);
 
   return (
     <div style={{ background: '#fff', minHeight: '100vh', padding: 40 }}>
@@ -33,6 +37,12 @@ export default function ReturnedReceiptPrintPage({ searchParams }: { searchParam
           </ul>
           {data.returnNote && <div><b>Return Note:</b> {data.returnNote}</div>}
           {data.servedBy && <div><b>Served by:</b> {data.servedBy}</div>}
+          {data.signature && (
+            <div style={{ marginTop: 24 }}>
+              <b>Customer Signature:</b>
+              <div><img src={data.signature} alt="Signature" style={{ maxWidth: 300, border: '1px solid #ccc', marginTop: 8 }} /></div>
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ color: 'red', textAlign: 'center' }}>No receipt data found.</div>
