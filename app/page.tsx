@@ -186,6 +186,20 @@ export default function Home() {
         }
       }
     );
+
+    // Clone all computed styles from the preview section
+    function getAllCSS() {
+      let css = '';
+      // Get all style sheets
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules || [])) {
+            css += rule.cssText + '\n';
+          }
+        } catch (e) { /* ignore CORS issues */ }
+      }
+      return css;
+    }
     const printWindow = document.createElement('iframe');
     printWindow.style.position = 'fixed';
     printWindow.style.right = '0';
@@ -198,42 +212,8 @@ export default function Home() {
     if (doc) {
       doc.open();
       doc.write('<html><head><title>Print Invoice</title>');
-      // Inject all necessary CSS for print
-      const printCss = `
-        @media print {
-          html, body {
-            background: #fff !important;
-            color: #000 !important;
-            margin: 0;
-            padding: 0;
-            width: 210mm;
-            min-height: 297mm;
-          }
-          .previewSection {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            margin: 0 auto;
-            width: 900px;
-            max-width: 100vw;
-          }
-          .invoiceContainer {
-            margin: 0 auto;
-            background: white;
-          }
-          .invoice-logo, .print-logo, .logoImage {
-            display: block;
-            margin: 0 auto 16px auto;
-            max-width: 180px;
-            max-height: 120px;
-            width: auto !important;
-            height: auto !important;
-            object-fit: contain;
-          }
-        }
-      `;
-      doc.write(`<style>${printCss}</style>`);
+      // Inject all CSS from the main document
+      doc.write(`<style>${getAllCSS()}</style>`);
       doc.write('</head><body>');
       doc.write(printContents);
       doc.write('</body></html>');
