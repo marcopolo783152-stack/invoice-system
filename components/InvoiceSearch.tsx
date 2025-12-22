@@ -666,7 +666,10 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                             <button onClick={() => setShowReturnReceipt(false)} className={styles.closeBtn}>Close</button>
                             <button
                               onClick={() => {
-                                const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(returnedReceiptData))}`;
+                                // Remove any nested 'data' property to avoid duplicate data params
+                                const cleanReceiptData = { ...returnedReceiptData };
+                                if (cleanReceiptData.data) delete cleanReceiptData.data;
+                                const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(cleanReceiptData))}`;
                                 window.open(url, '_blank', 'noopener');
                               }}
                               className={styles.printBtn}
