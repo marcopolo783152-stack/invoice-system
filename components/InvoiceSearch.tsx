@@ -678,17 +678,16 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                             <button onClick={() => setShowReturnReceipt(false)} className={styles.closeBtn}>Close</button>
                             <button
                               onClick={() => {
-                                // Always send the correct structure for print page
-                                let printData;
-                                if (returnedReceiptData.data && returnedReceiptData.returnedItems) {
-                                  printData = {
-                                    ...returnedReceiptData.data,
-                                    returnedItems: returnedReceiptData.returnedItems,
-                                    returnNote: returnedReceiptData.returnNote,
-                                  };
-                                } else {
-                                  printData = returnedReceiptData;
-                                }
+                                // Always flatten returnedReceiptData for print
+                                let data = returnedReceiptData.data || returnedReceiptData;
+                                const printData = {
+                                  invoiceNumber: data.invoiceNumber,
+                                  date: data.date,
+                                  soldTo: data.soldTo,
+                                  servedBy: data.servedBy,
+                                  returnedItems: returnedReceiptData.returnedItems || data.returnedItems || [],
+                                  returnNote: returnedReceiptData.returnNote || data.returnNote || '',
+                                };
                                 const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(printData))}`;
                                 window.open(url, '_blank', 'noopener');
                               }}
