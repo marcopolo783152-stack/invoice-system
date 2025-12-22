@@ -366,41 +366,39 @@ export default function Home() {
         {/* Invoice Preview and Actions */}
         {showPreview && invoiceData && calculations && (
           <div id="preview-section" className={styles.previewSection}>
-            <div className="print-invoice-root">
-              <div className={styles.actions}>
-                <h2>Invoice Preview</h2>
-                <div className={styles.actionButtons}>
-                  <button onClick={handlePrint} className={styles.printBtn}>
-                    🖨️ Print
-                  </button>
-                  <button onClick={handleDownloadPDF} className={styles.pdfBtn}>
-                    📄 Download PDF
-                  </button>
-                  <button onClick={handleSendEmail} className={styles.emailBtn}>
-                    📧 Email Invoice
-                  </button>
-                  <button onClick={handleNewInvoice} className={styles.newBtn}>
-                    ➕ New Invoice
-                  </button>
-                </div>
-              </div>
-
-              <div ref={invoiceRef} className={styles.invoiceContainer}>
-                <InvoiceTemplate
-                  data={invoiceData}
-                  calculations={calculations}
-                  businessInfo={businessConfig}
-                />
-              </div>
-
-              <div className={styles.bottomActions}>
+            <div className={styles.actions}>
+              <h2>Invoice Preview</h2>
+              <div className={styles.actionButtons}>
                 <button onClick={handlePrint} className={styles.printBtn}>
                   🖨️ Print
                 </button>
                 <button onClick={handleDownloadPDF} className={styles.pdfBtn}>
                   📄 Download PDF
                 </button>
+                <button onClick={handleSendEmail} className={styles.emailBtn}>
+                  📧 Email Invoice
+                </button>
+                <button onClick={handleNewInvoice} className={styles.newBtn}>
+                  ➕ New Invoice
+                </button>
               </div>
+            </div>
+
+            <div ref={invoiceRef} className={styles.invoiceContainer}>
+              <InvoiceTemplate
+                data={invoiceData}
+                calculations={calculations}
+                businessInfo={businessConfig}
+              />
+            </div>
+
+            <div className={styles.bottomActions}>
+              <button onClick={handlePrint} className={styles.printBtn}>
+                🖨️ Print
+              </button>
+              <button onClick={handleDownloadPDF} className={styles.pdfBtn}>
+                📄 Download PDF
+              </button>
             </div>
           </div>
         )}

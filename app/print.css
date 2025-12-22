@@ -22,26 +22,4 @@
     display: none !important;
   }
 }
-@media print {
-  body {
-    background: #fff !important;
-    margin: 0;
-    padding: 0;
-  }
-  .print-invoice-root, .invoice {
-    width: 210mm !important;
-    min-height: 297mm !important;
-    margin: 0 auto !important;
-    box-sizing: border-box;
-    background: #fff !important;
-    color: #000 !important;
-    page-break-after: always;
-    box-shadow: none !important;
-    display: block !important;
-  }
-  /* Hide everything except the invoice */
-  #__next > *:not(.print-invoice-root):not(.print-receipt-center),
-  body > *:not(.print-invoice-root):not(.print-receipt-center) {
-    display: none !important;
-  }
-}
+/* (Reverted to original version: no special print-invoice-root or invoice print hiding) */
