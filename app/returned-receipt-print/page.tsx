@@ -32,7 +32,7 @@ export default function ReturnedReceiptPrintPage() {
     }
   }, []);
 
-  // Print using iframe for better reliability
+  // Print using iframe for better reliability and A4 size
   const handlePrint = () => {
     if (!printRef.current) return;
     const printContents = printRef.current.innerHTML;
@@ -48,8 +48,7 @@ export default function ReturnedReceiptPrintPage() {
     if (doc) {
       doc.open();
       doc.write('<html><head><title>Print Receipt</title>');
-      // Optionally add styles here
-      doc.write('<style>body{background:#fff;color:#222;font-family:Arial,sans-serif;}@media print{body{margin:0;}}</style>');
+      doc.write('<style>@media print { html, body { width: 210mm; min-height: 297mm; background: #fff; margin: 0; padding: 0; } .print-receipt-center { width: 190mm; min-height: 277mm; margin: 0 auto; background: #fff; color: #000; } }</style>');
       doc.write('</head><body>');
       doc.write(printContents);
       doc.write('</body></html>');

@@ -1,59 +1,19 @@
-/* Hide all UI except invoice when printing */
+
 @media print {
-  body {
-    background: #fff !important;
-    margin: 0;
-    padding: 0;
-  }
-  .invoice {
-    width: 210mm !important;
-    min-height: 297mm !important;
-    margin: 0 auto !important;
-    box-sizing: border-box;
-    background: #fff !important;
-    color: #000 !important;
-    page-break-after: always;
-    box-shadow: none !important;
-    display: block !important;
-  }
-  /* Hide everything except the invoice */
-  #__next > *:not(.invoice),
-  body > *:not(.invoice) {
-    display: none !important;
-  }
+	html, body {
+		background: #fff !important;
+		color: #000 !important;
+		margin: 0;
+		padding: 0;
+		width: 210mm;
+		min-height: 297mm;
+	}
+	.invoice, .print-receipt-center {
+		width: 190mm;
+		min-height: 277mm;
+		margin: 0 auto;
+		background: #fff;
+		color: #000;
+	}
 }
-@media print {
-  html, body {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    background: #fff !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-  }
-  .main, .container, .previewSection, .invoiceContainer, .invoice {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100vw !important;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
-    color: #000 !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-    position: static !important;
-    display: block !important;
-    z-index: 9999 !important;
-  }
-  /* Remove all scrollbars and force all content to print */
-  * {
-    overflow: visible !important;
-  }
-  /* Hide header, nav, and all UI except invoice preview and invoice */
-  .header, .headerActions, .actions, .actionButtons, .bottomActions, .searchSection, .formSection, .errors, .loginContainer, .loginForm, .searchBox, .paginationTop, .paginationControls, .resultsList, .previewPanel, .previewHeader, .previewActions, .previewContent, .previewSection, .noResults, .modalOverlay, .modalContent, .progressBar, .progressInfo, .progressTrack, .progressFill, .selectAllBtn, .deleteSelectedBtn, .exportBtn, .closeBtn, .returnBtn, .cancelBtn, .editBtn, .viewBtn, .deleteBtn, .newBtnHeader, .newBtn, .pdfBtn, .printBtn, .emailBtn {
-    display: none !important;
-  }
-}
+
