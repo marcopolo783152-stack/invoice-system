@@ -534,8 +534,12 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                             // Prepare receipt data for this invoice
                             const returnedItems = invoice.data.items.filter(i => i.returned);
                             // Always open in new tab for print-friendly view
+                            // Always include invoiceNumber and returnedItems for print
                             const printData = {
-                              ...invoice.data,
+                              invoiceNumber: invoice.data.invoiceNumber,
+                              date: invoice.data.date,
+                              soldTo: invoice.data.soldTo,
+                              servedBy: invoice.data.servedBy,
                               returnedItems,
                               returnNote: invoice.data.returnNote || 'Returned by customer',
                             };
