@@ -171,11 +171,11 @@ export default function Home() {
 
   const handlePrint = () => {
     if (!invoiceRef.current) return;
-    let printContents = printRef.current.innerHTML;
+    let printContents = invoiceRef.current.innerHTML;
     // Add inline style to logo image for print reliability
     printContents = printContents.replace(
       /<img([^>]*class=\"[^\"]*logoImage[^\"]*\"[^>]*)>/,
-      (match, attrs) => {
+      (match: string, attrs: string) => {
         // Add inline style for max-width and max-height
         if (attrs.includes('style=')) {
           return `<img${attrs.replace(/style=\"/, 'style=\"max-width:180px;max-height:120px;width:auto !important;height:auto !important;object-fit:contain; ')}>`;
