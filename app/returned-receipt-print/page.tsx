@@ -8,7 +8,12 @@ function parseData(dataParam: string | null) {
   try {
     return JSON.parse(decodeURIComponent(dataParam));
   } catch {
-    return null;
+    try {
+      // Try double decode (sometimes data is encoded twice)
+      return JSON.parse(decodeURIComponent(decodeURIComponent(dataParam)));
+    } catch {
+      return { _raw: dataParam, _error: 'Failed to parse receipt data.' };
+    }
   }
 }
 
@@ -28,7 +33,7 @@ export default function ReturnedReceiptPrintPage() {
   return (
     <div style={{ background: '#fff', minHeight: '100vh', padding: 40 }}>
       <h1 style={{ textAlign: 'center', marginBottom: 24 }}>Returned Receipt</h1>
-      {data ? (
+      {data && !data._error ? (
         <div style={{ maxWidth: 600, margin: '0 auto', fontSize: 18 }}>
           <div><b>Customer:</b> {data.soldTo?.name}</div>
           <div><b>Date:</b> {data.date}</div>
@@ -49,7 +54,15 @@ export default function ReturnedReceiptPrintPage() {
           )}
         </div>
       ) : (
-        <div style={{ color: 'red', textAlign: 'center' }}>No receipt data found.</div>
+        <div style={{ color: 'red', textAlign: 'center' }}>
+          No receipt data found.<br />
+          {data?._raw && (
+            <div style={{ marginTop: 16, fontSize: 12, color: '#333' }}>
+              <b>Raw data param:</b>
+              <div style={{ wordBreak: 'break-all' }}>{data._raw}</div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
