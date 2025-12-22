@@ -688,6 +688,12 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                                   returnedItems: returnedReceiptData.returnedItems || data.returnedItems || [],
                                   returnNote: returnedReceiptData.returnNote || data.returnNote || '',
                                 };
+                                // Store in sessionStorage for print page fallback
+                                if (typeof window !== 'undefined') {
+                                  try {
+                                    sessionStorage.setItem('mp-invoice-print-data', JSON.stringify(printData));
+                                  } catch {}
+                                }
                                 const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(printData))}`;
                                 window.open(url, '_blank', 'noopener');
                               }}

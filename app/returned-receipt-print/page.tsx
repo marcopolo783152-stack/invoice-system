@@ -28,7 +28,17 @@ export default function ReturnedReceiptPrintPage() {
       // Get all 'data' params and use the last one
       const allDataParams = params.getAll('data');
       const dataParam = allDataParams.length > 0 ? allDataParams[allDataParams.length - 1] : null;
-      setData(parseData(dataParam));
+      let parsed = parseData(dataParam);
+      if (!parsed || parsed._error) {
+        // Fallback: try to get from sessionStorage
+        try {
+          const sessionData = sessionStorage.getItem('mp-invoice-print-data');
+          if (sessionData) {
+            parsed = JSON.parse(sessionData);
+          }
+        } catch {}
+      }
+      setData(parsed);
     }
   }, []);
 
