@@ -2,8 +2,14 @@
 "use client";
 // ReturnedReceipt component for professional returned receipt
 export function ReturnedReceipt({ receiptData }: { receiptData: any }) {
-  if (!receiptData) return null;
-  const { data, returnedItems, returnNote } = receiptData;
+  if (!receiptData) return <div style={{ color: 'red', textAlign: 'center' }}>No receipt data found.</div>;
+  // Defensive: allow both flat and nested data
+  let data = receiptData.data || receiptData;
+  const returnedItems = receiptData.returnedItems || data.returnedItems || [];
+  const returnNote = receiptData.returnNote || data.returnNote || '';
+  if (!data || !data.invoiceNumber) {
+    return <div style={{ color: 'red', textAlign: 'center' }}>Invalid or incomplete receipt data.</div>;
+  }
   const businessInfo = {
     name: 'MARCO POLO ORIENTAL RUGS, INC.',
     address: '3260 DUKE ST',
@@ -28,21 +34,21 @@ export function ReturnedReceipt({ receiptData }: { receiptData: any }) {
       </div>
       <h3 style={{ textAlign: 'center', margin: '16px 0', letterSpacing: 2 }}>RETURNED RECEIPT</h3>
       <div style={{ marginBottom: 12 }}>
-        <b>Invoice #:</b> {data.invoiceNumber}<br />
-        <b>Date:</b> {new Date().toLocaleDateString()}<br />
-        <b>Customer:</b> {data.soldTo.name}<br />
-        <b>Address:</b> {data.soldTo.address}, {data.soldTo.city}, {data.soldTo.state} {data.soldTo.zip}<br />
-        <b>Phone:</b> {data.soldTo.phone} {data.soldTo.email && (<span>| <b>Email:</b> {data.soldTo.email}</span>)}<br />
+        <b>Invoice #:</b> {data.invoiceNumber || ''}<br />
+        <b>Date:</b> {data.date ? new Date(data.date).toLocaleDateString() : new Date().toLocaleDateString()}<br />
+        <b>Customer:</b> {data.soldTo?.name || ''}<br />
+        <b>Address:</b> {data.soldTo?.address || ''}, {data.soldTo?.city || ''}, {data.soldTo?.state || ''} {data.soldTo?.zip || ''}<br />
+        <b>Phone:</b> {data.soldTo?.phone || ''} {data.soldTo?.email && (<span>| <b>Email:</b> {data.soldTo.email}</span>)}<br />
         {data.servedBy && (<span><b>Served by:</b> {data.servedBy}</span>)}
       </div>
       <div style={{ marginBottom: 12 }}>
         <b>Returned Items:</b>
         <ul style={{ margin: 0, paddingLeft: 20 }}>
-          {returnedItems.map((item: any) => (
-            <li key={item.id}>
-              {item.sku} - {item.description}
+          {Array.isArray(returnedItems) && returnedItems.length > 0 ? returnedItems.map((item: any, idx: number) => (
+            <li key={item.id || idx}>
+              {item.sku || ''} - {item.description || ''}
             </li>
-          ))}
+          )) : <li>No returned items found.</li>}
         </ul>
       </div>
       <div style={{ marginBottom: 12 }}>
