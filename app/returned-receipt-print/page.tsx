@@ -35,30 +35,40 @@ export default function ReturnedReceiptPrintPage() {
   }, []);
 
   // Support both legacy and new returnedItems structure
-  const customer = data?.soldTo?.name || data?.customer || '';
-  const date = data?.date || data?.createdAt || '';
-  const invoiceNumber = data?.invoiceNumber || data?.id || '';
-  const items = Array.isArray(data?.returnedItems)
-    ? data.returnedItems
-    : Array.isArray(data?.items)
-      ? data.items.filter((item: any) => item.returned)
-      : [];
-  const returnNote = data?.returnNote || '';
-  const servedBy = data?.servedBy || '';
-  const signature = data?.signature || '';
+  // Support both legacy and minimal returnedItems structure
+  let customer = data?.soldTo?.name || data?.customer || '';
+  let date = data?.date || data?.createdAt || '';
+  let invoiceNumber = data?.invoiceNumber || data?.id || '';
+  let items = [];
+  let returnNote = data?.returnNote || '';
+  let servedBy = data?.servedBy || '';
+  let signature = data?.signature || '';
+
+  // If only returnedItems and returnNote are present, use them
+  if (Array.isArray(data?.returnedItems) && Object.keys(data).length <= 3) {
+    items = data.returnedItems;
+    // Try to extract customer/invoice/date from returnedItems if present
+    customer = items[0]?.customer || '';
+    invoiceNumber = items[0]?.invoiceNumber || '';
+    date = items[0]?.date || '';
+  } else if (Array.isArray(data?.returnedItems)) {
+    items = data.returnedItems;
+  } else if (Array.isArray(data?.items)) {
+    items = data.items.filter((item: any) => item.returned);
+  }
 
   return (
     <div style={{ background: '#fff', minHeight: '100vh', padding: 40 }}>
       <h1 style={{ textAlign: 'center', marginBottom: 24 }}>Returned Receipt</h1>
       {data && !data._error ? (
         <div style={{ maxWidth: 600, margin: '0 auto', fontSize: 18 }}>
-          <div><b>Customer:</b> {customer}</div>
-          <div><b>Date:</b> {date}</div>
-          <div><b>Invoice #:</b> {invoiceNumber}</div>
+          {customer && <div><b>Customer:</b> {customer}</div>}
+          {date && <div><b>Date:</b> {date}</div>}
+          {invoiceNumber && <div><b>Invoice #:</b> {invoiceNumber}</div>}
           <div><b>Returned Items:</b></div>
           <ul>
             {items.length > 0 ? items.map((item: any, idx: number) => (
-              <li key={idx}>{item.description} ({item.sku})</li>
+              <li key={idx}>{item.description} {item.sku ? `(${item.sku})` : ''}</li>
             )) : <li>No returned items found.</li>}
           </ul>
           {returnNote && <div><b>Return Note:</b> {returnNote}</div>}
