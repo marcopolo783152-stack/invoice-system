@@ -184,7 +184,17 @@ export default function Home() {
     if (doc) {
       doc.open();
       doc.write('<html><head><title>Print Invoice</title>');
-      doc.write('<style>body{background:#fff;color:#222;font-family:Arial,sans-serif;}@media print{body{margin:0;}}</style>');
+      doc.write(`
+        <style>
+          @page { size: A4; margin: 0; }
+          html, body { width: 210mm; height: 297mm; background: #fff; color: #222; font-family: Arial, sans-serif; margin: 0; padding: 0; }
+          .invoice { width: 190mm !important; min-height: 277mm !important; margin: 0 auto; padding: 10mm; background: #fff; }
+          @media print {
+            body { margin: 0; box-shadow: none; }
+            .invoice { box-shadow: none; }
+          }
+        </style>
+      `);
       doc.write('</head><body>');
       doc.write(printContents);
       doc.write('</body></html>');
