@@ -83,7 +83,7 @@ export default function InvoiceTemplate({
           <img 
             src="/LOGO.png" 
             alt="Marco Polo Oriental Rugs" 
-            className={styles.logoImage}
+            className={`${styles.logoImage} invoice-logo`}
             onError={e => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
@@ -98,7 +98,7 @@ export default function InvoiceTemplate({
               fallback.style.color = '#888';
               fallback.style.fontWeight = 'bold';
               fallback.style.fontSize = '18px';
-              target.parentElement?.appendChild(fallback);
+              target.parentNode?.appendChild(fallback);
             }}
           />
         </div>
