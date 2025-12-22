@@ -28,21 +28,20 @@
     margin: 0;
     padding: 0;
   }
-  .print-receipt-center {
-    width: 210mm;
-    min-height: 297mm;
-    max-width: 100vw;
+  .print-invoice-root, .invoice {
+    width: 210mm !important;
+    min-height: 297mm !important;
     margin: 0 auto !important;
     box-sizing: border-box;
     background: #fff !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    color: #000 !important;
     page-break-after: always;
+    box-shadow: none !important;
+    display: block !important;
   }
-  /* Hide everything except the receipt */
-  #__next > *:not(.print-receipt-center),
-  body > *:not(.print-receipt-center) {
+  /* Hide everything except the invoice */
+  #__next > *:not(.print-invoice-root):not(.print-receipt-center),
+  body > *:not(.print-invoice-root):not(.print-receipt-center) {
     display: none !important;
   }
 }
