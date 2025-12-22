@@ -170,8 +170,10 @@ export default function Home() {
   };
 
   const handlePrint = () => {
-    if (!invoiceRef.current) return;
-    let printContents = invoiceRef.current.innerHTML;
+    // Print the entire preview section for perfect match
+    const previewSection = document.getElementById('preview-section');
+    if (!previewSection) return;
+    let printContents = previewSection.outerHTML;
     // Add inline style to logo image for print reliability
     printContents = printContents.replace(
       /<img([^>]*class=\"[^\"]*logoImage[^\"]*\"[^>]*)>/,
@@ -196,8 +198,41 @@ export default function Home() {
     if (doc) {
       doc.open();
       doc.write('<html><head><title>Print Invoice</title>');
-      // Inject print.css directly into the iframe
-      const printCss = `@media print { html, body { background: #fff !important; color: #000 !important; margin: 0; padding: 0; width: 210mm; min-height: 297mm; } .invoice, .print-receipt-center { width: 190mm; min-height: 277mm; margin: 0 auto; background: #fff; color: #000; } .invoice-logo, .print-logo, .logoImage { display: block; margin: 0 auto 16px auto; max-width: 180px; max-height: 120px; width: auto !important; height: auto !important; object-fit: contain; } .invoice { padding-top: 16px; } }`;
+      // Inject all necessary CSS for print
+      const printCss = `
+        @media print {
+          html, body {
+            background: #fff !important;
+            color: #000 !important;
+            margin: 0;
+            padding: 0;
+            width: 210mm;
+            min-height: 297mm;
+          }
+          .previewSection {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            margin: 0 auto;
+            width: 900px;
+            max-width: 100vw;
+          }
+          .invoiceContainer {
+            margin: 0 auto;
+            background: white;
+          }
+          .invoice-logo, .print-logo, .logoImage {
+            display: block;
+            margin: 0 auto 16px auto;
+            max-width: 180px;
+            max-height: 120px;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain;
+          }
+        }
+      `;
       doc.write(`<style>${printCss}</style>`);
       doc.write('</head><body>');
       doc.write(printContents);
