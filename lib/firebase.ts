@@ -54,4 +54,6 @@ try {
   console.error('Firebase initialization error:', error);
 }
 
+export { app };
+
 export { db };
