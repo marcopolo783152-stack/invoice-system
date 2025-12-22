@@ -11,7 +11,8 @@ import React, { useState, useEffect } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
 
-import styles from './InvoiceForm.module.css';
+
+import SignaturePad from './SignaturePad';
 
 interface InvoiceFormProps {
   onSubmit: (data: InvoiceData) => void;
