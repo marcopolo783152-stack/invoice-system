@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Printer, FileText, Download, Undo } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Download, Undo, Edit } from 'lucide-react';
 import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
@@ -14,6 +14,7 @@ import PrintPortal from '@/components/PrintPortal';
 
 function InvoiceViewContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const id = searchParams.get('id');
 
     const [invoice, setInvoice] = useState<SavedInvoice | null>(null);
@@ -63,6 +64,12 @@ function InvoiceViewContent() {
             } catch (error) {
                 alert('Failed to generate PDF. Please try using Print instead.');
             }
+        }
+    };
+
+    const handleEdit = () => {
+        if (invoice) {
+            router.push(`/invoices/new?edit=${invoice.id}`);
         }
     };
 
@@ -187,6 +194,17 @@ function InvoiceViewContent() {
                                     }}
                                 >
                                     <Undo size={18} /> Return
+                                </button>
+                                <button
+                                    onClick={handleEdit}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 8,
+                                        padding: '10px 20px', background: '#6366f1', color: 'white',
+                                        border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                                        boxShadow: '0 2px 4px rgba(99, 102, 241, 0.3)'
+                                    }}
+                                >
+                                    <Edit size={18} /> Edit
                                 </button>
                                 <button
                                     onClick={handlePrint}

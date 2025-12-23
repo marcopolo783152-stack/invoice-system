@@ -7,7 +7,8 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
@@ -25,7 +26,9 @@ import { sendInvoiceEmail, prepareInvoiceForEmail, isEmailConfigured } from '@/l
 import { businessConfig } from '@/config/business';
 import styles from './page.module.css';
 
-export default function Home() {
+function InvoicePageContent() {
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
   // Settings dropdown state
   const [showSettings, setShowSettings] = useState(false);
 
@@ -56,6 +59,7 @@ export default function Home() {
     return true;
   }
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
+  const [formInitialData, setFormInitialData] = useState<Partial<InvoiceData> | undefined>(undefined);
   const [showPreview, setShowPreview] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -117,6 +121,17 @@ export default function Home() {
       };
     }
   }, []);
+
+  useEffect(() => {
+    if (editId) {
+      getAllInvoices().then(invoices => {
+        const found = invoices.find(inv => inv.id === editId || inv.data.invoiceNumber === editId);
+        if (found) {
+          setFormInitialData(found.data);
+        }
+      });
+    }
+  }, [editId]);
 
   useEffect(() => {
     // Save users to localStorage
@@ -328,7 +343,13 @@ export default function Home() {
         {/* Invoice Form */}
         {!showSearch && !showPreview && (
           <div className={styles.formSection}>
-            <InvoiceForm onSubmit={handleFormSubmit} initialData={invoiceData || undefined} currentUser={currentUser} users={users} />
+            <InvoiceForm
+              onSubmit={handleFormSubmit}
+              initialData={formInitialData}
+              currentUser={currentUser}
+              users={users}
+              key={formInitialData ? 'edit-mode' : 'create-mode'}
+            />
           </div>
         )}
 
@@ -396,5 +417,13 @@ export default function Home() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div>Loading editor...</div>}>
+      <InvoicePageContent />
+    </Suspense>
   );
 }

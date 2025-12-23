@@ -6,14 +6,14 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2 } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
-import { exportInvoicesAsPDFs } from '@/lib/bulk-export';
 import AddressBookModal from './AddressBookModal';
+import ExportPreviewModal from './ExportPreviewModal';
 
 export default function Sidebar({ user, onLogout }: { user: any, onLogout: () => void }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const [isExporting, setIsExporting] = useState(false);
     const [showAddressBook, setShowAddressBook] = useState(false);
+    const [showExportPreview, setShowExportPreview] = useState(false);
 
     // Helper to check active state safely
     const isActive = (path: string, exact = false) => {
@@ -27,26 +27,7 @@ export default function Sidebar({ user, onLogout }: { user: any, onLogout: () =>
     // Usually "Invoices" is parent. But let's separate them visually if the user wants them as separate items.
     // If view=bin, Invoices is technically active too properly. But maybe we want to highlight Bin.
 
-    const handleExportPDFs = async () => {
-        if (isExporting) return;
-        setIsExporting(true);
-        try {
-            const invoices = await getAllInvoices();
-            if (invoices.length === 0) {
-                alert('No invoices to export');
-                return;
-            }
-            // Export all invoices
-            await exportInvoicesAsPDFs(invoices, (progress) => {
-                console.log(progress);
-            });
-        } catch (error) {
-            console.error('Export failed', error);
-            alert('Export failed. Check console for details.');
-        } finally {
-            setIsExporting(false);
-        }
-    };
+
 
     return (
         <div className={styles.sidebar}>
@@ -81,13 +62,12 @@ export default function Sidebar({ user, onLogout }: { user: any, onLogout: () =>
                 </button>
 
                 <button
-                    onClick={handleExportPDFs}
-                    disabled={isExporting}
+                    onClick={() => setShowExportPreview(true)}
                     className={styles.navItem}
-                    style={{ border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', width: '100%', fontSize: 15, fontFamily: 'inherit', opacity: isExporting ? 0.7 : 1 }}
+                    style={{ border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', width: '100%', fontSize: 15, fontFamily: 'inherit' }}
                 >
                     <FileDown size={20} />
-                    <span>{isExporting ? 'Exporting...' : 'Export PDFs'}</span>
+                    <span>Export PDFs</span>
                 </button>
 
                 <Link href="/invoices?view=bin" className={`${styles.navItem} ${isRecycleBin ? styles.active : ''}`}>
@@ -123,6 +103,10 @@ export default function Sidebar({ user, onLogout }: { user: any, onLogout: () =>
             <AddressBookModal
                 isOpen={showAddressBook}
                 onClose={() => setShowAddressBook(false)}
+            />
+            <ExportPreviewModal
+                isOpen={showExportPreview}
+                onClose={() => setShowExportPreview(false)}
             />
         </div>
     );

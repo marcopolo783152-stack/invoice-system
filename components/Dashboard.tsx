@@ -6,12 +6,13 @@ import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import Link from 'next/link';
 
-type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time';
+type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
 export default function Dashboard() {
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
     const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([]);
     const [period, setPeriod] = useState<Period>('all-time');
+    const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -30,6 +31,10 @@ export default function Dashboard() {
         const getStartOfPeriod = (p: Period) => {
             const d = new Date(startOfToday);
             if (p === 'today') return d;
+            if (p === 'custom') {
+                const [y, m, dPart] = customDate.split('-').map(Number);
+                return new Date(y, m - 1, dPart);
+            }
             if (p === 'this-week') {
                 d.setDate(d.getDate() - d.getDay());
                 return d;
@@ -48,6 +53,12 @@ export default function Dashboard() {
         };
 
         const getEndOfPeriod = (p: Period) => {
+            if (p === 'custom') {
+                const [y, m, dPart] = customDate.split('-').map(Number);
+                const d = new Date(y, m - 1, dPart);
+                d.setHours(23, 59, 59, 999);
+                return d;
+            }
             if (p === 'last-week') {
                 const d = new Date(startOfToday);
                 d.setDate(d.getDate() - d.getDay() - 1);
@@ -82,30 +93,54 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap' }}>
                     <p style={{ color: '#666' }}>Performance analysis and financial reports.</p>
 
-                    <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12 }}>
-                        {(['today', 'this-week', 'last-week', 'this-month', 'this-year', 'all-time'] as Period[]).map((p) => (
-                            <button
-                                key={p}
-                                onClick={() => setPeriod(p)}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: 8,
-                                    border: 'none',
-                                    background: period === p ? 'white' : 'transparent',
-                                    color: period === p ? '#1e293b' : '#64748b',
-                                    fontWeight: period === p ? 600 : 500,
-                                    fontSize: 13,
-                                    cursor: 'pointer',
-                                    boxShadow: period === p ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                    textTransform: 'capitalize'
+                    <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12 }}>
+                            {(['today', 'this-week', 'last-week', 'this-month', 'this-year', 'all-time'] as Period[]).map((p) => (
+                                <button
+                                    key={p}
+                                    onClick={() => setPeriod(p)}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: 8,
+                                        border: 'none',
+                                        background: period === p ? 'white' : 'transparent',
+                                        color: period === p ? '#1e293b' : '#64748b',
+                                        fontWeight: period === p ? 600 : 500,
+                                        fontSize: 13,
+                                        cursor: 'pointer',
+                                        boxShadow: period === p ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                        textTransform: 'capitalize'
+                                    }}
+                                >
+                                    {p.replace('-', ' ')}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f1f5f9', padding: '4px 12px', borderRadius: 12 }}>
+                            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Date:</span>
+                            <input
+                                type="date"
+                                value={customDate}
+                                onChange={(e) => {
+                                    setCustomDate(e.target.value);
+                                    setPeriod('custom');
                                 }}
-                            >
-                                {p.replace('-', ' ')}
-                            </button>
-                        ))}
+                                style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    fontSize: 13,
+                                    color: period === 'custom' ? '#1e293b' : '#64748b',
+                                    fontWeight: period === 'custom' ? 600 : 500,
+                                    outline: 'none',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                        </div>
                     </div>
 
                     <button
+                        className="no-print"
                         onClick={() => window.print()}
                         style={{
                             padding: '10px 20px',

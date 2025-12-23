@@ -195,7 +195,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     totalDue,
     netSubtotal,
     netTotalDue,
-    returnedAmount: subtotal - netSubtotal, // This is gross returned amount before tax/discount
+    returnedAmount: totalDue - netTotalDue, // Total value of returned items including tax and discount
   };
 }
 

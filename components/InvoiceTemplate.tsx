@@ -174,9 +174,10 @@ export default function InvoiceTemplate({
           </thead>
           <tbody>
             {calculations.items.map((item) => (
-              <tr key={item.id}>
+              <tr key={item.id} style={item.returned ? { color: '#dc2626', backgroundColor: '#fef2f2' } : {}}>
                 <td>{item.sku}</td>
                 <td className={styles.description}>
+                  {item.returned && <span style={{ fontWeight: 'bold', marginRight: 4 }}>[RETURNED]</span>}
                   {item.description}
                   {item.image && (
                     <div style={{ marginTop: 4 }}>
@@ -249,6 +250,18 @@ export default function InvoiceTemplate({
                 <td className={styles.totalLabel}>TOTAL DUE:</td>
                 <td className={styles.totalValue}>{formatCurrency(calculations.totalDue)}</td>
               </tr>
+              {calculations.returnedAmount > 0 && (
+                <>
+                  <tr style={{ color: '#dc2626' }}>
+                    <td className={styles.totalLabel}>Less Returns:</td>
+                    <td className={styles.totalValue}>-{formatCurrency(calculations.returnedAmount)}</td>
+                  </tr>
+                  <tr className={styles.totalDueRow} style={{ borderTop: '2px solid #000' }}>
+                    <td className={styles.totalLabel}>NET DUE:</td>
+                    <td className={styles.totalValue}>{formatCurrency(calculations.netTotalDue)}</td>
+                  </tr>
+                </>
+              )}
             </tbody>
           </table>
         </div>
