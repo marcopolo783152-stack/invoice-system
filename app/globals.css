@@ -30,7 +30,7 @@ a {
 /* Responsive Layout */
 @media (max-width: 1024px) {
   .desktop-sidebar-space {
-    display: none !important;
+    display: none;
   }
 
   .mobile-only-header {
@@ -39,12 +39,22 @@ a {
 
   .main-content {
     margin-left: 0 !important;
+    padding-bottom: 80px;
+  }
+}
+
+.sidebar-container {
+  transform: translateX(0);
+  /* Persistent on desktop */
+}
+
+@media (max-width: 1024px) {
+  .sidebar-container {
+    transform: translateX(-100%);
   }
 
-  :root {
-    --dashboard-padding: 16px;
-    --h1-size: 24px;
-    --p-size: 14px;
+  .sidebar-container.mobile-open {
+    transform: translateX(0);
   }
 }
 
@@ -53,6 +63,14 @@ a {
   --dashboard-padding: 40px;
   --h1-size: 32px;
   --p-size: 16px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --dashboard-padding: 16px;
+    --h1-size: 24px;
+    --p-size: 14px;
+  }
 }
 
 /* Print Optimizations */

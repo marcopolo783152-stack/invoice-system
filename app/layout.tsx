@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   const [user, setUser] = useState<any>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   useEffect(() => {
     // Basic auth check for sidebar user info
@@ -69,12 +69,11 @@ export default function RootLayout({
               top: 0,
               bottom: 0,
               zIndex: 100,
-              transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
               transition: 'transform 0.3s ease-in-out, width 0.3s ease-in-out',
               // On desktop, it should always be visible
               visibility: 'visible',
               width: isCollapsed ? 80 : 280
-            }} className="sidebar-container">
+            }} className={`sidebar-container ${isSidebarOpen ? 'mobile-open' : ''}`}>
               <Sidebar
                 user={user}
                 onLogout={handleLogout}

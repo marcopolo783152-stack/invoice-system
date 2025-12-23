@@ -61,6 +61,20 @@
     display: none;
 }
 
+.label {
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    opacity: 1;
+    visibility: visible;
+}
+
+.collapsed .label {
+    opacity: 0;
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
 @media (max-width: 1024px) {
     .sidebar {
         width: 300px;
@@ -70,6 +84,13 @@
     .collapsed {
         width: 300px;
         /* Reset on mobile */
+    }
+
+    .collapsed .label {
+        opacity: 1;
+        visibility: visible;
+        width: auto;
+        height: auto;
     }
 
     .mobileClose {

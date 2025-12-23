@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
@@ -35,18 +35,24 @@ export default function Sidebar({
 
     const isRecycleBin = pathname === '/invoices' && searchParams?.get('view') === 'bin';
 
-    // If we are in recycle bin, "Invoices" link shouldn't be active? 
-    // Usually "Invoices" is parent. But let's separate them visually if the user wants them as separate items.
-    // If view=bin, Invoices is technically active too properly. But maybe we want to highlight Bin.
-
-
+    const navItems = [
+        { label: 'Dashboard', href: '/', icon: LayoutDashboard, exact: true },
+        { label: 'Invoices', href: '/invoices', icon: FileText, activeCondition: pathname === '/invoices' && !isRecycleBin },
+        { label: 'New Invoice', href: '/invoices/new', icon: PlusCircle },
+        { label: 'Inventory DB', href: '/inventory', icon: Package },
+        { label: 'Address Book', icon: Users, type: 'button' as const, onClick: () => setShowAddressBook(true) },
+        { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: () => setShowExportPreview(true) },
+        { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
+        { label: 'Settings', href: '/settings', icon: Settings },
+        { label: 'Audit Log', href: '/audit-log', icon: History }
+    ];
 
     return (
         <div className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}>
             <div className={styles.logo}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <Package className={styles.logoIcon} size={28} />
-                    {!isCollapsed && <span>Marco Polo</span>}
+                    <TrendingUp className={styles.logoIcon} size={28} />
+                    <span className={styles.label}>Marco Polo</span>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                     {onToggleCollapse && (
@@ -55,7 +61,7 @@ export default function Sidebar({
                             className={styles.collapseToggle}
                             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
                         >
-                            {isCollapsed ? <ChevronRight size={20} /> : <Menu size={20} />}
+                            {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
                         </button>
                     )}
                     {onClose && (
@@ -70,74 +76,52 @@ export default function Sidebar({
             </div>
 
             <nav className={styles.nav}>
-                <Link href="/" className={`${styles.navItem} ${pathname === '/' ? styles.active : ''}`} title="Dashboard">
-                    <LayoutDashboard size={20} />
-                    {!isCollapsed && <span>Dashboard</span>}
-                </Link>
+                {navItems.map((item) => {
+                    const itemIsActive = item.activeCondition !== undefined
+                        ? item.activeCondition
+                        : isActive(item.href || '', item.exact);
 
-                <Link href="/invoices" className={`${styles.navItem} ${pathname === '/invoices' && !isRecycleBin ? styles.active : ''}`} title="Invoices">
-                    <FileText size={20} />
-                    {!isCollapsed && <span>Invoices</span>}
-                </Link>
-
-                <Link href="/invoices/new" className={`${styles.navItem} ${pathname === '/invoices/new' ? styles.active : ''}`} title="New Invoice">
-                    <PlusCircle size={20} />
-                    {!isCollapsed && <span>New Invoice</span>}
-                </Link>
-
-                <Link href="/inventory" className={`${styles.navItem} ${pathname.startsWith('/inventory') ? styles.active : ''}`} title="Inventory DB">
-                    <Package size={20} />
-                    {!isCollapsed && <span>Inventory DB</span>}
-                </Link>
-
-                <button
-                    onClick={() => setShowAddressBook(true)}
-                    className={styles.navItem}
-                    style={{ border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', width: '100%', fontSize: 15, fontFamily: 'inherit' }}
-                    title="Address Book"
-                >
-                    <Users size={20} />
-                    {!isCollapsed && <span>Address Book</span>}
-                </button>
-
-                <button
-                    onClick={() => setShowExportPreview(true)}
-                    className={styles.navItem}
-                    style={{ border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', width: '100%', fontSize: 15, fontFamily: 'inherit' }}
-                    title="Export PDFs"
-                >
-                    <FileDown size={20} />
-                    {!isCollapsed && <span>Export PDFs</span>}
-                </button>
-
-                <Link href="/invoices?view=bin" className={`${styles.navItem} ${isRecycleBin ? styles.active : ''}`} title="Recycle Bin">
-                    <Trash2 size={20} />
-                    {!isCollapsed && <span>Recycle Bin</span>}
-                </Link>
-
-                <Link href="/settings" className={`${styles.navItem} ${pathname.startsWith('/settings') ? styles.active : ''}`} title="Settings">
-                    <Settings size={20} />
-                    {!isCollapsed && <span>Settings</span>}
-                </Link>
-
-                <Link href="/audit-log" className={`${styles.navItem} ${pathname.startsWith('/audit-log') ? styles.active : ''}`} title="Audit Log">
-                    <History size={20} />
-                    {!isCollapsed && <span>Audit Log</span>}
-                </Link>
+                    if (item.type === 'button') {
+                        return (
+                            <button
+                                key={item.label}
+                                onClick={item.onClick}
+                                className={styles.navItem}
+                                style={{ border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', width: '100%', fontSize: 15, fontFamily: 'inherit' }}
+                                title={isCollapsed ? item.label : undefined}
+                            >
+                                <item.icon size={22} />
+                                <span className={styles.label}>{item.label}</span>
+                            </button>
+                        );
+                    }
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href || ''}
+                            className={`${styles.navItem} ${itemIsActive ? styles.active : ''}`}
+                            onClick={onClose}
+                            title={isCollapsed ? item.label : undefined}
+                        >
+                            <item.icon size={22} />
+                            <span className={styles.label}>{item.label}</span>
+                        </Link>
+                    );
+                })}
             </nav>
 
             <div className={styles.footer}>
-                <div className={styles.user}>
-                    <div className={styles.avatar}>
-                        {user?.name?.[0] || user?.username?.[0] || 'U'}
-                    </div>
-                    {!isCollapsed && (
-                        <div className={styles.userInfo}>
-                            <span className={styles.userName}>{user?.fullName || 'User'}</span>
-                            <span className={styles.userRole}>{user?.role || 'Staff'}</span>
+                {user && (
+                    <div className={styles.user}>
+                        <div className={styles.avatar}>
+                            {user.fullName?.[0] || user.username?.[0] || 'U'}
                         </div>
-                    )}
-                </div>
+                        <div className={`${styles.userInfo} ${styles.label}`}>
+                            <span className={styles.userName}>{user.fullName}</span>
+                            <span className={styles.userRole}>{user.role}</span>
+                        </div>
+                    </div>
+                )}
                 <button
                     onClick={onLogout}
                     className={styles.navItem}
@@ -145,9 +129,10 @@ export default function Sidebar({
                     title="Logout"
                 >
                     <LogOut size={20} />
-                    {!isCollapsed && <span>Logout</span>}
+                    <span className={styles.label}>Logout</span>
                 </button>
             </div>
+
             <AddressBookModal
                 isOpen={showAddressBook}
                 onClose={() => setShowAddressBook(false)}
