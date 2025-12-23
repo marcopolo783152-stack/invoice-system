@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
+import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
+import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
+import { requestSecurityConfirmation } from '@/lib/email-service';
 import Link from 'next/link';
-import { Search, Plus, FileText, Download, Trash2 } from 'lucide-react';
+import { Search, Plus, FileText, Download, Trash2, Users, FileDown } from 'lucide-react';
 
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
@@ -13,6 +15,9 @@ export default function InvoicesPage() {
     const [typeFilter, setTypeFilter] = useState<'ALL' | 'INVOICE' | 'CONSIGNMENT'>('ALL');
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     const [loading, setLoading] = useState(true);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
 
     useEffect(() => {
         async function loadData() {
@@ -60,6 +65,66 @@ export default function InvoicesPage() {
         return { bg: '#eff6ff', text: '#3b82f6', label: 'Invoice' };
     };
 
+    const handleExportAddressBook = () => {
+        const csv = exportAddressBook();
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'address-book.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportAllPDFs = async () => {
+        if (filteredInvoices.length === 0) return alert('No invoices to export');
+        if (!confirm(`Export ${filteredInvoices.length} invoices as PDF? This may take a few moments.`)) return;
+
+        const confirmed = await requestSecurityConfirmation('Export All', `Exporting ${filteredInvoices.length} invoices`);
+        if (!confirmed) return;
+
+        setIsExporting(true);
+        try {
+            await exportInvoicesAsPDFs(filteredInvoices, setExportProgress);
+            alert('Export complete!');
+        } catch (e) {
+            alert('Export failed');
+            console.error(e);
+        } finally {
+            setIsExporting(false);
+            setExportProgress(null);
+        }
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedIds(filteredInvoices.map(inv => inv.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleToggleSelect = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Are you sure you want to delete ${selectedIds.length} invoices?`)) return;
+
+        const key = prompt('Enter security key to delete:');
+        if (key !== 'Marcopolo$') return alert('Incorrect security key');
+
+        await deleteMultipleInvoices(selectedIds);
+        const data = await getAllInvoices();
+        setInvoices(data);
+        setSelectedIds([]);
+    };
+
     return (
         <div style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
             <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -67,28 +132,67 @@ export default function InvoicesPage() {
                     <h1 style={{ fontSize: 32, fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>Invoices</h1>
                     <p style={{ color: '#666' }}>Manage and view all your invoices</p>
                 </div>
-                <Link
-                    href="/invoices/new"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                        padding: '12px 24px',
-                        borderRadius: 12,
-                        textDecoration: 'none',
-                        fontWeight: 600,
-                        boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)'
-                    }}
-                >
-                    <Plus size={20} />
-                    New Invoice
-                </Link>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                        onClick={handleExportAddressBook}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer'
+                        }}
+                    >
+                        <Users size={20} /> Address Book
+                    </button>
+                    <button
+                        onClick={handleExportAllPDFs}
+                        disabled={isExporting}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
+                            opacity: isExporting ? 0.7 : 1
+                        }}
+                    >
+                        <FileDown size={20} /> {isExporting ? 'Exporting...' : 'Export PDFs'}
+                    </button>
+                    <Link
+                        href="/invoices/new"
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white', padding: '12px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 600,
+                            boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)'
+                        }}
+                    >
+                        <Plus size={20} /> New Invoice
+                    </Link>
+                </div>
             </header>
 
+            {isExporting && exportProgress && (
+                <div style={{ marginBottom: 20, padding: 16, background: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd', color: '#0369a1' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span>{exportProgress.status}</span>
+                        <span>{Math.round(exportProgress.percentage)}%</span>
+                    </div>
+                    <div style={{ height: 6, background: '#e0f2fe', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${exportProgress.percentage}%`, background: '#0284c7', transition: 'width 0.3s' }} />
+                    </div>
+                </div>
+            )}
+
             {/* Controls Bar */}
-            <div style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+                {selectedIds.length > 0 && (
+                    <button
+                        onClick={handleDeleteSelected}
+                        style={{
+                            padding: '12px 16px', borderRadius: 12, background: '#fee2e2', color: '#ef4444', border: 'none', fontWeight: 600, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 8
+                        }}
+                    >
+                        <Trash2 size={18} /> Delete ({selectedIds.length})
+                    </button>
+                )}
+
                 {/* Search */}
                 <div style={{ position: 'relative', flex: 1, minWidth: 300 }}>
                     <Search size={20} color="#9ca3af" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
@@ -114,13 +218,7 @@ export default function InvoicesPage() {
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value as any)}
                     style={{
-                        padding: '12px 16px',
-                        borderRadius: 12,
-                        border: '1px solid #e5e7eb',
-                        fontSize: 14,
-                        outline: 'none',
-                        cursor: 'pointer',
-                        background: 'white'
+                        padding: '12px 16px', borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 14, outline: 'none', cursor: 'pointer', background: 'white'
                     }}
                 >
                     <option value="ALL">All Types</option>
@@ -132,13 +230,7 @@ export default function InvoicesPage() {
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as any)}
                     style={{
-                        padding: '12px 16px',
-                        borderRadius: 12,
-                        border: '1px solid #e5e7eb',
-                        fontSize: 14,
-                        outline: 'none',
-                        cursor: 'pointer',
-                        background: 'white'
+                        padding: '12px 16px', borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 14, outline: 'none', cursor: 'pointer', background: 'white'
                     }}
                 >
                     <option value="desc">Newest First</option>
@@ -151,6 +243,14 @@ export default function InvoicesPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ borderBottom: '1px solid #eee', textAlign: 'left', background: '#f9fafb' }}>
+                            <th style={{ padding: '16px 24px', width: 40 }}>
+                                <input
+                                    type="checkbox"
+                                    onChange={handleSelectAll}
+                                    checked={filteredInvoices.length > 0 && selectedIds.length === filteredInvoices.length}
+                                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                />
+                            </th>
                             <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice #</th>
                             <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
                             <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Customer</th>
@@ -163,8 +263,17 @@ export default function InvoicesPage() {
                     <tbody>
                         {filteredInvoices.map((inv) => {
                             const status = getStatusColor(inv);
+                            const isSelected = selectedIds.includes(inv.id);
                             return (
-                                <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s' }} className="hover:bg-gray-50">
+                                <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s', background: isSelected ? '#f0f9ff' : 'transparent' }} className="hover:bg-gray-50">
+                                    <td style={{ padding: '20px 24px' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => handleToggleSelect(inv.id)}
+                                            style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                        />
+                                    </td>
                                     <td style={{ padding: '20px 24px', fontWeight: 600, color: '#1a1f3c' }}>
                                         <Link href={`/invoices/view?id=${inv.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
@@ -203,7 +312,7 @@ export default function InvoicesPage() {
                         })}
                         {filteredInvoices.length === 0 && (
                             <tr>
-                                <td colSpan={7} style={{ padding: 60, textAlign: 'center', color: '#9ca3af' }}>
+                                <td colSpan={8} style={{ padding: 60, textAlign: 'center', color: '#9ca3af' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
                                         <div style={{ padding: 20, background: '#f3f4f6', borderRadius: '50%' }}>
                                             <Search size={32} color="#9ca3af" />
