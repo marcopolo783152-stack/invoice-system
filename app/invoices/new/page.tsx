@@ -137,6 +137,15 @@ function InvoicePageContent() {
     // Save users to localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('mp-invoice-users', JSON.stringify(users));
+
+      // Update currentUser if their details changed
+      if (currentUser) {
+        const updatedUser = users.find(u => u.username === currentUser.username);
+        if (updatedUser) {
+          setCurrentUser(updatedUser);
+          localStorage.setItem('mp-invoice-user', JSON.stringify(updatedUser));
+        }
+      }
     }
   }, [users]);
 
@@ -316,9 +325,16 @@ function InvoicePageContent() {
           <div>
             <h1>Rug Business Invoice System</h1>
             <p>Professional invoicing for Web, Android, and Windows</p>
-            <div style={{ fontSize: 14, marginTop: 4 }}>
-              <b>Logged in as:</b> {currentUser?.fullName || currentUser?.username || 'Unknown'} ({currentUser?.role || 'Unknown'})
-              <span style={{ marginLeft: 16 }}><b>Admin:</b> admin@marcopolo.com</span>
+            <div style={{ fontSize: 14, marginTop: 4, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span><b>Logged in as:</b> {currentUser?.fullName} ({currentUser?.role})</span>
+              {currentUser?.role === 'admin' && (
+                <button
+                  onClick={() => setShowSettings(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', color: '#4f46e5', fontSize: 14, padding: 0 }}
+                >
+                  ⚙️ Settings (Manage Users)
+                </button>
+              )}
             </div>
           </div>
           <div className={styles.headerActions}>
@@ -350,6 +366,23 @@ function InvoicePageContent() {
               users={users}
               key={formInitialData ? 'edit-mode' : 'create-mode'}
             />
+          </div>
+        )}
+
+        {/* User Management Modal */}
+        {showSettings && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
+          }}>
+            <div style={{ background: 'white', padding: 20, borderRadius: 8, maxWidth: 600, width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <UserManagement
+                users={users}
+                setUsers={setUsers}
+                currentUser={currentUser}
+                onClose={() => setShowSettings(false)}
+              />
+            </div>
           </div>
         )}
 

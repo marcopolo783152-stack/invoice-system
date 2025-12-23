@@ -92,6 +92,8 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [filterTab, setFilterTab] = useState<'ALL' | 'INVOICE' | 'CONSIGNMENT'>('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Rug Return Modal State
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -150,7 +152,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   useEffect(() => {
     // Load all invoices on mount (async)
     getAllInvoices().then(invoices => {
-      setResults(invoices.sort((a, b) => 
+      setResults(invoices.sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       ));
     });
@@ -160,7 +162,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     setSearchQuery(query);
     setCurrentPage(1); // Reset to first page on new search
     const invoices = await searchInvoices(query);
-    setResults(invoices.sort((a, b) => 
+    setResults(invoices.sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     ));
   };
@@ -193,7 +195,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   };
 
   const handleToggleSelect = (id: string) => {
-    setSelectedIds(prev => 
+    setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
     );
   };
@@ -208,7 +210,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
 
   const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) return;
-    
+
     if (!confirm(`Delete ${selectedIds.length} selected invoice(s)? This cannot be undone.`)) return;
 
     // Require security key before bulk deletion
@@ -267,11 +269,32 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     return `${mm}/${dd}/${yyyy}`;
   };
 
-  // Filter results by tab
+  // Filter results by tab and date
   const filteredResults = results.filter(inv => {
-    if (filterTab === 'ALL') return true;
-    if (filterTab === 'INVOICE') return (inv.data.documentType || inv.documentType) !== 'CONSIGNMENT';
-    if (filterTab === 'CONSIGNMENT') return (inv.data.documentType || inv.documentType) === 'CONSIGNMENT';
+    // 1. Tab Filter
+    let matchesTab = true;
+    if (filterTab === 'INVOICE') matchesTab = (inv.data.documentType || inv.documentType) !== 'CONSIGNMENT';
+    if (filterTab === 'CONSIGNMENT') matchesTab = (inv.data.documentType || inv.documentType) === 'CONSIGNMENT';
+    if (!matchesTab) return false;
+
+    // 2. Date Range Filter
+    if (startDate || endDate) {
+      const invDate = new Date(inv.data.date); // Use the user-entered invoice date
+      if (startDate) {
+        const start = new Date(startDate);
+        if (invDate < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        // Set end date to end of day? Or just compare dates. 
+        // Invoice date is typically YYYY-MM-DD (local). 
+        // New Date('YYYY-MM-DD') is UTC. 
+        // Let's compare string values if possible or just standardize.
+        // inv.data.date is 'YYYY-MM-DD'.
+        if (inv.data.date > endDate) return false;
+      }
+    }
+
     return true;
   });
 
@@ -318,68 +341,95 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
     <div className={styles.container}>
       <div className={styles.header}>
         <h2>Search Invoices</h2>
-        <div style={{ marginBottom: 8 }}>
-          <button onClick={handleShowAddressBookPreview} className={styles.exportBtn} style={{ marginRight: 8 }}>
+        <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f3f4f6', padding: '4px 8px', borderRadius: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>📅 Date Range:</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className={styles.dateInput}
+              style={{ border: '1px solid #ccc', borderRadius: 4, padding: '2px 6px' }}
+            />
+            <span style={{ fontSize: 13 }}>to</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className={styles.dateInput}
+              style={{ border: '1px solid #ccc', borderRadius: 4, padding: '2px 6px' }}
+            />
+            {(startDate || endDate) && (
+              <button
+                onClick={() => { setStartDate(''); setEndDate(''); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#dc2626' }}
+                title="Clear date filter"
+              >
+                ✕ Clear
+              </button>
+            )}
+          </div>
+          <button onClick={handleShowAddressBookPreview} className={styles.exportBtn}>
             📤 Address Book (Preview & Download)
           </button>
         </div>
-              {showAddressBookPreview && (
-                <div className={styles.modalOverlay}>
-                  <div className={styles.modalContent}>
-                    <h3>Address Book Preview</h3>
-                    <div className={styles.addressBookTableWrapper}>
-                      <table className={styles.addressBookTable}>
-                        <thead>
-                          <tr>
-                            {getFilteredAddressBookRows().headers.map((header, idx) => (
-                              <th key={idx}>{header}</th>
-                            ))}
-                            <th>Remove</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {getFilteredAddressBookRows().rows.map((row, idx) => (
-                            <tr key={idx}>
-                              {row.map((cell, cidx) => (
-                                <td key={cidx}>{cell}</td>
-                              ))}
-                              <td>
-                                <button className={styles.removeBtn} onClick={() => setExcludedAddressRows([...excludedAddressRows, idx])}>Remove</button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
-                      <button className={styles.exportBtn} onClick={handleDownloadAddressBook}>Download CSV</button>
-                      <button className={styles.closeBtn} onClick={() => { setShowAddressBookPreview(false); setExcludedAddressRows([]); }}>Close</button>
-                    </div>
-                  </div>
-                </div>
-              )}
+        {showAddressBookPreview && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <h3>Address Book Preview</h3>
+              <div className={styles.addressBookTableWrapper}>
+                <table className={styles.addressBookTable}>
+                  <thead>
+                    <tr>
+                      {getFilteredAddressBookRows().headers.map((header, idx) => (
+                        <th key={idx}>{header}</th>
+                      ))}
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getFilteredAddressBookRows().rows.map((row, idx) => (
+                      <tr key={idx}>
+                        {row.map((cell, cidx) => (
+                          <td key={cidx}>{cell}</td>
+                        ))}
+                        <td>
+                          <button className={styles.removeBtn} onClick={() => setExcludedAddressRows([...excludedAddressRows, idx])}>Remove</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
+                <button className={styles.exportBtn} onClick={handleDownloadAddressBook}>Download CSV</button>
+                <button className={styles.closeBtn} onClick={() => { setShowAddressBookPreview(false); setExcludedAddressRows([]); }}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className={styles.filterTabs} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <button onClick={() => setFilterTab('ALL')} className={filterTab === 'ALL' ? styles.activeTab : ''}>All</button>
           <button onClick={() => setFilterTab('INVOICE')} className={filterTab === 'INVOICE' ? styles.activeTab : ''}>Invoices</button>
           <button onClick={() => setFilterTab('CONSIGNMENT')} className={filterTab === 'CONSIGNMENT' ? styles.activeTab : ''}>Consignments</button>
         </div>
         <div className={styles.headerActions}>
-          <button 
-            onClick={handleSelectAll} 
+          <button
+            onClick={handleSelectAll}
             className={styles.selectAllBtn}
             disabled={results.length === 0}
           >
             {selectedIds.length === results.length && results.length > 0 ? '☐' : '☑'} Select All
           </button>
-          <button 
-            onClick={handleDeleteSelected} 
+          <button
+            onClick={handleDeleteSelected}
             className={styles.deleteSelectedBtn}
             disabled={selectedIds.length === 0}
           >
             🗑️ Delete Selected ({selectedIds.length})
           </button>
-          <button 
-            onClick={handleExportAll} 
+          <button
+            onClick={handleExportAll}
             className={styles.exportBtn}
             disabled={isExporting || results.length === 0}
           >
@@ -401,8 +451,8 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
             <span>{exportProgress.percentage}%</span>
           </div>
           <div className={styles.progressTrack}>
-            <div 
-              className={styles.progressFill} 
+            <div
+              className={styles.progressFill}
               style={{ width: `${exportProgress.percentage}%` }}
             />
           </div>
@@ -422,22 +472,22 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
           {filteredResults.length} record{filteredResults.length !== 1 ? 's' : ''} found
         </span>
       </div>
-{/* Pagination Controls */}
+      {/* Pagination Controls */}
       {filteredResults.length > 0 && (
         <div className={styles.paginationTop}>
           <div className={styles.pageInfo}>
-            Page {currentPage} of {Math.ceil(filteredResults.length / itemsPerPage)} 
+            Page {currentPage} of {Math.ceil(filteredResults.length / itemsPerPage)}
             {' '}• Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredResults.length)}-{Math.min(currentPage * itemsPerPage, filteredResults.length)} of {filteredResults.length}
           </div>
           <div className={styles.paginationControls}>
-            <button 
+            <button
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
               className={styles.pageBtn}
             >
               ⏮️ First
             </button>
-            <button 
+            <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
               className={styles.pageBtn}
@@ -445,14 +495,14 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
               ◀️ Previous
             </button>
             <span className={styles.pageNumber}>Page {currentPage}</span>
-            <button 
+            <button
               onClick={() => setCurrentPage(p => Math.min(Math.ceil(results.length / itemsPerPage), p + 1))}
               disabled={currentPage >= Math.ceil(results.length / itemsPerPage)}
               className={styles.pageBtn}
             >
               Next ▶️
             </button>
-            <button 
+            <button
               onClick={() => setCurrentPage(Math.ceil(results.length / itemsPerPage))}
               disabled={currentPage >= Math.ceil(results.length / itemsPerPage)}
               className={styles.pageBtn}
@@ -460,8 +510,8 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
               Last ⏭️
             </button>
           </div>
-          <select 
-            value={itemsPerPage} 
+          <select
+            value={itemsPerPage}
             onChange={(e) => {
               setItemsPerPage(Number(e.target.value));
               setCurrentPage(1);
@@ -506,78 +556,78 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                       }}
                       className={styles.checkbox}
                     />
-                    <div 
+                    <div
                       className={styles.itemContent}
                       onClick={() => handleViewInvoice(invoice)}
                     >
-                    <div className={styles.resultHeader}>
-                      <span className={styles.invoiceNumber}>
-                        {invoice.data.invoiceNumber}
-                      </span>
-                      <span className={styles.invoiceDate}>
-                        {invoice.data.date}
-                      </span>
-                      {(invoice.data.documentType === 'CONSIGNMENT' || invoice.documentType === 'CONSIGNMENT') && (
-                        <span className={styles.consignBadge}>Consignment</span>
-                      )}
-                      {invoice.data.returned && (
-                        <span className={styles.returnedBadge}>Returned</span>
-                      )}
-                      {/* View Returned Receipt button */}
-                      {invoice.data.items && invoice.data.items.some(i => i.returned) && (
-                        <button
-                          className={styles.receiptBtn}
-                          style={{ marginLeft: 8, fontSize: 12, padding: '2px 8px' }}
-                          title="View Returned Receipt"
-                          onClick={e => {
-                            e.stopPropagation();
-                            // Prepare receipt data for this invoice
-                            const returnedItems = invoice.data.items.filter(i => i.returned);
-                            // Always open in new tab for print-friendly view
-                            // Always include invoiceNumber and returnedItems for print
-                            const printData = {
-                              invoiceNumber: invoice.data.invoiceNumber,
-                              date: invoice.data.date,
-                              soldTo: invoice.data.soldTo,
-                              servedBy: invoice.data.servedBy,
-                              returnedItems,
-                              returnNote: invoice.data.returnNote || 'Returned by customer',
-                            };
-                            const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(printData))}`;
-                            window.open(url, '_blank', 'noopener');
-                          }}
-                        >
-                          View Returned Receipt
-                        </button>
-                      )}
-                    </div>
-                    <div className={styles.customerName}>
-                      {invoice.data.soldTo.name}
-                      {(invoice.data.documentType === 'CONSIGNMENT' || invoice.documentType === 'CONSIGNMENT') && (
-                        <span className={styles.givenTo}>
-                          &nbsp;| <b>Given To:</b> {invoice.data.soldTo.name}
+                      <div className={styles.resultHeader}>
+                        <span className={styles.invoiceNumber}>
+                          {invoice.data.invoiceNumber}
                         </span>
-                      )}
-                    </div>
-                    <div className={styles.resultDetails}>
-                      {invoice.data.soldTo.phone && (
-                        <span>📞 {invoice.data.soldTo.phone}</span>
-                      )}
-                      {invoice.data.soldTo.address && (
-                        <span>📍 {invoice.data.soldTo.address}</span>
-                      )}
-                    </div>
-                    <div className={styles.resultFooter}>
-                      <span className={styles.total}>
-                        {formatCurrency(calculations.totalDue)}
-                      </span>
-                      <span className={styles.itemCount}>
-                        {invoice.data.items.length} item{invoice.data.items.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <div className={styles.timestamp}>
-                      Created: {formatDate(invoice.createdAt)}
-                    </div>
+                        <span className={styles.invoiceDate}>
+                          {invoice.data.date}
+                        </span>
+                        {(invoice.data.documentType === 'CONSIGNMENT' || invoice.documentType === 'CONSIGNMENT') && (
+                          <span className={styles.consignBadge}>Consignment</span>
+                        )}
+                        {invoice.data.returned && (
+                          <span className={styles.returnedBadge}>Returned</span>
+                        )}
+                        {/* View Returned Receipt button */}
+                        {invoice.data.items && invoice.data.items.some(i => i.returned) && (
+                          <button
+                            className={styles.receiptBtn}
+                            style={{ marginLeft: 8, fontSize: 12, padding: '2px 8px' }}
+                            title="View Returned Receipt"
+                            onClick={e => {
+                              e.stopPropagation();
+                              // Prepare receipt data for this invoice
+                              const returnedItems = invoice.data.items.filter(i => i.returned);
+                              // Always open in new tab for print-friendly view
+                              // Always include invoiceNumber and returnedItems for print
+                              const printData = {
+                                invoiceNumber: invoice.data.invoiceNumber,
+                                date: invoice.data.date,
+                                soldTo: invoice.data.soldTo,
+                                servedBy: invoice.data.servedBy,
+                                returnedItems,
+                                returnNote: invoice.data.returnNote || 'Returned by customer',
+                              };
+                              const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(printData))}`;
+                              window.open(url, '_blank', 'noopener');
+                            }}
+                          >
+                            View Returned Receipt
+                          </button>
+                        )}
+                      </div>
+                      <div className={styles.customerName}>
+                        {invoice.data.soldTo.name}
+                        {(invoice.data.documentType === 'CONSIGNMENT' || invoice.documentType === 'CONSIGNMENT') && (
+                          <span className={styles.givenTo}>
+                            &nbsp;| <b>Given To:</b> {invoice.data.soldTo.name}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.resultDetails}>
+                        {invoice.data.soldTo.phone && (
+                          <span>📞 {invoice.data.soldTo.phone}</span>
+                        )}
+                        {invoice.data.soldTo.address && (
+                          <span>📍 {invoice.data.soldTo.address}</span>
+                        )}
+                      </div>
+                      <div className={styles.resultFooter}>
+                        <span className={styles.total}>
+                          {formatCurrency(calculations.totalDue)}
+                        </span>
+                        <span className={styles.itemCount}>
+                          {invoice.data.items.length} item{invoice.data.items.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className={styles.timestamp}>
+                        Created: {formatDate(invoice.createdAt)}
+                      </div>
                     </div>
                   </div>
                 );
@@ -618,94 +668,94 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                   ✏️ Edit
                 </button>
               </div>
-            {/* Rug Return Modal (uses portal for iPad/mobile compatibility) */}
-            {showReturnModal && selectedInvoice && typeof window !== 'undefined' && createPortal(
-              <div className={styles.modalOverlay} style={{ zIndex: 10000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
-                <div className={styles.modalContent} style={{ maxWidth: 400, margin: '10vh auto' }}>
-                  <h3>Return Invoice #{selectedInvoice.data.invoiceNumber}</h3>
-                  <p>Customer: <b>{selectedInvoice.data.soldTo.name}</b></p>
-                  <div>
-                    <b>Select items to return:</b>
-                    <ul className={styles.returnItemList}>
-                      {selectedInvoice.data.items.map(item => (
-                        <li key={item.id}>
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={returnItems.includes(item.id)}
-                              onChange={e => {
-                                if (e.target.checked) {
-                                  setReturnItems([...returnItems, item.id]);
-                                } else {
-                                  setReturnItems(returnItems.filter(id => id !== item.id));
-                                }
-                              }}
-                              disabled={item.returned}
-                            />
-                            <span style={{ textDecoration: item.returned ? 'line-through' : undefined }}>
-                              {item.sku} - {item.description} {item.returned && '(Already Returned)'}
-                            </span>
-                          </label>
-                        </li>
-                      ))}
-                    </ul>
+              {/* Rug Return Modal (uses portal for iPad/mobile compatibility) */}
+              {showReturnModal && selectedInvoice && typeof window !== 'undefined' && createPortal(
+                <div className={styles.modalOverlay} style={{ zIndex: 10000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
+                  <div className={styles.modalContent} style={{ maxWidth: 400, margin: '10vh auto' }}>
+                    <h3>Return Invoice #{selectedInvoice.data.invoiceNumber}</h3>
+                    <p>Customer: <b>{selectedInvoice.data.soldTo.name}</b></p>
+                    <div>
+                      <b>Select items to return:</b>
+                      <ul className={styles.returnItemList}>
+                        {selectedInvoice.data.items.map(item => (
+                          <li key={item.id}>
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={returnItems.includes(item.id)}
+                                onChange={e => {
+                                  if (e.target.checked) {
+                                    setReturnItems([...returnItems, item.id]);
+                                  } else {
+                                    setReturnItems(returnItems.filter(id => id !== item.id));
+                                  }
+                                }}
+                                disabled={item.returned}
+                              />
+                              <span style={{ textDecoration: item.returned ? 'line-through' : undefined }}>
+                                {item.sku} - {item.description} {item.returned && '(Already Returned)'}
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <textarea
+                      placeholder="Return note (optional)"
+                      value={returnNote}
+                      onChange={e => setReturnNote(e.target.value)}
+                      rows={3}
+                      className={styles.textarea}
+                    />
+                    <div className={styles.modalActions}>
+                      <button onClick={handleReturnInvoice} disabled={returnProcessing} className={styles.returnBtn}>
+                        {returnProcessing ? 'Processing...' : 'Confirm Return'}
+                      </button>
+                      <button onClick={() => setShowReturnModal(false)} className={styles.cancelBtn}>
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                  <textarea
-                    placeholder="Return note (optional)"
-                    value={returnNote}
-                    onChange={e => setReturnNote(e.target.value)}
-                    rows={3}
-                    className={styles.textarea}
-                  />
-                  <div className={styles.modalActions}>
-                    <button onClick={handleReturnInvoice} disabled={returnProcessing} className={styles.returnBtn}>
-                      {returnProcessing ? 'Processing...' : 'Confirm Return'}
-                    </button>
-                    <button onClick={() => setShowReturnModal(false)} className={styles.cancelBtn}>
-                      Cancel
-                    </button>
+                </div>,
+                document.body
+              )}
+              {/* Return Receipt Modal (uses portal for iPad/mobile compatibility) */}
+              {showReturnReceipt && returnedReceiptData && typeof window !== 'undefined' && createPortal(
+                <div className={styles.modalOverlay} style={{ zIndex: 10000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
+                  <div className={styles.modalContent} style={{ maxWidth: 520, margin: '5vh auto', background: '#fff' }}>
+                    <ReturnedReceipt receiptData={returnedReceiptData} />
+                    <div className={styles.modalActions}>
+                      <button onClick={() => setShowReturnReceipt(false)} className={styles.closeBtn}>Close</button>
+                      <button
+                        onClick={() => {
+                          // Always flatten returnedReceiptData for print
+                          let data = returnedReceiptData.data || returnedReceiptData;
+                          const printData = {
+                            invoiceNumber: data.invoiceNumber,
+                            date: data.date,
+                            soldTo: data.soldTo,
+                            servedBy: data.servedBy,
+                            returnedItems: returnedReceiptData.returnedItems || data.returnedItems || [],
+                            returnNote: returnedReceiptData.returnNote || data.returnNote || '',
+                          };
+                          // Store in localStorage for print page fallback (cross-tab)
+                          if (typeof window !== 'undefined') {
+                            try {
+                              localStorage.setItem('mp-invoice-print-data', JSON.stringify(printData));
+                            } catch { }
+                          }
+                          const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(printData))}`;
+                          window.open(url, '_blank', 'noopener');
+                        }}
+                        className={styles.printBtn}
+                      >
+                        Print Receipt
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </div>,
-              document.body
-            )}
-                    {/* Return Receipt Modal (uses portal for iPad/mobile compatibility) */}
-                    {showReturnReceipt && returnedReceiptData && typeof window !== 'undefined' && createPortal(
-                      <div className={styles.modalOverlay} style={{ zIndex: 10000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
-                        <div className={styles.modalContent} style={{ maxWidth: 520, margin: '5vh auto', background: '#fff' }}>
-                          <ReturnedReceipt receiptData={returnedReceiptData} />
-                          <div className={styles.modalActions}>
-                            <button onClick={() => setShowReturnReceipt(false)} className={styles.closeBtn}>Close</button>
-                            <button
-                              onClick={() => {
-                                // Always flatten returnedReceiptData for print
-                                let data = returnedReceiptData.data || returnedReceiptData;
-                                const printData = {
-                                  invoiceNumber: data.invoiceNumber,
-                                  date: data.date,
-                                  soldTo: data.soldTo,
-                                  servedBy: data.servedBy,
-                                  returnedItems: returnedReceiptData.returnedItems || data.returnedItems || [],
-                                  returnNote: returnedReceiptData.returnNote || data.returnNote || '',
-                                };
-                                // Store in localStorage for print page fallback (cross-tab)
-                                if (typeof window !== 'undefined') {
-                                  try {
-                                    localStorage.setItem('mp-invoice-print-data', JSON.stringify(printData));
-                                  } catch {}
-                                }
-                                const url = `/returned-receipt-print?data=${encodeURIComponent(JSON.stringify(printData))}`;
-                                window.open(url, '_blank', 'noopener');
-                              }}
-                              className={styles.printBtn}
-                            >
-                              Print Receipt
-                            </button>
-                          </div>
-                        </div>
-                      </div>,
-                      document.body
-                    )}
+                </div>,
+                document.body
+              )}
             </div>
             <div className={styles.previewContent}>
               <div className={styles.previewSection}>
@@ -715,7 +765,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                 <p><strong>Terms:</strong> {selectedInvoice.data.terms}</p>
                 <p><strong>Mode:</strong> {selectedInvoice.data.mode}</p>
                 {selectedInvoice.data.returned && (
-                  <p className={styles.returnedInfo}><strong>Status:</strong> Returned<br/>{selectedInvoice.data.returnNote && (<span><strong>Note:</strong> {selectedInvoice.data.returnNote}</span>)}</p>
+                  <p className={styles.returnedInfo}><strong>Status:</strong> Returned<br />{selectedInvoice.data.returnNote && (<span><strong>Note:</strong> {selectedInvoice.data.returnNote}</span>)}</p>
                 )}
               </div>
               <div className={styles.previewSection}>
@@ -731,7 +781,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                   <div key={item.id} className={styles.previewItem}>
                     <p><strong>{idx + 1}. {item.sku}</strong> - {item.description}</p>
                     <p className={styles.itemDetails}>
-                      {item.shape === 'round' 
+                      {item.shape === 'round'
                         ? `Round: ${item.widthFeet}'${item.widthInches}" diameter`
                         : `${item.widthFeet}'${item.widthInches}" × ${item.lengthFeet}'${item.lengthInches}"`
                       }

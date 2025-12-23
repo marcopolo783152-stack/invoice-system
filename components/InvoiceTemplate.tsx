@@ -264,10 +264,12 @@ export default function InvoiceTemplate({
                     <td className={styles.totalLabel}>Less Returns:</td>
                     <td className={styles.totalValue}>-{formatCurrency(calculations.returnedAmount)}</td>
                   </tr>
-                  <tr className={styles.totalDueRow} style={{ borderTop: '2px solid #000' }}>
+                  {/* <tr className={styles.totalDueRow} style={{ borderTop: '2px solid #000' }}>
                     <td className={styles.totalLabel}>NET DUE:</td>
                     <td className={styles.totalValue}>{formatCurrency(calculations.netTotalDue)}</td>
-                  </tr>
+                  </tr> */
+                    /* User requested to remove Net Value display */
+                  }
                 </>
               )}
             </tbody>
