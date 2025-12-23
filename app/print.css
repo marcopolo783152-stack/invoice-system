@@ -6,93 +6,48 @@
 /* Print Styles */
 @media print {
 
-	/* 1. Hide everything that shouldn't be printed */
-	.sidebar,
-	.no-print,
-	.header-actions,
-	[class*="Sidebar"],
-	nav,
-	header,
-	footer,
-	button,
-	.screen-only,
-	#invoice-screen-view {
+	/* 1. Hide the entire application wrapper */
+	/* We assume the Next.js app is the first div or specific element, but to be safe we hide all body children */
+	body>* {
 		display: none !important;
 	}
 
-	/* 2. Reset layout containers */
+	/* 2. Show ONLY the print portal root */
+	/* Note: PrintPortal creates this div directly on document.body */
+	body>.print-portal-root {
+		display: block !important;
+		position: absolute !important;
+		left: 0 !important;
+		top: 0 !important;
+		width: 100% !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		background: white !important;
+		z-index: 999999 !important;
+	}
+
+	/* 3. Make sure content inside portal is visible */
+	.print-portal-root * {
+		visibility: visible !important;
+	}
+
+	.print-only-portal {
+		display: block !important;
+	}
+
+	/* 4. Reset Body */
 	html,
 	body {
-		visibility: visible !important;
-		background: #fff !important;
+		background: white !important;
 		margin: 0 !important;
 		padding: 0 !important;
-		width: 100% !important;
-		height: auto !important;
+		height: 100% !important;
 		overflow: visible !important;
-		color: #000 !important;
 	}
 
-	.main-content {
-		margin-left: 0 !important;
-		padding: 0 !important;
-		width: 100% !important;
-		background: #fff !important;
-		display: block !important;
-	}
-
-	/* 3. Show printable content with high priority */
-	.print-portal-root,
-	.print-only-portal,
-	#printable-invoice-content,
-	.print-only-portal *,
-	#printable-invoice-content * {
-		visibility: visible !important;
-		display: block !important;
-		opacity: 1 !important;
-	}
-
-	/* 4. Position printable content to cover page */
-	.print-portal-root,
-	.print-only-portal,
-	#printable-invoice-content {
-		position: absolute !important;
-		left: 0;
-		top: 0;
-		width: 100% !important;
-		background: #fff !important;
-		z-index: 999999 !important;
-		margin: 0 !important;
-		padding: 0 !important;
-	}
-
-	/* 5. Business Templates Adjustments */
-	.invoice-logo,
-	.print-logo {
-		display: block !important;
-		margin: 0 auto 16px auto !important;
-		max-width: 180px !important;
-		max-height: 120px !important;
-		width: auto !important;
-		height: auto !important;
-		object-fit: contain !important;
-	}
-
-	.invoice,
-	.print-receipt-center {
-		width: 190mm !important;
-		min-height: 277mm !important;
-		margin: 0 auto !important;
-		padding: 10mm !important;
-		background: #fff !important;
-		color: #000 !important;
-		box-shadow: none !important;
-		border: none !important;
-	}
-
-	/* Force background colors/images */
-	* {
-		-webkit-print-color-adjust: exact !important;
-		print-color-adjust: exact !important;
+	/* 5. Printable formatting */
+	@page {
+		margin: 0.5in;
+		size: letter portrait;
 	}
 }
