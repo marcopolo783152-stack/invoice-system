@@ -7,7 +7,6 @@ import { ArrowLeft, Printer, FileText, Download } from 'lucide-react';
 import { getInvoiceById, getInvoiceByIdAsync, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
-import PrintPortal from '@/components/PrintPortal';
 import { businessConfig } from '@/config/business';
 import { generatePDF } from '@/lib/pdf-utils';
 
@@ -164,50 +163,42 @@ function InvoiceViewContent() {
                 </div>
             </div>
 
-            {/* Print Portal - Restored */}
-            <PrintPortal>
-                <div className="print-only-portal">
-                    <InvoiceTemplate
-                        data={invoice.data}
-                        calculations={calculations}
-                        businessInfo={businessConfig}
-                    />
-                </div>
-            </PrintPortal>
+            {/* Print Version - Hidden on screen, shown on print */}
+            <div id="printable-invoice-content" style={{ display: 'none' }}>
+                <InvoiceTemplate
+                    data={invoice.data}
+                    calculations={calculations}
+                    businessInfo={businessConfig}
+                />
+            </div>
 
             <style jsx global>{`
                 @media print {
-                    /* Hide the screen view using ID which is high specificity */
-                    #invoice-screen-view {
+                    /* Hide the screen view */
+                    #invoice-screen-view, .no-print {
                         display: none !important;
                     }
                     
-                    /* Reset body to ensure full page printing */
-                    body, html {
-                        visibility: visible !important;
-                        overflow: visible !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        background: white !important;
-                        height: auto !important;
-                    }
-
-                    /* 
-                       Ensure Portal Root is visible. 
-                       Next.js sometimes adds styles to the app root, 
-                       but Portal is a direct child of body so it should be fine.
-                    */
-                    .print-portal-root {
+                    /* Show the hidden print version */
+                    #printable-invoice-content {
                         display: block !important;
                         position: absolute;
                         top: 0;
                         left: 0;
                         width: 100%;
-                        z-index: 9999;
+                        margin: 0;
+                        padding: 0;
+                        background: white;
                     }
 
-                    .print-only-portal {
-                        display: block !important;
+                    /* Important: Reset parent containers to avoid clipping */
+                    html, body {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: white !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        overflow: visible !important;
                     }
                 }
             `}</style>
