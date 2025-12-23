@@ -37,6 +37,11 @@ export default function Sidebar({ user, onLogout }: { user: any, onLogout: () =>
                     <PlusCircle size={20} />
                     <span>New Invoice</span>
                 </Link>
+
+                <Link href="/settings" className={`${styles.navItem} ${isActive('/settings') ? styles.active : ''}`}>
+                    <Settings size={20} />
+                    <span>Settings</span>
+                </Link>
             </nav>
 
             <div className={styles.footer}>
