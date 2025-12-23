@@ -170,60 +170,8 @@ export default function Home() {
   };
 
   const handlePrint = () => {
-    // Print the entire preview section for perfect match
-    const previewSection = document.getElementById('preview-section');
-    if (!previewSection) return;
-    let printContents = previewSection.outerHTML;
-    // Add inline style to logo image for print reliability
-    printContents = printContents.replace(
-      /<img([^>]*class=\"[^\"]*logoImage[^\"]*\"[^>]*)>/,
-      (match: string, attrs: string) => {
-        // Add inline style for max-width and max-height
-        if (attrs.includes('style=')) {
-          return `<img${attrs.replace(/style=\"/, 'style=\"max-width:180px;max-height:120px;width:auto !important;height:auto !important;object-fit:contain; ')}>`;
-        } else {
-          return `<img${attrs} style=\"max-width:180px;max-height:120px;width:auto !important;height:auto !important;object-fit:contain;\">`;
-        }
-      }
-    );
-
-    // Clone all computed styles from the preview section
-    function getAllCSS() {
-      let css = '';
-      // Get all style sheets
-      for (const sheet of Array.from(document.styleSheets)) {
-        try {
-          for (const rule of Array.from(sheet.cssRules || [])) {
-            css += rule.cssText + '\n';
-          }
-        } catch (e) { /* ignore CORS issues */ }
-      }
-      return css;
-    }
-    const printWindow = document.createElement('iframe');
-    printWindow.style.position = 'fixed';
-    printWindow.style.right = '0';
-    printWindow.style.bottom = '0';
-    printWindow.style.width = '0';
-    printWindow.style.height = '0';
-    printWindow.style.border = 'none';
-    document.body.appendChild(printWindow);
-    const doc = printWindow.contentWindow?.document;
-    if (doc) {
-      doc.open();
-      doc.write('<html><head><title>Print Invoice</title>');
-      // Inject all CSS from the main document
-      doc.write(`<style>${getAllCSS()}</style>`);
-      doc.write('</head><body>');
-      doc.write(printContents);
-      doc.write('</body></html>');
-      doc.close();
-      printWindow.contentWindow?.focus();
-      setTimeout(() => {
-        printWindow.contentWindow?.print();
-        setTimeout(() => document.body.removeChild(printWindow), 1000);
-      }, 300);
-    }
+    // Use window.print() so print CSS is applied
+    window.print();
   };
 
   const handleDownloadPDF = async () => {
