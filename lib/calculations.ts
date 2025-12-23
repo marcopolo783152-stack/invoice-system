@@ -66,6 +66,10 @@ export interface InvoiceCalculations {
   subtotalAfterDiscount: number;
   salesTax: number;
   totalDue: number;
+  // Net values (excluding returned items)
+  netSubtotal: number;
+  netTotalDue: number;
+  returnedAmount: number;
 }
 
 /**
@@ -145,13 +149,27 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   // Calculate subtotal
   const subtotal = calculatedItems.reduce((sum, item) => sum + item.amount, 0);
 
+  // Calculate net subtotal (excluding returned items)
+  const netSubtotal = calculatedItems
+    .filter(item => !item.returned)
+    .reduce((sum, item) => sum + item.amount, 0);
+
+  const returnedAmount = subtotal - netSubtotal;
+
   // Calculate discount (only for retail)
   let discount = 0;
   if (isRetail && data.discountPercentage) {
     discount = subtotal * (data.discountPercentage / 100);
   }
 
+  // Net discount (proportional to net subtotal)
+  let netDiscount = 0;
+  if (isRetail && data.discountPercentage) {
+    netDiscount = netSubtotal * (data.discountPercentage / 100);
+  }
+
   const subtotalAfterDiscount = subtotal - discount;
+  const netSubtotalAfterDiscount = netSubtotal - netDiscount;
 
   // Calculate sales tax (only for retail, applied after discount, but not for consignments)
   let salesTax = 0;
@@ -159,8 +177,14 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     salesTax = subtotalAfterDiscount * SALES_TAX_RATE;
   }
 
+  let netSalesTax = 0;
+  if (isRetail && !isConsignment) {
+    netSalesTax = netSubtotalAfterDiscount * SALES_TAX_RATE;
+  }
+
   // Calculate total due
   const totalDue = subtotalAfterDiscount + salesTax;
+  const netTotalDue = netSubtotalAfterDiscount + netSalesTax;
 
   return {
     items: calculatedItems,
@@ -169,6 +193,9 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     subtotalAfterDiscount,
     salesTax,
     totalDue,
+    netSubtotal,
+    netTotalDue,
+    returnedAmount: subtotal - netSubtotal, // This is gross returned amount before tax/discount
   };
 }
 
