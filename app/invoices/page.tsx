@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoices, restoreMultipleInvoices, permanentlyDeleteInvoices } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, Plus, FileText, Download, Trash2, Users, FileDown, RotateCcw, AlertTriangle, Archive } from 'lucide-react';
 
-export default function InvoicesPage() {
+function InvoicesPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
@@ -387,5 +387,13 @@ export default function InvoicesPage() {
                 </table>
             </div>
         </div>
+    );
+}
+
+export default function InvoicesPage() {
+    return (
+        <Suspense fallback={<div style={{ padding: 40, color: '#666' }}>Loading invoices...</div>}>
+            <InvoicesPageContent />
+        </Suspense>
     );
 }

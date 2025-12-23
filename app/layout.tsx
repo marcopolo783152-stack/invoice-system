@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import './print.css';
 import Sidebar from '@/components/Sidebar';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -39,7 +39,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <div style={{ display: 'flex' }}>
-          <Sidebar user={user} onLogout={handleLogout} />
+          <Suspense fallback={<div style={{ width: 280, background: '#1e293b', minHeight: '100vh' }} />}>
+            <Sidebar user={user} onLogout={handleLogout} />
+          </Suspense>
           <div style={{ flex: 1, marginLeft: 280, minHeight: '100vh', background: '#f8fafc' }}>
             {children}
           </div>
