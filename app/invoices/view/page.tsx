@@ -8,7 +8,7 @@ import { getInvoiceById, getInvoiceByIdAsync, SavedInvoice } from '@/lib/invoice
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { businessConfig } from '@/config/business';
-import { generatePDF } from '@/lib/pdf-utils';
+import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
 
 function InvoiceViewContent() {
     const searchParams = useSearchParams();
@@ -33,8 +33,14 @@ function InvoiceViewContent() {
         }
     }, [id]);
 
-    const handlePrint = () => {
-        window.print();
+    const handlePrint = async () => {
+        if (invoiceRef.current && invoice) {
+            try {
+                await openPDFInNewTab(invoiceRef.current, invoice.data.invoiceNumber);
+            } catch (error) {
+                alert('Failed to open PDF for printing. Please try again.');
+            }
+        }
     };
 
     const handleDownloadPDF = async () => {

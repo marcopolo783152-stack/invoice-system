@@ -72,6 +72,63 @@ export async function generatePDF(
 }
 
 /**
+ * Generate and open PDF in new tab
+ */
+export async function openPDFInNewTab(
+  invoiceElement: HTMLElement,
+  invoiceNumber: string
+): Promise<void> {
+  try {
+    // Create canvas from HTML element
+    const canvas = await html2canvas(invoiceElement, {
+      scale: 2, // Higher quality
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      width: invoiceElement.scrollWidth,
+      height: invoiceElement.scrollHeight,
+    });
+
+    // Calculate dimensions for letter size (8.5" x 11")
+    const imgWidth = 8.5; // inches
+    const pageHeight = 11; // inches
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    // Create PDF
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'in',
+      format: 'letter',
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+
+    // Add image to PDF
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    // Add new pages if content exceeds one page
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    // Open PDF in new tab
+    const blobUrl = pdf.output('bloburl');
+    window.open(blobUrl, '_blank');
+
+  } catch (error) {
+    console.error('Error opening PDF:', error);
+    throw new Error('Failed to open PDF. Please try again.');
+  }
+}
+
+/**
  * Alternative: Direct print to PDF using browser
  * This uses the browser's native print-to-PDF capability
  */
