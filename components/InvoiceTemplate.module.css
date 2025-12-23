@@ -175,8 +175,10 @@
 .footer {
   display: flex;
   justify-content: space-between;
-  margin-top: 15px;
+  margin-top: 30px;
   gap: 20px;
+  page-break-inside: avoid;
+  align-items: flex-start;
 }
 
 .notesSection {
