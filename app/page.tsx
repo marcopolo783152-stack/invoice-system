@@ -437,7 +437,8 @@ export default function Home() {
               </div>
             </div>
 
-            <div ref={invoiceRef} className={styles.invoiceContainer}>
+            {/* Print-only wrapper: only this area will be printed */}
+            <div className="print-area" ref={invoiceRef}>
               <InvoiceTemplate
                 data={invoiceData}
                 calculations={calculations}

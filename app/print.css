@@ -1,3 +1,22 @@
+/* Only print the .print-area, hide everything else */
+@media print {
+	body * {
+		visibility: hidden !important;
+	}
+	.print-area, .print-area * {
+		visibility: visible !important;
+	}
+	.print-area {
+		position: absolute !important;
+		left: 0;
+		top: 0;
+		width: 100vw !important;
+		min-height: 100vh !important;
+		background: #fff !important;
+		z-index: 9999;
+		box-shadow: none !important;
+	}
+}
 /* Print-specific logo sizing and layout improvements */
 @media print {
 	.invoice-logo, .print-logo {
