@@ -166,7 +166,7 @@ export default function InvoicesPage() {
                             return (
                                 <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s' }} className="hover:bg-gray-50">
                                     <td style={{ padding: '20px 24px', fontWeight: 600, color: '#1a1f3c' }}>
-                                        <Link href={`/invoices/${inv.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                        <Link href={`/invoices/view?id=${inv.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                                                 <div style={{ padding: 8, background: '#eff6ff', borderRadius: 8, color: '#3b82f6' }}>
                                                     <FileText size={16} />
@@ -193,7 +193,7 @@ export default function InvoicesPage() {
                                     <td style={{ padding: '20px 24px', fontWeight: 700, color: '#1a1f3c' }}>${calculateInvoice(inv.data).totalDue.toLocaleString()}</td>
                                     <td style={{ padding: '20px 24px' }}>
                                         <div style={{ display: 'flex', gap: 8 }}>
-                                            <Link href={`/invoices/${inv.id}`} style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }} title="View Invoice">
+                                            <Link href={`/invoices/view?id=${inv.id}`} style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }} title="View Invoice">
                                                 <FileText size={16} />
                                             </Link>
                                         </div>

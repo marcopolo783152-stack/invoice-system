@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Printer, FileText, Download } from 'lucide-react';
 import { getInvoiceById, SavedInvoice } from '@/lib/invoice-storage';
@@ -11,11 +11,9 @@ import PrintPortal from '@/components/PrintPortal';
 import { businessConfig } from '@/config/business';
 import { generatePDF } from '@/lib/pdf-utils';
 
-export default function InvoiceViewPage({ params }: { params: { id: string } }) {
-    const router = useRouter();
-    // In Next.js App Router, params are resolved asynchronously in some contexts or passed directly.
-    // For client components we might need to unwrap, but here it's prop-passed.
-    const { id } = params;
+function InvoiceViewContent() {
+    const searchParams = useSearchParams();
+    const id = searchParams.get('id');
 
     const [invoice, setInvoice] = useState<SavedInvoice | null>(null);
     const [calculations, setCalculations] = useState<InvoiceCalculations | null>(null);
@@ -29,6 +27,8 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                 setInvoice(data);
                 setCalculations(calculateInvoice(data.data));
             }
+            setLoading(false);
+        } else {
             setLoading(false);
         }
     }, [id]);
@@ -57,7 +57,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                 </Link>
                 <div style={{ textAlign: 'center', marginTop: 40 }}>
                     <h2 style={{ color: '#ef4444' }}>Invoice Not Found</h2>
-                    <p style={{ color: '#666' }}>The invoice with ID {id} could not be found.</p>
+                    <p style={{ color: '#666' }}>The invoice ID could not be found.</p>
                 </div>
             </div>
         );
@@ -170,5 +170,13 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                 </div>
             </PrintPortal>
         </div>
+    );
+}
+
+export default function InvoiceViewPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <InvoiceViewContent />
+        </Suspense>
     );
 }
