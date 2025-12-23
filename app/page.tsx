@@ -299,7 +299,7 @@ export default function Home() {
               🔍 Search Invoices ({invoiceCount})
             </button>
             <button onClick={handleNewInvoice} className={styles.newBtnHeader}>
-              ➕ New Invoice
+              ➕ New Invoice v1.1
             </button>
             {/* Settings Dropdown */}
             <div style={{ position: 'relative', marginLeft: 10 }}>
