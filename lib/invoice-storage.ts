@@ -1,31 +1,62 @@
 /**
+ * Get all deduplicated customers from invoices
+ */
+export async function getCustomers(): Promise<any[]> {
+  const invoices = await getAllInvoices();
+  const customers: Record<string, any> = {};
+
+  invoices.forEach(inv => {
+    const docType = inv.data.documentType || inv.documentType;
+    if (docType === 'INVOICE' || docType === 'CONSIGNMENT') {
+      const soldTo = inv.data.soldTo;
+      const key = `${soldTo.name}|${soldTo.phone}`;
+      if (!customers[key]) {
+        customers[key] = {
+          ...soldTo,
+          id: key,
+          lastInvoiceDate: inv.createdAt
+        };
+      } else if (new Date(inv.createdAt) > new Date(customers[key].lastInvoiceDate)) {
+        customers[key].lastInvoiceDate = inv.createdAt;
+      }
+    }
+  });
+
+  return Object.values(customers).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Export specific customers as CSV
+ */
+export function exportCustomersCSV(customers: any[]): string {
+  let csv = 'Name,Last Name,Address,City,State,Zip Code,Phone Number,Email Address\n';
+  customers.forEach(cust => {
+    let firstName = cust.name;
+    let lastName = '';
+    if (cust.name.includes(' ')) {
+      const parts = cust.name.split(' ');
+      firstName = parts[0];
+      lastName = parts.slice(1).join(' ');
+    }
+    csv += `"${firstName}","${lastName}","${cust.address}","${cust.city}","${cust.state}","${cust.zip}","${cust.phone}","${cust.email || ''}"\n`;
+  });
+  return csv;
+}
+
+/**
  * Export address book as CSV (for Excel)
  * Columns: Name,Last Name,Address,City,State,Zip Code,Phone Number,Email Address
  */
 export function exportAddressBook(): string {
-  // Use cloud invoices if Firebase is configured, else fallback to local
-  let invoices: SavedInvoice[] = [];
-  if (typeof window !== 'undefined' && window.localStorage) {
-    if (isFirebaseConfigured()) {
-      // Synchronous cloud fetch is not possible, so warn user if not up to date
-      console.warn('Address book may not be fully up to date. For latest, use dashboard export after cloud sync.');
-      // Optionally, you could make exportAddressBook async and use getAllInvoices()
-      // For now, fallback to localStorage for compatibility
-      invoices = getAllInvoicesSync();
-    } else {
-      invoices = getAllInvoicesSync();
-    }
-  }
+  // Keeping this for backward compatibility if needed, but we should use getCustomers + exportCustomersCSV
+  let invoices: SavedInvoice[] = getAllInvoicesSync();
   const customers: Record<string, any> = {};
   invoices.forEach(inv => {
-    // Only include invoices or consignments
     const docType = inv.data.documentType || inv.documentType;
     if (docType === 'INVOICE' || docType === 'CONSIGNMENT') {
       const soldTo = inv.data.soldTo;
-      // Use phone+name as unique key
       const key = `${soldTo.name}|${soldTo.phone}`;
       if (!customers[key]) {
-        // Split name into first/last if possible
         let firstName = soldTo.name;
         let lastName = '';
         if (soldTo.name.includes(' ')) {
@@ -46,7 +77,6 @@ export function exportAddressBook(): string {
       }
     }
   });
-  // CSV header
   let csv = 'Name,Last Name,Address,City,State,Zip Code,Phone Number,Email Address\n';
   Object.values(customers).forEach(cust => {
     csv += `"${cust.firstName}","${cust.lastName}","${cust.address}","${cust.city}","${cust.state}","${cust.zip}","${cust.phone}","${cust.email}"\n`;

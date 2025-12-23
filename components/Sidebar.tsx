@@ -7,11 +7,13 @@ import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import { exportInvoicesAsPDFs } from '@/lib/bulk-export';
+import AddressBookModal from './AddressBookModal';
 
 export default function Sidebar({ user, onLogout }: { user: any, onLogout: () => void }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [isExporting, setIsExporting] = useState(false);
+    const [showAddressBook, setShowAddressBook] = useState(false);
 
     // Helper to check active state safely
     const isActive = (path: string, exact = false) => {
@@ -70,7 +72,7 @@ export default function Sidebar({ user, onLogout }: { user: any, onLogout: () =>
                 </Link>
 
                 <button
-                    onClick={() => exportAddressBook()}
+                    onClick={() => setShowAddressBook(true)}
                     className={styles.navItem}
                     style={{ border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', width: '100%', fontSize: 15, fontFamily: 'inherit' }}
                 >
@@ -118,6 +120,10 @@ export default function Sidebar({ user, onLogout }: { user: any, onLogout: () =>
                     <span>Logout</span>
                 </button>
             </div>
+            <AddressBookModal
+                isOpen={showAddressBook}
+                onClose={() => setShowAddressBook(false)}
+            />
         </div>
     );
 }
