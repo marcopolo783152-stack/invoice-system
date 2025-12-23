@@ -3,6 +3,7 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { ReturnedReceipt } from '@/components/InvoiceSearch';
+import { openPDFInNewTab, isMobileDevice } from '@/lib/pdf-utils';
 
 function parseData(dataParam: string | null) {
   if (!dataParam) return null;
@@ -36,16 +37,26 @@ export default function ReturnedReceiptPrintPage() {
           if (localData) {
             parsed = JSON.parse(localData);
           }
-        } catch {}
+        } catch { }
       }
       setData(parsed);
     }
   }, []);
 
   // Print using iframe for better reliability and A4 size
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    if (isMobileDevice() && printRef.current) {
+      try {
+        await openPDFInNewTab(printRef.current, `Receipt_${data.invoiceNumber || 'Return'}`);
+        return;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     if (!printRef.current) return;
     const printContents = printRef.current.innerHTML;
+    // ... rest of iframe logic ...
     const printWindow = document.createElement('iframe');
     printWindow.style.position = 'fixed';
     printWindow.style.right = '0';

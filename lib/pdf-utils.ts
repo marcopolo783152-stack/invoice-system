@@ -118,9 +118,21 @@ export async function openPDFInNewTab(
       heightLeft -= pageHeight;
     }
 
-    // Open PDF in new tab
-    const blobUrl = pdf.output('bloburl');
-    window.open(blobUrl, '_blank');
+    // Open PDF
+    const blob = pdf.output('blob');
+    const blobUrl = URL.createObjectURL(blob);
+
+    if (isMobileDevice()) {
+      // On mobile, window.open is often blocked if async. 
+      // Redirecting current window is more reliable for viewing the PDF.
+      window.location.href = blobUrl;
+    } else {
+      const newWindow = window.open(blobUrl, '_blank');
+      if (!newWindow) {
+        // Fallback if blocked
+        window.location.href = blobUrl;
+      }
+    }
 
   } catch (error) {
     console.error('Error opening PDF:', error);
@@ -142,4 +154,13 @@ export function printToPDF(): void {
  */
 export function isPrintSupported(): boolean {
   return typeof window !== 'undefined' && 'print' in window;
+}
+
+/**
+ * Robust mobile detection
+ */
+export function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(window.navigator.userAgent)
+    || (window.innerWidth <= 800 && window.innerHeight <= 900);
 }

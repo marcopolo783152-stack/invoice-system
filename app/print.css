@@ -6,30 +6,42 @@
 /* Print Styles */
 @media print {
 
-	/* Hide everything by default */
-	body * {
-		visibility: hidden !important;
+	/* Hide elements that shouldn't be printed */
+	.sidebar,
+	.no-print,
+	.header-actions,
+	[class*="Sidebar"],
+	nav,
+	button {
+		display: none !important;
 	}
 
-	/* Show print portal */
+	/* Ensure body is visible and white */
+	body {
+		visibility: visible !important;
+		background: #fff !important;
+		margin: 0 !important;
+		padding: 0 !important;
+	}
+
+	/* Show print portal with high priority */
+	.print-portal-root,
 	.print-only-portal,
 	.print-only-portal * {
 		visibility: visible !important;
 		display: block !important;
 	}
 
-	/* Position print portal to cover page */
+	/* Position print portal to cover page for legacy browsers */
 	.print-only-portal {
-		position: fixed !important;
+		position: absolute !important;
 		left: 0;
 		top: 0;
 		width: 100% !important;
-		height: 100% !important;
 		background: #fff !important;
 		z-index: 99999;
 		margin: 0 !important;
 		padding: 0 !important;
-		overflow: visible !important;
 	}
 }
 

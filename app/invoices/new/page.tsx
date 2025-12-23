@@ -19,7 +19,7 @@ import InvoiceSearch from '@/components/InvoiceSearch';
 const Login = dynamic(() => import('@/components/Login').then(mod => mod.default), { ssr: false });
 const UserManagement = dynamic(() => import('@/components/UserManagement'), { ssr: false });
 import { InvoiceData, calculateInvoice, validateInvoiceData } from '@/lib/calculations';
-import { printInvoice, generatePDF } from '@/lib/pdf-utils';
+import { printInvoice, generatePDF, openPDFInNewTab, isMobileDevice } from '@/lib/pdf-utils';
 import { saveInvoice, getInvoicesCount, getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { sendInvoiceEmail, prepareInvoiceForEmail, isEmailConfigured } from '@/lib/email-service';
 import { businessConfig } from '@/config/business';
@@ -173,9 +173,17 @@ export default function Home() {
     }, 100);
   };
 
-  const handlePrint = () => {
-    // Use window.print() so print CSS is applied
-    window.print();
+  const handlePrint = async () => {
+    if (isMobileDevice() && invoiceRef.current && invoiceData) {
+      try {
+        await openPDFInNewTab(invoiceRef.current, invoiceData.invoiceNumber);
+      } catch (error) {
+        alert('Failed to generate preview. Try Download PDF instead.');
+      }
+    } else {
+      // Use window.print() so print CSS is applied
+      window.print();
+    }
   };
 
   const handleDownloadPDF = async () => {
