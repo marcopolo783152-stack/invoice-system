@@ -15,6 +15,7 @@ export default function RootLayout({
 }) {
   const [user, setUser] = useState<any>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     // Basic auth check for sidebar user info
@@ -64,15 +65,22 @@ export default function RootLayout({
               bottom: 0,
               zIndex: 100,
               transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-              transition: 'transform 0.3s ease-in-out',
+              transition: 'transform 0.3s ease-in-out, width 0.3s ease-in-out',
               // On desktop, it should always be visible
-              visibility: 'visible'
+              visibility: 'visible',
+              width: isCollapsed ? 80 : 280
             }} className="sidebar-container">
-              <Sidebar user={user} onLogout={handleLogout} onClose={() => setIsSidebarOpen(false)} />
+              <Sidebar
+                user={user}
+                onLogout={handleLogout}
+                onClose={() => setIsSidebarOpen(false)}
+                isCollapsed={isCollapsed}
+                onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+              />
             </div>
 
             {/* Desktop Sidebar Placeholder */}
-            <div style={{ width: 280, flexShrink: 0 }} className="desktop-sidebar-space" />
+            <div style={{ width: isCollapsed ? 80 : 280, flexShrink: 0, transition: 'width 0.3s ease-in-out' }} className="desktop-sidebar-space" />
           </Suspense>
 
           <div className="main-content" style={{

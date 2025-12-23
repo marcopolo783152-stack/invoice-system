@@ -11,6 +11,12 @@
     top: 0;
     z-index: 100;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+    transition: width 0.3s ease-in-out, padding 0.3s ease-in-out;
+}
+
+.collapsed {
+    width: 80px;
+    padding: 24px 12px;
 }
 
 .logo {
@@ -28,6 +34,29 @@
     backdrop-filter: blur(10px);
 }
 
+.collapsed .logo {
+    padding: 12px 0;
+    justify-content: center;
+}
+
+.collapseToggle {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.collapseToggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
 .mobileClose {
     display: none;
 }
@@ -38,10 +67,20 @@
         box-shadow: 10px 0 50px rgba(0, 0, 0, 0.5);
     }
 
+    .collapsed {
+        width: 300px;
+        /* Reset on mobile */
+    }
+
     .mobileClose {
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .collapseToggle {
+        display: none;
+        /* Hide toggle on mobile */
     }
 }
 
@@ -64,15 +103,27 @@
     color: rgba(255, 255, 255, 0.7);
     text-decoration: none;
     border-radius: 12px;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease, border-radius 0.3s ease;
     font-weight: 500;
     font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.collapsed .navItem {
+    justify-content: center;
+    padding: 16px 0;
+    gap: 0;
 }
 
 .navItem:hover {
     background: rgba(255, 255, 255, 0.1);
     color: white;
     transform: translateX(4px);
+}
+
+.collapsed .navItem:hover {
+    transform: scale(1.05);
 }
 
 .active {
@@ -95,6 +146,11 @@
     border-radius: 12px;
 }
 
+.collapsed .user {
+    padding: 12px 0;
+    justify-content: center;
+}
+
 .avatar {
     width: 40px;
     height: 40px;
@@ -105,6 +161,7 @@
     justify-content: center;
     font-weight: bold;
     color: #1a1f3c;
+    flex-shrink: 0;
 }
 
 .userInfo {
