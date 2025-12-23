@@ -220,8 +220,14 @@ export default function InvoiceTemplate({
           )}
           <div className={styles.salesTerms}>
             <h4>Terms & Conditions:</h4>
-            <p>1. All Sales are final</p>
-            <p>2. No refunds. Exchanges only within one week of purchase.</p>
+            {data.documentType === 'CONSIGNMENT' ? (
+              <p>All items remain property of Marco Polo Oriental Rugs until sold. Payment due upon sale or return. Items not sold within 90 days may be returned.</p>
+            ) : (
+              <>
+                <p>1. All Sales are final</p>
+                <p>2. No refunds. Exchanges only within one week of purchase.</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -247,7 +253,9 @@ export default function InvoiceTemplate({
                 </tr>
               )}
               <tr className={styles.totalDueRow}>
-                <td className={styles.totalLabel}>TOTAL DUE:</td>
+                <td className={styles.totalLabel}>
+                  {data.documentType === 'CONSIGNMENT' ? 'TOTAL VALUE ON HOLD:' : 'TOTAL DUE:'}
+                </td>
                 <td className={styles.totalValue}>{formatCurrency(calculations.totalDue)}</td>
               </tr>
               {calculations.returnedAmount > 0 && (
