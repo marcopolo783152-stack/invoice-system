@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
+import { getItemBySku } from '@/lib/inventory-storage';
 
 import SignaturePad from './SignaturePad';
 import styles from './InvoiceForm.module.css';
@@ -114,6 +115,35 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         item.id === id ? { ...item, [field]: value } : item
       )
     );
+
+    // Auto-fill logic when SKU changes
+    if (field === 'sku' && typeof value === 'string' && value.length > 2) {
+      // Debounce slightly or just fire async
+      getItemBySku(value).then(found => {
+        if (found) {
+          setItems(currentItems =>
+            currentItems.map(item => {
+              if (item.id === id) {
+                // If found, auto-fill details
+                // Only overwrite if current fields are empty or user just typed SKU
+                return {
+                  ...item,
+                  description: item.description || found.description,
+                  shape: found.shape,
+                  widthFeet: found.widthFeet,
+                  widthInches: found.widthInches,
+                  lengthFeet: found.lengthFeet,
+                  lengthInches: found.lengthInches,
+                  fixedPrice: item.fixedPrice || found.price, // Use inventory price as default fixed price
+                  image: item.image || found.image
+                };
+              }
+              return item;
+            })
+          );
+        }
+      });
+    }
   };
 
   const handleImageUpload = (id: string, file: File) => {
