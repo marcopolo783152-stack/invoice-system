@@ -73,6 +73,7 @@ import { searchInvoices, getAllInvoices, deleteInvoice, deleteMultipleInvoices, 
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
+import { logActivity } from '@/lib/audit-logger';
 import styles from './InvoiceSearch.module.css';
 
 interface InvoiceSearchProps {
@@ -142,6 +143,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
       setReturnNote('');
       setReturnItems([]);
       setReturnProcessing(false);
+      logActivity('Invoice Returned', `Items returned for Invoice #${selectedInvoice.data.invoiceNumber}`);
       await handleSearch(searchQuery);
     } catch (err) {
       alert('Error processing return.');
@@ -188,6 +190,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
       return;
     }
     await deleteInvoice(id);
+    logActivity('Invoice Deleted', `Invoice #${invoice.data.invoiceNumber} deleted by user.`);
     await handleSearch(searchQuery);
     setSelectedInvoice(null);
     setSelectedIds(prev => prev.filter(sid => sid !== id));
@@ -220,6 +223,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
       return;
     }
     await deleteMultipleInvoices(selectedIds);
+    logActivity('Bulk Delete', `${selectedIds.length} invoices deleted in bulk.`);
     await handleSearch(searchQuery);
     setSelectedInvoice(null);
     setSelectedIds([]);

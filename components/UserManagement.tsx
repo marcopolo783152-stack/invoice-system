@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { logActivity } from "@/lib/audit-logger";
 import styles from "./UserManagement.module.css";
 
 export interface User {
@@ -65,6 +66,7 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
         }
         return u;
       }));
+      logActivity('User Updated', `User ${fullName} (${username}) updated.`);
       setSuccessMsg("User updated successfully");
       resetForm();
     } else {
@@ -74,6 +76,7 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
         return;
       }
       setUsers([...users, { username, fullName, password, role }]);
+      logActivity('User Created', `User ${fullName} (${username}) created as ${role}.`);
       setSuccessMsg("User added successfully");
       resetForm();
     }
@@ -106,6 +109,7 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
     }
     if (confirm(`Delete user ${u.fullName}?`)) {
       setUsers(users.filter(user => user.username !== u.username));
+      logActivity('User Deleted', `User ${u.fullName} (${u.username}) removed.`);
       if (isEditing && originalUsername === u.username) {
         resetForm();
       }

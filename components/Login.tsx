@@ -1,6 +1,7 @@
 
 "use client";
 import { useState, useEffect } from "react";
+import { logActivity } from "@/lib/audit-logger";
 import styles from "./Login.module.css";
 
 export interface LoginProps {
@@ -38,6 +39,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (user) {
         sessionStorage.setItem("mp-invoice-auth", "1");
         sessionStorage.setItem("mp-invoice-user", JSON.stringify(user));
+        logActivity('Login', `User ${user.fullName} logged in successfully`);
         // Also clear local storage just in case old session exists
         localStorage.removeItem("mp-invoice-auth");
         localStorage.removeItem("mp-invoice-user");

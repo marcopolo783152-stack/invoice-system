@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2 } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
@@ -83,6 +83,11 @@ export default function Sidebar({ user, onLogout }: { user: any, onLogout: () =>
                 <Link href="/settings" className={`${styles.navItem} ${pathname.startsWith('/settings') ? styles.active : ''}`}>
                     <Settings size={20} />
                     <span>Settings</span>
+                </Link>
+
+                <Link href="/audit-log" className={`${styles.navItem} ${pathname.startsWith('/audit-log') ? styles.active : ''}`}>
+                    <History size={20} />
+                    <span>Audit Log</span>
                 </Link>
             </nav>
 

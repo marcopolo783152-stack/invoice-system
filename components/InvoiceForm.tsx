@@ -13,6 +13,7 @@ import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/l
 import { getItemBySku } from '@/lib/inventory-storage';
 import { Customer, searchCustomers } from '@/lib/customer-storage';
 import { getCustomerDebt } from '@/lib/invoice-storage';
+import { logActivity } from '@/lib/audit-logger';
 import * as XLSX from 'xlsx'; // Import SheetJS
 import dynamic from 'next/dynamic';
 
@@ -279,6 +280,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     };
 
     onSubmit(invoiceData);
+    logActivity('Invoice Saved', `${documentType} #${invoiceNumber} for ${soldTo.name} has been processed.`);
   };
 
   const isPerSqFt = mode.includes('per-sqft');

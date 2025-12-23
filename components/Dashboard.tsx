@@ -12,7 +12,8 @@ export default function Dashboard() {
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
     const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([]);
     const [period, setPeriod] = useState<Period>('all-time');
-    const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -32,7 +33,7 @@ export default function Dashboard() {
             const d = new Date(startOfToday);
             if (p === 'today') return d;
             if (p === 'custom') {
-                const [y, m, dPart] = customDate.split('-').map(Number);
+                const [y, m, dPart] = startDate.split('-').map(Number);
                 return new Date(y, m - 1, dPart);
             }
             if (p === 'this-week') {
@@ -54,7 +55,7 @@ export default function Dashboard() {
 
         const getEndOfPeriod = (p: Period) => {
             if (p === 'custom') {
-                const [y, m, dPart] = customDate.split('-').map(Number);
+                const [y, m, dPart] = endDate.split('-').map(Number);
                 const d = new Date(y, m - 1, dPart);
                 d.setHours(23, 59, 59, 999);
                 return d;
@@ -80,9 +81,9 @@ export default function Dashboard() {
     }, [invoices, period]);
 
     // KPIs
-    const totalRevenue = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).netTotalDue, 0);
-    const totalReturned = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).returnedAmount, 0);
-    const averageOrder = filteredInvoices.length > 0 ? totalRevenue / filteredInvoices.length : 0;
+    const totalRevenue = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).totalDue, 0);
+    const totalInvoices = filteredInvoices.length;
+    const averageOrder = totalInvoices > 0 ? totalRevenue / totalInvoices : 0;
 
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading dashboard...</div>;
 
@@ -118,12 +119,30 @@ export default function Dashboard() {
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f1f5f9', padding: '4px 12px', borderRadius: 12 }}>
-                            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Date:</span>
+                            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>From:</span>
                             <input
                                 type="date"
-                                value={customDate}
+                                value={startDate}
                                 onChange={(e) => {
-                                    setCustomDate(e.target.value);
+                                    setStartDate(e.target.value);
+                                    setPeriod('custom');
+                                }}
+                                style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    fontSize: 13,
+                                    color: period === 'custom' ? '#1e293b' : '#64748b',
+                                    fontWeight: period === 'custom' ? 600 : 500,
+                                    outline: 'none',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>To:</span>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => {
+                                    setEndDate(e.target.value);
                                     setPeriod('custom');
                                 }}
                                 style={{
@@ -163,26 +182,26 @@ export default function Dashboard() {
             {/* KPI Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 40 }}>
                 <KpiCard
-                    title="Net Revenue"
+                    title="Revenue"
                     value={`$${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                     icon={<DollarSign size={24} color="#10b981" />}
-                    trend={totalReturned > 0 ? `-$${totalReturned.toLocaleString()} returns` : "No returns"}
-                    trendColor={totalReturned > 0 ? "#ef4444" : "#10b981"}
+                    trend={`Gross Sales`}
+                    trendColor="#10b981"
                     color="rgba(16, 185, 129, 0.1)"
                 />
                 <KpiCard
                     title="Invoices"
-                    value={filteredInvoices.length.toString()}
+                    value={totalInvoices.toString()}
                     icon={<FileText size={24} color="#6366f1" />}
-                    trend={`${period.replace('-', ' ')} view`}
+                    trend={`${period.replace('-', ' ')}`}
                     trendColor="#64748b"
                     color="rgba(99, 102, 241, 0.1)"
                 />
                 <KpiCard
-                    title="Avg. Net Value"
+                    title="Avg. Invoice Value"
                     value={`$${averageOrder.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                     icon={<TrendingUp size={24} color="#f59e0b" />}
-                    trend="Per order net"
+                    trend="Per order"
                     trendColor="#64748b"
                     color="rgba(245, 158, 11, 0.1)"
                 />
@@ -201,7 +220,7 @@ export default function Dashboard() {
                             <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Invoice #</th>
                             <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Customer</th>
                             <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Date</th>
-                            <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Net Amount</th>
+                            <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Total Amount</th>
                             <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Status</th>
                         </tr>
                     </thead>
@@ -214,8 +233,7 @@ export default function Dashboard() {
                                     <td style={{ padding: '16px 0', color: '#4b5563' }}>{inv.data.soldTo.name}</td>
                                     <td style={{ padding: '16px 0', color: '#6b7280' }}>{inv.data.date}</td>
                                     <td style={{ padding: '16px 0', fontWeight: 600, color: '#1a1f3c' }}>
-                                        ${calcs.netTotalDue.toLocaleString()}
-                                        {calcs.returnedAmount > 0 && <span style={{ fontSize: 10, color: '#ef4444', display: 'block' }}>Returns: -${calcs.returnedAmount.toLocaleString()}</span>}
+                                        ${calcs.totalDue.toLocaleString()}
                                     </td>
                                     <td style={{ padding: '16px 0' }}>
                                         <span style={{
