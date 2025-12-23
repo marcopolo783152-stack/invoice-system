@@ -303,7 +303,7 @@ export default function Home() {
               🔍 Search Invoices ({invoiceCount})
             </button>
             <button onClick={handleNewInvoice} className={styles.newBtnHeader}>
-              ➕ New Invoice v1.2
+              ➕ New Invoice v1.3
             </button>
             {/* Settings Dropdown */}
             <div style={{ position: 'relative', marginLeft: 10 }}>
@@ -390,9 +390,18 @@ export default function Home() {
             </div>
 
             {/* Print-only wrapper: only this area will be printed */}
-            {/* Portal-based print wrapper: Moved outside main layout */}
+            {/* Screen Preview (Visible on Screen, Hidden on Print via CSS) */}
+            <div className="screen-only" ref={invoiceRef}>
+              <InvoiceTemplate
+                data={invoiceData}
+                calculations={calculations}
+                businessInfo={businessConfig}
+              />
+            </div>
+
+            {/* Print Portal (Hidden on Screen, Visible on Print) */}
             <PrintPortal>
-              <div className="print-area" ref={invoiceRef}>
+              <div className="print-only-portal">
                 <InvoiceTemplate
                   data={invoiceData}
                   calculations={calculations}
