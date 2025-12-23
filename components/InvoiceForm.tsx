@@ -11,7 +11,6 @@ import React, { useState, useEffect } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
 
-
 import SignaturePad from './SignaturePad';
 import styles from './InvoiceForm.module.css';
 
@@ -24,13 +23,13 @@ interface InvoiceFormProps {
 
 // This form supports both creating and editing invoices. When editing, all fields (customer info, items, etc.) are pre-filled and can be updated.
 export default function InvoiceForm({ onSubmit, initialData, currentUser, users }: InvoiceFormProps) {
-    const [servedBy, setServedBy] = useState(initialData?.servedBy || (currentUser?.fullName || currentUser?.username || ''));
+  const [servedBy, setServedBy] = useState(initialData?.servedBy || (currentUser?.fullName || currentUser?.username || ''));
 
-    useEffect(() => {
-      if (!initialData?.servedBy && currentUser) {
-        setServedBy(currentUser.fullName || currentUser.username);
-      }
-    }, [currentUser, initialData]);
+  useEffect(() => {
+    if (!initialData?.servedBy && currentUser) {
+      setServedBy(currentUser.fullName || currentUser.username);
+    }
+  }, [currentUser, initialData]);
   const [documentType, setDocumentType] = useState<DocumentType>(initialData?.documentType || 'INVOICE');
   const [mode, setMode] = useState<InvoiceMode>(
     initialData?.mode || 'retail-per-rug'
@@ -115,6 +114,45 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         item.id === id ? { ...item, [field]: value } : item
       )
     );
+  };
+
+  const handleImageUpload = (id: string, file: File) => {
+    if (!file) return;
+
+    // Resize image to max 300x300 for thumbnail
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 300;
+        const MAX_HEIGHT = 300;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Compress
+
+        handleItemChange(id, 'image', dataUrl);
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleGenerateNewNumber = () => {
@@ -421,6 +459,49 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                 </select>
               </div>
             </div>
+
+            {/* Image Upload for Item */}
+            <div className={styles.formGroup}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#4f46e5', marginTop: 8 }}>
+                <span>📷 {item.image ? 'Change Image' : 'Add Item Image'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => e.target.files?.[0] && handleImageUpload(item.id, e.target.files[0])}
+                  style={{ display: 'none' }}
+                />
+              </label>
+              {item.image && (
+                <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
+                  <img src={item.image} alt="Preview" style={{ height: 60, borderRadius: 4, border: '1px solid #ccc' }} />
+                  <button
+                    type="button"
+                    onClick={() => handleItemChange(item.id, 'image', '')}
+                    style={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      background: '#ef4444',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: 20,
+                      height: 20,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                    title="Remove image"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className={styles.row}>
               <div className={styles.formGroup}>
                 <label>{item.shape === 'round' ? 'Diameter (Feet):' : 'Width (Feet):'}*</label>
@@ -522,10 +603,11 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             </div>
           </div>
         ))}
+
+        <button type="button" onClick={handleAddItem} className={styles.addBtn}>
+          + Add Item
+        </button>
       </div>
-      <button type="button" onClick={handleAddItem} className={styles.addBtn}>
-        + Add Item
-      </button>
 
       {/* Additional Options */}
       {isRetail && (

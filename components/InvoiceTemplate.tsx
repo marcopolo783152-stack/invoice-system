@@ -80,9 +80,9 @@ export default function InvoiceTemplate({
           {businessInfo.email && <p>Email: {businessInfo.email}</p>}
         </div>
         <div className={styles.logoSection}>
-          <img 
-            src="/LOGO.png" 
-            alt="Marco Polo Oriental Rugs" 
+          <img
+            src="/LOGO.png"
+            alt="Marco Polo Oriental Rugs"
             className={`${styles.logoImage} invoice-logo`}
             onError={e => {
               const target = e.target as HTMLImageElement;
@@ -176,7 +176,14 @@ export default function InvoiceTemplate({
             {calculations.items.map((item) => (
               <tr key={item.id}>
                 <td>{item.sku}</td>
-                <td className={styles.description}>{item.description}</td>
+                <td className={styles.description}>
+                  {item.description}
+                  {item.image && (
+                    <div style={{ marginTop: 4 }}>
+                      <img src={item.image} alt="Item" style={{ maxHeight: 60, maxWidth: 100, objectFit: 'contain', border: '1px solid #eee' }} />
+                    </div>
+                  )}
+                </td>
                 <td className={styles.shape}>
                   {item.shape === 'round' ? 'Round' : 'Rect'}
                 </td>

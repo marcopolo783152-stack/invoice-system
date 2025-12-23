@@ -10,34 +10,55 @@ export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
     const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState<'ALL' | 'INVOICE' | 'CONSIGNMENT'>('ALL');
+    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function loadData() {
             const data = await getAllInvoices();
-            // Sort by date desc (newest first)
-            const sorted = data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            setInvoices(sorted);
-            setFilteredInvoices(sorted);
+            setInvoices(data);
             setLoading(false);
         }
         loadData();
     }, []);
 
     useEffect(() => {
-        if (!searchTerm.trim()) {
-            setFilteredInvoices(invoices);
-            return;
+        let result = [...invoices];
+
+        // 1. Text Search
+        if (searchTerm.trim()) {
+            const lowerTerm = searchTerm.toLowerCase();
+            result = result.filter(inv =>
+                inv.data.invoiceNumber.toLowerCase().includes(lowerTerm) ||
+                inv.data.soldTo.name.toLowerCase().includes(lowerTerm)
+            );
         }
-        const lowerTerm = searchTerm.toLowerCase();
-        const filtered = invoices.filter(inv =>
-            inv.data.invoiceNumber.toLowerCase().includes(lowerTerm) ||
-            inv.data.soldTo.name.toLowerCase().includes(lowerTerm)
-        );
-        setFilteredInvoices(filtered);
-    }, [searchTerm, invoices]);
+
+        // 2. Type Filter
+        if (typeFilter !== 'ALL') {
+            result = result.filter(inv =>
+                (inv.data.documentType || 'INVOICE') === typeFilter
+            );
+        }
+
+        // 3. Sorting
+        result.sort((a, b) => {
+            const dateA = new Date(a.data.date).getTime();
+            const dateB = new Date(b.data.date).getTime();
+            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
+
+        setFilteredInvoices(result);
+    }, [searchTerm, typeFilter, sortOrder, invoices]);
 
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading invoices...</div>;
+
+    const getStatusColor = (inv: SavedInvoice) => {
+        if (inv.data.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
+        if (inv.data.terms?.toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
+        return { bg: '#eff6ff', text: '#3b82f6', label: 'Invoice' };
+    };
 
     return (
         <div style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
@@ -66,24 +87,63 @@ export default function InvoicesPage() {
                 </Link>
             </header>
 
-            {/* Search Bar */}
-            <div style={{ marginBottom: 24, position: 'relative' }}>
-                <Search size={20} color="#9ca3af" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                    type="text"
-                    placeholder="Search by invoice number or customer name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+            {/* Controls Bar */}
+            <div style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                {/* Search */}
+                <div style={{ position: 'relative', flex: 1, minWidth: 300 }}>
+                    <Search size={20} color="#9ca3af" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                        type="text"
+                        placeholder="Search by invoice # or customer..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '12px 12px 12px 48px',
+                            borderRadius: 12,
+                            border: '1px solid #e5e7eb',
+                            fontSize: 16,
+                            outline: 'none',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                        }}
+                    />
+                </div>
+
+                {/* Filters */}
+                <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value as any)}
                     style={{
-                        width: '100%',
-                        padding: '16px 16px 16px 48px',
-                        borderRadius: 16,
+                        padding: '12px 16px',
+                        borderRadius: 12,
                         border: '1px solid #e5e7eb',
-                        fontSize: 16,
+                        fontSize: 14,
                         outline: 'none',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                        cursor: 'pointer',
+                        background: 'white'
                     }}
-                />
+                >
+                    <option value="ALL">All Types</option>
+                    <option value="INVOICE">Invoices</option>
+                    <option value="CONSIGNMENT">Consignments</option>
+                </select>
+
+                <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as any)}
+                    style={{
+                        padding: '12px 16px',
+                        borderRadius: 12,
+                        border: '1px solid #e5e7eb',
+                        fontSize: 14,
+                        outline: 'none',
+                        cursor: 'pointer',
+                        background: 'white'
+                    }}
+                >
+                    <option value="desc">Newest First</option>
+                    <option value="asc">Oldest First</option>
+                </select>
             </div>
 
             {/* Invoice Table */}
@@ -92,6 +152,7 @@ export default function InvoicesPage() {
                     <thead>
                         <tr style={{ borderBottom: '1px solid #eee', textAlign: 'left', background: '#f9fafb' }}>
                             <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice #</th>
+                            <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
                             <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Customer</th>
                             <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
                             <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items</th>
@@ -100,37 +161,52 @@ export default function InvoicesPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredInvoices.map((inv) => (
-                            <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s' }} className="hover:bg-gray-50">
-                                <td style={{ padding: '20px 24px', fontWeight: 600, color: '#1a1f3c' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <div style={{ padding: 8, background: '#eff6ff', borderRadius: 8, color: '#3b82f6' }}>
-                                            <FileText size={16} />
+                        {filteredInvoices.map((inv) => {
+                            const status = getStatusColor(inv);
+                            return (
+                                <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s' }} className="hover:bg-gray-50">
+                                    <td style={{ padding: '20px 24px', fontWeight: 600, color: '#1a1f3c' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <div style={{ padding: 8, background: '#eff6ff', borderRadius: 8, color: '#3b82f6' }}>
+                                                <FileText size={16} />
+                                            </div>
+                                            {inv.data.invoiceNumber}
                                         </div>
-                                        {inv.data.invoiceNumber}
-                                    </div>
-                                </td>
-                                <td style={{ padding: '20px 24px', color: '#4b5563', fontWeight: 500 }}>{inv.data.soldTo.name}</td>
-                                <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data.date}</td>
-                                <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data.items.length} items</td>
-                                <td style={{ padding: '20px 24px', fontWeight: 700, color: '#1a1f3c' }}>${calculateInvoice(inv.data).totalDue.toLocaleString()}</td>
-                                <td style={{ padding: '20px 24px' }}>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <button style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563' }} title="Download PDF">
-                                            <Download size={16} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+                                    <td style={{ padding: '20px 24px' }}>
+                                        <span style={{
+                                            padding: '6px 12px',
+                                            borderRadius: 20,
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            background: status.bg,
+                                            color: status.text
+                                        }}>
+                                            {status.label}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '20px 24px', color: '#4b5563', fontWeight: 500 }}>{inv.data.soldTo.name}</td>
+                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data.date}</td>
+                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data.items.length} items</td>
+                                    <td style={{ padding: '20px 24px', fontWeight: 700, color: '#1a1f3c' }}>${calculateInvoice(inv.data).totalDue.toLocaleString()}</td>
+                                    <td style={{ padding: '20px 24px' }}>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <button style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563' }} title="Download PDF">
+                                                <Download size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                         {filteredInvoices.length === 0 && (
                             <tr>
-                                <td colSpan={6} style={{ padding: 60, textAlign: 'center', color: '#9ca3af' }}>
+                                <td colSpan={7} style={{ padding: 60, textAlign: 'center', color: '#9ca3af' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
                                         <div style={{ padding: 20, background: '#f3f4f6', borderRadius: '50%' }}>
                                             <Search size={32} color="#9ca3af" />
                                         </div>
-                                        <div>No invoices found matching your search</div>
+                                        <div>No invoices found matching your criteria</div>
                                     </div>
                                 </td>
                             </tr>

@@ -24,6 +24,8 @@ export interface InvoiceItem {
   // Return support
   returned?: boolean;
   returnNote?: string;
+  // Image support
+  image?: string; // Base64 encoded image
 }
 
 export type DocumentType = 'INVOICE' | 'CONSIGNMENT';
@@ -79,7 +81,7 @@ export function calculateSquareFoot(
   shape: RugShape = 'rectangle'
 ): number {
   const widthInFeet = widthFeet + widthInches / 12;
-  
+
   if (shape === 'round') {
     // For round rugs, use diameter (from width) to calculate area
     // Area = π × radius² = π × (diameter/2)²
@@ -87,7 +89,7 @@ export function calculateSquareFoot(
     const radius = diameter / 2;
     return Math.PI * radius * radius;
   }
-  
+
   // Rectangle calculation
   const lengthInFeet = lengthFeet + lengthInches / 12;
   return widthInFeet * lengthInFeet;
