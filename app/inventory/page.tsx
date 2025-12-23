@@ -10,12 +10,15 @@ import {
 } from '@/lib/inventory-storage';
 import { formatCurrency, RugShape } from '@/lib/calculations';
 import { Search, Plus, Trash2, Edit, Save, X, Image as ImageIcon } from 'lucide-react';
+import Login from '@/components/Login';
 
 function InventoryContent() {
     const [items, setItems] = useState<InventoryItem[]>([]);
     const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     // Modal State
     const [showModal, setShowModal] = useState(false);
@@ -36,8 +39,24 @@ function InventoryContent() {
     });
 
     useEffect(() => {
-        loadInventory();
+        // Authenticate
+        const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
+        const user = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
+
+        if (auth === '1' && user) {
+            setIsAuthenticated(true);
+            try { setCurrentUser(JSON.parse(user)); } catch { }
+            loadInventory();
+        } else {
+            setIsAuthenticated(false);
+            setLoading(false);
+        }
     }, []);
+
+    const onLogin = () => {
+        setIsAuthenticated(true);
+        loadInventory();
+    };
 
     useEffect(() => {
         if (!searchQuery.trim()) {
@@ -58,6 +77,9 @@ function InventoryContent() {
         setFilteredItems(data);
         setLoading(false);
     };
+
+    if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading inventory...</div>;
+    if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     const handleAddNew = () => {
         setEditingItem(null);

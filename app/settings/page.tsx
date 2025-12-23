@@ -2,26 +2,44 @@
 
 import React, { useState, useEffect } from 'react';
 import UserManagement from '@/components/UserManagement';
+import Login from '@/components/Login';
 
 export default function SettingsPage() {
     const [user, setUser] = useState<any>(null);
     const [users, setUsers] = useState<any[]>([]);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         // Basic auth check
-        const storedUser = localStorage.getItem('mp-invoice-user');
+        const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
+        const storedUser = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
         const storedUsers = localStorage.getItem('mp-invoice-users');
 
-        if (storedUser) {
+        if (auth === '1' && storedUser) {
+            setIsAuthenticated(true);
             try { setUser(JSON.parse(storedUser)); } catch { }
-        }
-        if (storedUsers) {
-            try { setUsers(JSON.parse(storedUsers)); } catch { }
+            if (storedUsers) {
+                try { setUsers(JSON.parse(storedUsers)); } catch { }
+            } else {
+                setUsers([{ username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }]);
+            }
+            setLoading(false);
         } else {
-            // Default default
-            setUsers([{ username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }]);
+            setIsAuthenticated(false);
+            setLoading(false);
         }
     }, []);
+
+    const onLogin = () => {
+        setIsAuthenticated(true);
+        // Current user should be available now
+        const storedUser = sessionStorage.getItem('mp-invoice-user');
+        if (storedUser) try { setUser(JSON.parse(storedUser)); } catch { }
+    };
+
+    if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading settings...</div>;
+    if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     // Sync users to local storage when changed
     useEffect(() => {

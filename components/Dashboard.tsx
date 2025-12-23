@@ -5,6 +5,7 @@ import { DollarSign, FileText, TrendingUp, Users } from 'lucide-react';
 import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import Link from 'next/link';
+import Login from './Login';
 
 type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
@@ -15,15 +16,41 @@ export default function Dashboard() {
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     useEffect(() => {
+        // Authenticate
+        const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
+        const user = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
+
+        if (auth === '1' && user) {
+            setIsAuthenticated(true);
+            try { setCurrentUser(JSON.parse(user)); } catch { }
+
+            async function loadData() {
+                const data = await getAllInvoices();
+                setInvoices(data);
+                setLoading(false);
+            }
+            loadData();
+        } else {
+            setIsAuthenticated(false);
+            setLoading(false);
+        }
+    }, []);
+
+    const onLogin = () => {
+        setIsAuthenticated(true);
+        setLoading(true);
+        // Reload data after login
         async function loadData() {
             const data = await getAllInvoices();
             setInvoices(data);
             setLoading(false);
         }
         loadData();
-    }, []);
+    };
 
     useEffect(() => {
         const now = new Date();
@@ -86,6 +113,7 @@ export default function Dashboard() {
     const totalInvoices = filteredInvoices.length;
 
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading dashboard...</div>;
+    if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     return (
         <div style={{ padding: 'var(--dashboard-padding, 40px)', maxWidth: 1200, margin: '0 auto' }}>

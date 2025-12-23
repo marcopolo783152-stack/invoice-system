@@ -20,7 +20,8 @@ export default function RootLayout({
   useEffect(() => {
     // Basic auth check for sidebar user info
     if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('mp-invoice-user');
+      // Check both storages for consistency
+      const storedUser = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
       if (storedUser) {
         try { setUser(JSON.parse(storedUser)); } catch { }
       }
@@ -29,8 +30,12 @@ export default function RootLayout({
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
+      // Clear ALL possible session/auth tokens
+      sessionStorage.removeItem('mp-invoice-auth');
+      sessionStorage.removeItem('mp-invoice-user');
       localStorage.removeItem('mp-invoice-auth');
       localStorage.removeItem('mp-invoice-user');
+
       window.location.href = '/';
       window.location.reload();
     }

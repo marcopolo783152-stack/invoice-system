@@ -3,16 +3,35 @@
 import React, { useEffect, useState } from 'react';
 import { getAuditLogs, AuditEntry } from '@/lib/audit-logger';
 import { History, Search, Filter } from 'lucide-react';
+import Login from '@/components/Login';
 
 export default function AuditLogPage() {
     const [logs, setLogs] = useState<AuditEntry[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     useEffect(() => {
-        setLogs(getAuditLogs());
-        setLoading(false);
+        // Authenticate
+        const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
+        const user = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
+
+        if (auth === '1' && user) {
+            setIsAuthenticated(true);
+            try { setCurrentUser(JSON.parse(user)); } catch { }
+            setLogs(getAuditLogs());
+            setLoading(false);
+        } else {
+            setIsAuthenticated(false);
+            setLoading(false);
+        }
     }, []);
+
+    const onLogin = () => {
+        setIsAuthenticated(true);
+        setLogs(getAuditLogs());
+    };
 
     const filteredLogs = logs.filter(log =>
         log.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -26,6 +45,7 @@ export default function AuditLogPage() {
     };
 
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading logs...</div>;
+    if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     return (
         <div style={{ padding: 'var(--dashboard-padding, 40px)', maxWidth: 1000, margin: '0 auto' }}>

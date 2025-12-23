@@ -8,6 +8,7 @@ import { requestSecurityConfirmation } from '@/lib/email-service';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, Plus, FileText, Download, Trash2, Users, FileDown, RotateCcw, AlertTriangle, Archive } from 'lucide-react';
+import Login from '@/components/Login';
 
 function InvoicesPageContent() {
     const searchParams = useSearchParams();
@@ -22,22 +23,28 @@ function InvoicesPageContent() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     useEffect(() => {
-        const view = searchParams.get('view') === 'bin' ? 'bin' : 'active';
-        setViewMode(view);
-    }, [searchParams]);
+        // Authenticate
+        const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
+        const user = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
 
-    const handleSetViewMode = (mode: 'active' | 'bin') => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (mode === 'bin') params.set('view', 'bin');
-        else params.delete('view');
-        router.push(`/invoices?${params.toString()}`);
-    };
-
-    useEffect(() => {
-        loadData();
+        if (auth === '1' && user) {
+            setIsAuthenticated(true);
+            try { setCurrentUser(JSON.parse(user)); } catch { }
+            loadData();
+        } else {
+            setIsAuthenticated(false);
+            setLoading(false);
+        }
     }, [viewMode]);
+
+    const onLogin = () => {
+        setIsAuthenticated(true);
+        loadData();
+    };
 
     async function loadData() {
         setLoading(true);
@@ -89,6 +96,7 @@ function InvoicesPageContent() {
     }, [searchTerm, typeFilter, sortOrder, invoices]);
 
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading invoices...</div>;
+    if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     const getStatusColor = (inv: SavedInvoice) => {
         if (inv.data.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
