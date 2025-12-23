@@ -61,12 +61,12 @@ export function exportAddressBook(): string {
  */
 
 import { InvoiceData } from './calculations';
-import { 
-  saveInvoiceToCloud, 
-  getInvoicesFromCloud, 
+import {
+  saveInvoiceToCloud,
+  getInvoicesFromCloud,
   updateInvoiceInCloud,
   deleteInvoiceFromCloud,
-  deleteMultipleInvoicesFromCloud 
+  deleteMultipleInvoicesFromCloud
 } from './firebase-storage';
 import { isFirebaseConfigured } from './firebase';
 
@@ -85,7 +85,7 @@ export interface SavedInvoice {
  */
 export async function getAllInvoices(): Promise<SavedInvoice[]> {
   if (typeof window === 'undefined') return [];
-  
+
   // Try Firebase first
   if (isFirebaseConfigured()) {
     try {
@@ -101,11 +101,11 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
       console.error('Error fetching from Firebase, using localStorage:', error);
     }
   }
-  
+
   // Fallback to localStorage
   const stored = localStorage.getItem(STORAGE_KEY);
   if (!stored) return [];
-  
+
   try {
     return JSON.parse(stored);
   } catch (error) {
@@ -119,10 +119,10 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
  */
 export function getAllInvoicesSync(): SavedInvoice[] {
   if (typeof window === 'undefined') return [];
-  
+
   const stored = localStorage.getItem(STORAGE_KEY);
   if (!stored) return [];
-  
+
   try {
     return JSON.parse(stored);
   } catch (error) {
@@ -219,6 +219,20 @@ export function getInvoiceById(id: string): SavedInvoice | null {
 }
 
 /**
+ * Get invoice by ID (asynchronous, checks cloud + local)
+ */
+export async function getInvoiceByIdAsync(id: string): Promise<SavedInvoice | null> {
+  // First try local
+  const local = getInvoiceById(id);
+  if (local) return local;
+
+  // Then try fetching all (which checks cloud)
+  // Optimization: In a real app we'd fetch just one, but here we reuse existing logic
+  const all = await getAllInvoices();
+  return all.find(inv => inv.id === id) || null;
+}
+
+/**
  * Get invoice by invoice number (synchronous)
  */
 export function getInvoiceByNumber(invoiceNumber: string): SavedInvoice | null {
@@ -233,49 +247,49 @@ export function getInvoiceByNumber(invoiceNumber: string): SavedInvoice | null {
  */
 export async function searchInvoices(query: string): Promise<SavedInvoice[]> {
   const invoices = await getAllInvoices();
-  
+
   if (!query.trim()) return invoices;
-  
+
   const searchTerm = query.toLowerCase().trim();
-  
+
   return invoices.filter(inv => {
     const data = inv.data;
-    
+
     // Search by invoice number
     if (data.invoiceNumber.toLowerCase().includes(searchTerm)) {
       return true;
     }
-    
+
     // Search by customer name
     if (data.soldTo.name.toLowerCase().includes(searchTerm)) {
       return true;
     }
-    
+
     // Search by phone
     if (data.soldTo.phone.toLowerCase().includes(searchTerm)) {
       return true;
     }
-    
+
     // Search by address
     if (data.soldTo.address.toLowerCase().includes(searchTerm)) {
       return true;
     }
-    
+
     // Search by city
     if (data.soldTo.city.toLowerCase().includes(searchTerm)) {
       return true;
     }
-    
+
     // Search by zip
     if (data.soldTo.zip.toLowerCase().includes(searchTerm)) {
       return true;
     }
-    
-      // Search by rug number (SKU) in items
-      if (Array.isArray(data.items) && data.items.some(item => item.sku && item.sku.toLowerCase().includes(searchTerm))) {
-        return true;
-      }
-    
+
+    // Search by rug number (SKU) in items
+    if (Array.isArray(data.items) && data.items.some(item => item.sku && item.sku.toLowerCase().includes(searchTerm))) {
+      return true;
+    }
+
     return false;
   });
 }
@@ -293,7 +307,7 @@ export async function deleteInvoice(id: string): Promise<boolean> {
   let bin: SavedInvoice[] = [];
   try {
     bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
-  } catch {}
+  } catch { }
   bin.push(deletedInvoice);
   localStorage.setItem('deleted_invoices', JSON.stringify(bin));
 
@@ -320,7 +334,7 @@ export function restoreInvoiceFromBin(id: string): boolean {
   let bin: SavedInvoice[] = [];
   try {
     bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
-  } catch {}
+  } catch { }
   const idx = bin.findIndex(inv => inv.id === id);
   if (idx === -1) return false;
   const [restored] = bin.splice(idx, 1);

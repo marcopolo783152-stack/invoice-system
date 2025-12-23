@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Printer, FileText, Download } from 'lucide-react';
-import { getInvoiceById, SavedInvoice } from '@/lib/invoice-storage';
+import { getInvoiceById, getInvoiceByIdAsync, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import PrintPortal from '@/components/PrintPortal';
@@ -22,12 +22,13 @@ function InvoiceViewContent() {
 
     useEffect(() => {
         if (id) {
-            const data = getInvoiceById(id);
-            if (data) {
-                setInvoice(data);
-                setCalculations(calculateInvoice(data.data));
-            }
-            setLoading(false);
+            getInvoiceByIdAsync(id).then(data => {
+                if (data) {
+                    setInvoice(data);
+                    setCalculations(calculateInvoice(data.data));
+                }
+                setLoading(false);
+            });
         } else {
             setLoading(false);
         }
