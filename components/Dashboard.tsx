@@ -81,18 +81,18 @@ export default function Dashboard() {
     }, [invoices, period]);
 
     // KPIs
-    const totalRevenue = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).totalDue, 0);
+    const totalNetRevenue = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).netTotalDue, 0);
+    const totalReturned = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).returnedAmount, 0);
     const totalInvoices = filteredInvoices.length;
-    const averageOrder = totalInvoices > 0 ? totalRevenue / totalInvoices : 0;
 
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading dashboard...</div>;
 
     return (
-        <div style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ padding: 'var(--dashboard-padding, 40px)', maxWidth: 1200, margin: '0 auto' }}>
             <header style={{ marginBottom: 40 }}>
-                <h1 style={{ fontSize: 32, fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>Dashboard</h1>
+                <h1 style={{ fontSize: 'var(--h1-size, 32px)', fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>Dashboard</h1>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap' }}>
-                    <p style={{ color: '#666' }}>Performance analysis and financial reports.</p>
+                    <p style={{ color: '#666', fontSize: 'var(--p-size, 16px)' }}>Performance analysis and financial reports.</p>
 
                     <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                         <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12 }}>
@@ -182,10 +182,10 @@ export default function Dashboard() {
             {/* KPI Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 40 }}>
                 <KpiCard
-                    title="Revenue"
-                    value={`$${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                    title="Total Revenue"
+                    value={`$${totalNetRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<DollarSign size={24} color="#10b981" />}
-                    trend={`Gross Sales`}
+                    trend={`Total - Refunds`}
                     trendColor="#10b981"
                     color="rgba(16, 185, 129, 0.1)"
                 />
@@ -198,65 +198,70 @@ export default function Dashboard() {
                     color="rgba(99, 102, 241, 0.1)"
                 />
                 <KpiCard
-                    title="Avg. Invoice Value"
-                    value={`$${averageOrder.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                    icon={<TrendingUp size={24} color="#f59e0b" />}
-                    trend="Per order"
-                    trendColor="#64748b"
-                    color="rgba(245, 158, 11, 0.1)"
+                    title="Total Returns"
+                    value={`$${totalReturned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    icon={<TrendingUp size={24} color="#ef4444" />}
+                    trend="Refunded"
+                    trendColor="#ef4444"
+                    color="rgba(239, 68, 68, 0.1)"
                 />
             </div>
 
             {/* Recent Activity */}
-            <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+            <div style={{ background: 'white', borderRadius: 24, padding: 'var(--dashboard-padding, 32px)', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                    <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1f3c' }}>{period === 'all-time' ? 'Recent Invoices' : `Invoices - ${period.replace('-', ' ')}`}</h2>
+                    <h2 style={{ fontSize: 'var(--h2-size, 20px)', fontWeight: 700, color: '#1a1f3c' }}>{period === 'all-time' ? 'Recent Invoices' : `Invoices - ${period.replace('-', ' ')}`}</h2>
                     <Link href="/invoices" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }} className="no-print">View All</Link>
                 </div>
 
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ borderBottom: '1px solid #eee', textAlign: 'left' }}>
-                            <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Invoice #</th>
-                            <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Customer</th>
-                            <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Date</th>
-                            <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Total Amount</th>
-                            <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredInvoices.slice(0, 10).map((inv) => {
-                            const calcs = calculateInvoice(inv.data);
-                            return (
-                                <tr key={inv.id} style={{ borderBottom: '1px solid #f8f8f8' }}>
-                                    <td style={{ padding: '16px 0', fontWeight: 600, color: '#1a1f3c' }}>{inv.data.invoiceNumber}</td>
-                                    <td style={{ padding: '16px 0', color: '#4b5563' }}>{inv.data.soldTo.name}</td>
-                                    <td style={{ padding: '16px 0', color: '#6b7280' }}>{inv.data.date}</td>
-                                    <td style={{ padding: '16px 0', fontWeight: 600, color: '#1a1f3c' }}>
-                                        ${calcs.totalDue.toLocaleString()}
-                                    </td>
-                                    <td style={{ padding: '16px 0' }}>
-                                        <span style={{
-                                            padding: '4px 12px',
-                                            borderRadius: 20,
-                                            background: inv.data.documentType === 'WASH' ? '#e0f2fe' : 'rgba(16, 185, 129, 0.1)',
-                                            color: inv.data.documentType === 'WASH' ? '#0369a1' : '#059669',
-                                            fontSize: 12,
-                                            fontWeight: 600
-                                        }}>{inv.data.documentType || 'Paid'}</span>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                        {filteredInvoices.length === 0 && (
-                            <tr>
-                                <td colSpan={5} style={{ padding: 40, textAlign: 'center', color: '#888' }}>No invoices found for this period.</td>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid #eee', textAlign: 'left' }}>
+                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Invoice #</th>
+                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Customer</th>
+                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Date</th>
+                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Total Amount</th>
+                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Served By</th>
+                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Status</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filteredInvoices.slice(0, 10).map((inv) => {
+                                const calcs = calculateInvoice(inv.data);
+                                return (
+                                    <tr key={inv.id} style={{ borderBottom: '1px solid #f8f8f8' }}>
+                                        <td style={{ padding: '16px 0', fontWeight: 600, color: '#1a1f3c' }}>{inv.data.invoiceNumber}</td>
+                                        <td style={{ padding: '16px 0', color: '#4b5563' }}>{inv.data.soldTo.name}</td>
+                                        <td style={{ padding: '16px 0', color: '#6b7280' }}>{inv.data.date}</td>
+                                        <td style={{ padding: '16px 0', fontWeight: 600, color: '#1a1f3c' }}>
+                                            ${calcs.totalDue.toLocaleString()}
+                                        </td>
+                                        <td style={{ padding: '16px 0', color: '#4b5563', fontSize: 13 }}>
+                                            {inv.data.servedBy || '—'}
+                                        </td>
+                                        <td style={{ padding: '16px 0' }}>
+                                            <span style={{
+                                                padding: '4px 12px',
+                                                borderRadius: 20,
+                                                background: inv.data.documentType === 'WASH' ? '#e0f2fe' : 'rgba(16, 185, 129, 0.1)',
+                                                color: inv.data.documentType === 'WASH' ? '#0369a1' : '#059669',
+                                                fontSize: 12,
+                                                fontWeight: 600
+                                            }}>{inv.data.documentType || 'Paid'}</span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {filteredInvoices.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} style={{ padding: 40, textAlign: 'center', color: '#888' }}>No invoices found for this period.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-
         </div>
     );
 }

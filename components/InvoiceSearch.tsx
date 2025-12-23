@@ -342,9 +342,9 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
   };
 
   return (
-    <div className={styles.container}>
+    <div style={{ padding: 'var(--dashboard-padding, 20px)' }} className={styles.container}>
       <div className={styles.header}>
-        <h2>Search Invoices</h2>
+        <h2 style={{ fontSize: 'var(--h1-size, 24px)' }}>Search Invoices</h2>
         <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f3f4f6', padding: '4px 8px', borderRadius: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 500 }}>📅 Date Range:</span>

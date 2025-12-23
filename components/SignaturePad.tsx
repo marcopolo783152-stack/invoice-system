@@ -28,8 +28,9 @@ export default function SignaturePad({ onSave, onCancel, existingSignature }: Si
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
-    canvas.width = 600;
+    // Set canvas size based on container or default
+    const container = canvas.parentElement;
+    canvas.width = container ? container.clientWidth : 600;
     canvas.height = 200;
 
     // Configure drawing style

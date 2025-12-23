@@ -20,11 +20,29 @@
     color: #fff;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
-    padding: 8px;
+    padding: 12px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     backdrop-filter: blur(10px);
+}
+
+.mobileClose {
+    display: none;
+}
+
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 300px;
+        box-shadow: 10px 0 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .mobileClose {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 }
 
 .logoIcon {

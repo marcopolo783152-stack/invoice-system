@@ -14,10 +14,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const [user, setUser] = useState<any>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Basic auth check for sidebar user info
-    // Access localStorage only on client side
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('mp-invoice-user');
       if (storedUser) {
@@ -38,11 +38,80 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div style={{ display: 'flex' }}>
-          <Suspense fallback={<div style={{ width: 280, background: '#1e293b', minHeight: '100vh' }} />}>
-            <Sidebar user={user} onLogout={handleLogout} />
+        <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+          {/* Mobile Overlay */}
+          {isSidebarOpen && (
+            <div
+              onClick={() => setIsSidebarOpen(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.5)',
+                zIndex: 90,
+                backdropFilter: 'blur(4px)'
+              }}
+            />
+          )}
+
+          <Suspense fallback={<div style={{ width: 280, background: '#1e293b' }} />}>
+            <div style={{
+              position: 'fixed',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              zIndex: 100,
+              transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+              transition: 'transform 0.3s ease-in-out',
+              // On desktop, it should always be visible
+              visibility: 'visible'
+            }} className="sidebar-container">
+              <Sidebar user={user} onLogout={handleLogout} onClose={() => setIsSidebarOpen(false)} />
+            </div>
+
+            {/* Desktop Sidebar Placeholder */}
+            <div style={{ width: 280, flexShrink: 0 }} className="desktop-sidebar-space" />
           </Suspense>
-          <div className="main-content" style={{ flex: 1, marginLeft: 280, minHeight: '100vh', background: '#f8fafc' }}>
+
+          <div className="main-content" style={{
+            flex: 1,
+            minHeight: '100vh',
+            background: '#f8fafc',
+            width: '100%',
+            transition: 'margin-left 0.3s ease-in-out'
+          }}>
+            {/* Mobile Header */}
+            <header className="mobile-only-header" style={{
+              display: 'none',
+              padding: '16px',
+              background: 'white',
+              borderBottom: '1px solid #e2e8f0',
+              position: 'sticky',
+              top: 0,
+              zIndex: 50,
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#1e293b',
+                  cursor: 'pointer',
+                  padding: '8px'
+                }}
+              >
+                <div style={{ width: 24, height: 2, background: 'currentColor', marginBottom: 5 }} />
+                <div style={{ width: 24, height: 2, background: 'currentColor', marginBottom: 5 }} />
+                <div style={{ width: 24, height: 2, background: 'currentColor' }} />
+              </button>
+              <div style={{ fontWeight: 800, color: '#1a1f3c' }}>Marco Polo</div>
+              <div style={{ width: 40 }} /> {/* Spacer */}
+            </header>
+
             {children}
           </div>
         </div>

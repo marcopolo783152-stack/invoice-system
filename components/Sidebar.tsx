@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
 import ExportPreviewModal from './ExportPreviewModal';
 
-export default function Sidebar({ user, onLogout }: { user: any, onLogout: () => void }) {
+export default function Sidebar({ user, onLogout, onClose }: { user: any, onLogout: () => void, onClose?: () => void }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [showAddressBook, setShowAddressBook] = useState(false);
@@ -32,8 +32,26 @@ export default function Sidebar({ user, onLogout }: { user: any, onLogout: () =>
     return (
         <div className={styles.sidebar}>
             <div className={styles.logo}>
-                <Package className={styles.logoIcon} size={28} />
-                <span>Marco Polo</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Package className={styles.logoIcon} size={28} />
+                    <span>Marco Polo</span>
+                </div>
+                {onClose && (
+                    <button
+                        onClick={onClose}
+                        className={styles.mobileClose}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'white',
+                            cursor: 'pointer',
+                            display: 'none', // Shown via media query
+                            padding: 4
+                        }}
+                    >
+                        <X size={24} />
+                    </button>
+                )}
             </div>
 
             <nav className={styles.nav}>

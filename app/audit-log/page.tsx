@@ -28,15 +28,15 @@ export default function AuditLogPage() {
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading logs...</div>;
 
     return (
-        <div style={{ padding: 40, maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ padding: 'var(--dashboard-padding, 40px)', maxWidth: 1000, margin: '0 auto' }}>
             <header style={{ marginBottom: 32 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                     <div style={{ padding: 10, background: '#e0e7ff', borderRadius: 12, color: '#4f46e5' }}>
                         <History size={24} />
                     </div>
-                    <h1 style={{ fontSize: 28, fontWeight: 800, color: '#1a1f3c', margin: 0 }}>Audit Log</h1>
+                    <h1 style={{ fontSize: 'var(--h1-size, 28px)', fontWeight: 800, color: '#1a1f3c', margin: 0 }}>Audit Log</h1>
                 </div>
-                <p style={{ color: '#666' }}>Track activity and changes across the system.</p>
+                <p style={{ color: '#666', fontSize: 'var(--p-size, 16px)' }}>Track activity and changes across the system.</p>
             </header>
 
             <div style={{ background: 'white', borderRadius: 20, padding: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.03)', marginBottom: 24 }}>

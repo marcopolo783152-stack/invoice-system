@@ -27,6 +27,34 @@ a {
   text-decoration: none;
 }
 
+/* Responsive Layout */
+@media (max-width: 1024px) {
+  .desktop-sidebar-space {
+    display: none !important;
+  }
+
+  .mobile-only-header {
+    display: flex !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  :root {
+    --dashboard-padding: 16px;
+    --h1-size: 24px;
+    --p-size: 14px;
+  }
+}
+
+/* Base Variables */
+:root {
+  --dashboard-padding: 40px;
+  --h1-size: 32px;
+  --p-size: 16px;
+}
+
 /* Print Optimizations */
 @media print {
   * {
@@ -37,6 +65,15 @@ a {
   body {
     margin: 0;
     padding: 0;
+  }
+
+  /* Ensure sidebar space is removed in print */
+  .desktop-sidebar-space {
+    display: none !important;
+  }
+
+  .mobile-only-header {
+    display: none !important;
   }
 
   @page {
