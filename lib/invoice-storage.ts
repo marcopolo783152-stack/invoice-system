@@ -358,15 +358,82 @@ export function getDeletedInvoices(): SavedInvoice[] {
 }
 
 /**
+ * Restore multiple invoices from the bin
+ */
+export async function restoreMultipleInvoices(ids: string[]): Promise<boolean> {
+  let bin: SavedInvoice[] = [];
+  try {
+    bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
+  } catch { }
+
+  const toRestore = bin.filter(inv => ids.includes(inv.id));
+  const remainingBin = bin.filter(inv => !ids.includes(inv.id));
+
+  if (toRestore.length === 0) return false;
+
+  // Add back to active invoices
+  const invoices = getAllInvoicesSync();
+  const currentIds = invoices.map(i => i.id);
+
+  // Clean potential collisions
+  const cleanRestore = toRestore.filter(i => !currentIds.includes(i.id));
+  invoices.push(...cleanRestore);
+
+  // Re-upload to cloud if configured
+  if (isFirebaseConfigured()) {
+    for (const inv of cleanRestore) {
+      try {
+        await saveInvoiceToCloud(
+          inv.data.invoiceNumber,
+          inv.data.soldTo?.name || 'Unknown',
+          0,
+          inv.data
+        );
+      } catch (e) {
+        console.error('Failed to restore to cloud', e);
+      }
+    }
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+  localStorage.setItem('deleted_invoices', JSON.stringify(remainingBin));
+  return true;
+}
+
+/**
+ * Permanently delete multiple invoices from the bin
+ */
+export function permanentlyDeleteInvoices(ids: string[]): boolean {
+  let bin: SavedInvoice[] = [];
+  try {
+    bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
+  } catch { }
+
+  const remainingBin = bin.filter(inv => !ids.includes(inv.id));
+
+  localStorage.setItem('deleted_invoices', JSON.stringify(remainingBin));
+  return true;
+}
+
+/**
  * Delete multiple invoices (from both Firebase and localStorage)
  */
 export async function deleteMultipleInvoices(ids: string[]): Promise<boolean> {
   const invoices = getAllInvoicesSync();
-  const filtered = invoices.filter(inv => !ids.includes(inv.id));
+  const toDelete = invoices.filter(inv => ids.includes(inv.id));
+  const remaining = invoices.filter(inv => !ids.includes(inv.id));
 
-  if (filtered.length === invoices.length) {
-    return false; // No invoices found
+  if (toDelete.length === 0) {
+    return false;
   }
+
+  // Move to bin
+  let bin: SavedInvoice[] = [];
+  try {
+    bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
+  } catch { }
+  bin.push(...toDelete);
+  localStorage.setItem('deleted_invoices', JSON.stringify(bin));
 
   // Delete from Firebase
   if (isFirebaseConfigured()) {
@@ -377,8 +444,8 @@ export async function deleteMultipleInvoices(ids: string[]): Promise<boolean> {
     }
   }
 
-  // Delete from localStorage
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  // Update localStorage
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
   return true;
 }
 

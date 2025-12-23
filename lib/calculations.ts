@@ -28,7 +28,7 @@ export interface InvoiceItem {
   image?: string; // Base64 encoded image
 }
 
-export type DocumentType = 'INVOICE' | 'CONSIGNMENT';
+export type DocumentType = 'INVOICE' | 'CONSIGNMENT' | 'WASH';
 
 export interface InvoiceData {
   documentType?: DocumentType; // 'INVOICE' (default) or 'CONSIGNMENT'

@@ -220,6 +220,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         >
           <option value="INVOICE">Invoice</option>
           <option value="CONSIGNMENT">Consignment</option>
+          <option value="WASH">Wash Invoice</option>
         </select>
       </div>
       <h2>{documentType === 'CONSIGNMENT' ? 'Consignment Out Details' : 'Invoice Details'}</h2>

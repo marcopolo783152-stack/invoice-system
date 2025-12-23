@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices } from '@/lib/invoice-storage';
+import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoices, restoreMultipleInvoices, permanentlyDeleteInvoices } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
 import Link from 'next/link';
-import { Search, Plus, FileText, Download, Trash2, Users, FileDown } from 'lucide-react';
+import { Search, Plus, FileText, Download, Trash2, Users, FileDown, RotateCcw, AlertTriangle, Archive } from 'lucide-react';
 
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
     const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([]);
+    const [viewMode, setViewMode] = useState<'active' | 'bin'>('active');
     const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState<'ALL' | 'INVOICE' | 'CONSIGNMENT'>('ALL');
+    const [typeFilter, setTypeFilter] = useState<'ALL' | 'INVOICE' | 'CONSIGNMENT' | 'WASH'>('ALL');
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     const [loading, setLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -20,13 +21,21 @@ export default function InvoicesPage() {
     const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
 
     useEffect(() => {
-        async function loadData() {
+        loadData();
+    }, [viewMode]);
+
+    async function loadData() {
+        setLoading(true);
+        if (viewMode === 'active') {
             const data = await getAllInvoices();
             setInvoices(data);
-            setLoading(false);
+        } else {
+            const data = getDeletedInvoices();
+            setInvoices(data);
         }
-        loadData();
-    }, []);
+        setLoading(false);
+        setSelectedIds([]);
+    }
 
     useEffect(() => {
         let result = [...invoices];
@@ -61,6 +70,7 @@ export default function InvoicesPage() {
 
     const getStatusColor = (inv: SavedInvoice) => {
         if (inv.data.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
+        if (inv.data.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash' };
         if (inv.data.terms?.toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
         return { bg: '#eff6ff', text: '#3b82f6', label: 'Invoice' };
     };
@@ -114,56 +124,95 @@ export default function InvoicesPage() {
 
     const handleDeleteSelected = async () => {
         if (selectedIds.length === 0) return;
-        if (!confirm(`Are you sure you want to delete ${selectedIds.length} invoices?`)) return;
 
-        const key = prompt('Enter security key to delete:');
-        if (key !== 'Marcopolo$') return alert('Incorrect security key');
+        if (viewMode === 'active') {
+            if (!confirm(`Move ${selectedIds.length} invoices to Recycle Bin?`)) return;
+            await deleteMultipleInvoices(selectedIds);
+            loadData();
+        } else {
+            if (!confirm(`Permanently delete ${selectedIds.length} invoices? This cannot be undone.`)) return;
+            const key = prompt('Enter security key to confirm permanent deletion:');
+            if (key !== 'Marcopolo$') return alert('Incorrect security key');
 
-        await deleteMultipleInvoices(selectedIds);
-        const data = await getAllInvoices();
-        setInvoices(data);
-        setSelectedIds([]);
+            permanentlyDeleteInvoices(selectedIds);
+            loadData();
+        }
+    };
+
+    const handleRestoreSelected = async () => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Restore ${selectedIds.length} invoices?`)) return;
+
+        await restoreMultipleInvoices(selectedIds);
+        loadData();
     };
 
     return (
         <div style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
             <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h1 style={{ fontSize: 32, fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>Invoices</h1>
-                    <p style={{ color: '#666' }}>Manage and view all your invoices</p>
+                    <h1 style={{ fontSize: 32, fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>
+                        {viewMode === 'active' ? 'Invoices' : 'Recycle Bin'}
+                    </h1>
+                    <p style={{ color: '#666' }}>
+                        {viewMode === 'active' ? 'Manage and view all your invoices' : 'View and restore deleted invoices'}
+                    </p>
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
-                    <button
-                        onClick={handleExportAddressBook}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer'
-                        }}
-                    >
-                        <Users size={20} /> Address Book
-                    </button>
-                    <button
-                        onClick={handleExportAllPDFs}
-                        disabled={isExporting}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
-                            opacity: isExporting ? 0.7 : 1
-                        }}
-                    >
-                        <FileDown size={20} /> {isExporting ? 'Exporting...' : 'Export PDFs'}
-                    </button>
-                    <Link
-                        href="/invoices/new"
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            color: 'white', padding: '12px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 600,
-                            boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)'
-                        }}
-                    >
-                        <Plus size={20} /> New Invoice
-                    </Link>
+                    {viewMode === 'active' ? (
+                        <>
+                            <button
+                                onClick={() => setViewMode('bin')}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer'
+                                }}
+                            >
+                                <Trash2 size={20} /> Recycle Bin
+                            </button>
+                            <button
+                                onClick={handleExportAddressBook}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer'
+                                }}
+                            >
+                                <Users size={20} /> Address Book
+                            </button>
+                            <button
+                                onClick={handleExportAllPDFs}
+                                disabled={isExporting}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
+                                    opacity: isExporting ? 0.7 : 1
+                                }}
+                            >
+                                <FileDown size={20} /> {isExporting ? 'Exporting...' : 'Export PDFs'}
+                            </button>
+                            <Link
+                                href="/invoices/new"
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    color: 'white', padding: '12px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 600,
+                                    boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)'
+                                }}
+                            >
+                                <Plus size={20} /> New Invoice
+                            </Link>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => setViewMode('active')}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer'
+                            }}
+                        >
+                            <FileText size={20} /> Back to Invoices
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -182,15 +231,40 @@ export default function InvoicesPage() {
             {/* Controls Bar */}
             <div style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
                 {selectedIds.length > 0 && (
-                    <button
-                        onClick={handleDeleteSelected}
-                        style={{
-                            padding: '12px 16px', borderRadius: 12, background: '#fee2e2', color: '#ef4444', border: 'none', fontWeight: 600, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: 8
-                        }}
-                    >
-                        <Trash2 size={18} /> Delete ({selectedIds.length})
-                    </button>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                        {viewMode === 'active' ? (
+                            <button
+                                onClick={handleDeleteSelected}
+                                style={{
+                                    padding: '12px 16px', borderRadius: 12, background: '#fee2e2', color: '#ef4444', border: 'none', fontWeight: 600, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 8
+                                }}
+                            >
+                                <Trash2 size={18} /> Delete ({selectedIds.length})
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={handleRestoreSelected}
+                                    style={{
+                                        padding: '12px 16px', borderRadius: 12, background: '#dcfce7', color: '#166534', border: 'none', fontWeight: 600, cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: 8
+                                    }}
+                                >
+                                    <RotateCcw size={18} /> Restore ({selectedIds.length})
+                                </button>
+                                <button
+                                    onClick={handleDeleteSelected}
+                                    style={{
+                                        padding: '12px 16px', borderRadius: 12, background: '#fee2e2', color: '#ef4444', border: 'none', fontWeight: 600, cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: 8
+                                    }}
+                                >
+                                    <AlertTriangle size={18} /> Delete Forever ({selectedIds.length})
+                                </button>
+                            </>
+                        )}
+                    </div>
                 )}
 
                 {/* Search */}
@@ -224,6 +298,7 @@ export default function InvoicesPage() {
                     <option value="ALL">All Types</option>
                     <option value="INVOICE">Invoices</option>
                     <option value="CONSIGNMENT">Consignments</option>
+                    <option value="WASH">Wash Invoices</option>
                 </select>
 
                 <select
