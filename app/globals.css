@@ -95,7 +95,7 @@ a {
   }
 
   @page {
-    margin: 0.5in;
-    size: letter portrait;
+    margin: 15mm;
+    size: A4 portrait;
   }
 }

@@ -40,9 +40,16 @@ export default function RootLayout({
     };
 
     checkAuth();
+
+    // Regular interval fallback for edge cases
+    const interval = setInterval(checkAuth, 1000);
+
     // Also listen for storage changes for cross-tab or logout sync
     window.addEventListener('storage', checkAuth);
-    return () => window.removeEventListener('storage', checkAuth);
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -56,6 +63,8 @@ export default function RootLayout({
       setIsAuthenticated(false);
       setUser(null);
       window.location.href = '/';
+      // Force refresh on logout to clear all states
+      setTimeout(() => window.location.reload(), 100);
     }
   };
 
@@ -81,6 +90,7 @@ export default function RootLayout({
           {isAuthenticated && isSidebarOpen && (
             <div
               onClick={() => setIsSidebarOpen(false)}
+              onTouchStart={() => setIsSidebarOpen(false)}
               style={{
                 position: 'fixed',
                 top: 0,
@@ -134,7 +144,7 @@ export default function RootLayout({
             {/* Mobile Header - Only if authenticated */}
             {isAuthenticated && (
               <header className="mobile-only-header" style={{
-                display: 'none',
+                display: 'none', // Overridden by media query in globals.css
                 padding: '16px',
                 background: 'white',
                 borderBottom: '1px solid #e2e8f0',
@@ -146,19 +156,25 @@ export default function RootLayout({
               }}>
                 <button
                   onClick={() => setIsSidebarOpen(true)}
+                  onTouchStart={() => setIsSidebarOpen(true)}
                   style={{
                     background: 'none',
                     border: 'none',
                     color: '#1e293b',
                     cursor: 'pointer',
-                    padding: '8px'
+                    padding: '12px',
+                    margin: '-12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
                   }}
+                  aria-label="Open menu"
                 >
                   <div style={{ width: 24, height: 2, background: 'currentColor', marginBottom: 5 }} />
                   <div style={{ width: 24, height: 2, background: 'currentColor', marginBottom: 5 }} />
                   <div style={{ width: 24, height: 2, background: 'currentColor' }} />
                 </button>
-                <div style={{ fontWeight: 800, color: '#1a1f3c' }}>Marco Polo</div>
+                <div style={{ fontWeight: 800, color: '#1a1f3c', fontSize: '1.2rem' }}>Marco Polo</div>
                 <div style={{ width: 40 }} /> {/* Spacer */}
               </header>
             )}

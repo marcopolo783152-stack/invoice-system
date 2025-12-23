@@ -40,6 +40,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (user) {
         sessionStorage.setItem("mp-invoice-auth", "1");
         sessionStorage.setItem("mp-invoice-user", JSON.stringify(user));
+
+        // Trigger RootLayout reactive check immediately
+        window.dispatchEvent(new Event('storage'));
+
         logActivity('Login', `User ${user.fullName} logged in successfully`);
         // Also clear local storage just in case old session exists
         localStorage.removeItem("mp-invoice-auth");
