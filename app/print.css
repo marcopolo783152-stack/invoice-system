@@ -1,20 +1,19 @@
 /* Hide print portal content on screen */
-.print-only-portal {
+.print-only-portal,
+.print-portal-root {
 	display: none;
 }
 
 /* Print Styles */
 @media print {
 
-	/* 1. Hide the entire application wrapper */
-	/* We assume the Next.js app is the first div or specific element, but to be safe we hide all body children */
-	body>* {
+	/* 1. If a print portal exists, hide EVERYTHING else to ensure pixel-perfect portal content */
+	body.has-print-portal>*:not(.print-portal-root) {
 		display: none !important;
 	}
 
-	/* 2. Show ONLY the print portal root */
-	/* Note: PrintPortal creates this div directly on document.body */
-	body>.print-portal-root {
+	/* 2. Show ONLY the print portal root if it exists */
+	body.has-print-portal>.print-portal-root {
 		display: block !important;
 		position: absolute !important;
 		left: 0 !important;
@@ -26,13 +25,32 @@
 		z-index: 999999 !important;
 	}
 
-	/* 3. Make sure content inside portal is visible */
-	.print-portal-root * {
-		visibility: visible !important;
+	/* 3. Handle standard printing (when NO print portal is present) */
+	/* Hide elements marked with no-print */
+	.no-print {
+		display: none !important;
 	}
 
+	/* Always hide sidebar and its space when printing anything */
+	.sidebar-container,
+	.desktop-sidebar-space,
+	.mobile-only-header {
+		display: none !important;
+	}
+
+	/* Reset main content for printing */
+	.main-content {
+		margin: 0 !important;
+		padding: 0 !important;
+		width: 100% !important;
+		background: white !important;
+	}
+
+	/* Ensure visible content is actually visible */
+	.has-print-portal .print-portal-root *,
 	.print-only-portal {
 		display: block !important;
+		visibility: visible !important;
 	}
 
 	/* 4. Reset Body */
@@ -41,13 +59,13 @@
 		background: white !important;
 		margin: 0 !important;
 		padding: 0 !important;
-		height: 100% !important;
+		height: auto !important;
 		overflow: visible !important;
 	}
 
 	/* 5. Printable formatting */
 	@page {
-		margin: 15mm;
+		margin: 10mm;
 		size: A4 portrait;
 	}
 }

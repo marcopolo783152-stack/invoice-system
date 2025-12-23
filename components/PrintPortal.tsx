@@ -12,7 +12,11 @@ export default function PrintPortal({ children }: PrintPortalProps) {
 
     useEffect(() => {
         setMounted(true);
-        return () => setMounted(false);
+        document.body.classList.add('has-print-portal');
+        return () => {
+            setMounted(false);
+            document.body.classList.remove('has-print-portal');
+        };
     }, []);
 
     if (!mounted) return null;
