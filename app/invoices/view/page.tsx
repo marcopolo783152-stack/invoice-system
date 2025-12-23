@@ -173,19 +173,28 @@ function InvoiceViewContent() {
 
             <style jsx global>{`
                 @media print {
+                    /* Hide everything by default */
                     body > * {
                         display: none !important;
                     }
+                    /* Show the print portal */
                     body > .print-portal-root {
                         display: block !important;
-                        position: absolute;
-                        top: 0;
-                        left: 0;
+                        position: relative;
                         width: 100%;
+                        height: auto;
+                        z-index: 9999;
+                        background: white;
                     }
-                    /* Ensure the portal content isn't hidden by specific styles */
+                    /* Ensure content flow */
                     .print-only-portal {
                         display: block !important;
+                        width: 100%;
+                    }
+                    /* Reset any potential layout interferene */
+                    html, body {
+                        overflow: visible !important;
+                        height: auto !important;
                     }
                 }
             `}</style>
