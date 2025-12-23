@@ -8,9 +8,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType } from '@/lib/calculations';
+import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
 import { getItemBySku } from '@/lib/inventory-storage';
+import { Customer, searchCustomers } from '@/lib/customer-storage';
+import { getCustomerDebt } from '@/lib/invoice-storage';
+import dynamic from 'next/dynamic';
+
+const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
 
 import SignaturePad from './SignaturePad';
 import styles from './InvoiceForm.module.css';
@@ -70,6 +75,44 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       email: '',
     }
   );
+
+  // Customer Auto-complete logic
+  const [customerSuggestions, setCustomerSuggestions] = useState<Customer[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [debtStats, setDebtStats] = useState<{ totalDebt: number; overdueCount: number } | null>(null);
+
+  const handleCustomerNameChange = async (value: string) => {
+    setSoldTo({ ...soldTo, name: value });
+    setDebtStats(null); // Clear debt warning when name changes
+    if (value.length > 1) {
+      const matches = await searchCustomers(value);
+      setCustomerSuggestions(matches);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectCustomer = async (customer: Customer) => {
+    setSoldTo({
+      name: customer.name,
+      address: customer.address,
+      city: customer.city,
+      state: customer.state,
+      zip: customer.zip,
+      phone: customer.phone,
+      email: customer.email || '',
+    });
+    setShowSuggestions(false);
+
+    // Check for debt
+    const stats = await getCustomerDebt(customer.name);
+    if (stats.totalDebt > 0) {
+      setDebtStats(stats);
+    } else {
+      setDebtStats(null);
+    }
+  };
   const [items, setItems] = useState<InvoiceItem[]>(
     initialData?.items || [createEmptyItem()]
   );
@@ -183,6 +226,16 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+
+  // Barcode Scanning
+  const [scanningItemId, setScanningItemId] = useState<string | null>(null);
+
+  const handleScanSuccess = (code: string) => {
+    if (scanningItemId) {
+      handleItemChange(scanningItemId, 'sku', code);
+    }
+    setScanningItemId(null);
   };
 
   const handleGenerateNewNumber = () => {
@@ -347,18 +400,41 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
 
       {/* Sold To Section */}
       <h3>Customer Information</h3>
+      {debtStats && debtStats.totalDebt > 0 && (
+        <div style={{ padding: '15px', background: '#ffe4e6', border: '1px solid #fda4af', borderRadius: '8px', marginBottom: '20px', color: '#9f1239' }}>
+          <h4 style={{ margin: '0 0 5px 0' }}>⚠️ Outstanding Balance</h4>
+          <p style={{ margin: 0 }}>Customer has a total outstanding balance of <strong>{formatCurrency(debtStats.totalDebt)}</strong>.</p>
+          {debtStats.overdueCount > 0 && (
+            <p style={{ margin: '5px 0 0 0', fontWeight: 'bold' }}>There are {debtStats.overdueCount} overdue invoices (30+ days).</p>
+          )}
+        </div>
+      )}
       <div className={styles.row}>
-        <div className={styles.formGroup}>
+        <div className={styles.formGroup} style={{ position: 'relative' }}>
           <label>Name:*</label>
           <input
             type="text"
             value={soldTo.name}
-            onChange={(e) =>
-              setSoldTo({ ...soldTo, name: e.target.value })
-            }
+            onChange={(e) => handleCustomerNameChange(e.target.value)}
             required
             className={styles.input}
+            autoComplete="off"
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           />
+          {showSuggestions && customerSuggestions.length > 0 && (
+            <div className={styles.suggestionsList}>
+              {customerSuggestions.map((c) => (
+                <div
+                  key={c.id}
+                  className={styles.suggestionItem}
+                  onClick={() => selectCustomer(c)}
+                >
+                  <span className={styles.suggestionName}>{c.name}</span>
+                  <span className={styles.suggestionDetail}>{c.city}, {c.state} • {c.phone}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className={styles.formGroup}>
           <label>Phone:*</label>
@@ -454,15 +530,25 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             <div className={styles.row}>
               <div className={styles.formGroup}>
                 <label>SKU:*</label>
-                <input
-                  type="text"
-                  value={item.sku}
-                  onChange={(e) =>
-                    handleItemChange(item.id, 'sku', e.target.value)
-                  }
-                  required
-                  className={styles.input}
-                />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    value={item.sku}
+                    onChange={(e) =>
+                      handleItemChange(item.id, 'sku', e.target.value)
+                    }
+                    required
+                    className={styles.input}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setScanningItemId(item.id)}
+                    style={{ padding: '0 12px', background: '#e0e7ff', border: '1px solid #c7d2fe', borderRadius: '8px', cursor: 'pointer', fontSize: '20px' }}
+                    title="Scan Barcode"
+                  >
+                    📷
+                  </button>
+                </div>
               </div>
               <div className={styles.formGroup} style={{ flex: 2 }}>
                 <label>Description:*</label>
@@ -498,6 +584,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={(e) => e.target.files?.[0] && handleImageUpload(item.id, e.target.files[0])}
                   style={{ display: 'none' }}
                 />
@@ -707,6 +794,14 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           }}
           onCancel={() => setShowSignaturePad(false)}
           existingSignature={signature}
+        />
+      )}
+
+      {/* Barcode Scanner Modal */}
+      {scanningItemId && (
+        <BarcodeScanner
+          onScan={handleScanSuccess}
+          onClose={() => setScanningItemId(null)}
         />
       )}
     </form>

@@ -90,7 +90,7 @@ export function exportAddressBook(): string {
  * Automatically syncs across all devices
  */
 
-import { InvoiceData } from './calculations';
+import { InvoiceData, calculateInvoice } from './calculations';
 import {
   saveInvoiceToCloud,
   getInvoicesFromCloud,
@@ -99,6 +99,8 @@ import {
   deleteMultipleInvoicesFromCloud
 } from './firebase-storage';
 import { isFirebaseConfigured } from './firebase';
+import { updateInventoryStatusFromInvoice } from './inventory-storage';
+import { updateCustomerFromInvoice } from './customer-storage';
 
 const STORAGE_KEY = 'saved_invoices';
 
@@ -237,6 +239,18 @@ export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
   }
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+
+  // Trigger inventory status update (fire and forget)
+  // We don't await this to keep the UI snappy, but errors are logged
+  updateInventoryStatusFromInvoice(savedInvoice.data).catch(err =>
+    console.error('Error auto-updating inventory status:', err)
+  );
+
+  // Trigger customer DB update (fire and forget)
+  updateCustomerFromInvoice(savedInvoice.data.soldTo).catch(err =>
+    console.error('Error auto-updating customer DB:', err)
+  );
+
   return savedInvoice;
 }
 
@@ -518,4 +532,50 @@ export function clearAllInvoices(): void {
   if (confirm('Are you sure you want to delete all invoices? This cannot be undone.')) {
     localStorage.removeItem(STORAGE_KEY);
   }
+}
+
+/**
+ * Get customer debt statistics
+ * Returns total outstanding debt and number of overdue invoices (> 30 days)
+ */
+export async function getCustomerDebt(customerName: string): Promise<{ totalDebt: number; overdueCount: number }> {
+  if (!customerName) return { totalDebt: 0, overdueCount: 0 };
+
+  // We need to await here because getAllInvoices guarantees we have the latest from cloud
+  const invoices = await getAllInvoices();
+  const now = new Date();
+  // 30 days ago
+  const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+  const outstanding = invoices.filter(inv => {
+    const d = inv.data;
+    if (d.soldTo.name.trim().toLowerCase() !== customerName.trim().toLowerCase()) return false;
+
+    // Exclude Consignments/Wash for debt calculation unless specified
+    // But user asked for "Net 30" -> implies standard invoices
+    if ((d.documentType || 'INVOICE') !== 'INVOICE') return false;
+
+    // Exclude Paid
+    const terms = (d.terms || '').toLowerCase();
+    if (terms.includes('paid')) return false;
+
+    return true;
+  });
+
+  let totalDebt = 0;
+  let overdueCount = 0;
+
+  outstanding.forEach(inv => {
+    const calcs = calculateInvoice(inv.data);
+    totalDebt += calcs.netTotalDue; // Use Net Total (after returns)
+
+    // Check Overdue
+    // If invoice date is older than 30 days
+    const invDate = new Date(inv.createdAt);
+    if (invDate < thirtyDaysAgo) {
+      overdueCount++;
+    }
+  });
+
+  return { totalDebt, overdueCount };
 }

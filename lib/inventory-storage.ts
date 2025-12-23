@@ -5,7 +5,7 @@
  * Syncs between localStorage and Firebase.
  */
 
-import { RugShape } from './calculations';
+import { RugShape, InvoiceData } from './calculations';
 import { db, isFirebaseConfigured } from './firebase';
 import {
     collection,
@@ -191,4 +191,45 @@ export async function deleteInventoryItem(id: string): Promise<void> {
     const items = await getInventoryItems();
     const filtered = items.filter(i => i.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+}
+
+/**
+ * Update inventory status based on invoice data
+ */
+export async function updateInventoryStatusFromInvoice(invoiceData: InvoiceData): Promise<void> {
+    const items = await getInventoryItems();
+    let updates = 0;
+
+    for (const invoiceItem of invoiceData.items) {
+        if (!invoiceItem.sku) continue;
+
+        // Find matching inventory item
+        const inventoryItem = items.find(i => i.sku.toLowerCase() === invoiceItem.sku.toLowerCase());
+        if (!inventoryItem) continue;
+
+        let newStatus: 'AVAILABLE' | 'SOLD' | 'ON_APPROVAL' = inventoryItem.status;
+
+        // Logic:
+        // 1. If Returned -> AVAILABLE
+        // 2. If Consignment -> ON_APPROVAL
+        // 3. If Invoice (Sold) -> SOLD
+
+        if (invoiceItem.returned || invoiceData.returned) {
+            newStatus = 'AVAILABLE';
+        } else if (invoiceData.documentType === 'CONSIGNMENT') {
+            newStatus = 'ON_APPROVAL';
+        } else {
+            newStatus = 'SOLD';
+        }
+
+        // Only update if status changed
+        if (newStatus !== inventoryItem.status) {
+            await saveInventoryItem({ ...inventoryItem, status: newStatus });
+            updates++;
+        }
+    }
+
+    if (updates > 0) {
+        console.log(`Updated status for ${updates} inventory items.`);
+    }
 }
