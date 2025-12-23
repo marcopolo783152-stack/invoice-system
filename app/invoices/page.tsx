@@ -27,6 +27,18 @@ function InvoicesPageContent() {
     const [currentUser, setCurrentUser] = useState<any>(null);
 
     useEffect(() => {
+        const view = searchParams.get('view') === 'bin' ? 'bin' : 'active';
+        setViewMode(view);
+    }, [searchParams]);
+
+    const handleSetViewMode = (mode: 'active' | 'bin') => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (mode === 'bin') params.set('view', 'bin');
+        else params.delete('view');
+        router.push(`/invoices?${params.toString()}`);
+    };
+
+    useEffect(() => {
         // Authenticate
         const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
         const user = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
