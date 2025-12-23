@@ -187,7 +187,7 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
               </button>
             )}
           </div>
-          {error && <div className={styles.error} style={{ marginTop: 10, color: 'dc2626' }}>{error}</div>}
+          {error && <div className={styles.error} style={{ marginTop: 10, color: '#dc2626' }}>{error}</div>}
           {successMsg && <div style={{ marginTop: 10, color: 'green' }}>{successMsg}</div>}
         </form>
       </div>

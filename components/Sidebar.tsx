@@ -14,21 +14,24 @@ export default function Sidebar({
     onLogout,
     onClose,
     isCollapsed,
-    onToggleCollapse
+    onToggleCollapse,
+    onShowAddressBook,
+    onShowExportPreview
 }: {
     user: any,
     onLogout: () => void,
     onClose?: () => void,
     isCollapsed?: boolean,
-    onToggleCollapse?: () => void
+    onToggleCollapse?: () => void,
+    onShowAddressBook?: () => void,
+    onShowExportPreview?: () => void
 }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const [showAddressBook, setShowAddressBook] = useState(false);
-    const [showExportPreview, setShowExportPreview] = useState(false);
 
     // Helper to check active state safely
     const isActive = (path: string, exact = false) => {
+        if (!pathname) return false;
         if (exact) return pathname === path;
         return pathname.startsWith(path);
     };
@@ -40,8 +43,8 @@ export default function Sidebar({
         { label: 'Invoices', href: '/invoices', icon: FileText, activeCondition: pathname === '/invoices' && !isRecycleBin },
         { label: 'New Invoice', href: '/invoices/new', icon: PlusCircle },
         { label: 'Inventory DB', href: '/inventory', icon: Package },
-        { label: 'Address Book', icon: Users, type: 'button' as const, onClick: () => setShowAddressBook(true) },
-        { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: () => setShowExportPreview(true) },
+        { label: 'Address Book', icon: Users, type: 'button' as const, onClick: onShowAddressBook },
+        { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
         { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
         { label: 'Settings', href: '/settings', icon: Settings },
         { label: 'Audit Log', href: '/audit-log', icon: History }
@@ -132,15 +135,6 @@ export default function Sidebar({
                     <span className={styles.label}>Logout</span>
                 </button>
             </div>
-
-            <AddressBookModal
-                isOpen={showAddressBook}
-                onClose={() => setShowAddressBook(false)}
-            />
-            <ExportPreviewModal
-                isOpen={showExportPreview}
-                onClose={() => setShowExportPreview(false)}
-            />
         </div>
     );
 }

@@ -60,11 +60,11 @@ export default function SettingsPage() {
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1f3c', marginBottom: 24 }}>My Profile</h2>
                 <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
                     <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #ffd700 0%, #ffa500 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 'bold', color: '#1a1f3c' }}>
-                        {user?.name?.[0] || user?.username?.[0] || 'U'}
+                        {(user?.fullName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
                     </div>
                     <div>
                         <div style={{ fontSize: 24, fontWeight: 700, color: '#1a1f3c' }}>{user?.fullName || 'User'}</div>
-                        <div style={{ color: '#666' }}>{user?.username}</div>
+                        <div style={{ color: '#666' }}>{user?.username || 'No email provided'}</div>
                         <div style={{ display: 'inline-block', marginTop: 8, padding: '4px 12px', borderRadius: 20, background: '#f3f4f6', color: '#4b5563', fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>
                             {user?.role || 'Staff'}
                         </div>
@@ -75,7 +75,7 @@ export default function SettingsPage() {
             {user?.role === 'admin' && (
                 <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
                     <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1f3c', marginBottom: 24 }}>User Management</h2>
-                    <UserManagement users={users} setUsers={setUsers} />
+                    <UserManagement users={users} setUsers={setUsers} currentUser={user} />
                 </div>
             )}
         </div>

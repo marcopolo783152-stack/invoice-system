@@ -4,6 +4,8 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import './print.css';
 import Sidebar from '@/components/Sidebar';
+import AddressBookModal from '@/components/AddressBookModal';
+import ExportPreviewModal from '@/components/ExportPreviewModal';
 import { useState, useEffect, Suspense } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -16,6 +18,8 @@ export default function RootLayout({
   const [user, setUser] = useState<any>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [showAddressBook, setShowAddressBook] = useState(false);
+  const [showExportPreview, setShowExportPreview] = useState(false);
 
   useEffect(() => {
     // Basic auth check for sidebar user info
@@ -45,6 +49,16 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+          {/* Global Modals - Rendered at root to avoid stacking context issues */}
+          <AddressBookModal
+            isOpen={showAddressBook}
+            onClose={() => setShowAddressBook(false)}
+          />
+          <ExportPreviewModal
+            isOpen={showExportPreview}
+            onClose={() => setShowExportPreview(false)}
+          />
+
           {/* Mobile Overlay */}
           {isSidebarOpen && (
             <div
@@ -80,6 +94,8 @@ export default function RootLayout({
                 onClose={() => setIsSidebarOpen(false)}
                 isCollapsed={isCollapsed}
                 onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+                onShowAddressBook={() => setShowAddressBook(true)}
+                onShowExportPreview={() => setShowExportPreview(true)}
               />
             </div>
 
