@@ -52,6 +52,11 @@ export default function Sidebar({ user, onLogout }: { user: any, onLogout: () =>
                     <span>New Invoice</span>
                 </Link>
 
+                <Link href="/inventory" className={`${styles.navItem} ${pathname.startsWith('/inventory') ? styles.active : ''}`}>
+                    <Package size={20} />
+                    <span>Inventory DB</span>
+                </Link>
+
                 <button
                     onClick={() => setShowAddressBook(true)}
                     className={styles.navItem}
