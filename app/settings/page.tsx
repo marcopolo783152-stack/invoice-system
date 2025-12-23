@@ -18,9 +18,22 @@ export default function SettingsPage() {
 
         if (auth === '1' && storedUser) {
             setIsAuthenticated(true);
-            try { setUser(JSON.parse(storedUser)); } catch { }
+            try {
+                const parsed = JSON.parse(storedUser);
+                if (parsed && typeof parsed === 'object') setUser(parsed);
+                else setIsAuthenticated(false);
+            } catch {
+                setIsAuthenticated(false);
+            }
+
             if (storedUsers) {
-                try { setUsers(JSON.parse(storedUsers)); } catch { }
+                try {
+                    const parsed = JSON.parse(storedUsers);
+                    if (Array.isArray(parsed)) setUsers(parsed);
+                    else setUsers([{ username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }]);
+                } catch {
+                    setUsers([{ username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }]);
+                }
             } else {
                 setUsers([{ username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }]);
             }

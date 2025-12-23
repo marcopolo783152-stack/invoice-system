@@ -193,7 +193,7 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
       </div>
 
       <ul className={styles.userList}>
-        {users.map(u => (
+        {Array.isArray(users) && users.map(u => (
           <li key={u.username} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #eee' }}>
             <div>
               <span style={{ fontWeight: 'bold' }}>{u.fullName}</span>

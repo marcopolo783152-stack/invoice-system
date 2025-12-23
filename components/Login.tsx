@@ -23,7 +23,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const stored = localStorage.getItem("mp-invoice-users");
     if (stored) {
       try {
-        setUsers(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setUsers(parsed);
       } catch { }
     }
   }, []);
