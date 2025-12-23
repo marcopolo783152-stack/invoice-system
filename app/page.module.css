@@ -5,9 +5,9 @@
 .main {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  background-image: 
-    repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px),
-    repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(0,0,0,.05) 35px, rgba(0,0,0,.05) 70px),
+  background-image:
+    repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255, 255, 255, .05) 35px, rgba(255, 255, 255, .05) 70px),
+    repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(0, 0, 0, .05) 35px, rgba(0, 0, 0, .05) 70px),
     linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
   position: relative;
@@ -27,7 +27,7 @@
   padding: 30px 20px;
 }
 
-.header > div:first-child {
+.header>div:first-child {
   text-align: left;
 }
 
@@ -242,7 +242,7 @@
     gap: 20px;
   }
 
-  .header > div:first-child {
+  .header>div:first-child {
     text-align: center;
   }
 
@@ -284,31 +284,5 @@
 
   .bottomActions button {
     width: 100%;
-  }
-}
-
-/* Print Styles */
-@media print {
-  .main {
-    background: white;
-    padding: 0;
-  }
-
-  .header,
-  .formSection,
-  .actions,
-  .bottomActions,
-  .errors {
-    display: none !important;
-  }
-
-  .previewSection {
-    padding: 0;
-    box-shadow: none;
-    margin: 0;
-  }
-
-  .invoiceContainer {
-    margin: 0;
   }
 }
