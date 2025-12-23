@@ -204,15 +204,6 @@ export default function Dashboard() {
                 </table>
             </div>
 
-            <style jsx global>{`
-                @media print {
-                    .no-print { display: none !important; }
-                    body { background: white !important; }
-                    .sidebar { display: none !important; }
-                    main { margin-left: 0 !important; }
-                    div[style*="marginLeft: 280"] { margin-left: 0 !important; }
-                }
-            `}</style>
         </div>
     );
 }

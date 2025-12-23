@@ -6,82 +6,93 @@
 /* Print Styles */
 @media print {
 
-	/* Hide elements that shouldn't be printed */
+	/* 1. Hide everything that shouldn't be printed */
 	.sidebar,
 	.no-print,
 	.header-actions,
 	[class*="Sidebar"],
 	nav,
-	button {
+	header,
+	footer,
+	button,
+	.screen-only,
+	#invoice-screen-view {
 		display: none !important;
 	}
 
-	/* Ensure body is visible and white */
+	/* 2. Reset layout containers */
+	html,
 	body {
 		visibility: visible !important;
 		background: #fff !important;
 		margin: 0 !important;
 		padding: 0 !important;
+		width: 100% !important;
+		height: auto !important;
+		overflow: visible !important;
+		color: #000 !important;
 	}
 
-	/* Show print portal with high priority */
-	.print-portal-root,
-	.print-only-portal,
-	.print-only-portal * {
-		visibility: visible !important;
+	.main-content {
+		margin-left: 0 !important;
+		padding: 0 !important;
+		width: 100% !important;
+		background: #fff !important;
 		display: block !important;
 	}
 
-	/* Position print portal to cover page for legacy browsers */
-	.print-only-portal {
+	/* 3. Show printable content with high priority */
+	.print-portal-root,
+	.print-only-portal,
+	#printable-invoice-content,
+	.print-only-portal *,
+	#printable-invoice-content * {
+		visibility: visible !important;
+		display: block !important;
+		opacity: 1 !important;
+	}
+
+	/* 4. Position printable content to cover page */
+	.print-portal-root,
+	.print-only-portal,
+	#printable-invoice-content {
 		position: absolute !important;
 		left: 0;
 		top: 0;
 		width: 100% !important;
 		background: #fff !important;
-		z-index: 99999;
+		z-index: 999999 !important;
 		margin: 0 !important;
 		padding: 0 !important;
 	}
-}
 
-/* Print-specific logo sizing and layout improvements */
-@media print {
-
+	/* 5. Business Templates Adjustments */
 	.invoice-logo,
 	.print-logo {
-		display: block;
-		margin: 0 auto 16px auto;
-		max-width: 180px;
-		max-height: 120px;
+		display: block !important;
+		margin: 0 auto 16px auto !important;
+		max-width: 180px !important;
+		max-height: 120px !important;
 		width: auto !important;
 		height: auto !important;
-		object-fit: contain;
-	}
-
-	.invoice {
-		padding-top: 16px;
-	}
-}
-
-@media print {
-
-	html,
-	body {
-		background: #fff !important;
-		color: #000 !important;
-		margin: 0;
-		padding: 0;
-		width: 210mm;
-		min-height: 297mm;
+		object-fit: contain !important;
 	}
 
 	.invoice,
 	.print-receipt-center {
-		width: 190mm;
-		min-height: 277mm;
-		margin: 0 auto;
-		background: #fff;
-		color: #000;
+		width: 190mm !important;
+		min-height: 277mm !important;
+		margin: 0 auto !important;
+		padding: 10mm !important;
+		background: #fff !important;
+		color: #000 !important;
+		box-shadow: none !important;
+		border: none !important;
+	}
+
+	/* Force background colors/images */
+	* {
+		-webkit-print-color-adjust: exact !important;
+		print-color-adjust: exact !important;
 	}
 }

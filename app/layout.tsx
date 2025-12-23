@@ -42,7 +42,7 @@ export default function RootLayout({
           <Suspense fallback={<div style={{ width: 280, background: '#1e293b', minHeight: '100vh' }} />}>
             <Sidebar user={user} onLogout={handleLogout} />
           </Suspense>
-          <div style={{ flex: 1, marginLeft: 280, minHeight: '100vh', background: '#f8fafc' }}>
+          <div className="main-content" style={{ flex: 1, marginLeft: 280, minHeight: '100vh', background: '#f8fafc' }}>
             {children}
           </div>
         </div>

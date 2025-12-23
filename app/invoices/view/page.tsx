@@ -10,6 +10,7 @@ import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { ReturnedReceipt } from '@/components/ReturnedReceipt';
 import { businessConfig } from '@/config/business';
 import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
+import PrintPortal from '@/components/PrintPortal';
 
 function InvoiceViewContent() {
     const searchParams = useSearchParams();
@@ -311,41 +312,21 @@ function InvoiceViewContent() {
             </div>
 
             {/* Print Version - Hidden on screen, shown on print */}
-            <div id="printable-invoice-content" style={{ display: 'none' }}>
-                <InvoiceTemplate
-                    data={invoice.data}
-                    calculations={calculations}
-                    businessInfo={businessConfig}
-                />
-            </div>
+            <PrintPortal>
+                <div id="printable-invoice-content" className="print-only-portal">
+                    <InvoiceTemplate
+                        data={invoice.data}
+                        calculations={calculations}
+                        businessInfo={businessConfig}
+                    />
+                </div>
+            </PrintPortal>
 
             <style jsx global>{`
                 @media print {
-                    /* Hide the screen view */
-                    #invoice-screen-view, .no-print {
-                        display: none !important;
-                    }
-                    
-                    /* Show the hidden print version */
-                    #printable-invoice-content {
-                        display: block !important;
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        width: 100%;
-                        margin: 0;
-                        padding: 0;
-                        background: white;
-                    }
-
-                    /* Important: Reset parent containers to avoid clipping */
+                    /* Handle legacy overrides if any, but print.css should handle most */
                     html, body {
-                        margin: 0 !important;
-                        padding: 0 !important;
                         background: white !important;
-                        width: 100% !important;
-                        height: auto !important;
-                        overflow: visible !important;
                     }
                 }
             `}</style>
