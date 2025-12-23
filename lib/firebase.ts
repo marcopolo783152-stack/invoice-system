@@ -39,7 +39,8 @@ export function isFirebaseConfigured(): boolean {
 }
 
 // Initialize Firebase only if configured
-let app: FirebaseApp | undefined;
+
+let app: FirebaseApp;
 let db: Firestore | undefined;
 
 try {
@@ -48,6 +49,12 @@ try {
     db = getFirestore(app);
     console.log('Firebase initialized successfully');
   } else {
+    // For SSR or if not configured, initialize a dummy app (for type safety)
+    if (getApps().length === 0) {
+      app = initializeApp(firebaseConfig);
+    } else {
+      app = getApps()[0];
+    }
     console.log('Firebase not configured - using localStorage only');
   }
 } catch (error) {
