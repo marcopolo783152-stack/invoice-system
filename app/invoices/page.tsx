@@ -6,7 +6,7 @@ import { calculateInvoice } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
 import Link from 'next/link';
-import { Search, Plus, FileText, Download, Trash2, Users, FileDown, RotateCcw, AlertTriangle, Archive } from 'lucide-react';
+import { Search, Plus, FileText, Download, Trash2, Users, FileDown, RotateCcw, AlertTriangle, Archive, Settings, ChevronDown } from 'lucide-react';
 
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
@@ -19,6 +19,7 @@ export default function InvoicesPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+    const [showSettings, setShowSettings] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -161,53 +162,92 @@ export default function InvoicesPage() {
                 <div style={{ display: 'flex', gap: 12 }}>
                     {viewMode === 'active' ? (
                         <>
-                            <button
-                                onClick={() => setViewMode('bin')}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer'
-                                }}
-                            >
-                                <Trash2 size={20} /> Recycle Bin
-                            </button>
-                            <button
-                                onClick={handleExportAddressBook}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer'
-                                }}
-                            >
-                                <Users size={20} /> Address Book
-                            </button>
-                            <button
-                                onClick={handleExportAllPDFs}
-                                disabled={isExporting}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
-                                    opacity: isExporting ? 0.7 : 1
-                                }}
-                            >
-                                <FileDown size={20} /> {isExporting ? 'Exporting...' : 'Export PDFs'}
-                            </button>
+                            {/* New Invoice (Primary) */}
                             <Link
                                 href="/invoices/new"
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 8,
                                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                     color: 'white', padding: '12px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 600,
-                                    boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)'
+                                    boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)',
+                                    height: 48
                                 }}
                             >
                                 <Plus size={20} /> New Invoice
                             </Link>
+
+                            {/* Settings Dropdown */}
+                            <div style={{ position: 'relative' }}>
+                                <button
+                                    onClick={() => setShowSettings(!showSettings)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 8,
+                                        padding: '0 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
+                                        height: 48
+                                    }}
+                                >
+                                    <Settings size={20} />
+                                    <ChevronDown size={16} />
+                                </button>
+
+                                {showSettings && (
+                                    <div style={{
+                                        position: 'absolute', top: '100%', right: 0, marginTop: 8, width: 220,
+                                        background: 'white', borderRadius: 12, border: '1px solid #e2e8f0',
+                                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                                        zIndex: 50, overflow: 'hidden', padding: 4
+                                    }}>
+                                        <button
+                                            onClick={() => { setViewMode('bin'); setShowSettings(false); }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 12,
+                                                width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
+                                                textAlign: 'left', cursor: 'pointer', color: '#475569', fontSize: 14, fontWeight: 500,
+                                                borderRadius: 8
+                                            }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <Trash2 size={18} /> Recycle Bin
+                                        </button>
+                                        <button
+                                            onClick={() => { handleExportAddressBook(); setShowSettings(false); }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 12,
+                                                width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
+                                                textAlign: 'left', cursor: 'pointer', color: '#475569', fontSize: 14, fontWeight: 500,
+                                                borderRadius: 8
+                                            }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <Users size={18} /> Address Book
+                                        </button>
+                                        <button
+                                            onClick={() => { handleExportAllPDFs(); setShowSettings(false); }}
+                                            disabled={isExporting}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 12,
+                                                width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
+                                                textAlign: 'left', cursor: 'pointer', color: '#475569', fontSize: 14, fontWeight: 500,
+                                                borderRadius: 8, opacity: isExporting ? 0.7 : 1
+                                            }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <FileDown size={18} /> {isExporting ? 'Exporting...' : 'Export PDFs'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </>
                     ) : (
                         <button
                             onClick={() => setViewMode('active')}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: 8,
-                                padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer'
+                                padding: '12px 24px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
+                                height: 48
                             }}
                         >
                             <FileText size={20} /> Back to Invoices
