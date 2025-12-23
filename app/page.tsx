@@ -10,7 +10,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import InvoiceForm from '@/components/InvoiceForm';
-import InvoiceTemplate from '@/components/InvoiceTemplate';
+import PrintPortal from '@/components/PrintPortal';
+// ... existing imports ...
+
+
 import InvoiceSearch from '@/components/InvoiceSearch';
 const Login = dynamic(() => import('@/components/Login').then(mod => mod.default), { ssr: false });
 const UserManagement = dynamic(() => import('@/components/UserManagement'), { ssr: false });
@@ -22,35 +25,35 @@ import { businessConfig } from '@/config/business';
 import styles from './page.module.css';
 
 export default function Home() {
-    // Settings dropdown state
-    const [showSettings, setShowSettings] = useState(false);
+  // Settings dropdown state
+  const [showSettings, setShowSettings] = useState(false);
 
-    // Logout function
-    const logout = () => {
-      setIsAuthenticated(false);
-      setCurrentUser(null);
-      localStorage.removeItem('mp-invoice-auth');
-      localStorage.removeItem('mp-invoice-user');
-    };
+  // Logout function
+  const logout = () => {
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    localStorage.removeItem('mp-invoice-auth');
+    localStorage.removeItem('mp-invoice-user');
+  };
 
-    // Helper to detect if page is being closed (not reloaded)
-    function isWindowClosing(event: BeforeUnloadEvent) {
-      // If event.persisted is true, it's a reload (bfcache)
-      // If event.type is 'pagehide' and event.persisted, it's a reload
-      // If event.type is 'beforeunload', check if navigation type is reload
-      // Use performance.navigation for legacy, navigation API for modern
-      if (window.performance) {
-        const navs = window.performance.getEntriesByType && window.performance.getEntriesByType('navigation');
-        const nav = navs && navs.length > 0 ? navs[0] as PerformanceNavigationTiming : undefined;
-        if (nav && 'type' in nav) {
-          if (nav.type === 'reload') return false;
-          if (nav.type === 'navigate') return false;
-        }
-        // fallback for legacy
-        if ((window.performance as any).navigation && (window.performance as any).navigation.type === 1) return false;
+  // Helper to detect if page is being closed (not reloaded)
+  function isWindowClosing(event: BeforeUnloadEvent) {
+    // If event.persisted is true, it's a reload (bfcache)
+    // If event.type is 'pagehide' and event.persisted, it's a reload
+    // If event.type is 'beforeunload', check if navigation type is reload
+    // Use performance.navigation for legacy, navigation API for modern
+    if (window.performance) {
+      const navs = window.performance.getEntriesByType && window.performance.getEntriesByType('navigation');
+      const nav = navs && navs.length > 0 ? navs[0] as PerformanceNavigationTiming : undefined;
+      if (nav && 'type' in nav) {
+        if (nav.type === 'reload') return false;
+        if (nav.type === 'navigate') return false;
       }
-      return true;
+      // fallback for legacy
+      if ((window.performance as any).navigation && (window.performance as any).navigation.type === 1) return false;
     }
+    return true;
+  }
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -74,11 +77,11 @@ export default function Home() {
       setIsAuthenticated(localStorage.getItem('mp-invoice-auth') === '1');
       const storedUsers = localStorage.getItem('mp-invoice-users');
       if (storedUsers) {
-        try { setUsers(JSON.parse(storedUsers)); } catch {}
+        try { setUsers(JSON.parse(storedUsers)); } catch { }
       }
       const storedUser = localStorage.getItem('mp-invoice-user');
       if (storedUser) {
-        try { setCurrentUser(JSON.parse(storedUser)); } catch {}
+        try { setCurrentUser(JSON.parse(storedUser)); } catch { }
       }
 
       // --- Logout on window/tab close only (not reload) ---
@@ -261,7 +264,7 @@ export default function Home() {
     setShowPreview(true);
     setShowSearch(false);
     setErrors([]);
-    
+
     setTimeout(() => {
       document.getElementById('preview-section')?.scrollIntoView({
         behavior: 'smooth',
@@ -277,7 +280,7 @@ export default function Home() {
       setIsAuthenticated(true);
       const storedUser = localStorage.getItem('mp-invoice-user');
       if (storedUser) {
-        try { setCurrentUser(JSON.parse(storedUser)); } catch {}
+        try { setCurrentUser(JSON.parse(storedUser)); } catch { }
       }
     }} />;
   }
@@ -299,7 +302,7 @@ export default function Home() {
               🔍 Search Invoices ({invoiceCount})
             </button>
             <button onClick={handleNewInvoice} className={styles.newBtnHeader}>
-              ➕ New Invoice v1.1
+              ➕ New Invoice v1.2
             </button>
             {/* Settings Dropdown */}
             <div style={{ position: 'relative', marginLeft: 10 }}>
@@ -357,7 +360,7 @@ export default function Home() {
         {/* Invoice Search */}
         {showSearch && (
           <div className={styles.searchSection}>
-            <InvoiceSearch 
+            <InvoiceSearch
               onSelectInvoice={handleSelectInvoice}
               onClose={() => setShowSearch(false)}
             />
@@ -386,13 +389,16 @@ export default function Home() {
             </div>
 
             {/* Print-only wrapper: only this area will be printed */}
-            <div className="print-area" ref={invoiceRef}>
-              <InvoiceTemplate
-                data={invoiceData}
-                calculations={calculations}
-                businessInfo={businessConfig}
-              />
-            </div>
+            {/* Portal-based print wrapper: Moved outside main layout */}
+            <PrintPortal>
+              <div className="print-area" ref={invoiceRef}>
+                <InvoiceTemplate
+                  data={invoiceData}
+                  calculations={calculations}
+                  businessInfo={businessConfig}
+                />
+              </div>
+            </PrintPortal>
 
             <div className={styles.bottomActions}>
               <button onClick={handlePrint} className={styles.printBtn}>
