@@ -8,6 +8,11 @@ export interface User {
   role: "admin" | "seller" | "manager";
 }
 
+export const DEFAULT_USERS: User[] = [
+  { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin" },
+  { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" },
+];
+
 interface UserManagementProps {
   users: User[];
   setUsers: (u: User[]) => void;

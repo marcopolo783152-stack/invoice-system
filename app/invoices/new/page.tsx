@@ -36,6 +36,9 @@ function InvoicePageContent() {
   const logout = () => {
     setIsAuthenticated(false);
     setCurrentUser(null);
+    sessionStorage.removeItem('mp-invoice-auth');
+    sessionStorage.removeItem('mp-invoice-user');
+    // Also clean local just in case
     localStorage.removeItem('mp-invoice-auth');
     localStorage.removeItem('mp-invoice-user');
   };
@@ -71,7 +74,8 @@ function InvoicePageContent() {
     password: string;
     role: "admin" | "seller" | "manager";
   }[]>([
-    { username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }
+    { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin" },
+    { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" }
   ]);
   const [currentUser, setCurrentUser] = useState<{ username: string; fullName: string; role: string } | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
@@ -79,24 +83,20 @@ function InvoicePageContent() {
   useEffect(() => {
     // Check auth and users on mount
     if (typeof window !== 'undefined') {
-      setIsAuthenticated(localStorage.getItem('mp-invoice-auth') === '1');
+      // Check SESSION storage for auth (fallback to local for legacy)
+      const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
+      setIsAuthenticated(auth === '1');
+
       const storedUsers = localStorage.getItem('mp-invoice-users');
       if (storedUsers) {
         try { setUsers(JSON.parse(storedUsers)); } catch { }
       }
-      const storedUser = localStorage.getItem('mp-invoice-user');
+
+      // Check SESSION storage for user (fallback to local)
+      const storedUser = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
       if (storedUser) {
         try { setCurrentUser(JSON.parse(storedUser)); } catch { }
       }
-
-      // --- Logout on window/tab close only (not reload) ---
-      const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-        // Only logout if not a reload
-        if (isWindowClosing(event)) {
-          logout();
-        }
-      };
-      window.addEventListener('beforeunload', handleBeforeUnload);
 
       // --- Logout after 2 hours of inactivity ---
       let inactivityTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -104,17 +104,19 @@ function InvoicePageContent() {
         if (inactivityTimeout) clearTimeout(inactivityTimeout);
         inactivityTimeout = setTimeout(() => {
           logout();
+          alert('Session timed out due to inactivity.'); // Inform user
         }, 2 * 60 * 60 * 1000); // 2 hours
       };
+
       // Reset timer on user activity
-      ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(evt => {
+      const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll', 'click'];
+      events.forEach(evt => {
         window.addEventListener(evt, resetInactivityTimer);
       });
       resetInactivityTimer();
 
       return () => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-        ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(evt => {
+        events.forEach(evt => {
           window.removeEventListener(evt, resetInactivityTimer);
         });
         if (inactivityTimeout) clearTimeout(inactivityTimeout);
@@ -143,7 +145,7 @@ function InvoicePageContent() {
         const updatedUser = users.find(u => u.username === currentUser.username);
         if (updatedUser) {
           setCurrentUser(updatedUser);
-          localStorage.setItem('mp-invoice-user', JSON.stringify(updatedUser));
+          sessionStorage.setItem('mp-invoice-user', JSON.stringify(updatedUser));
         }
       }
     }
@@ -311,7 +313,7 @@ function InvoicePageContent() {
   if (!isAuthenticated) {
     return <Login onLogin={() => {
       setIsAuthenticated(true);
-      const storedUser = localStorage.getItem('mp-invoice-user');
+      const storedUser = sessionStorage.getItem('mp-invoice-user');
       if (storedUser) {
         try { setCurrentUser(JSON.parse(storedUser)); } catch { }
       }

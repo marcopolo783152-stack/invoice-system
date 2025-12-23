@@ -13,6 +13,7 @@ import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/l
 import { getItemBySku } from '@/lib/inventory-storage';
 import { Customer, searchCustomers } from '@/lib/customer-storage';
 import { getCustomerDebt } from '@/lib/invoice-storage';
+import * as XLSX from 'xlsx'; // Import SheetJS
 import dynamic from 'next/dynamic';
 
 const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
@@ -513,6 +514,97 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       {/* Items Section */}
       <h3>Items</h3>
       <div className={styles.itemsContainer}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+          <button
+            type="button"
+            onClick={() => {
+              // Download Template
+              const templateData = [
+                {
+                  SKU: 'Example-1',
+                  Description: 'Persian Rug',
+                  Shape: 'Rectangle',
+                  Width_Ft: 5,
+                  Width_In: 0,
+                  Length_Ft: 7,
+                  Length_In: 0,
+                  Fixed_Price: 1500,
+                  Price_Per_SqFt: 0
+                },
+                {
+                  SKU: 'Example-2',
+                  Description: 'Round Rug',
+                  Shape: 'Round',
+                  Width_Ft: 6,
+                  Width_In: 6,
+                  Length_Ft: 0,
+                  Length_In: 0,
+                  Fixed_Price: 2000,
+                  Price_Per_SqFt: 0
+                }
+              ];
+              const ws = XLSX.utils.json_to_sheet(templateData);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "Template");
+              XLSX.writeFile(wb, "invoice_import_template.xlsx");
+            }}
+            style={{ padding: '6px 12px', background: '#22c55e', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
+          >
+            📥 Download Excel Template
+          </button>
+          <label style={{ padding: '6px 12px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13, display: 'inline-block' }}>
+            📤 Import from Excel
+            <input
+              type="file"
+              accept=".xlsx, .xls"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                  try {
+                    const bstr = evt.target?.result;
+                    const wb = XLSX.read(bstr, { type: 'binary' });
+                    const wsname = wb.SheetNames[0];
+                    const ws = wb.Sheets[wsname];
+                    const data = XLSX.utils.sheet_to_json(ws);
+
+                    const newItems: InvoiceItem[] = data.map((row: any) => ({
+                      id: Math.random().toString(36).substr(2, 9),
+                      sku: row['SKU']?.toString() || '',
+                      description: row['Description']?.toString() || '',
+                      shape: (row['Shape']?.toString().toLowerCase().includes('round') ? 'round' : 'rectangle') as RugShape,
+                      widthFeet: Number(row['Width_Ft']) || 0,
+                      widthInches: Number(row['Width_In']) || 0,
+                      lengthFeet: Number(row['Length_Ft']) || 0,
+                      lengthInches: Number(row['Length_In']) || 0,
+                      pricePerSqFt: Number(row['Price_Per_SqFt']) || 0,
+                      fixedPrice: Number(row['Fixed_Price']) || Number(row['Price']) || 0,
+                      returned: false
+                    }));
+
+                    if (newItems.length > 0) {
+                      if (confirm(`Found ${newItems.length} items. Append to current list? (Cancel to clear list and replace)`)) {
+                        setItems(prev => [...prev, ...newItems]);
+                      } else {
+                        setItems(newItems);
+                      }
+                    } else {
+                      alert('No items found in file.');
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert('Error parsing file. Please use the template.');
+                  }
+                  e.target.value = ''; // Reset input
+                };
+                reader.readAsBinaryString(file);
+              }}
+            />
+          </label>
+        </div>
         {items.map((item, index) => (
           <div key={item.id} className={styles.itemRow}>
             <div className={styles.itemHeader}>

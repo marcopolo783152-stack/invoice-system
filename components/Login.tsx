@@ -13,7 +13,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([
-    { username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }
+    { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin" },
+    { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" }
   ]);
 
   useEffect(() => {
@@ -22,7 +23,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     if (stored) {
       try {
         setUsers(JSON.parse(stored));
-      } catch {}
+      } catch { }
     }
   }, []);
 
@@ -35,8 +36,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         u => u.username.trim().toLowerCase() === username.trim().toLowerCase() && u.password === password
       );
       if (user) {
-        localStorage.setItem("mp-invoice-auth", "1");
-        localStorage.setItem("mp-invoice-user", JSON.stringify(user));
+        sessionStorage.setItem("mp-invoice-auth", "1");
+        sessionStorage.setItem("mp-invoice-user", JSON.stringify(user));
+        // Also clear local storage just in case old session exists
+        localStorage.removeItem("mp-invoice-auth");
+        localStorage.removeItem("mp-invoice-user");
         onLogin();
       } else {
         setError("Invalid username or password");
