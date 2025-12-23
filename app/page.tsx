@@ -10,6 +10,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import InvoiceForm from '@/components/InvoiceForm';
+import InvoiceTemplate from '@/components/InvoiceTemplate';
 import PrintPortal from '@/components/PrintPortal';
 // ... existing imports ...
 
