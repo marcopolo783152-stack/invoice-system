@@ -7,7 +7,6 @@ import { ArrowLeft, Printer, FileText, Download } from 'lucide-react';
 import { getInvoiceById, getInvoiceByIdAsync, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
-import PrintPortal from '@/components/PrintPortal';
 import { businessConfig } from '@/config/business';
 import { generatePDF } from '@/lib/pdf-utils';
 
@@ -147,14 +146,18 @@ function InvoiceViewContent() {
                     </div>
                 </div>
 
-                {/* Screen Preview */}
-                <div style={{
-                    background: 'white',
-                    padding: 40,
-                    borderRadius: 8,
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                    border: '1px solid #e2e8f0'
-                }} ref={invoiceRef}>
+                {/* Screen Preview - Now also the Print Source */}
+                <div
+                    className="printable-area"
+                    style={{
+                        background: 'white',
+                        padding: 40,
+                        borderRadius: 8,
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        border: '1px solid #e2e8f0'
+                    }}
+                    ref={invoiceRef}
+                >
                     <InvoiceTemplate
                         data={invoice.data}
                         calculations={calculations}
@@ -163,51 +166,37 @@ function InvoiceViewContent() {
                 </div>
             </div>
 
-            {/* Print Portal */}
-            <PrintPortal>
-                <div className="print-only-portal">
-                    <InvoiceTemplate
-                        data={invoice.data}
-                        calculations={calculations}
-                        businessInfo={businessConfig}
-                    />
-                </div>
-            </PrintPortal>
-
             <style jsx global>{`
                 @media print {
-                    /* OPTION 2: Visibility hack (often more reliable for portals) */
-                    body {
+                    /* Hide everything by default */
+                    body * {
                         visibility: hidden;
                     }
                     
-                    /* Make the portal visible */
-                    .print-portal-root {
+                    /* Show only the printable area and its children */
+                    .printable-area, .printable-area * {
                         visibility: visible;
+                    }
+                    
+                    /* Position the printable area at the top-left of the page */
+                    .printable-area {
                         position: absolute;
                         top: 0;
                         left: 0;
                         width: 100%;
-                        z-index: 9999;
+                        margin: 0;
+                        padding: 0 !important; /* Remove screen wrapper padding */
                         background: white;
-                    }
-                    
-                    /* Ensure exact children are visible */
-                    .print-portal-root * {
-                        visibility: visible;
+                        border: none !important;
+                        box-shadow: none !important;
+                        z-index: 9999;
                     }
 
-                    /* 
-                       Backup: Hide the screen content wrapper explicitly 
-                       in case it's somehow leaking through 
-                    */
-                    .screen-content, .no-print {
-                        display: none !important;
-                    }
-                    
+                    /* Reset body/html for full page printing */
                     html, body {
+                        margin: 0 !important;
+                        padding: 0 !important;
                         overflow: visible !important;
-                        height: auto !important;
                     }
                 }
             `}</style>
