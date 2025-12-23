@@ -176,33 +176,38 @@ function InvoiceViewContent() {
 
             <style jsx global>{`
                 @media print {
-                    /* Hide screen content */
-                    .screen-content, .no-print {
-                        display: none !important;
+                    /* OPTION 2: Visibility hack (often more reliable for portals) */
+                    body {
+                        visibility: hidden;
                     }
                     
-                    /* Reset body/html */
-                    html, body {
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        background: white !important;
-                        overflow: visible !important;
-                    }
-
-                    /* Show the print portal */
-                    body > .print-portal-root {
-                        display: block !important;
+                    /* Make the portal visible */
+                    .print-portal-root {
+                        visibility: visible;
                         position: absolute;
                         top: 0;
                         left: 0;
                         width: 100%;
                         z-index: 9999;
+                        background: white;
+                    }
+                    
+                    /* Ensure exact children are visible */
+                    .print-portal-root * {
+                        visibility: visible;
                     }
 
-                    /* Ensure content flow */
-                    .print-only-portal {
-                        display: block !important;
-                        width: 100%;
+                    /* 
+                       Backup: Hide the screen content wrapper explicitly 
+                       in case it's somehow leaking through 
+                    */
+                    .screen-content, .no-print {
+                        display: none !important;
+                    }
+                    
+                    html, body {
+                        overflow: visible !important;
+                        height: auto !important;
                     }
                 }
             `}</style>
