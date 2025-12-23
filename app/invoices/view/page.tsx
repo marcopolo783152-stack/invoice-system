@@ -170,9 +170,29 @@ function InvoiceViewContent() {
                     />
                 </div>
             </PrintPortal>
+
+            <style jsx global>{`
+                @media print {
+                    body > * {
+                        display: none !important;
+                    }
+                    body > .print-portal-root {
+                        display: block !important;
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                    }
+                    /* Ensure the portal content isn't hidden by specific styles */
+                    .print-only-portal {
+                        display: block !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 }
+
 
 export default function InvoiceViewPage() {
     return (
