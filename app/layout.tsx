@@ -31,7 +31,14 @@ export default function RootLayout({
 
         if (auth === '1' && storedUser) {
           setIsAuthenticated(true);
-          try { setUser(JSON.parse(storedUser)); } catch { }
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            // Only update if data actually changed to prevent re-render loops
+            setUser((prev: any) => {
+              if (JSON.stringify(prev) !== JSON.stringify(parsedUser)) return parsedUser;
+              return prev;
+            });
+          } catch { }
         } else {
           setIsAuthenticated(false);
           setUser(null);
@@ -90,7 +97,6 @@ export default function RootLayout({
           {isAuthenticated && isSidebarOpen && (
             <div
               onClick={() => setIsSidebarOpen(false)}
-              onTouchStart={() => setIsSidebarOpen(false)}
               style={{
                 position: 'fixed',
                 top: 0,
@@ -107,16 +113,30 @@ export default function RootLayout({
           <Suspense fallback={<div style={{ width: isAuthenticated ? (isCollapsed ? 80 : 280) : 0, background: '#1e293b' }} />}>
             {isAuthenticated && (
               <>
-                <div style={{
-                  position: 'fixed',
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  zIndex: 100,
-                  transition: 'transform 0.3s ease-in-out, width 0.3s ease-in-out',
-                  visibility: 'visible',
-                  width: isCollapsed ? 80 : 280
-                }} className={`sidebar-container ${isSidebarOpen ? 'mobile-open' : ''}`}>
+                <div
+                  className={`sidebar-container ${isSidebarOpen ? 'mobile-open' : ''}`}
+                  style={{
+                    position: 'fixed',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    zIndex: 100,
+                    transition: 'transform 0.3s ease-in-out, width 0.3s ease-in-out',
+                    visibility: 'visible',
+                    // On mobile we don't want the inline width to override the CSS width
+                    width: 'var(--sidebar-width, auto)'
+                  }}
+                >
+                  <style jsx>{`
+                      .sidebar-container {
+                        --sidebar-width: ${isCollapsed ? '80px' : '280px'};
+                      }
+                      @media (max-width: 1024px) {
+                        .sidebar-container {
+                          --sidebar-width: 300px;
+                        }
+                      }
+                    `}</style>
                   <Sidebar
                     user={user}
                     onLogout={handleLogout}
@@ -156,7 +176,6 @@ export default function RootLayout({
               }}>
                 <button
                   onClick={() => setIsSidebarOpen(true)}
-                  onTouchStart={() => setIsSidebarOpen(true)}
                   style={{
                     background: 'none',
                     border: 'none',
