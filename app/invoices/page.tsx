@@ -45,8 +45,15 @@ function InvoicesPageContent() {
             const data = await getAllInvoices();
             setInvoices(data);
         } else {
-            const data = getDeletedInvoices();
-            setInvoices(data);
+            // Get bin items
+            const binData = getDeletedInvoices();
+            // Get active items to cross-reference
+            const activeData = await getAllInvoices();
+            const activeIds = new Set(activeData.map(i => i.id));
+
+            // Only show items that are NOT in the active list
+            const cleanBin = binData.filter(i => !activeIds.has(i.id));
+            setInvoices(cleanBin);
         }
         setLoading(false);
         setSelectedIds([]);
