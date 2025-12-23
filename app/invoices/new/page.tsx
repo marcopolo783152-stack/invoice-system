@@ -299,43 +299,9 @@ export default function Home() {
             </div>
           </div>
           <div className={styles.headerActions}>
-            <button onClick={handleShowSearch} className={styles.searchBtn}>
-              🔍 Search Invoices ({invoiceCount})
-            </button>
             <button onClick={handleNewInvoice} className={styles.newBtnHeader}>
               ➕ New Invoice v1.3
             </button>
-            {/* Settings Dropdown */}
-            <div style={{ position: 'relative', marginLeft: 10 }}>
-              <button
-                className={styles.settingsBtn}
-                style={{ padding: '10px 18px', borderRadius: 8, background: '#fff', color: '#764ba2', fontWeight: 600, border: 'none', fontSize: 16, cursor: 'pointer' }}
-                onClick={() => setShowSettings(s => !s)}
-              >
-                ⚙️ Settings
-              </button>
-              {showSettings && (
-                <div style={{ position: 'absolute', right: 0, top: 45, background: '#fff', color: '#222', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 220, zIndex: 1000, padding: 12 }}>
-                  <div style={{ padding: '8px 0', borderBottom: '1px solid #eee', fontWeight: 500 }}>
-                    {currentUser?.fullName || currentUser?.username} ({currentUser?.role})
-                  </div>
-                  <button
-                    style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 0', fontSize: 15, cursor: 'pointer' }}
-                    onClick={() => {
-                      logout();
-                      setShowSettings(false);
-                    }}
-                  >
-                    🚪 Logout
-                  </button>
-                  {currentUser?.role === 'admin' && (
-                    <div style={{ marginTop: 8 }}>
-                      <UserManagement users={users} setUsers={setUsers} />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         </header>
 
