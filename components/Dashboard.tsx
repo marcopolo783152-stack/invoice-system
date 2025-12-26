@@ -108,9 +108,16 @@ export default function Dashboard() {
     }, [invoices, period]);
 
     // KPIs
-    const totalNetRevenue = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).netTotalDue, 0);
+    const salesInvoices = filteredInvoices.filter(inv => inv.data.documentType !== 'CONSIGNMENT');
+    const consignmentInvoices = filteredInvoices.filter(inv => inv.data.documentType === 'CONSIGNMENT');
+
+    const totalNetRevenue = salesInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).netTotalDue, 0);
+    const totalConsignmentValue = consignmentInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).netTotalDue, 0);
     const totalReturned = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).returnedAmount, 0);
-    const totalInvoices = filteredInvoices.length;
+
+    // Counts
+    const salesCount = salesInvoices.length;
+    const consignmentCount = consignmentInvoices.length;
 
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading dashboard...</div>;
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
@@ -210,7 +217,7 @@ export default function Dashboard() {
             {/* KPI Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 40 }}>
                 <KpiCard
-                    title="Total Revenue"
+                    title="Sales Revenue"
                     value={`$${totalNetRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<DollarSign size={24} color="#10b981" />}
                     trend={`Total - Refunds`}
@@ -218,8 +225,16 @@ export default function Dashboard() {
                     color="rgba(16, 185, 129, 0.1)"
                 />
                 <KpiCard
-                    title="Invoices"
-                    value={totalInvoices.toString()}
+                    title="Consignment Value"
+                    value={`$${totalConsignmentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    icon={<FileText size={24} color="#f59e0b" />}
+                    trend={`${consignmentCount} Docs`}
+                    trendColor="#f59e0b"
+                    color="rgba(245, 158, 11, 0.1)"
+                />
+                <KpiCard
+                    title="Sales Invoices"
+                    value={salesCount.toString()}
                     icon={<FileText size={24} color="#6366f1" />}
                     trend={`${period.replace('-', ' ')}`}
                     trendColor="#64748b"

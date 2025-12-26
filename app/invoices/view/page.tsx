@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Printer, FileText, Download, Undo, Edit } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart } from 'lucide-react';
 import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
@@ -29,6 +29,7 @@ function InvoiceViewContent() {
     const [returnProcessing, setReturnProcessing] = useState(false);
     const [showReturnReceipt, setShowReturnReceipt] = useState(false);
     const [returnedReceiptData, setReturnedReceiptData] = useState<any>(null);
+    const [isConverting, setIsConverting] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -69,9 +70,17 @@ function InvoiceViewContent() {
 
     // Return Handlers
     const handleReturnClick = () => {
+        setIsConverting(false);
         setShowReturnModal(true);
         setReturnItems([]);
         setReturnNote('');
+    };
+
+    const handleConvertClick = () => {
+        setIsConverting(true);
+        setShowReturnModal(true);
+        setReturnItems([]);
+        setReturnNote('Converted to Sale');
     };
 
     const handleProcessReturn = async () => {
@@ -86,7 +95,7 @@ function InvoiceViewContent() {
         try {
             const updatedItems = invoice.data.items.map(item =>
                 returnItems.includes(item.id)
-                    ? { ...item, returned: true, returnNote: returnNote || 'Returned by customer' }
+                    ? { ...item, returned: true, returnNote: returnNote || (isConverting ? 'Converted to Sale' : 'Returned by customer') }
                     : item
             );
 
@@ -95,13 +104,30 @@ function InvoiceViewContent() {
                 data: {
                     ...invoice.data,
                     items: updatedItems,
-                    returnNote: returnNote || 'Parts Returned',
+                    returnNote: returnNote || (isConverting ? 'Converted to Sale' : 'Parts Returned'),
                     returned: updatedItems.every(i => i.returned)
                 },
                 updatedAt: new Date().toISOString()
             };
 
             await saveInvoice(updatedInvoice.data);
+
+            if (isConverting) {
+                // Get the items to sell
+                const itemsToSell = invoice.data.items.filter(i => returnItems.includes(i.id));
+                // Save to session for new invoice
+                const itemsForNewInvoice = itemsToSell.map(item => ({
+                    ...item,
+                    id: Math.random().toString(36).substr(2, 9), // New ID for new invoice
+                    returned: false, // Reset returned status for new sale
+                    returnNote: undefined
+                }));
+                sessionStorage.setItem('convert_items', JSON.stringify(itemsForNewInvoice));
+                // Redirect
+                router.push('/invoices/new');
+                return;
+            }
+
             await loadInvoice(invoice.id); // Reload to reflect changes
 
             // Show Receipt
@@ -178,6 +204,19 @@ function InvoiceViewContent() {
                             </div>
 
                             <div style={{ display: 'flex', gap: 12 }}>
+                                {invoice.data.documentType === 'CONSIGNMENT' && (
+                                    <button
+                                        onClick={handleConvertClick}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8,
+                                            padding: '10px 20px', background: '#10b981', color: 'white',
+                                            border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                                            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+                                        }}
+                                    >
+                                        <ShoppingCart size={18} /> Sell Items
+                                    </button>
+                                )}
                                 <button
                                     onClick={handleReturnClick}
                                     style={{
@@ -229,7 +268,7 @@ function InvoiceViewContent() {
                     {showReturnModal && (
                         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                             <div style={{ background: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 500, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-                                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Return Items</h3>
+                                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>{isConverting ? 'Select Items to Sell' : 'Return Items'}</h3>
                                 <div style={{ maxHeight: 300, overflowY: 'auto', marginBottom: 16, border: '1px solid #e2e8f0', borderRadius: 8 }}>
                                     {invoice.data.items.map(item => (
                                         <label key={item.id} style={{ display: 'flex', gap: 12, padding: 12, borderBottom: '1px solid #f1f5f9', cursor: item.returned ? 'default' : 'pointer', background: item.returned ? '#f8fafc' : 'white' }}>
@@ -259,8 +298,8 @@ function InvoiceViewContent() {
                                 />
                                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                                     <button onClick={() => setShowReturnModal(false)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
-                                    <button onClick={handleProcessReturn} disabled={returnProcessing} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: returnProcessing ? 0.7 : 1 }}>
-                                        {returnProcessing ? 'Processing...' : 'Confirm Return'}
+                                    <button onClick={handleProcessReturn} disabled={returnProcessing} style={{ padding: '8px 16px', background: isConverting ? '#10b981' : '#ef4444', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: returnProcessing ? 0.7 : 1 }}>
+                                        {returnProcessing ? 'Processing...' : (isConverting ? 'Convert to Sale' : 'Confirm Return')}
                                     </button>
                                 </div>
                             </div>

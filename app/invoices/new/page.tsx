@@ -160,6 +160,28 @@ function InvoicePageContent() {
     updateCount();
   }, [showPreview]);
 
+  useEffect(() => {
+    // Check for converted items from Consignment (Sold Workflow)
+    if (typeof window !== 'undefined') {
+      const convertItemsStr = sessionStorage.getItem('convert_items');
+      if (convertItemsStr) {
+        try {
+          const items = JSON.parse(convertItemsStr);
+          setFormInitialData({
+            documentType: 'INVOICE',
+            items: items,
+            date: new Date().toISOString().split('T')[0],
+            terms: 'Due on Receipt'
+          });
+          // Clear it so it doesn't persist on reload/navigation
+          sessionStorage.removeItem('convert_items');
+        } catch (e) {
+          console.error('Error parsing converted items', e);
+        }
+      }
+    }
+  }, []);
+
   const handleFormSubmit = (data: InvoiceData) => {
     // Validate data
     const validationErrors = validateInvoiceData(data);

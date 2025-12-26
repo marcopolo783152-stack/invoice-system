@@ -277,13 +277,11 @@
     margin: 0mm;
   }
 
-  html,
-  body {
-    width: 100%;
-    height: 100%;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible;
+  @page {
+    /* Use auto to respect user's paper selection (Letter/A4) */
+    size: auto;
+    /* Remove browser margins so we control layout via padding in .invoice */
+    margin: 0mm;
   }
 
   .invoice {
