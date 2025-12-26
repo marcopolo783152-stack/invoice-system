@@ -14,7 +14,7 @@
   background: white;
   color: black;
   font-family: 'Arial', 'Helvetica', sans-serif;
-  font-size: 9pt;
+  font-size: 8.5pt;
   box-sizing: border-box;
 }
 
@@ -148,7 +148,7 @@
 
 .itemsTable td {
   border: 1px solid #999;
-  padding: 4px 3px;
+  padding: 3px 2px;
   font-size: 8pt;
 }
 
@@ -309,9 +309,12 @@
   }
 
   /* Redundant @page handled by global print.css, but kept for specificity if needed */
+  /* Redundant @page handled by global print.css, but kept for specificity if needed */
   @page {
-    margin: 15mm;
-    size: A4 portrait;
+    /* Use auto to respect user's paper selection (Letter/A4) */
+    size: auto;
+    /* Minimize browser margins to give control to our container padding */
+    margin: 10mm;
   }
 }
 
