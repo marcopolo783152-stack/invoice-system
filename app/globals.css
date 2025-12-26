@@ -115,10 +115,10 @@ a {
 
   body.has-print-portal .print-portal-root {
     display: block !important;
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: relative;
     width: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   html,
