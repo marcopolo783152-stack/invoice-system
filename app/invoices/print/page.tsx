@@ -72,7 +72,7 @@ function PrintPageContent() {
     }
 
     return (
-        <div className="print-page-root">
+        <div className="print-page-root printable-area invoice-container">
             <InvoiceTemplate
                 data={invoice.data}
                 calculations={calculations}

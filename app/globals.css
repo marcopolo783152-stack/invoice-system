@@ -98,7 +98,9 @@ a {
   .__next,
   .main-container,
   [class*="layout"],
-  #invoice-print-view {
+  #invoice-print-view,
+  .main-content,
+  .print-page-root {
     height: auto !important;
     overflow: visible !important;
     position: static !important;
@@ -108,7 +110,8 @@ a {
   /* Ensure the specific invoice content is visible */
   .printable-area,
   .invoice-container,
-  .invoice {
+  .invoice,
+  .print-page-root {
     visibility: visible !important;
     opacity: 1 !important;
     display: block !important;
