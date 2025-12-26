@@ -76,14 +76,17 @@ a {
   }
 }
 
-/* Universal Print Fix */
+/* -------------------------------------------------------------------------- */
+/* CSS-ONLY DIRECT PRINT STRATEGY                                              */
+/* -------------------------------------------------------------------------- */
 @media print {
+
+  /* 1. Reset Page & Body */
   @page {
+    margin: 0;
     size: auto;
-    margin: 0mm;
   }
 
-  /* Force everything to be visible and scrollable */
   html,
   body {
     height: auto !important;
@@ -93,74 +96,38 @@ a {
     background: white !important;
   }
 
-  /* Disable the 'Antigravity' layout restrictions during print */
-  #root,
-  .__next,
-  .main-container,
-  [class*="layout"],
-  #invoice-print-view,
-  .main-content,
-  .print-page-root {
-    height: auto !important;
-    overflow: visible !important;
-    position: static !important;
+  /* 2. Hide EVERYTHING by default */
+  body>* {
+    display: none !important;
+  }
+
+  /* 3. Show ONLY the invoice content wrapper */
+  /* We use the specific ID requested */
+  #invoice-content-to-print,
+  #invoice-content-to-print * {
+    visibility: visible !important;
+  }
+
+  /* 4. Position it at the top-left to look like a full page */
+  #invoice-content-to-print {
     display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    /* Optional: padding handled by component */
   }
 
-  /* -------------------------------------------------------------------------- */
-  /* CSS-ONLY DIRECT PRINT STRATEGY                                              */
-  /* -------------------------------------------------------------------------- */
-  @media print {
-
-    /* 1. Reset Page & Body */
-    @page {
-      margin: 0;
-      size: auto;
-    }
-
-    html,
-    body {
-      height: auto !important;
-      overflow: visible !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      background: white !important;
-    }
-
-    /* 2. Hide EVERYTHING by default */
-    body>* {
-      display: none !important;
-    }
-
-    /* 3. Show ONLY the invoice content wrapper */
-    /* We use the specific ID requested */
-    #invoice-content-to-print,
-    #invoice-content-to-print * {
-      visibility: visible !important;
-    }
-
-    /* 4. Position it at the top-left to look like a full page */
-    #invoice-content-to-print {
-      display: block !important;
-      position: absolute !important;
-      left: 0 !important;
-      top: 0 !important;
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      /* Optional: padding handled by component */
-    }
-
-    /* 5. Utility to hide items even inside the printable area if needed */
-    .no-print {
-      display: none !important;
-    }
+  /* 5. Utility to hide items even inside the printable area if needed */
+  .no-print {
+    display: none !important;
   }
 
-  /* Hide UI clutter like buttons and navbars */
+  /* 6. Hide UI clutter explicitly */
   nav,
   footer,
-  .no-print,
   button,
   .action-buttons,
   header,
@@ -170,7 +137,7 @@ a {
     display: none !important;
   }
 
-  /* Force background graphics */
+  /* 7. Force background graphics */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
