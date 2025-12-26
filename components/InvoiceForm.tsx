@@ -852,7 +852,17 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       <div className={styles.formGroup}>
         <label>Customer Signature:*</label>
         <div className={styles.signatureSection}>
-          {signature ? (
+          {!showSignaturePad && !signature && (
+            <button
+              type="button"
+              onClick={() => setShowSignaturePad(true)}
+              className={styles.addSignatureBtn}
+            >
+              ✍️ Add Customer Signature
+            </button>
+          )}
+
+          {!showSignaturePad && signature && (
             <div className={styles.signaturePreview}>
               <img src={signature} alt="Customer signature" />
               <button
@@ -863,14 +873,18 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                 ✏️ Change Signature
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowSignaturePad(true)}
-              className={styles.addSignatureBtn}
-            >
-              ✍️ Add Customer Signature
-            </button>
+          )}
+
+          {showSignaturePad && (
+            <SignaturePad
+              onSave={(signatureData) => {
+                setSignature(signatureData);
+                setShowSignaturePad(false);
+              }}
+              onCancel={() => setShowSignaturePad(false)}
+              existingSignature={signature}
+              variant="inline"
+            />
           )}
         </div>
       </div>
@@ -880,16 +894,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       </button>
 
       {/* Signature Pad Modal */}
-      {showSignaturePad && (
-        <SignaturePad
-          onSave={(signatureData) => {
-            setSignature(signatureData);
-            setShowSignaturePad(false);
-          }}
-          onCancel={() => setShowSignaturePad(false)}
-          existingSignature={signature}
-        />
-      )}
+      {/* Signature Pad Modal - REMOVED (Now Inline) */}
 
       {/* Barcode Scanner Modal */}
       {scanningItemId && (

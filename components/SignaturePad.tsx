@@ -13,10 +13,11 @@ import styles from './SignaturePad.module.css';
 interface SignaturePadProps {
   onSave: (signatureData: string) => void;
   onCancel: () => void;
+  variant?: 'modal' | 'inline';
   existingSignature?: string;
 }
 
-export default function SignaturePad({ onSave, onCancel, existingSignature }: SignaturePadProps) {
+export default function SignaturePad({ onSave, onCancel, existingSignature, variant = 'modal' }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
@@ -133,52 +134,60 @@ export default function SignaturePad({ onSave, onCancel, existingSignature }: Si
     onSave(signatureData);
   };
 
+  const content = (
+    <div className={variant === 'modal' ? styles.modal : styles.inlineContainer}>
+      <h2>Customer Signature</h2>
+      <p className={styles.instructions}>
+        Please sign in the box below using your finger (touch screen) or mouse
+      </p>
+
+      <div className={styles.canvasContainer}>
+        <canvas
+          ref={canvasRef}
+          className={styles.canvas}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+        />
+      </div>
+
+      <div className={styles.actions}>
+        <button
+          type="button"
+          onClick={clearSignature}
+          className={styles.clearBtn}
+        >
+          🗑️ Clear
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className={styles.cancelBtn}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={saveSignature}
+          className={styles.saveBtn}
+        >
+          ✓ Save Signature
+        </button>
+      </div>
+    </div>
+  );
+
+  if (variant === 'inline') {
+    return content;
+  }
+
   return (
     <div className={styles.overlay}>
-      <div className={styles.modal}>
-        <h2>Customer Signature</h2>
-        <p className={styles.instructions}>
-          Please sign in the box below using your finger (touch screen) or mouse
-        </p>
-
-        <div className={styles.canvasContainer}>
-          <canvas
-            ref={canvasRef}
-            className={styles.canvas}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            onTouchStart={startDrawing}
-            onTouchMove={draw}
-            onTouchEnd={stopDrawing}
-          />
-        </div>
-
-        <div className={styles.actions}>
-          <button
-            type="button"
-            onClick={clearSignature}
-            className={styles.clearBtn}
-          >
-            🗑️ Clear
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className={styles.cancelBtn}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={saveSignature}
-            className={styles.saveBtn}
-          >
-            ✓ Save Signature
-          </button>
-        </div>
-      </div>
+      {content}
     </div>
   );
 }
