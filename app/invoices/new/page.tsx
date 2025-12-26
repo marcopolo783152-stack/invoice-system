@@ -349,22 +349,24 @@ function InvoicePageContent() {
           <div>
             <h1>Rug Business Invoice System</h1>
             <p>Professional invoicing for Web, Android, and Windows</p>
-            <div style={{ fontSize: 14, marginTop: 4, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span><b>Logged in as:</b> {currentUser?.fullName} ({currentUser?.role})</span>
-              {currentUser?.role === 'admin' && (
-                <button
-                  onClick={() => setShowSettings(true)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', color: '#4f46e5', fontSize: 14, padding: 0 }}
-                >
-                  ⚙️ Settings (Manage Users)
-                </button>
-              )}
-            </div>
           </div>
-          <div className={styles.headerActions}>
-            <button onClick={handleNewInvoice} className={styles.newBtnHeader}>
-              ➕ New Invoice v1.3
-            </button>
+          <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+            <div style={{ fontSize: 13, color: '#64748b', background: '#f1f5f9', padding: '6px 12px', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }}></div>
+              <span>{currentUser?.fullName} ({currentUser?.role})</span>
+            </div>
+            {currentUser?.role === 'admin' && (
+              <button
+                onClick={() => setShowSettings(true)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#6366f1', fontSize: 13, fontWeight: 500,
+                  marginTop: 4, display: 'flex', alignItems: 'center', gap: 4
+                }}
+              >
+                <span>Mange Users</span> ⚙️
+              </button>
+            )}
           </div>
         </header>
 
