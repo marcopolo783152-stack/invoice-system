@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getInvoiceByIdAsync, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { businessConfig } from '@/config/business';
 
-export default function PrintPage() {
+function PrintPageContent() {
     const searchParams = useSearchParams();
     const id = searchParams.get('id');
 
@@ -75,5 +75,13 @@ export default function PrintPage() {
                 }
             `}</style>
         </div>
+    );
+}
+
+export default function PrintPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <PrintPageContent />
+        </Suspense>
     );
 }
