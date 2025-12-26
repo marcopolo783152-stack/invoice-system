@@ -110,10 +110,10 @@ export async function openPDFInNewTab(
   return createPDF(invoiceElement, invoiceNumber, false);
 }
 
-export async function generatePDFBlobUrl(
+export async function getInvoicePDFBlob(
   invoiceElement: HTMLElement,
   invoiceNumber: string
-): Promise<string> {
+): Promise<Blob> {
   const pages = invoiceElement.querySelectorAll('.pdf-page');
   if (!pages || pages.length === 0) throw new Error('No invoice pages found');
 
@@ -140,7 +140,14 @@ export async function generatePDFBlobUrl(
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
   }
 
-  const blob = pdf.output('blob');
+  return pdf.output('blob');
+}
+
+export async function generatePDFBlobUrl(
+  invoiceElement: HTMLElement,
+  invoiceNumber: string
+): Promise<string> {
+  const blob = await getInvoicePDFBlob(invoiceElement, invoiceNumber);
   return URL.createObjectURL(blob);
 }
 
