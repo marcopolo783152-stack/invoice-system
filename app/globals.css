@@ -77,69 +77,40 @@ a {
 }
 
 /* -------------------------------------------------------------------------- */
-/* CSS-ONLY DIRECT PRINT STRATEGY                                              */
+/* PRINT FORCE CSS strategy                                                    */
 /* -------------------------------------------------------------------------- */
 @media print {
 
-  /* 1. Reset Page & Body */
-  @page {
-    margin: 0;
-    size: auto;
-  }
-
-  html,
-  body {
-    height: auto !important;
-    overflow: visible !important;
+  /* 1. Hide every single thing on the page by default */
+  body * {
+    visibility: hidden !important;
+    height: 0 !important;
     margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
   }
 
-  /* 2. Hide EVERYTHING by default */
-  body>* {
-    display: none !important;
-  }
-
-  /* 3. Show ONLY the invoice content wrapper */
-  /* We use the specific ID requested */
-  #invoice-content-to-print,
-  #invoice-content-to-print * {
+  /* 2. ONLY make the invoice container and its children visible */
+  .invoice-container,
+  .invoice-container *,
+  #invoice-view,
+  #invoice-view * {
     visibility: visible !important;
+    height: auto !important;
+    display: block !important;
   }
 
-  /* 4. Position it at the top-left to look like a full page */
-  #invoice-content-to-print {
-    display: block !important;
+  /* 3. Force the container to the top left of the printed page */
+  .invoice-container,
+  #invoice-view {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    /* Optional: padding handled by component */
   }
 
-  /* 5. Utility to hide items even inside the printable area if needed */
-  .no-print {
-    display: none !important;
-  }
-
-  /* 6. Hide UI clutter explicitly */
-  nav,
-  footer,
-  button,
-  .action-buttons,
-  header,
-  .sidebar-container,
-  .mobile-only-header,
-  .desktop-sidebar-space {
-    display: none !important;
-  }
-
-  /* 7. Force background graphics */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  /* 4. Fix common AI layout 'clipping' */
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
   }
 }

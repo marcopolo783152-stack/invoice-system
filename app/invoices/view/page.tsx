@@ -340,7 +340,7 @@ function InvoiceViewContent() {
 
                     {/* Screen Preview */}
                     <div
-                        id="invoice-content-to-print"
+                        id="invoice-view"
                         style={{
                             background: 'white',
                             padding: 40,
