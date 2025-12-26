@@ -7,7 +7,7 @@ import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, Plus, FileText, Download, Trash2, Users, FileDown, RotateCcw, AlertTriangle, Archive } from 'lucide-react';
+import { Search, Plus, FileText, Download, Trash2, Users, FileDown, RotateCcw, AlertTriangle, Archive, Printer } from 'lucide-react';
 import Login from '@/components/Login';
 
 function InvoicesPageContent() {
@@ -390,6 +390,23 @@ function InvoicesPageContent() {
                                     <td style={{ padding: '20px 24px', fontWeight: 700, color: '#1a1f3c' }}>${calculateInvoice(inv.data).totalDue.toLocaleString()}</td>
                                     <td style={{ padding: '20px 24px' }}>
                                         <div style={{ display: 'flex', gap: 8 }}>
+                                            <button
+                                                onClick={() => {
+                                                    const width = 1000;
+                                                    const height = 800;
+                                                    const left = (window.screen.width - width) / 2;
+                                                    const top = (window.screen.height - height) / 2;
+                                                    window.open(
+                                                        `/invoices/print?id=${inv.id}`,
+                                                        '_blank',
+                                                        `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
+                                                    );
+                                                }}
+                                                style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }}
+                                                title="Print Invoice"
+                                            >
+                                                <Printer size={16} />
+                                            </button>
                                             <Link href={`/invoices/view?id=${inv.id}`} style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }} title="View Invoice">
                                                 <FileText size={16} />
                                             </Link>
