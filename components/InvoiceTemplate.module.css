@@ -345,7 +345,11 @@
 .signatureImage img {
   max-width: 400px;
   max-height: 80px;
+  width: auto;
   height: auto;
+  display: block;
+  /* Ensure it takes space */
+  object-fit: contain;
 }
 
 .signatureDate {

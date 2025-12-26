@@ -69,69 +69,69 @@ export async function exportInvoicesAsPDFs(
         // Render the Invoice Template
         await new Promise<void>(resolve => {
           root.render(
-            <div className="pdf-export-wrapper" style = {{ background: 'white' }}>
-        <InvoiceTemplate 
-                   data={ invoice.data } 
-                   calculations = { calculations } 
-                   businessInfo = { businessConfig }
-          />
-          </div>
-        );
-        // Allow React to complete render
-        setTimeout(resolve, 50);
-      });
+            React.createElement('div', { className: 'pdf-export-wrapper', style: { background: 'white' } },
+              React.createElement(InvoiceTemplate, {
+                data: invoice.data,
+                calculations: calculations,
+                businessInfo: businessConfig
+              })
+            )
+          );
+          // Allow React to complete render
+          setTimeout(resolve, 50);
+        });
 
-      // Wait a bit more for images/fonts to stabilize if needed
-      await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait a bit more for images/fonts to stabilize if needed
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Generate PDF blob using the shared utility (handles pagination)
-      const pdfBlob = await getInvoicePDFBlob(container, invoice.data.invoiceNumber);
+        // Generate PDF blob using the shared utility (handles pagination)
+        const pdfBlob = await getInvoicePDFBlob(container, invoice.data.invoiceNumber);
 
-      // Add to ZIP
-      const invoiceNum = invoice.data.invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_');
-      const customerName = invoice.data.soldTo.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `${invoiceNum}_${customerName}.pdf`;
-      zip.file(filename, pdfBlob);
+        // Add to ZIP
+        const invoiceNum = invoice.data.invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_');
+        const customerName = invoice.data.soldTo.name.replace(/[^a-zA-Z0-9]/g, '_');
+        const filename = `${invoiceNum}_${customerName}.pdf`;
+        zip.file(filename, pdfBlob);
 
-    } catch (error) {
-      console.error(`Error processing invoice ${invoice.data.invoiceNumber}:`, error);
-      // Continue with next invoice even if one fails
+      } catch (error) {
+        console.error(`Error processing invoice ${invoice.data.invoiceNumber}:`, error);
+        // Continue with next invoice even if one fails
+      }
     }
-  }
 
     // Cleanup React Root and Container
     root.unmount();
-  document.body.removeChild(container);
+    document.body.removeChild(container);
 
-  // Generate ZIP file
-  onProgress?.({
-    current: total,
-    total,
-    status: 'Creating ZIP file...',
-    percentage: 100,
-  });
+    // Generate ZIP file
+    onProgress?.({
+      current: total,
+      total,
+      status: 'Creating ZIP file...',
+      percentage: 100,
+    });
 
-  const zipBlob = await zip.generateAsync({
-    type: 'blob',
-    compression: 'DEFLATE',
-    compressionOptions: { level: 6 }
-  });
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
 
-  // Download ZIP
-  const timestamp = new Date().toISOString().split('T')[0];
-  saveAs(zipBlob, `Invoices_Export_${timestamp}.zip`);
+    // Download ZIP
+    const timestamp = new Date().toISOString().split('T')[0];
+    saveAs(zipBlob, `Invoices_Export_${timestamp}.zip`);
 
-  onProgress?.({
-    current: total,
-    total,
-    status: 'Export complete!',
-    percentage: 100,
-  });
+    onProgress?.({
+      current: total,
+      total,
+      status: 'Export complete!',
+      percentage: 100,
+    });
 
-} catch (error) {
-  console.error('Error exporting invoices:', error);
-  throw error;
-}
+  } catch (error) {
+    console.error('Error exporting invoices:', error);
+    throw error;
+  }
 }
 
 /**
