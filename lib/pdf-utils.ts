@@ -110,6 +110,40 @@ export async function openPDFInNewTab(
   return createPDF(invoiceElement, invoiceNumber, false);
 }
 
+export async function generatePDFBlobUrl(
+  invoiceElement: HTMLElement,
+  invoiceNumber: string
+): Promise<string> {
+  const pages = invoiceElement.querySelectorAll('.pdf-page');
+  if (!pages || pages.length === 0) throw new Error('No invoice pages found');
+
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+  const pdfWidth = 8.5;
+
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i] as HTMLElement;
+    const canvas = await html2canvas(page, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      width: page.scrollWidth,
+      height: page.scrollHeight,
+      windowWidth: page.scrollWidth,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    if (i > 0) pdf.addPage();
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+  }
+
+  const blob = pdf.output('blob');
+  return URL.createObjectURL(blob);
+}
+
 /**
  * Alternative: Direct print to PDF using browser
  * This uses the browser's native print-to-PDF capability

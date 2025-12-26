@@ -1,146 +1,96 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getInvoiceByIdAsync, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { businessConfig } from '@/config/business';
-import { Printer } from 'lucide-react';
+import { generatePDFBlobUrl } from '@/lib/pdf-utils';
+import { Printer, Download } from 'lucide-react';
 
 function PrintPageContent() {
     const searchParams = useSearchParams();
-    // Default to 'id' or try 'edit' if that was passed by mistake, though 'id' is standard
     const id = searchParams.get('id');
 
     const [invoice, setInvoice] = useState<SavedInvoice | null>(null);
     const [calculations, setCalculations] = useState<InvoiceCalculations | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState('Loading invoice...');
     const [error, setError] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (id) {
-            loadInvoice(id);
-        } else {
-            setError('No Invoice ID provided');
-            setLoading(false);
-        }
+        if (id) loadInvoice(id);
+        else setError('No Invoice ID provided');
     }, [id]);
 
     const loadInvoice = async (invoiceId: string) => {
         try {
-            console.log('Loading invoice for print:', invoiceId);
             const data = await getInvoiceByIdAsync(invoiceId);
             if (data) {
-                console.log('Invoice loaded:', data.id);
                 setInvoice(data);
                 setCalculations(calculateInvoice(data.data));
+                setStatus('Rendering invoice...');
             } else {
-                console.error('Invoice not found for ID:', invoiceId);
                 setError(`Invoice not found (${invoiceId})`);
             }
         } catch (err) {
-            console.error('Error loading invoice:', err);
             setError('Failed to load invoice data');
-        } finally {
-            setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (!loading && invoice && calculations) {
-            // Auto-trigger print after a short delay
-            // Increased to 1000ms to ensure rendering is complete
-            const timer = setTimeout(() => {
-                window.print();
+        if (invoice && calculations && containerRef.current) {
+            setStatus('Generating PDF...');
+            // Wait for render
+            setTimeout(async () => {
+                try {
+                    if (!containerRef.current) return;
+                    const url = await generatePDFBlobUrl(containerRef.current, invoice.data.invoiceNumber);
+                    // Replace current window with PDF
+                    window.location.href = url;
+                    setStatus('PDF Generated. Opening...');
+                } catch (e) {
+                    console.error(e);
+                    setError('Failed to generate PDF');
+                }
             }, 1000);
-            return () => clearTimeout(timer);
         }
-    }, [loading, invoice, calculations]);
+    }, [invoice, calculations]);
 
-    const handleManualPrint = () => {
-        window.print();
-    };
-
-    if (loading) {
+    if (error) {
         return (
-            <div style={{ padding: 40, textAlign: 'center', fontFamily: 'sans-serif' }}>
-                <div style={{ marginBottom: 20 }}>Generating Print View...</div>
-                <div style={{ fontSize: 12, color: '#666' }}>ID: {id}</div>
+            <div style={{ padding: 40, textAlign: 'center', color: 'red', fontFamily: 'sans-serif' }}>
+                <h2>Error</h2>
+                <p>{error}</p>
+                <button onClick={() => window.close()} style={{ padding: '8px 16px', marginTop: 20 }}>Close</button>
             </div>
         );
     }
 
-    if (error || !invoice || !calculations) {
-        return (
-            <div style={{ padding: 40, textAlign: 'center', color: 'red', fontFamily: 'sans-serif' }}>
-                <h2>Error Printing Invoice</h2>
-                <p>{error || 'Unknown error occurred'}</p>
-                <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', marginTop: 20, cursor: 'pointer' }}>
-                    Retry
-                </button>
-            </div>
-        );
+    if (!invoice || !calculations) {
+        return <div style={{ padding: 40, textAlign: 'center', fontFamily: 'sans-serif' }}>{status}</div>;
     }
 
     return (
-        <div style={{ background: 'white', minHeight: '100vh', position: 'relative' }}>
-            {/* Debug/Manual Print Header - Hidden when printing */}
-            <div className="no-print" style={{
-                padding: '10px 20px',
-                background: '#f1f5f9',
-                borderBottom: '1px solid #e2e8f0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontSize: '14px',
-                color: '#64748b'
+        <div style={{ minHeight: '100vh', background: '#ccc', padding: 20 }}>
+            <div style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'white', zIndex: 9999, display: 'flex',
+                flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
             }}>
-                <div>Print Preview (ID: {invoice.data.invoiceNumber})</div>
-                <button
-                    onClick={handleManualPrint}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '8px 16px', background: '#3b82f6', color: 'white',
-                        border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer'
-                    }}
-                >
-                    <Printer size={16} /> Print Now
-                </button>
+                <div style={{ fontSize: 24, marginBottom: 16, fontWeight: 600 }}>{status}</div>
+                <div style={{ color: '#666' }}>Please wait while we prepare your document...</div>
             </div>
 
-            <InvoiceTemplate
-                data={invoice.data}
-                calculations={calculations}
-                businessInfo={businessConfig}
-            />
-
-            <style jsx global>{`
-                /* Ensure complete cleanup of app shell */
-                .sidebar-container, .desktop-sidebar-space, header, .mobile-only-header {
-                    display: none !important;
-                }
-                /* Reset body for print context */
-                body {
-                    background: white !important;
-                    overflow: auto !important; /* Allow scrolling in preview */
-                }
-                
-                @media print {
-                    @page {
-                        margin: 0;
-                    }
-                    body {
-                        margin: 0;
-                        padding: 0;
-                        background: white !important;
-                        overflow: visible !important;
-                    }
-                    .no-print {
-                        display: none !important;
-                    }
-                }
-            `}</style>
+            {/* Hidden render container for PDF generation */}
+            <div ref={containerRef} style={{ position: 'absolute', top: -9999, left: -9999 }}>
+                <InvoiceTemplate
+                    data={invoice.data}
+                    calculations={calculations}
+                    businessInfo={businessConfig}
+                />
+            </div>
         </div>
     );
 }

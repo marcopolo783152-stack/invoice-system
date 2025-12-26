@@ -48,17 +48,14 @@ function InvoiceViewContent() {
         setLoading(false);
     };
 
-    const handlePrint = () => {
-        if (invoice) {
-            const width = 1000;
-            const height = 800;
-            const left = (window.screen.width - width) / 2;
-            const top = (window.screen.height - height) / 2;
-            window.open(
-                `/invoices/print?id=${invoice.id}`,
-                '_blank',
-                `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
-            );
+    const handlePrint = async () => {
+        if (invoiceRef.current && invoice) {
+            // Fallback to direct PDF generation (Old Way)
+            try {
+                await openPDFInNewTab(invoiceRef.current, invoice.data.invoiceNumber);
+            } catch (error) {
+                alert('Failed to generate PDF.');
+            }
         }
     };
 
