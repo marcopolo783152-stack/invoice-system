@@ -279,6 +279,13 @@
   /* Force exact page breaks */
   .invoice {
     page-break-after: always;
+    break-after: page;
+  }
+
+  /* Last page should not force a break to avoid blank sheet at end */
+  .invoice:last-of-type {
+    page-break-after: auto;
+    break-after: auto;
   }
 
   /* Prevent content from being cut */
