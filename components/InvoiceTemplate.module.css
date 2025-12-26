@@ -277,19 +277,12 @@
     margin: 0mm;
   }
 
-  @page {
-    /* Use auto to respect user's paper selection (Letter/A4) */
-    size: auto;
-    /* Remove browser margins so we control layout via padding in .invoice */
-    margin: 0mm;
-  }
-
   .invoice {
     width: 100%;
     max-width: 100%;
     margin: 0;
     /* This padding acts as the page margin */
-    padding: 15mm;
+    padding: 10mm;
     box-shadow: none;
     max-height: none;
 

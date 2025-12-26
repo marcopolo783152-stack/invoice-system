@@ -100,7 +100,7 @@ a {
   @page {
     /* Use auto to respect user selection */
     size: auto;
-    margin: 15mm;
+    margin: 0mm;
   }
 
   /* Utility to hide elements during print */
@@ -124,7 +124,7 @@ a {
   html,
   body {
     width: 100%;
-    height: 100%;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible;
