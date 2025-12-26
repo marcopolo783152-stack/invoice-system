@@ -341,6 +341,7 @@ function InvoiceViewContent() {
                     {/* Screen Preview */}
                     <div
                         id="invoice-view"
+                        className="invoice-paper"
                         style={{
                             background: 'white',
                             padding: 40,

@@ -423,7 +423,7 @@ function InvoicePageContent() {
 
             {/* Print-only wrapper: only this area will be printed */}
             {/* Screen Preview (Visible on Screen, Hidden on Print via CSS) */}
-            <div className="screen-only" ref={invoiceRef} id="invoice-view">
+            <div className="screen-only invoice-paper" ref={invoiceRef} id="invoice-view">
               <InvoiceTemplate
                 data={invoiceData}
                 calculations={calculations}
