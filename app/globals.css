@@ -77,41 +77,37 @@ a {
 }
 
 /* -------------------------------------------------------------------------- */
-/* PRINT FORCE CSS strategy                                                    */
-/* -------------------------------------------------------------------------- */
 @media print {
 
-  /* Force the root and all parent containers to allow content to flow */
-  html,
-  body,
-  #root,
-  .__next,
-  [class*="layout"],
-  [class*="container"] {
-    height: auto !important;
+  /* Force the entire app to be visible */
+  * {
     overflow: visible !important;
-    display: block !important;
+    height: auto !important;
     position: static !important;
+    display: block !important;
+    visibility: visible !important;
   }
 
-  /* Hide the UI (buttons, sidebars, nav) */
+  /* Hide only the elements we definitely don't want */
   nav,
-  .no-print,
+  footer,
   button,
+  .no-print,
   .sidebar,
   .header-actions {
     display: none !important;
+    height: 0 !important;
   }
 
-  /* Target the invoice white box specifically */
-  .invoice-paper,
-  [class*="InvoiceView"],
-  .printable-content {
-    visibility: visible !important;
+  /* Force the invoice box to start at the top of the paper */
+  .invoice-container,
+  #invoice-view,
+  [class*="Invoice"] {
     position: absolute !important;
-    left: 0 !important;
     top: 0 !important;
+    left: 0 !important;
     width: 100% !important;
-    display: block !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 }
