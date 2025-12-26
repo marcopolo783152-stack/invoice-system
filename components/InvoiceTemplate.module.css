@@ -268,16 +268,34 @@
 
 /* Print Styles */
 @media print {
-  .invoice {
-    width: 100%;
-    margin: 0;
-    padding: 5mm;
-    box-shadow: none;
-    max-height: none;
+
+  /* Redundant @page handled by global print.css, but kept for specificity if needed */
+  @page {
+    /* Use auto to respect user's paper selection (Letter/A4) */
+    size: auto;
+    /* Remove browser margins so we control layout via padding in .invoice */
+    margin: 0mm;
   }
 
-  /* Force exact page breaks */
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible;
+  }
+
   .invoice {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    /* This padding acts as the page margin */
+    padding: 15mm;
+    box-shadow: none;
+    max-height: none;
+
+    /* Force exact page breaks */
     page-break-after: always;
     break-after: page;
   }
@@ -306,15 +324,6 @@
   .itemsTable th {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-  }
-
-  /* Redundant @page handled by global print.css, but kept for specificity if needed */
-  /* Redundant @page handled by global print.css, but kept for specificity if needed */
-  @page {
-    /* Use auto to respect user's paper selection (Letter/A4) */
-    size: auto;
-    /* Minimize browser margins to give control to our container padding */
-    margin: 10mm;
   }
 }
 
