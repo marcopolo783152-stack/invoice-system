@@ -14,16 +14,11 @@ export const printElement = (elementId: string) => {
     }
 
     // 3. Prepare Content
+    // Get the HTML content
     const content = element.innerHTML;
 
-    // 4. Gather Styles
-    // We need to copy all <style> and <link rel="stylesheet"> tags
-    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-        .map(style => style.outerHTML)
-        .join('\n');
-
-    // 5. Construct New Document
-    printWindow.document.open();
+    // 4. Construct New Document with `document.write`
+    // We include the "Emergency" CSS as requested
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -31,52 +26,60 @@ export const printElement = (elementId: string) => {
             <title>Print Invoice</title>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            ${styles}
+            
+            <!-- Standard Stylesheets -->
+            <!-- We try to get Tailwind/Main CSS if possible, but the inline styles below are the "Emergency" set -->
+            ${Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+            .map(style => style.outerHTML)
+            .join('\n')}
+
             <style>
-                /* Force Print Visibility Overrides */
-                body, html {
-                    margin: 0;
-                    padding: 0;
-                    height: auto !important;
-                    overflow: visible !important;
+                /* Emergency CSS requested by user */
+                body { 
+                    visibility: visible !important; 
+                    display: block !important; 
+                    height: auto !important; 
+                    margin: 0 !important; 
+                    padding: 0 !important;
                     background: white !important;
                 }
                 
-                /* Ensure content fits */
-                .invoice, .invoice-container {
-                    width: 100% !important;
-                    max-width: 100% !important;
-                    box-shadow: none !important;
-                    margin: 0 !important;
-                    visibility: visible !important;
-                    display: block !important;
+                #invoice-view, .invoice-printable-wrapper { 
+                    width: 100%; 
+                    margin: 0; 
+                    padding: 20px; 
+                }
+                
+                .no-print { 
+                    display: none !important; 
                 }
 
-                /* Hide non-print elements just in case */
-                .no-print { display: none !important; }
-
+                /* Ensure we override any potential hiding from cloned styles */
                 @media print {
-                    @page { margin: 0; size: auto; }
-                    body { -webkit-print-color-adjust: exact; }
+                    body { visibility: visible !important; }
+                    .no-print { display: none !important; }
                 }
             </style>
         </head>
         <body>
-            <div id="print-root">
+            <div id="invoice-view" class="invoice-printable-wrapper">
                 ${content}
             </div>
+            
             <script>
-                // iPad/Mobile Fix: Wait for resources
-                window.onload = function() {
-                    setTimeout(function() {
-                        window.print();
-                        // Optional: Close after print
-                        // window.close(); 
-                    }, 500);
-                };
+                // Wait 1000ms as requested for images/layout to settle
+                setTimeout(function() {
+                    window.print();
+                    // Optional: window.close(); 
+                }, 1000);
             </script>
         </body>
         </html>
     `);
+
+    // Important: Close the document stream
     printWindow.document.close();
+
+    // focus the window
+    printWindow.focus();
 };
