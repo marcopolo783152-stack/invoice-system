@@ -76,57 +76,67 @@ a {
   }
 }
 
-/* Print Optimizations */
+/* Global Print Reset & Robustness */
 @media print {
+
+  /* Hide all non-printable elements by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Whitelist the content we want to see */
+  #invoice-screen-view,
+  #invoice-screen-view *,
+  #invoice-print-view,
+  #invoice-print-view * {
+    visibility: visible;
+  }
+
+  /* Position adjustments for print wrappers */
+  #invoice-screen-view,
+  #invoice-print-view {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  /* Ensure body doesn't clip content */
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Force background graphics */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  body {
-    margin: 0;
-    padding: 0;
-  }
-
-  /* Ensure sidebar space is removed in print */
-  .desktop-sidebar-space {
+  /* Explicitly hide UI structure components to prevent layout ghosts */
+  header,
+  .sidebar-container,
+  .mobile-only-header,
+  .desktop-sidebar-space,
+  .no-print,
+  button {
     display: none !important;
   }
 
-  .mobile-only-header {
-    display: none !important;
-  }
-
-  @page {
-    /* Use auto to respect user selection */
-    size: auto;
-    margin: 0mm;
-  }
-
-  /* Utility to hide elements during print */
-  .no-print {
-    display: none !important;
-  }
-
-  /* Print Portal Support - Hides everything except the portal content */
-  body.has-print-portal>*:not(.print-portal-root) {
-    display: none !important;
-  }
-
-  body.has-print-portal .print-portal-root {
-    display: block !important;
-    position: relative;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
-
-  html,
-  body {
-    width: 100%;
-    height: auto !important;
+  /* Reset main content margins if they interfere */
+  .main-content {
     margin: 0 !important;
     padding: 0 !important;
-    overflow: visible;
+    width: 100% !important;
+    height: auto !important;
   }
 }

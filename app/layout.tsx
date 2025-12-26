@@ -79,15 +79,7 @@ export default function RootLayout({
 
   const isPrintPage = pathname?.startsWith('/invoices/print');
 
-  if (isPrintPage) {
-    return (
-      <html lang="en">
-        <body className={inter.className} style={{ background: 'white' }}>
-          {children}
-        </body>
-      </html>
-    );
-  }
+
 
   return (
     <html lang="en">

@@ -78,7 +78,7 @@ function PrintPageContent() {
     }
 
     return (
-        <div style={{ background: 'white', minHeight: '100vh', position: 'relative' }}>
+        <div id="invoice-print-view" style={{ background: 'white', minHeight: '100vh', position: 'relative' }}>
             {/* Debug/Manual Print Header - Hidden when printing via CSS */}
             <div className="no-print" style={{
                 padding: '10px 20px',
