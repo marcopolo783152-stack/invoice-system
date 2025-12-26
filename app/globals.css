@@ -98,7 +98,26 @@ a {
   }
 
   @page {
+    /* Use auto to respect user selection */
+    size: auto;
     margin: 15mm;
-    size: A4 portrait;
+  }
+
+  /* Utility to hide elements during print */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Print Portal Support - Hides everything except the portal content */
+  body.has-print-portal>*:not(.print-portal-root) {
+    display: none !important;
+  }
+
+  body.has-print-portal .print-portal-root {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
   }
 }

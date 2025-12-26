@@ -47,14 +47,8 @@ function InvoiceViewContent() {
         setLoading(false);
     };
 
-    const handlePrint = async () => {
-        if (invoiceRef.current && invoice) {
-            try {
-                await openPDFInNewTab(invoiceRef.current, invoice.data.invoiceNumber);
-            } catch (error) {
-                alert('Failed to open PDF for printing. Please try again.');
-            }
-        }
+    const handlePrint = () => {
+        window.print();
     };
 
     const handleDownloadPDF = async () => {

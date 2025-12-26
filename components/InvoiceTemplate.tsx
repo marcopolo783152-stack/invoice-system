@@ -80,7 +80,7 @@ export default function InvoiceTemplate({
         const pageItems = items.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
         return (
-          <div key={pageIndex} className={styles.invoice}>
+          <div key={pageIndex} className={`${styles.invoice} pdf-page`}>
             {/* Header Section - Repeated on every page */}
             <div className={styles.header}>
               <div className={styles.businessInfo}>

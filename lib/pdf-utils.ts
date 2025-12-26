@@ -18,126 +18,96 @@ export function printInvoice(): void {
 /**
  * Generate and download PDF from invoice
  */
-export async function generatePDF(
-  invoiceElement: HTMLElement,
-  invoiceNumber: string
-): Promise<void> {
+/**
+ * Generate PDF from invoice
+ */
+async function createPDF(invoiceElement: HTMLElement, invoiceNumber: string, isDownload: boolean): Promise<void> {
   try {
-    // Create canvas from HTML element
-    const canvas = await html2canvas(invoiceElement, {
-      scale: 2, // Higher quality
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      width: invoiceElement.scrollWidth,
-      height: invoiceElement.scrollHeight,
-    });
+    // Find all pages
+    const pages = invoiceElement.querySelectorAll('.pdf-page');
+    if (!pages || pages.length === 0) {
+      throw new Error('No invoice pages found to generate');
+    }
 
-    // Calculate dimensions for letter size (8.5" x 11")
-    const imgWidth = 8.5; // inches
-    const pageHeight = 11; // inches
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    // Create PDF
+    // Initialize PDF
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'in',
-      format: 'letter',
+      format: 'letter', // Standard Letter size
     });
 
-    const imgData = canvas.toDataURL('image/png');
+    const pdfWidth = 8.5;
+    const pdfHeight = 11;
 
-    // Add image to PDF
-    let heightLeft = imgHeight;
-    let position = 0;
+    // Process each page
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i] as HTMLElement;
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+      // Generate canvas for the page
+      // We use a slightly smaller width to avoid any potential overflow
+      const canvas = await html2canvas(page, {
+        scale: 2, // High quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: page.scrollWidth,
+        height: page.scrollHeight,
+        windowWidth: page.scrollWidth, // Ensure responsive styles don't match
+      });
 
-    // Add new pages if content exceeds one page
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      const imgData = canvas.toDataURL('image/png');
+      const imgProps = pdf.getImageProperties(imgData);
+
+      // Calculate height to fit width
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      // If not the first page, add a new one
+      if (i > 0) {
+        pdf.addPage();
+      }
+
+      // Add image to PDF
+      // usage: addImage(imageData, format, x, y, width, height)
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
     }
 
-    // Download PDF
     const fileName = `Invoice_${invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
-    pdf.save(fileName);
+
+    if (isDownload) {
+      pdf.save(fileName);
+    } else {
+      // Open in new tab
+      const blob = pdf.output('blob');
+      const blobUrl = URL.createObjectURL(blob);
+
+      if (isMobileDevice()) {
+        window.location.href = blobUrl;
+      } else {
+        const newWindow = window.open(blobUrl, '_blank');
+        if (!newWindow) {
+          window.location.href = blobUrl;
+        }
+      }
+    }
+
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw new Error('Failed to generate PDF. Please try again.');
   }
 }
 
-/**
- * Generate and open PDF in new tab
- */
+export async function generatePDF(
+  invoiceElement: HTMLElement,
+  invoiceNumber: string
+): Promise<void> {
+  return createPDF(invoiceElement, invoiceNumber, true);
+}
+
 export async function openPDFInNewTab(
   invoiceElement: HTMLElement,
   invoiceNumber: string
 ): Promise<void> {
-  try {
-    // Create canvas from HTML element
-    const canvas = await html2canvas(invoiceElement, {
-      scale: 2, // Higher quality
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      width: invoiceElement.scrollWidth,
-      height: invoiceElement.scrollHeight,
-    });
-
-    // Calculate dimensions for letter size (8.5" x 11")
-    const imgWidth = 8.5; // inches
-    const pageHeight = 11; // inches
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    // Create PDF
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'in',
-      format: 'letter',
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-
-    // Add image to PDF
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    // Add new pages if content exceeds one page
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    // Open PDF
-    const blob = pdf.output('blob');
-    const blobUrl = URL.createObjectURL(blob);
-
-    if (isMobileDevice()) {
-      // On mobile, window.open is often blocked if async. 
-      // Redirecting current window is more reliable for viewing the PDF.
-      window.location.href = blobUrl;
-    } else {
-      const newWindow = window.open(blobUrl, '_blank');
-      if (!newWindow) {
-        // Fallback if blocked
-        window.location.href = blobUrl;
-      }
-    }
-
-  } catch (error) {
-    console.error('Error opening PDF:', error);
-    throw new Error('Failed to open PDF. Please try again.');
-  }
+  return createPDF(invoiceElement, invoiceNumber, false);
 }
 
 /**
