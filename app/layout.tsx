@@ -1,6 +1,7 @@
 'use client';
 
 import { Inter } from 'next/font/google';
+import { usePathname } from 'next/navigation';
 import './globals.css';
 import './print.css';
 import Sidebar from '@/components/Sidebar';
@@ -21,6 +22,7 @@ export default function RootLayout({
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [showAddressBook, setShowAddressBook] = useState(false);
   const [showExportPreview, setShowExportPreview] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     // Basic auth check for sidebar user info
@@ -74,6 +76,18 @@ export default function RootLayout({
       setTimeout(() => window.location.reload(), 100);
     }
   };
+
+  const isPrintPage = pathname?.startsWith('/invoices/print');
+
+  if (isPrintPage) {
+    return (
+      <html lang="en">
+        <body className={inter.className} style={{ background: 'white' }}>
+          {children}
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html lang="en">

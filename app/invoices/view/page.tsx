@@ -10,7 +10,7 @@ import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { ReturnedReceipt } from '@/components/ReturnedReceipt';
 import { businessConfig } from '@/config/business';
 import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
-import PrintPortal from '@/components/PrintPortal';
+
 
 function InvoiceViewContent() {
     const searchParams = useSearchParams();
@@ -49,7 +49,17 @@ function InvoiceViewContent() {
     };
 
     const handlePrint = () => {
-        window.print();
+        if (invoice) {
+            const width = 1000;
+            const height = 800;
+            const left = (window.screen.width - width) / 2;
+            const top = (window.screen.height - height) / 2;
+            window.open(
+                `/invoices/print?id=${invoice.id}`,
+                '_blank',
+                `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
+            );
+        }
     };
 
     const handleDownloadPDF = async () => {
@@ -362,16 +372,7 @@ function InvoiceViewContent() {
                 </div>
             </div>
 
-            {/* Print Version - Hidden on screen, shown on print */}
-            <PrintPortal>
-                <div id="printable-invoice-content" className="print-only-portal">
-                    <InvoiceTemplate
-                        data={invoice.data}
-                        calculations={calculations}
-                        businessInfo={businessConfig}
-                    />
-                </div>
-            </PrintPortal>
+
 
             <style jsx global>{`
                 @media print {
