@@ -212,9 +212,21 @@ function InvoicePageContent() {
     }, 100);
   };
 
+  const [isPrinting, setIsPrinting] = useState(false);
+
   const handlePrint = async () => {
-    // Direct Window Print (CSS handles content filtering via #invoice-content-to-print)
-    window.print();
+    if (invoiceRef.current && invoiceData) {
+      setIsPrinting(true);
+      try {
+        // Use client-side PDF generation to open in new tab
+        await openPDFInNewTab(invoiceRef.current, invoiceData.invoiceNumber);
+      } catch (error) {
+        console.error('Print generation failed:', error);
+        alert('Failed to generate print view. Please try again.');
+      } finally {
+        setIsPrinting(false);
+      }
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -406,8 +418,8 @@ function InvoicePageContent() {
             <div className={styles.actions}>
               <h2>Invoice Preview</h2>
               <div className={styles.actionButtons}>
-                <button onClick={handlePrint} className={styles.printBtn}>
-                  🖨️ Print
+                <button onClick={handlePrint} className={styles.printBtn} disabled={isPrinting}>
+                  🖨️ {isPrinting ? 'Preparing...' : 'Print'}
                 </button>
                 <button onClick={handleDownloadPDF} className={styles.pdfBtn}>
                   📄 Download PDF
@@ -443,8 +455,8 @@ function InvoicePageContent() {
             </PrintPortal>
 
             <div className={styles.bottomActions}>
-              <button onClick={handlePrint} className={styles.printBtn}>
-                🖨️ Print
+              <button onClick={handlePrint} className={styles.printBtn} disabled={isPrinting}>
+                🖨️ {isPrinting ? 'Preparing...' : 'Print'}
               </button>
               <button onClick={handleDownloadPDF} className={styles.pdfBtn}>
                 📄 Download PDF

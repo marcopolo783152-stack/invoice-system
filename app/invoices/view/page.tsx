@@ -30,6 +30,8 @@ function InvoiceViewContent() {
     const [returnedReceiptData, setReturnedReceiptData] = useState<any>(null);
     const [isConverting, setIsConverting] = useState(false);
 
+    const [isPrinting, setIsPrinting] = useState(false);
+
     useEffect(() => {
         if (id) {
             loadInvoice(id);
@@ -47,9 +49,20 @@ function InvoiceViewContent() {
         setLoading(false);
     };
 
-    const handlePrint = () => {
-        // Direct Window Print (CSS handles content filtering via #invoice-content-to-print)
-        window.print();
+    const handlePrint = async () => {
+        if (invoiceRef.current && invoice) {
+            setIsPrinting(true);
+            try {
+                // Use client-side PDF generation to open in new tab
+                // This bypasses CSS @media print issues completely
+                await openPDFInNewTab(invoiceRef.current, invoice.data.invoiceNumber);
+            } catch (error) {
+                console.error('Print generation failed:', error);
+                alert('Failed to generate print view. Please try again.');
+            } finally {
+                setIsPrinting(false);
+            }
+        }
     };
 
     const handleDownloadPDF = async () => {
@@ -241,14 +254,16 @@ function InvoiceViewContent() {
                                 </button>
                                 <button
                                     onClick={handlePrint}
+                                    disabled={isPrinting}
                                     style={{
                                         display: 'flex', alignItems: 'center', gap: 8,
                                         padding: '10px 20px', background: '#3b82f6', color: 'white',
-                                        border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                                        boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
+                                        border: 'none', borderRadius: 8, fontWeight: 600, cursor: isPrinting ? 'wait' : 'pointer',
+                                        boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)',
+                                        opacity: isPrinting ? 0.7 : 1
                                     }}
                                 >
-                                    <Printer size={18} /> Print
+                                    <Printer size={18} /> {isPrinting ? 'Preparing...' : 'Print'}
                                 </button>
                                 <button
                                     onClick={handleDownloadPDF}
