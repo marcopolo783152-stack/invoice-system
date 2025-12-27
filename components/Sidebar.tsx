@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
@@ -45,6 +45,7 @@ export default function Sidebar({
         { label: 'Inventory DB', href: '/inventory', icon: Package },
         { label: 'Address Book', icon: Users, type: 'button' as const, onClick: onShowAddressBook },
         { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
+        { label: 'Reports', href: '/reports', icon: BarChart },
         { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
         { label: 'Settings', href: '/settings', icon: Settings },
         { label: 'Audit Log', href: '/audit-log', icon: History }
