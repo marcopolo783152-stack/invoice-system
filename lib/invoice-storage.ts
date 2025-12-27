@@ -128,23 +128,25 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
         id: invoice.id,
         data: invoice.data,
         createdAt: invoice.createdAt.toISOString(),
-        updatedAt: invoice.createdAt.toISOString()
+        updatedAt: invoice.createdAt.toISOString(),
+        documentType: (invoice.data.documentType || 'INVOICE') as any
       }));
     } catch (error) {
       console.error('Error fetching from Firebase, using localStorage:', error);
     }
   }
+}
 
-  // Fallback to localStorage
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) return [];
+// Fallback to localStorage
+const stored = localStorage.getItem(STORAGE_KEY);
+if (!stored) return [];
 
-  try {
-    return JSON.parse(stored);
-  } catch (error) {
-    console.error('Error parsing invoices:', error);
-    return [];
-  }
+try {
+  return JSON.parse(stored);
+} catch (error) {
+  console.error('Error parsing invoices:', error);
+  return [];
+}
 }
 
 /**
