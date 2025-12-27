@@ -79,35 +79,28 @@ a {
 /* -------------------------------------------------------------------------- */
 @media print {
 
-  /* Force the entire app to be visible */
-  * {
-    overflow: visible !important;
+  body,
+  html,
+  #root,
+  .main-layout {
     height: auto !important;
-    position: static !important;
+    overflow: visible !important;
     display: block !important;
-    visibility: visible !important;
   }
 
-  /* Hide only the elements we definitely don't want */
-  nav,
-  footer,
-  button,
   .no-print,
+  button,
+  nav,
   .sidebar,
   .header-actions {
     display: none !important;
-    height: 0 !important;
   }
 
-  /* Force the invoice box to start at the top of the paper */
-  .invoice-container,
-  #invoice-view,
-  [class*="Invoice"] {
+  #invoice-view {
+    visibility: visible !important;
     position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    border: none !important;
-    box-shadow: none !important;
+    top: 0;
+    left: 0;
+    width: 100%;
   }
 }
