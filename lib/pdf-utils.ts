@@ -50,9 +50,8 @@ async function createPDF(invoiceElement: HTMLElement, invoiceNumber: string, isD
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: page.scrollWidth,
-        height: page.scrollHeight,
-        windowWidth: page.scrollWidth, // Ensure responsive styles don't match
+        windowWidth: 1200, // Ensure desktop layout
+        // Removed width/height to allow html2canvas to determine correct element bounds
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -127,9 +126,7 @@ export async function getInvoicePDFBlob(
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
-      width: page.scrollWidth,
-      height: page.scrollHeight,
-      windowWidth: page.scrollWidth,
+      windowWidth: 1200,
     });
 
     const imgData = canvas.toDataURL('image/png');
