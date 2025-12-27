@@ -6,6 +6,9 @@
  * ######## = 8-digit number
  */
 
+import { getNextInvoiceNumber as getNextInvoiceNumberFromCloud } from './firebase-storage';
+import { isFirebaseConfigured } from './firebase';
+
 const INVOICE_PREFIX = 'MP';
 const STORAGE_KEY = 'lastInvoiceNumber';
 
@@ -14,7 +17,7 @@ const STORAGE_KEY = 'lastInvoiceNumber';
  */
 function getLastInvoiceNumber(): number {
   if (typeof window === 'undefined') return 0;
-  
+
   const stored = localStorage.getItem(STORAGE_KEY);
   return stored ? parseInt(stored, 10) : 0;
 }
@@ -31,16 +34,26 @@ function saveLastInvoiceNumber(number: number): void {
  * Generate next invoice number
  * Format: MP########
  */
-export function generateInvoiceNumber(): string {
+export async function generateInvoiceNumber(): Promise<string> {
+  // Try Firebase first
+  if (isFirebaseConfigured()) {
+    try {
+      return await getNextInvoiceNumberFromCloud();
+    } catch (e) {
+      console.warn('Failed to get number from cloud, falling back to local:', e);
+    }
+  }
+
+  // Fallback to local
   const lastNumber = getLastInvoiceNumber();
   const nextNumber = lastNumber + 1;
-  
+
   // Pad with zeros to make 8 digits
   const paddedNumber = nextNumber.toString().padStart(8, '0');
-  
+
   // Save for next time
   saveLastInvoiceNumber(nextNumber);
-  
+
   return `${INVOICE_PREFIX}${paddedNumber}`;
 }
 

@@ -56,9 +56,10 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       if (savedNumber) {
         setInvoiceNumber(savedNumber);
       } else {
-        const newNumber = generateInvoiceNumber();
-        setInvoiceNumber(newNumber);
-        localStorage.setItem('currentInvoiceNumber', newNumber);
+        generateInvoiceNumber().then(newNumber => {
+          setInvoiceNumber(newNumber);
+          localStorage.setItem('currentInvoiceNumber', newNumber);
+        });
       }
     }
   }, [initialData]);
@@ -240,8 +241,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     setScanningItemId(null);
   };
 
-  const handleGenerateNewNumber = () => {
-    const newNumber = generateInvoiceNumber();
+  const handleGenerateNewNumber = async () => {
+    const newNumber = await generateInvoiceNumber();
     setInvoiceNumber(newNumber);
     localStorage.setItem('currentInvoiceNumber', newNumber);
   };

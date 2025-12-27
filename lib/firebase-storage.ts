@@ -4,16 +4,18 @@
  * Cloud-based invoice storage that syncs across all devices
  */
 
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  getDocs, 
-  query, 
+import {
   orderBy,
-  Timestamp 
+  Timestamp,
+  runTransaction,
+  doc,
+  onSnapshot,
+  addDoc,
+  collection,
+  deleteDoc,
+  getDocs,
+  query,
+  updateDoc
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
 import { InvoiceData } from './calculations';
@@ -60,6 +62,38 @@ export async function saveInvoiceToCloud(
 }
 
 /**
+ * Get next invoice number atomically
+ */
+export async function getNextInvoiceNumber(): Promise<string> {
+  if (!isFirebaseConfigured() || !db) {
+    throw new Error('Firebase not configured can not generate global invoice number.');
+  }
+
+  const counterRef = doc(db, 'counters', 'invoices');
+
+  try {
+    const newNumber = await runTransaction(db, async (transaction) => {
+      const sfDoc = await transaction.get(counterRef);
+
+      let currentNumber = 0;
+      if (sfDoc.exists()) {
+        currentNumber = sfDoc.data().current;
+      }
+
+      const next = currentNumber + 1;
+      transaction.set(counterRef, { current: next });
+      return next;
+    });
+
+    // Format: MP########
+    return `MP${newNumber.toString().padStart(8, '0')}`;
+  } catch (error) {
+    console.error('Transaction failed: ', error);
+    throw error;
+  }
+}
+
+/**
  * Get all invoices from Firebase
  */
 export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
@@ -70,7 +104,7 @@ export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
   try {
     const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
-    
+
     const invoices: SavedInvoice[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
@@ -84,7 +118,7 @@ export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
         createdAt: data.createdAt.toDate()
       });
     });
-    
+
     return invoices;
   } catch (error) {
     console.error('Error getting invoices from cloud:', error);
@@ -152,4 +186,35 @@ export async function deleteMultipleInvoicesFromCloud(ids: string[]): Promise<vo
     console.error('Error deleting multiple invoices from cloud:', error);
     throw error;
   }
+}
+
+/**
+ * Subscribe to real-time invoice updates
+ */
+export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void): () => void {
+  if (!isFirebaseConfigured() || !db) {
+    console.warn('Firebase not configured, real-time updates disabled');
+    return () => { };
+  }
+
+  const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+
+  return onSnapshot(q, (snapshot) => {
+    const invoices: SavedInvoice[] = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      invoices.push({
+        id: doc.id,
+        invoiceNumber: data.invoiceNumber,
+        customerName: data.customerName,
+        date: data.date,
+        totalAmount: data.totalAmount,
+        data: data.data,
+        createdAt: data.createdAt.toDate()
+      });
+    });
+    callback(invoices);
+  }, (error) => {
+    console.error('Error in invoice subscription:', error);
+  });
 }

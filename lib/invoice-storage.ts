@@ -96,7 +96,8 @@ import {
   getInvoicesFromCloud,
   updateInvoiceInCloud,
   deleteInvoiceFromCloud,
-  deleteMultipleInvoicesFromCloud
+  deleteMultipleInvoicesFromCloud,
+  subscribeToInvoices as subscribeToCloudInvoices
 } from './firebase-storage';
 import { isFirebaseConfigured } from './firebase';
 import { updateInventoryStatusFromInvoice } from './inventory-storage';
@@ -167,7 +168,7 @@ export function getAllInvoicesSync(): SavedInvoice[] {
  * Save an invoice (to both Firebase and localStorage)
  * If the customer is Martinez, force invoice number to MP00000002
  */
-export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
+export async function saveInvoice(data: InvoiceData, existingId?: string): Promise<SavedInvoice> {
   const invoices = getAllInvoicesSync();
 
   // Force invoice number for Martinez
@@ -175,10 +176,16 @@ export async function saveInvoice(data: InvoiceData): Promise<SavedInvoice> {
     data.invoiceNumber = 'MP00000002';
   }
 
-  // Check if invoice already exists (by invoice number)
-  const existingIndex = invoices.findIndex(
-    inv => inv.data.invoiceNumber === data.invoiceNumber
-  );
+  // Check if invoice already exists
+  // If exisitngId is provided, look up by that. Otherwise fall back to invoice number (for legacy/new items)
+  let existingIndex = -1;
+  if (existingId) {
+    existingIndex = invoices.findIndex(inv => inv.id === existingId);
+  } else {
+    existingIndex = invoices.findIndex(
+      inv => inv.data.invoiceNumber === data.invoiceNumber
+    );
+  }
 
   const now = new Date().toISOString();
   let savedInvoice: SavedInvoice;
@@ -578,4 +585,29 @@ export async function getCustomerDebt(customerName: string): Promise<{ totalDebt
   });
 
   return { totalDebt, overdueCount };
+}
+
+/**
+ * Subscribe to invoices (Wrapper for Cloud Subscription)
+ * Maps Firebase data format to local SavedInvoice format
+ */
+export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void): () => void {
+  if (typeof window === 'undefined') return () => { };
+
+  // If firebase is not configured, we can't really subscribe to "local storage events" easily across windows without listeners
+  // But for now we only support real-time sync via Firebase as per plan
+  if (isFirebaseConfigured()) {
+    return subscribeToCloudInvoices((cloudInvoices) => {
+      const mappedInvoices: SavedInvoice[] = cloudInvoices.map(inv => ({
+        id: inv.id,
+        data: inv.data,
+        createdAt: inv.createdAt.toISOString(),
+        updatedAt: inv.createdAt.toISOString(), // Firebase doesn't track updatedAt on root yet, using createdAt or could be added
+        documentType: (inv.data.documentType || 'INVOICE') as any
+      }));
+      callback(mappedInvoices);
+    });
+  }
+
+  return () => { };
 }

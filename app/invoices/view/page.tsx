@@ -123,7 +123,7 @@ function InvoiceViewContent() {
                 updatedAt: new Date().toISOString()
             };
 
-            await saveInvoice(updatedInvoice.data);
+            await saveInvoice(updatedInvoice.data, invoice.id);
 
             if (isConverting) {
                 // Get the items to sell

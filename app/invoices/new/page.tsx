@@ -192,7 +192,7 @@ function InvoicePageContent() {
     setShowSearch(false);
 
     // Save invoice to storage (async)
-    saveInvoice(data).then(async () => {
+    saveInvoice(data, editId || undefined).then(async () => {
       // Update count from Firebase
       const invoices = await getAllInvoices();
       setInvoiceCount(invoices.length);

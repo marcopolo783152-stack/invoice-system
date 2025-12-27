@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoices, restoreMultipleInvoices, permanentlyDeleteInvoices } from '@/lib/invoice-storage';
+import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoices, restoreMultipleInvoices, permanentlyDeleteInvoices, subscribeToInvoices } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
@@ -46,35 +46,60 @@ function InvoicesPageContent() {
         if (auth === '1' && user) {
             setIsAuthenticated(true);
             try { setCurrentUser(JSON.parse(user)); } catch { }
-            loadData();
         } else {
             setIsAuthenticated(false);
             setLoading(false);
+            return;
         }
+
+        // Subscription Logic
+        let unsubscribe: (() => void) | undefined;
+
+        const setupSubscription = async () => {
+            setLoading(true);
+
+            if (viewMode === 'active') {
+                // Real-time listener for active invoices
+                unsubscribe = subscribeToInvoices((data) => {
+                    setInvoices(data);
+                    setLoading(false);
+                });
+            } else {
+                // Bin logic (local + sync check)
+                const binData = getDeletedInvoices();
+                const activeData = await getAllInvoices();
+                const activeIds = new Set(activeData.map(i => i.id));
+                const cleanBin = binData.filter(i => !activeIds.has(i.id));
+                setInvoices(cleanBin);
+                setLoading(false);
+            }
+        };
+
+        setupSubscription();
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
     }, [viewMode]);
 
     const onLogin = () => {
         setIsAuthenticated(true);
-        loadData();
+        // Effect will re-run or we can trigger re-fetch if needed
     };
 
+    // Keep loadData for manual refreshes if needed (e.g. after restore)
     async function loadData() {
-        setLoading(true);
         if (viewMode === 'active') {
-            const data = await getAllInvoices();
-            setInvoices(data);
+            // Subscription handles this automatically
         } else {
-            // Get bin items
+            setLoading(true);
             const binData = getDeletedInvoices();
-            // Get active items to cross-reference
             const activeData = await getAllInvoices();
             const activeIds = new Set(activeData.map(i => i.id));
-
-            // Only show items that are NOT in the active list
             const cleanBin = binData.filter(i => !activeIds.has(i.id));
             setInvoices(cleanBin);
+            setLoading(false);
         }
-        setLoading(false);
         setSelectedIds([]);
     }
 
