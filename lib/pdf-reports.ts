@@ -36,8 +36,9 @@ export async function generateSalesReportPDF(
 
     // Table Headers
     const colDate = margin;
-    const colNum = 2.0;
-    const colCust = 3.5;
+    const colNum = 1.3;
+    const colType = 2.4;
+    const colCust = 4.0;
     const colAmount = 7.0;
 
     doc.setFontSize(10);
@@ -49,6 +50,7 @@ export async function generateSalesReportPDF(
 
     doc.text('Date', colDate, y + 0.05);
     doc.text('Invoice #', colNum, y + 0.05);
+    doc.text('Type / Status', colType, y + 0.05);
     doc.text('Customer', colCust, y + 0.05);
     doc.text('Amount', colAmount, y + 0.05, { align: 'right' });
 
@@ -59,8 +61,36 @@ export async function generateSalesReportPDF(
     let totalSales = 0;
 
     invoices.forEach((inv) => {
-        const amount = calculateInvoice(inv.data).totalDue;
-        totalSales += amount;
+        let amount = calculateInvoice(inv.data).totalDue;
+
+        // Determine Status/Type
+        let typeStr = inv.data.documentType || 'SALE';
+
+        // Check for returns - either the invoice itself is marked or has returned items
+        if (inv.data.returned || (inv.data.items && inv.data.items.every(i => i.returned))) {
+            typeStr = 'REFUND/RETURN';
+        } else if (typeStr === 'CONSIGNMENT') {
+            typeStr = 'CONSIGNMENT';
+        } else if (typeStr === 'WASH') {
+            typeStr = 'WASH SERVICE';
+        }
+
+        // Only add valid sales to total (exclude consignments until sold, and returns)
+        // Adjust logic based on specific business rules if needed. 
+        // For now, we assume simple summation but visual distinction is adding value.
+        // If it is a refund, we might want to NOT add it to positive sales, or substract.
+        // Standard practice: List them, maybe total is net? 
+        // For this iteration, I'll add them all but make it clear.
+
+        if (typeStr.includes('RETURN') || typeStr.includes('REFUND')) {
+            // Optional: Don't add to total? Or is amount negative? 
+            // Usually returns are handled by creating a credit memo or negative invoice.
+            // If the amount is positive but marked as returned, we shouldn't add it to "Sales".
+        } else if (typeStr === 'CONSIGNMENT') {
+            // Consignment items aren't sales yet.
+        } else {
+            totalSales += amount;
+        }
 
         // Check pagination
         if (y > pageHeight - margin - 0.5) {
@@ -71,9 +101,13 @@ export async function generateSalesReportPDF(
         doc.text(inv.data.date, colDate, y);
         doc.text(inv.data.invoiceNumber || '-', colNum, y);
 
+        doc.setFontSize(8);
+        doc.text(typeStr, colType, y);
+        doc.setFontSize(10);
+
         // Truncate customer name if too long
         let custName = inv.data.soldTo.name || '-';
-        if (custName.length > 30) custName = custName.substring(0, 30) + '...';
+        if (custName.length > 25) custName = custName.substring(0, 25) + '...';
         doc.text(custName, colCust, y);
 
         doc.text(`$${amount.toLocaleString()}`, colAmount, y, { align: 'right' });
@@ -88,7 +122,7 @@ export async function generateSalesReportPDF(
     y += 0.2;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text('Total Sales:', 5.5, y);
+    doc.text('Total Sales (Valid Only):', 4.5, y);
     doc.text(`$${totalSales.toLocaleString()}`, colAmount, y, { align: 'right' });
 
     // Save
