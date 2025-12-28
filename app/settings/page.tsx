@@ -44,11 +44,46 @@ export default function SettingsPage() {
         }
     }, []);
 
+    // Persistence for users list
+    useEffect(() => {
+        if (users.length > 0 && isAuthenticated) {
+            localStorage.setItem('mp-invoice-users', JSON.stringify(users));
+        }
+    }, [users, isAuthenticated]);
+
+    // Persistence for current user session
+    useEffect(() => {
+        if (user && isAuthenticated) {
+            sessionStorage.setItem('mp-invoice-user', JSON.stringify(user));
+            // Also update in the main users list if it exists there
+            if (users.length > 0) {
+                const updatedUsers = users.map(u => u.username === user.username ? user : u);
+                // Only update if actually different to avoid loop
+                if (JSON.stringify(updatedUsers) !== JSON.stringify(users)) {
+                    setUsers(updatedUsers);
+                }
+            }
+        }
+    }, [user, isAuthenticated]);
+
     const onLogin = () => {
         setIsAuthenticated(true);
         // Current user should be available now
         const storedUser = sessionStorage.getItem('mp-invoice-user');
         if (storedUser) try { setUser(JSON.parse(storedUser)); } catch { }
+    };
+
+    const handlePasswordChange = (newPassword: string) => {
+        if (!user) return;
+        const updatedUser = { ...user, password: newPassword };
+        setUser(updatedUser);
+
+        // Update in the main list as well
+        setUsers(prevUsers => prevUsers.map(u =>
+            u.username === user.username ? updatedUser : u
+        ));
+
+        alert("Password updated successfully!");
     };
 
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading settings...</div>;
@@ -64,15 +99,47 @@ export default function SettingsPage() {
             {user && (
                 <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', marginBottom: 32 }}>
                     <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1f3c', marginBottom: 24 }}>My Profile</h2>
-                    <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-                        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #ffd700 0%, #ffa500 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 'bold', color: '#1a1f3c' }}>
+                    <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+                        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #ffd700 0%, #ffa500 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 'bold', color: '#1a1f3c', flexShrink: 0 }}>
                             {(user?.fullName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
                         </div>
-                        <div>
+                        <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 24, fontWeight: 700, color: '#1a1f3c' }}>{user?.fullName || 'User'}</div>
                             <div style={{ color: '#666' }}>{user?.username || 'No email provided'}</div>
                             <div style={{ display: 'inline-block', marginTop: 8, padding: '4px 12px', borderRadius: 20, background: '#f3f4f6', color: '#4b5563', fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>
                                 {user?.role || 'Staff'}
+                            </div>
+
+                            <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #eee' }}>
+                                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Change Password</h3>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const form = e.target as HTMLFormElement;
+                                    const newPass = (form.elements.namedItem('newPass') as HTMLInputElement).value;
+                                    const confirmPass = (form.elements.namedItem('confirmPass') as HTMLInputElement).value;
+
+                                    if (newPass !== confirmPass) {
+                                        alert("Passwords do not match");
+                                        return;
+                                    }
+                                    if (newPass.length < 4) {
+                                        alert("Password must be at least 4 characters");
+                                        return;
+                                    }
+
+                                    handlePasswordChange(newPass);
+                                    form.reset();
+                                }} style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#666' }}>New Password</label>
+                                        <input type="password" name="newPass" required style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#666' }}>Confirm</label>
+                                        <input type="password" name="confirmPass" required style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }} />
+                                    </div>
+                                    <button type="submit" style={{ padding: '8px 16px', background: '#1a1f3c', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', height: 35 }}>Update</button>
+                                </form>
                             </div>
                         </div>
                     </div>

@@ -31,6 +31,7 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
   // Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
   const [originalUsername, setOriginalUsername] = useState(""); // Key to identify user during edit
+  const [showPassword, setShowPassword] = useState(false);
 
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -153,14 +154,34 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
             <div>
               <label style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>Password</label>
-              <input
-                type="text" // Visible text for easier editing
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  style={{ width: '100%', padding: '8px 32px 8px 8px', boxSizing: 'border-box' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    color: '#666'
+                  }}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>Role</label>
