@@ -339,50 +339,11 @@ function InvoicesListContent() {
                         <p style={{ color: '#64748b', fontSize: 16 }}>
                             {viewMode === 'active' ? 'Manage and view all your invoices' : 'View and restore deleted invoices'}
                         </p>
-                        {isFirebaseConfigured() && (
-                            <span style={{ fontSize: 12, padding: '4px 8px', borderRadius: 12, background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
-                                Cloud Online
-                            </span>
-                        )}
-                        <button
-                            onClick={handleSync}
-                            disabled={isSyncing}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                padding: '4px 12px',
-                                borderRadius: 20,
-                                background: isSyncing ? '#e2e8f0' : '#f1f5f9',
-                                border: 'none',
-                                cursor: isSyncing ? 'wait' : 'pointer',
-                                fontSize: 13,
-                                color: '#475569',
-                                fontWeight: 600,
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <RotateCcw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                            {isSyncing ? 'Syncing...' : 'Sync Now'}
-                        </button>
+                        {/* Sync button hidden - system is now autonomous */}
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    {/* Cloud Status Indicator */}
-                    <div style={{
-                        padding: '6px 12px',
-                        borderRadius: 20,
-                        background: isFirebaseConfigured() ? '#dcfce7' : '#fee2e2',
-                        color: isFirebaseConfigured() ? '#166534' : '#ef4444',
-                        fontWeight: 600,
-                        fontSize: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6
-                    }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: isFirebaseConfigured() ? '#22c55e' : '#ef4444' }}></div>
-                        {isFirebaseConfigured() ? 'Cloud Online' : 'Cloud Offline'}
-                    </div>
+                    {/* Simplified Status */}
 
                     {viewMode === 'active' ? (
                         <>

@@ -119,7 +119,7 @@ export interface SavedInvoice {
 }
 
 /**
- * Get all saved invoices (from Firebase or localStorage)
+ * Get all saved invoices (Cloud-First with Local Cache)
  */
 export async function getAllInvoices(): Promise<SavedInvoice[]> {
   if (typeof window === 'undefined') return [];
@@ -127,11 +127,9 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
   let cloudInvoices: SavedInvoice[] = [];
   let fetchedFromCloud = false;
 
-  // 1. Try Firebase first
-  // 1. Try Firebase first
+  // 1. Try Firebase as Primary Source
   if (isFirebaseConfigured()) {
     try {
-      // Race against a 5s timeout to prevent hanging on bad connections
       const rawCloudInvoices = await Promise.race([
         getInvoicesFromCloud(),
         new Promise<any[]>((_, reject) =>
@@ -139,9 +137,8 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
         )
       ]);
 
-      // Convert Firebase format to local format
       cloudInvoices = rawCloudInvoices
-        .filter((inv: CloudInvoice) => inv && inv.data) // Filter out corrupt records
+        .filter((inv: CloudInvoice) => inv && inv.data)
         .map((invoice: CloudInvoice) => ({
           id: invoice.id,
           data: invoice.data,
@@ -149,39 +146,25 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
           updatedAt: invoice.createdAt.toISOString(),
           documentType: (invoice.data.documentType || 'INVOICE') as any
         }));
+
       fetchedFromCloud = true;
+
+      // UPDATE LOCAL STORAGE TO MATCH CLOUD (Source of Truth Sync)
+      // This ensures that if we are online, local storage is perfectly mirrored.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudInvoices));
+      console.log('CLOUD-SYNC: Local storage updated/mirrored from Cloud.');
+
     } catch (error) {
-      console.warn('Error fetching from Firebase (or timeout), using localStorage:', error);
+      console.warn('Cloud fetch failed, falling back to local storage:', error);
     }
   }
 
-  // 2. Get invoices from LocalStorage
-  const localInvoices = getAllInvoicesSync();
-
-  // If we couldn't reach cloud, just return local
+  // 2. Fallback to LocalStorage if offline or cloud failed
   if (!fetchedFromCloud) {
-    return localInvoices;
+    return getAllInvoicesSync();
   }
 
-  // 3. Merge: Cloud is primary, but we want to show local items that are NOT in cloud (Offline creations)
-  const cloudIds = new Set(cloudInvoices.map(inv => inv.id));
-  const missingLocalInvoices = localInvoices.filter(local => !cloudIds.has(local.id));
-
-  // Combine them
-  const mergedInvoices = [...cloudInvoices, ...missingLocalInvoices];
-
-  // Sort by date descending
-  mergedInvoices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  // 4. Background Sync Attempt
-  // If we found local invoices that are not in cloud, try to push them silently
-  if (missingLocalInvoices.length > 0 && isFirebaseConfigured()) {
-    syncMissingInvoices(missingLocalInvoices).catch(err =>
-      console.warn('Background sync failed for some items:', err)
-    );
-  }
-
-  return mergedInvoices;
+  return cloudInvoices;
 }
 
 /**
@@ -762,18 +745,15 @@ export async function getCustomerDebt(customerName: string): Promise<{ totalDebt
 
 /**
  * Subscribe to invoices (Wrapper for Cloud Subscription)
- * Maps Firebase data format to local SavedInvoice format
+ * Automatically keeps localStorage in sync with Cloud deletions
  */
 export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void): () => void {
   if (typeof window === 'undefined') return () => { };
 
-  // If firebase is not configured, we can't really subscribe to "local storage events" easily across windows without listeners
-  // But for now we only support real-time sync via Firebase as per plan
   if (isFirebaseConfigured()) {
     return subscribeToCloudInvoices((cloudInvoices) => {
-      console.log('CLOUD SUBSCRIPTION: Data received. Total items:', cloudInvoices.length);
       const mappedCloudInvoices: SavedInvoice[] = cloudInvoices
-        .filter(inv => inv && inv.data) // Filter out corrupt records
+        .filter(inv => inv && inv.data)
         .map(inv => ({
           id: inv.id,
           data: inv.data,
@@ -782,17 +762,23 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
           documentType: (inv.data.documentType || 'INVOICE') as any
         }));
 
-      // Merge with Local Data (Offline Invoices)
+      // SYNC LOCAL STORAGE (PURGE DELETED)
+      // This is critical for cross-device sync. If an item is gone from Cloud, it must go from Local.
       const localInvoices = getAllInvoicesSync();
       const cloudIds = new Set(mappedCloudInvoices.map(i => i.id));
-      const missingLocal = localInvoices.filter(l => !cloudIds.has(l.id));
 
-      const merged = [...mappedCloudInvoices, ...missingLocal];
+      // Preserve local-only invoices that haven't been uploaded yet (short IDs)
+      const localOnly = localInvoices.filter(l => l.id.length < 20 && !cloudIds.has(l.id));
 
-      // Sort desc by date
-      merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const newLocalState = [...mappedCloudInvoices, ...localOnly];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newLocalState));
 
-      callback(merged);
+      // Sort desc by date for UI
+      newLocalState.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      callback(newLocalState);
     });
   }
 
