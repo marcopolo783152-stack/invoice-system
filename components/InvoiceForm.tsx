@@ -466,444 +466,455 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         </div>
       </div>
       <div className={styles.formGroup}>
-        <label>Address:*</label>
+        <label>Company Name <span style={{ color: '#94a3b8', fontWeight: 400 }}>(Optional)</span>:</label>
         <input
           type="text"
-          value={soldTo.address}
+          value={soldTo.companyName || ''}
           onChange={(e) =>
-            setSoldTo({ ...soldTo, address: e.target.value })
+            setSoldTo({ ...soldTo, companyName: e.target.value })
           }
-          required
+          placeholder="Business Name"
           className={styles.input}
         />
-      </div>
-      <div className={styles.row}>
         <div className={styles.formGroup}>
-          <label>City:</label>
+          <label>Address:*</label>
           <input
             type="text"
-            value={soldTo.city}
+            value={soldTo.address}
             onChange={(e) =>
-              setSoldTo({ ...soldTo, city: e.target.value })
+              setSoldTo({ ...soldTo, address: e.target.value })
             }
+            required
             className={styles.input}
           />
         </div>
-        <div className={styles.formGroup}>
-          <label>State:</label>
-          <input
-            type="text"
-            value={soldTo.state}
-            onChange={(e) =>
-              setSoldTo({ ...soldTo, state: e.target.value })
-            }
-            maxLength={2}
-            className={styles.input}
-          />
-        </div>
-        <div className={styles.formGroup}>
-          <label>ZIP:</label>
-          <input
-            type="text"
-            value={soldTo.zip}
-            onChange={(e) =>
-              setSoldTo({ ...soldTo, zip: e.target.value })
-            }
-            className={styles.input}
-          />
-        </div>
-      </div>
-
-      {/* Items Section */}
-      <h3>Items</h3>
-      <div className={styles.itemsContainer}>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-          <button
-            type="button"
-            onClick={() => {
-              // Download Template
-              const templateData = [
-                {
-                  SKU: 'Example-1',
-                  Description: 'Persian Rug',
-                  Shape: 'Rectangle',
-                  Width_Ft: 5,
-                  Width_In: 0,
-                  Length_Ft: 7,
-                  Length_In: 0,
-                  Fixed_Price: 1500,
-                  Price_Per_SqFt: 0
-                },
-                {
-                  SKU: 'Example-2',
-                  Description: 'Round Rug',
-                  Shape: 'Round',
-                  Width_Ft: 6,
-                  Width_In: 6,
-                  Length_Ft: 0,
-                  Length_In: 0,
-                  Fixed_Price: 2000,
-                  Price_Per_SqFt: 0
-                }
-              ];
-              const ws = XLSX.utils.json_to_sheet(templateData);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, "Template");
-              XLSX.writeFile(wb, "invoice_import_template.xlsx");
-            }}
-            style={{ padding: '6px 12px', background: '#22c55e', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
-          >
-            📥 Download Excel Template
-          </button>
-          <label style={{ padding: '6px 12px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13, display: 'inline-block' }}>
-            📤 Import from Excel
+        <div className={styles.row}>
+          <div className={styles.formGroup}>
+            <label>City:</label>
             <input
-              type="file"
-              accept=".xlsx, .xls"
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                  try {
-                    const bstr = evt.target?.result;
-                    const wb = XLSX.read(bstr, { type: 'binary' });
-                    const wsname = wb.SheetNames[0];
-                    const ws = wb.Sheets[wsname];
-                    const data = XLSX.utils.sheet_to_json(ws);
-
-                    const newItems: InvoiceItem[] = data.map((row: any) => ({
-                      id: Math.random().toString(36).substr(2, 9),
-                      sku: row['SKU']?.toString() || '',
-                      description: row['Description']?.toString() || '',
-                      shape: (row['Shape']?.toString().toLowerCase().includes('round') ? 'round' : 'rectangle') as RugShape,
-                      widthFeet: Number(row['Width_Ft']) || 0,
-                      widthInches: Number(row['Width_In']) || 0,
-                      lengthFeet: Number(row['Length_Ft']) || 0,
-                      lengthInches: Number(row['Length_In']) || 0,
-                      pricePerSqFt: Number(row['Price_Per_SqFt']) || 0,
-                      fixedPrice: Number(row['Fixed_Price']) || Number(row['Price']) || 0,
-                      returned: false
-                    }));
-
-                    if (newItems.length > 0) {
-                      if (confirm(`Found ${newItems.length} items. Append to current list? (Cancel to clear list and replace)`)) {
-                        setItems(prev => [...prev, ...newItems]);
-                      } else {
-                        setItems(newItems);
-                      }
-                    } else {
-                      alert('No items found in file.');
-                    }
-                  } catch (err) {
-                    console.error(err);
-                    alert('Error parsing file. Please use the template.');
-                  }
-                  e.target.value = ''; // Reset input
-                };
-                reader.readAsBinaryString(file);
-              }}
+              type="text"
+              value={soldTo.city}
+              onChange={(e) =>
+                setSoldTo({ ...soldTo, city: e.target.value })
+              }
+              className={styles.input}
             />
-          </label>
-        </div>
-        {items.map((item, index) => (
-          <div key={item.id} className={styles.itemRow}>
-            <div className={styles.itemHeader}>
-              <span>Item {index + 1}</span>
-              {items.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem(item.id)}
-                  className={styles.removeBtn}
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-            <div className={styles.row}>
-              <div className={styles.formGroup}>
-                <label>SKU:*</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    value={item.sku}
-                    onChange={(e) =>
-                      handleItemChange(item.id, 'sku', e.target.value)
-                    }
-                    required
-                    className={styles.input}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setScanningItemId(item.id)}
-                    style={{ padding: '0 12px', background: '#e0e7ff', border: '1px solid #c7d2fe', borderRadius: '8px', cursor: 'pointer', fontSize: '20px' }}
-                    title="Scan Barcode"
-                  >
-                    📷
-                  </button>
-                </div>
-              </div>
-              <div className={styles.formGroup} style={{ flex: 2 }}>
-                <label>Description:*</label>
-                <input
-                  type="text"
-                  value={item.description}
-                  onChange={(e) =>
-                    handleItemChange(item.id, 'description', e.target.value)
-                  }
-                  required
-                  className={styles.input}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Shape:*</label>
-                <select
-                  value={item.shape}
-                  onChange={(e) =>
-                    handleItemChange(item.id, 'shape', e.target.value as RugShape)
-                  }
-                  className={styles.select}
-                >
-                  <option value="rectangle">Rectangle</option>
-                  <option value="round">Round</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Image Upload for Item */}
-            <div className={styles.formGroup}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#4f46e5', marginTop: 8 }}>
-                <span>📷 {item.image ? 'Change Image' : 'Add Item Image'}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(e) => e.target.files?.[0] && handleImageUpload(item.id, e.target.files[0])}
-                  style={{ display: 'none' }}
-                />
-              </label>
-              {item.image && (
-                <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
-                  <img src={item.image} alt="Preview" style={{ height: 60, borderRadius: 4, border: '1px solid #ccc' }} />
-                  <button
-                    type="button"
-                    onClick={() => handleItemChange(item.id, 'image', '')}
-                    style={{
-                      position: 'absolute',
-                      top: -8,
-                      right: -8,
-                      background: '#ef4444',
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: 20,
-                      height: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: 12,
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                    }}
-                    title="Remove image"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className={styles.row}>
-              <div className={styles.formGroup}>
-                <label>{item.shape === 'round' ? 'Diameter (Feet):' : 'Width (Feet):'}*</label>
-                <input
-                  type="number"
-                  value={item.widthFeet}
-                  onChange={(e) =>
-                    handleItemChange(item.id, 'widthFeet', Number(e.target.value))
-                  }
-                  onFocus={(e) => e.target.select()}
-                  min="0"
-                  required
-                  className={styles.input}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>{item.shape === 'round' ? 'Diameter (Inches):' : 'Width (Inches):'}*</label>
-                <input
-                  type="number"
-                  value={item.widthInches}
-                  onChange={(e) =>
-                    handleItemChange(item.id, 'widthInches', Number(e.target.value))
-                  }
-                  onFocus={(e) => e.target.select()}
-                  min="0"
-                  max="11"
-                  required
-                  className={styles.input}
-                />
-              </div>
-              {item.shape === 'rectangle' && (
-                <>
-                  <div className={styles.formGroup}>
-                    <label>Length (Feet):*</label>
-                    <input
-                      type="number"
-                      value={item.lengthFeet}
-                      onChange={(e) =>
-                        handleItemChange(item.id, 'lengthFeet', Number(e.target.value))
-                      }
-                      onFocus={(e) => e.target.select()}
-                      min="0"
-                      required
-                      className={styles.input}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Length (Inches):*</label>
-                    <input
-                      type="number"
-                      value={item.lengthInches}
-                      onChange={(e) =>
-                        handleItemChange(item.id, 'lengthInches', Number(e.target.value))
-                      }
-                      onFocus={(e) => e.target.select()}
-                      min="0"
-                      max="11"
-                      required
-                      className={styles.input}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-            <div className={styles.row}>
-              {isPerSqFt ? (
-                <div className={styles.formGroup}>
-                  <label>Price per Sq.Ft:*</label>
-                  <input
-                    type="number"
-                    value={item.pricePerSqFt}
-                    onChange={(e) =>
-                      handleItemChange(item.id, 'pricePerSqFt', Number(e.target.value))
-                    }
-                    onFocus={(e) => e.target.select()}
-                    min="0"
-                    step="0.01"
-                    required
-                    className={styles.input}
-                  />
-                </div>
-              ) : (
-                <div className={styles.formGroup}>
-                  <label>Fixed Price:*</label>
-                  <input
-                    type="number"
-                    value={item.fixedPrice}
-                    onChange={(e) =>
-                      handleItemChange(item.id, 'fixedPrice', Number(e.target.value))
-                    }
-                    onFocus={(e) => e.target.select()}
-                    min="0"
-                    step="0.01"
-                    required
-                    className={styles.input}
-                  />
-                </div>
-              )}
-            </div>
           </div>
-        ))}
-
-        <button type="button" onClick={handleAddItem} className={styles.addBtn}>
-          + Add Item
-        </button>
-      </div>
-
-      {/* Additional Options */}
-      {isRetail && (
-        <div className={styles.formGroup}>
-          <label>Discount (%):</label>
-          <input
-            type="number"
-            value={discountPercentage}
-            onChange={(e) => setDiscountPercentage(Number(e.target.value))}
-            onFocus={(e) => e.target.select()}
-            min="0"
-            max="100"
-            step="0.01"
-            className={styles.input}
-          />
+          <div className={styles.formGroup}>
+            <label>State:</label>
+            <input
+              type="text"
+              value={soldTo.state}
+              onChange={(e) =>
+                setSoldTo({ ...soldTo, state: e.target.value })
+              }
+              maxLength={2}
+              className={styles.input}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label>ZIP:</label>
+            <input
+              type="text"
+              value={soldTo.zip}
+              onChange={(e) =>
+                setSoldTo({ ...soldTo, zip: e.target.value })
+              }
+              className={styles.input}
+            />
+          </div>
         </div>
-      )}
 
-      <div className={styles.formGroup}>
-        <label>Notes:</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          className={styles.textarea}
-        />
-      </div>
-
-      {/* Customer Signature */}
-      <div className={styles.formGroup}>
-        <label>Customer Signature:*</label>
-        <div className={styles.signatureSection}>
-          {!showSignaturePad && !signature && (
+        {/* Items Section */}
+        <h3>Items</h3>
+        <div className={styles.itemsContainer}>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
             <button
               type="button"
-              onClick={() => setShowSignaturePad(true)}
-              className={styles.addSignatureBtn}
+              onClick={() => {
+                // Download Template
+                const templateData = [
+                  {
+                    SKU: 'Example-1',
+                    Description: 'Persian Rug',
+                    Shape: 'Rectangle',
+                    Width_Ft: 5,
+                    Width_In: 0,
+                    Length_Ft: 7,
+                    Length_In: 0,
+                    Fixed_Price: 1500,
+                    Price_Per_SqFt: 0
+                  },
+                  {
+                    SKU: 'Example-2',
+                    Description: 'Round Rug',
+                    Shape: 'Round',
+                    Width_Ft: 6,
+                    Width_In: 6,
+                    Length_Ft: 0,
+                    Length_In: 0,
+                    Fixed_Price: 2000,
+                    Price_Per_SqFt: 0
+                  }
+                ];
+                const ws = XLSX.utils.json_to_sheet(templateData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Template");
+                XLSX.writeFile(wb, "invoice_import_template.xlsx");
+              }}
+              style={{ padding: '6px 12px', background: '#22c55e', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
             >
-              ✍️ Add Customer Signature
+              📥 Download Excel Template
             </button>
-          )}
+            <label style={{ padding: '6px 12px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13, display: 'inline-block' }}>
+              📤 Import from Excel
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
 
-          {!showSignaturePad && signature && (
-            <div className={styles.signaturePreview}>
-              <img src={signature} alt="Customer signature" />
+                  const reader = new FileReader();
+                  reader.onload = (evt) => {
+                    try {
+                      const bstr = evt.target?.result;
+                      const wb = XLSX.read(bstr, { type: 'binary' });
+                      const wsname = wb.SheetNames[0];
+                      const ws = wb.Sheets[wsname];
+                      const data = XLSX.utils.sheet_to_json(ws);
+
+                      const newItems: InvoiceItem[] = data.map((row: any) => ({
+                        id: Math.random().toString(36).substr(2, 9),
+                        sku: row['SKU']?.toString() || '',
+                        description: row['Description']?.toString() || '',
+                        shape: (row['Shape']?.toString().toLowerCase().includes('round') ? 'round' : 'rectangle') as RugShape,
+                        widthFeet: Number(row['Width_Ft']) || 0,
+                        widthInches: Number(row['Width_In']) || 0,
+                        lengthFeet: Number(row['Length_Ft']) || 0,
+                        lengthInches: Number(row['Length_In']) || 0,
+                        pricePerSqFt: Number(row['Price_Per_SqFt']) || 0,
+                        fixedPrice: Number(row['Fixed_Price']) || Number(row['Price']) || 0,
+                        returned: false
+                      }));
+
+                      if (newItems.length > 0) {
+                        if (confirm(`Found ${newItems.length} items. Append to current list? (Cancel to clear list and replace)`)) {
+                          setItems(prev => [...prev, ...newItems]);
+                        } else {
+                          setItems(newItems);
+                        }
+                      } else {
+                        alert('No items found in file.');
+                      }
+                    } catch (err) {
+                      console.error(err);
+                      alert('Error parsing file. Please use the template.');
+                    }
+                    e.target.value = ''; // Reset input
+                  };
+                  reader.readAsBinaryString(file);
+                }}
+              />
+            </label>
+          </div>
+          {items.map((item, index) => (
+            <div key={item.id} className={styles.itemRow}>
+              <div className={styles.itemHeader}>
+                <span>Item {index + 1}</span>
+                {items.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveItem(item.id)}
+                    className={styles.removeBtn}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className={styles.row}>
+                <div className={styles.formGroup}>
+                  <label>SKU:*</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      value={item.sku}
+                      onChange={(e) =>
+                        handleItemChange(item.id, 'sku', e.target.value)
+                      }
+                      required
+                      className={styles.input}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setScanningItemId(item.id)}
+                      style={{ padding: '0 12px', background: '#e0e7ff', border: '1px solid #c7d2fe', borderRadius: '8px', cursor: 'pointer', fontSize: '20px' }}
+                      title="Scan Barcode"
+                    >
+                      📷
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.formGroup} style={{ flex: 2 }}>
+                  <label>Description:*</label>
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) =>
+                      handleItemChange(item.id, 'description', e.target.value)
+                    }
+                    required
+                    className={styles.input}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Shape:*</label>
+                  <select
+                    value={item.shape}
+                    onChange={(e) =>
+                      handleItemChange(item.id, 'shape', e.target.value as RugShape)
+                    }
+                    className={styles.select}
+                  >
+                    <option value="rectangle">Rectangle</option>
+                    <option value="round">Round</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Image Upload for Item */}
+              <div className={styles.formGroup}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#4f46e5', marginTop: 8 }}>
+                  <span>📷 {item.image ? 'Change Image' : 'Add Item Image'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => e.target.files?.[0] && handleImageUpload(item.id, e.target.files[0])}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                {item.image && (
+                  <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
+                    <img src={item.image} alt="Preview" style={{ height: 60, borderRadius: 4, border: '1px solid #ccc' }} />
+                    <button
+                      type="button"
+                      onClick={() => handleItemChange(item.id, 'image', '')}
+                      style={{
+                        position: 'absolute',
+                        top: -8,
+                        right: -8,
+                        background: '#ef4444',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: 20,
+                        height: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.row}>
+                <div className={styles.formGroup}>
+                  <label>{item.shape === 'round' ? 'Diameter (Feet):' : 'Width (Feet):'}*</label>
+                  <input
+                    type="number"
+                    value={item.widthFeet}
+                    onChange={(e) =>
+                      handleItemChange(item.id, 'widthFeet', Number(e.target.value))
+                    }
+                    onFocus={(e) => e.target.select()}
+                    min="0"
+                    required
+                    className={styles.input}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>{item.shape === 'round' ? 'Diameter (Inches):' : 'Width (Inches):'}*</label>
+                  <input
+                    type="number"
+                    value={item.widthInches}
+                    onChange={(e) =>
+                      handleItemChange(item.id, 'widthInches', Number(e.target.value))
+                    }
+                    onFocus={(e) => e.target.select()}
+                    min="0"
+                    max="11"
+                    required
+                    className={styles.input}
+                  />
+                </div>
+                {item.shape === 'rectangle' && (
+                  <>
+                    <div className={styles.formGroup}>
+                      <label>Length (Feet):*</label>
+                      <input
+                        type="number"
+                        value={item.lengthFeet}
+                        onChange={(e) =>
+                          handleItemChange(item.id, 'lengthFeet', Number(e.target.value))
+                        }
+                        onFocus={(e) => e.target.select()}
+                        min="0"
+                        required
+                        className={styles.input}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Length (Inches):*</label>
+                      <input
+                        type="number"
+                        value={item.lengthInches}
+                        onChange={(e) =>
+                          handleItemChange(item.id, 'lengthInches', Number(e.target.value))
+                        }
+                        onFocus={(e) => e.target.select()}
+                        min="0"
+                        max="11"
+                        required
+                        className={styles.input}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className={styles.row}>
+                {isPerSqFt ? (
+                  <div className={styles.formGroup}>
+                    <label>Price per Sq.Ft:*</label>
+                    <input
+                      type="number"
+                      value={item.pricePerSqFt}
+                      onChange={(e) =>
+                        handleItemChange(item.id, 'pricePerSqFt', Number(e.target.value))
+                      }
+                      onFocus={(e) => e.target.select()}
+                      min="0"
+                      step="0.01"
+                      required
+                      className={styles.input}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.formGroup}>
+                    <label>Fixed Price:*</label>
+                    <input
+                      type="number"
+                      value={item.fixedPrice}
+                      onChange={(e) =>
+                        handleItemChange(item.id, 'fixedPrice', Number(e.target.value))
+                      }
+                      onFocus={(e) => e.target.select()}
+                      min="0"
+                      step="0.01"
+                      required
+                      className={styles.input}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          <button type="button" onClick={handleAddItem} className={styles.addBtn}>
+            + Add Item
+          </button>
+        </div>
+
+        {/* Additional Options */}
+        {isRetail && (
+          <div className={styles.formGroup}>
+            <label>Discount (%):</label>
+            <input
+              type="number"
+              value={discountPercentage}
+              onChange={(e) => setDiscountPercentage(Number(e.target.value))}
+              onFocus={(e) => e.target.select()}
+              min="0"
+              max="100"
+              step="0.01"
+              className={styles.input}
+            />
+          </div>
+        )}
+
+        <div className={styles.formGroup}>
+          <label>Notes:</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            className={styles.textarea}
+          />
+        </div>
+
+        {/* Customer Signature */}
+        <div className={styles.formGroup}>
+          <label>Customer Signature:*</label>
+          <div className={styles.signatureSection}>
+            {!showSignaturePad && !signature && (
               <button
                 type="button"
                 onClick={() => setShowSignaturePad(true)}
-                className={styles.changeSignatureBtn}
+                className={styles.addSignatureBtn}
               >
-                ✏️ Change Signature
+                ✍️ Add Customer Signature
               </button>
-            </div>
-          )}
+            )}
 
-          {showSignaturePad && (
-            <SignaturePad
-              onSave={(signatureData) => {
-                setSignature(signatureData);
-                setShowSignaturePad(false);
-              }}
-              onCancel={() => setShowSignaturePad(false)}
-              existingSignature={signature}
-              variant="inline"
-            />
-          )}
+            {!showSignaturePad && signature && (
+              <div className={styles.signaturePreview}>
+                <img src={signature} alt="Customer signature" />
+                <button
+                  type="button"
+                  onClick={() => setShowSignaturePad(true)}
+                  className={styles.changeSignatureBtn}
+                >
+                  ✏️ Change Signature
+                </button>
+              </div>
+            )}
+
+            {showSignaturePad && (
+              <SignaturePad
+                onSave={(signatureData) => {
+                  setSignature(signatureData);
+                  setShowSignaturePad(false);
+                }}
+                onCancel={() => setShowSignaturePad(false)}
+                existingSignature={signature}
+                variant="inline"
+              />
+            )}
+          </div>
         </div>
-      </div>
 
-      <button type="submit" className={styles.submitBtn}>
-        Generate Invoice
-      </button>
+        <button type="submit" className={styles.submitBtn}>
+          Generate Invoice
+        </button>
 
-      {/* Signature Pad Modal */}
-      {/* Signature Pad Modal - REMOVED (Now Inline) */}
+        {/* Signature Pad Modal */}
+        {/* Signature Pad Modal - REMOVED (Now Inline) */}
 
-      {/* Barcode Scanner Modal */}
-      {scanningItemId && (
-        <BarcodeScanner
-          onScan={handleScanSuccess}
-          onClose={() => setScanningItemId(null)}
-        />
-      )}
+        {/* Barcode Scanner Modal */}
+        {scanningItemId && (
+          <BarcodeScanner
+            onScan={handleScanSuccess}
+            onClose={() => setScanningItemId(null)}
+          />
+        )}
     </form>
   );
 }
