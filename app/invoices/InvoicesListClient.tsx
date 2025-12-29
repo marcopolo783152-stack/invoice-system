@@ -168,8 +168,12 @@ function InvoicesListContent() {
             result = result.filter(inv => {
                 const invNum = inv.data?.invoiceNumber || '';
                 const custName = inv.data?.soldTo?.name || '';
+                const hasMatchingSku = (inv.data?.items || []).some(item =>
+                    (item.sku || '').toLowerCase().includes(lowerTerm)
+                );
                 return invNum.toLowerCase().includes(lowerTerm) ||
-                    custName.toLowerCase().includes(lowerTerm);
+                    custName.toLowerCase().includes(lowerTerm) ||
+                    hasMatchingSku;
             });
         }
 

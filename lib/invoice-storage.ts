@@ -150,21 +150,36 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
       fetchedFromCloud = true;
 
       // UPDATE LOCAL STORAGE TO MATCH CLOUD (Source of Truth Sync)
-      // This ensures that if we are online, local storage is perfectly mirrored.
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudInvoices));
-      console.log('CLOUD-SYNC: Local storage updated/mirrored from Cloud.');
+      // BUT: We MUST preserve invoices that only exist locally (e.g. just saved or offline)
+      const localInvoices = getAllInvoicesSync();
+      const cloudIds = new Set(cloudInvoices.map(inv => inv.id));
 
+      const nowTs = new Date().getTime();
+      const twoMinutesInMs = 2 * 60 * 1000;
+
+      // Preserve local-only invoices if:
+      // 1. They haven't been uploaded yet (short IDs)
+      // 2. They were JUST saved on this device (less than 2 mins ago) to avoid race conditions
+      const localOnly = localInvoices.filter(l => {
+        if (cloudIds.has(l.id)) return false;
+        const isShortId = l.id.length < 20;
+        const updatedAt = new Date(l.updatedAt || 0).getTime();
+        const isVeryRecent = (nowTs - updatedAt) < twoMinutesInMs;
+        return isShortId || isVeryRecent;
+      });
+
+      const merged = [...cloudInvoices, ...localOnly];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      console.log('CLOUD-SYNC: Local storage updated (preserved local entries).');
+
+      return merged;
     } catch (error) {
       console.warn('Cloud fetch failed, falling back to local storage:', error);
     }
   }
 
   // 2. Fallback to LocalStorage if offline or cloud failed
-  if (!fetchedFromCloud) {
-    return getAllInvoicesSync();
-  }
-
-  return cloudInvoices;
+  return getAllInvoicesSync();
 }
 
 /**
@@ -356,6 +371,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
         returned: isReturn ? true : (data.returned || false),
         returnNote: (isReturn ? data.returnNote : data.returnNote) || '',
       },
+      documentType: (data.documentType || 'INVOICE') as any,
       createdAt: now,
       updatedAt: now,
     };
@@ -767,8 +783,19 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
       const localInvoices = getAllInvoicesSync();
       const cloudIds = new Set(mappedCloudInvoices.map(i => i.id));
 
-      // Preserve local-only invoices that haven't been uploaded yet (short IDs)
-      const localOnly = localInvoices.filter(l => l.id.length < 20 && !cloudIds.has(l.id));
+      const nowTs = new Date().getTime();
+      const twoMinutesInMs = 2 * 60 * 1000;
+
+      // Preserve local-only invoices if:
+      // 1. They haven't been uploaded yet (short IDs)
+      // 2. They were JUST saved on this device (less than 2 mins ago) to avoid race conditions
+      const localOnly = localInvoices.filter(l => {
+        if (cloudIds.has(l.id)) return false;
+        const isShortId = l.id.length < 20;
+        const updatedAt = new Date(l.updatedAt || 0).getTime();
+        const isVeryRecent = (nowTs - updatedAt) < twoMinutesInMs;
+        return isShortId || isVeryRecent;
+      });
 
       const newLocalState = [...mappedCloudInvoices, ...localOnly];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newLocalState));
