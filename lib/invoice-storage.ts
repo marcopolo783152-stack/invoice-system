@@ -704,6 +704,7 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
   // But for now we only support real-time sync via Firebase as per plan
   if (isFirebaseConfigured()) {
     return subscribeToCloudInvoices((cloudInvoices) => {
+      console.log('CLOUD SUBSCRIPTION: Data received. Total items:', cloudInvoices.length);
       const mappedCloudInvoices: SavedInvoice[] = cloudInvoices.map(inv => ({
         id: inv.id,
         data: inv.data,
