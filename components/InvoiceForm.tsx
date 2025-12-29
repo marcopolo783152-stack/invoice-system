@@ -299,6 +299,9 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             // Autofill consignment terms if selected
             if (value === 'CONSIGNMENT') {
               setTerms('Consignment: All items remain property of Marco Polo Oriental Rugs until sold. Payment due upon sale or return. Items not sold within 90 days may be returned.');
+            } else if (value === 'WASH') {
+              setMode('wash');
+              setTerms('Due on Receipt');
             } else {
               setTerms('Due on Receipt');
             }
@@ -311,6 +314,22 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         </select>
       </div>
       <h2>{documentType === 'CONSIGNMENT' ? 'Consignment Out Details' : 'Invoice Details'}</h2>
+
+      {/* Mode Selection */}
+      <div className={styles.formGroup}>
+        <label>Invoice Mode:</label>
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value as InvoiceMode)}
+          className={styles.select}
+        >
+          <option value="retail-per-rug">Retail - Per Rug</option>
+          <option value="wholesale-per-rug">Wholesale - Per Rug</option>
+          <option value="retail-per-sqft">Retail - Per Sq.Ft</option>
+          <option value="wholesale-per-sqft">Wholesale - Per Sq.Ft</option>
+          <option value="wash">Wash Service</option>
+        </select>
+      </div>
 
       {/* Invoice Info */}
       <div className={styles.topRow}>
