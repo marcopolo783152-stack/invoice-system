@@ -288,6 +288,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
             0, // Will be calculated
             savedInvoice.data
           );
+          alert('Sync Success: Invoice updated in cloud.');
         } catch (error) {
           console.warn('Firebase update failed, attempting to create new doc:', error);
           // Fallback logic...
@@ -301,6 +302,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
             );
             savedInvoice.id = newId;
             invoices[existingIndex] = savedInvoice;
+            alert('Sync Success: Invoice created in cloud (recovered from local).');
           } catch (e: any) {
             alert(`Sync Error: ${e.message}`);
           }
@@ -317,6 +319,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
           // Replace local ID with real Cloud ID
           savedInvoice.id = newId;
           invoices[existingIndex] = savedInvoice;
+          alert('Sync Success: Invoice uploaded to cloud.');
         } catch (error: any) {
           console.error('Failed to promote local invoice to cloud:', error);
           alert(`Sync Error: Failed to upload local invoice. ${error.message}`);
