@@ -147,35 +147,34 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
       console.warn('Error fetching from Firebase (or timeout), using localStorage:', error);
     }
   }
-}
 
-// 2. Get invoices from LocalStorage
-const localInvoices = getAllInvoicesSync();
+  // 2. Get invoices from LocalStorage
+  const localInvoices = getAllInvoicesSync();
 
-// If we couldn't reach cloud, just return local
-if (!fetchedFromCloud) {
-  return localInvoices;
-}
+  // If we couldn't reach cloud, just return local
+  if (!fetchedFromCloud) {
+    return localInvoices;
+  }
 
-// 3. Merge: Cloud is primary, but we want to show local items that are NOT in cloud (Offline creations)
-const cloudIds = new Set(cloudInvoices.map(inv => inv.id));
-const missingLocalInvoices = localInvoices.filter(local => !cloudIds.has(local.id));
+  // 3. Merge: Cloud is primary, but we want to show local items that are NOT in cloud (Offline creations)
+  const cloudIds = new Set(cloudInvoices.map(inv => inv.id));
+  const missingLocalInvoices = localInvoices.filter(local => !cloudIds.has(local.id));
 
-// Combine them
-const mergedInvoices = [...cloudInvoices, ...missingLocalInvoices];
+  // Combine them
+  const mergedInvoices = [...cloudInvoices, ...missingLocalInvoices];
 
-// Sort by date descending
-mergedInvoices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // Sort by date descending
+  mergedInvoices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-// 4. Background Sync Attempt
-// If we found local invoices that are not in cloud, try to push them silently
-if (missingLocalInvoices.length > 0 && isFirebaseConfigured()) {
-  syncMissingInvoices(missingLocalInvoices).catch(err =>
-    console.warn('Background sync failed for some items:', err)
-  );
-}
+  // 4. Background Sync Attempt
+  // If we found local invoices that are not in cloud, try to push them silently
+  if (missingLocalInvoices.length > 0 && isFirebaseConfigured()) {
+    syncMissingInvoices(missingLocalInvoices).catch(err =>
+      console.warn('Background sync failed for some items:', err)
+    );
+  }
 
-return mergedInvoices;
+  return mergedInvoices;
 }
 
 /**
