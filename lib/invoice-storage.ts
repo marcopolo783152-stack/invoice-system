@@ -124,49 +124,55 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
 
   // 1. Try Firebase first
   if (isFirebaseConfigured()) {
-    try {
-      const rawCloudInvoices = await getInvoicesFromCloud();
-      // Convert Firebase format to local format
-      cloudInvoices = rawCloudInvoices.map(invoice => ({
-        id: invoice.id,
-        data: invoice.data,
-        createdAt: invoice.createdAt.toISOString(),
-        updatedAt: invoice.createdAt.toISOString(),
-        documentType: (invoice.data.documentType || 'INVOICE') as any
-      }));
-      fetchedFromCloud = true;
-    } catch (error) {
-      console.error('Error fetching from Firebase, using localStorage:', error);
-    }
+    // Race against a 5s timeout to prevent hanging on bad connections
+    const rawCloudInvoices = await Promise.race([
+      getInvoicesFromCloud(),
+      new Promise<any[]>((_, reject) =>
+        setTimeout(() => reject(new Error('Cloud fetch timeout (5s)')), 5000)
+      )
+    ]);
+
+    // Convert Firebase format to local format
+    cloudInvoices = rawCloudInvoices.map(invoice => ({
+      id: invoice.id,
+      data: invoice.data,
+      createdAt: invoice.createdAt.toISOString(),
+      updatedAt: invoice.createdAt.toISOString(),
+      documentType: (invoice.data.documentType || 'INVOICE') as any
+    }));
+    fetchedFromCloud = true;
+  } catch (error) {
+    console.warn('Error fetching from Firebase (or timeout), using localStorage:', error);
   }
+}
 
-  // 2. Get invoices from LocalStorage
-  const localInvoices = getAllInvoicesSync();
+// 2. Get invoices from LocalStorage
+const localInvoices = getAllInvoicesSync();
 
-  // If we couldn't reach cloud, just return local
-  if (!fetchedFromCloud) {
-    return localInvoices;
-  }
+// If we couldn't reach cloud, just return local
+if (!fetchedFromCloud) {
+  return localInvoices;
+}
 
-  // 3. Merge: Cloud is primary, but we want to show local items that are NOT in cloud (Offline creations)
-  const cloudIds = new Set(cloudInvoices.map(inv => inv.id));
-  const missingLocalInvoices = localInvoices.filter(local => !cloudIds.has(local.id));
+// 3. Merge: Cloud is primary, but we want to show local items that are NOT in cloud (Offline creations)
+const cloudIds = new Set(cloudInvoices.map(inv => inv.id));
+const missingLocalInvoices = localInvoices.filter(local => !cloudIds.has(local.id));
 
-  // Combine them
-  const mergedInvoices = [...cloudInvoices, ...missingLocalInvoices];
+// Combine them
+const mergedInvoices = [...cloudInvoices, ...missingLocalInvoices];
 
-  // Sort by date descending
-  mergedInvoices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+// Sort by date descending
+mergedInvoices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  // 4. Background Sync Attempt
-  // If we found local invoices that are not in cloud, try to push them silently
-  if (missingLocalInvoices.length > 0 && isFirebaseConfigured()) {
-    syncMissingInvoices(missingLocalInvoices).catch(err =>
-      console.warn('Background sync failed for some items:', err)
-    );
-  }
+// 4. Background Sync Attempt
+// If we found local invoices that are not in cloud, try to push them silently
+if (missingLocalInvoices.length > 0 && isFirebaseConfigured()) {
+  syncMissingInvoices(missingLocalInvoices).catch(err =>
+    console.warn('Background sync failed for some items:', err)
+  );
+}
 
-  return mergedInvoices;
+return mergedInvoices;
 }
 
 /**
