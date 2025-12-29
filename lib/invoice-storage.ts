@@ -740,3 +740,76 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
 
   return () => { };
 }
+
+/**
+ * Diagnostic Force Sync
+ * Manually checks local vs cloud and forces upload of missing items.
+ * returns a report string.
+ */
+export async function diagnoseAndSync(): Promise<string> {
+  if (!isFirebaseConfigured()) {
+    return 'Cloud is not configured.';
+  }
+
+  try {
+    // 1. Get Local Invoices
+    const localInvoices = getAllInvoicesSync();
+    if (localInvoices.length === 0) return 'No local invoices to sync.';
+
+    // 2. Get Cloud Invoices (Fresh)
+    const cloudInvoices = await getInvoicesFromCloud();
+    const cloudIds = new Set(cloudInvoices.map(i => i.id));
+
+    // 3. Find Missing
+    const missing = localInvoices.filter(l => !cloudIds.has(l.id));
+
+    if (missing.length === 0) {
+      return 'All invoices are already synchronized.';
+    }
+
+    // 4. Force Upload
+    let successCount = 0;
+    let errors = [];
+
+    for (const invoice of missing) {
+      try {
+        // If it looks like a local ID (short), treat as new, otherwise try update
+        if (invoice.id.length < 20) {
+          const newId = await saveInvoiceToCloud(
+            invoice.data.invoiceNumber,
+            invoice.data.soldTo.name,
+            0, // totalAmount (recalc if needed, or send 0 as it's optional for list)
+            invoice.data
+          );
+          // Update local ID to match cloud
+          const index = localInvoices.findIndex(i => i.id === invoice.id);
+          if (index !== -1) {
+            localInvoices[index].id = newId;
+            saveInvoicesSync(localInvoices);
+          }
+        } else {
+          // It has a long ID but missing in cloud? Rare, maybe deleted in cloud. Re-create.
+          await saveInvoiceToCloud(
+            invoice.data.invoiceNumber,
+            invoice.data.soldTo.name,
+            0,
+            invoice.data
+          );
+        }
+        successCount++;
+      } catch (err: any) {
+        errors.push(`${invoice.data.invoiceNumber}: ${err.message}`);
+      }
+    }
+
+    if (errors.length > 0) {
+      return `Synced ${successCount}/${missing.length}. Errors: ${errors.join(', ')}`;
+    }
+
+    return `Successfully synced ${successCount} invoices.`;
+
+  } catch (error: any) {
+    console.error('Force sync failed:', error);
+    return `Sync failed: ${error.message}`;
+  }
+}
