@@ -141,7 +141,7 @@ function InvoicesPageContent() {
     const getStatusColor = (inv: SavedInvoice) => {
         if (inv.data?.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
         if (inv.data?.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash' };
-        if (inv.data?.terms?.toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
+        if ((inv.data?.terms || '').toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
         return { bg: '#eff6ff', text: '#3b82f6', label: 'Sale' };
     };
 
