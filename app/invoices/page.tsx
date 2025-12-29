@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoices, restoreMultipleInvoices, permanentlyDeleteInvoices, subscribeToInvoices } from '@/lib/invoice-storage';
+import { isFirebaseConfigured } from '@/lib/firebase';
 import { calculateInvoice } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
@@ -225,7 +226,23 @@ function InvoicesPageContent() {
                         {viewMode === 'active' ? 'Manage and view all your invoices' : 'View and restore deleted invoices'}
                     </p>
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    {/* Cloud Status Indicator */}
+                    <div style={{
+                        padding: '6px 12px',
+                        borderRadius: 20,
+                        background: isFirebaseConfigured() ? '#dcfce7' : '#fee2e2',
+                        color: isFirebaseConfigured() ? '#166534' : '#ef4444',
+                        fontWeight: 600,
+                        fontSize: 12,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6
+                    }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: isFirebaseConfigured() ? '#22c55e' : '#ef4444' }}></div>
+                        {isFirebaseConfigured() ? 'Cloud Online' : 'Cloud Offline'}
+                    </div>
+
                     {viewMode === 'active' ? (
                         <>
                             <button
