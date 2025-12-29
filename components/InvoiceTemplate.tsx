@@ -133,17 +133,23 @@ export default function InvoiceTemplate({
 
             {/* Customer and Invoice Info Section - Repeated */}
             <div className={styles.infoSection}>
-              <div className={styles.soldTo}>
-                <h3>SOLD TO:</h3>
-                <p className={styles.customerName}>{data.soldTo.name}</p>
-                <p>{data.soldTo.address}</p>
-                <p>
+              {/* Client Details */}
+              <div>
+                <p style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Bill To:</p>
+                {data.soldTo.companyName && (
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 2 }}>{data.soldTo.companyName}</p>
+                )}
+                <h3 style={{ fontSize: data.soldTo.companyName ? 12 : 14, fontWeight: data.soldTo.companyName ? 500 : 700, color: '#1e293b', marginBottom: 4 }}>
+                  {data.soldTo.name}
+                </h3>
+                <p style={{ fontSize: 11, color: '#475569', whiteSpace: 'pre-line' }}>{data.soldTo.address}</p>
+                <p style={{ fontSize: 11, color: '#475569' }}>
                   {data.soldTo.city}, {data.soldTo.state} {data.soldTo.zip}
                 </p>
-                {data.soldTo.phone && <p>Phone: {data.soldTo.phone}</p>}
-                {data.soldTo.email && <p>Email: {data.soldTo.email}</p>}
+                <p style={{ fontSize: 11, color: '#475569' }}>{data.soldTo.phone}</p>
+                {data.soldTo.email && <p style={{ fontSize: 11, color: '#475569' }}>{data.soldTo.email}</p>}
                 {data.servedBy && (
-                  <p><b>Served by:</b> {data.servedBy}</p>
+                  <p style={{ fontSize: 11, color: '#475569' }}><b>Served by:</b> {data.servedBy}</p>
                 )}
               </div>
               <div className={styles.invoiceInfo}>
