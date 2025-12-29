@@ -129,7 +129,10 @@ function InvoicesListContent() {
         result.sort((a, b) => {
             const dateA = new Date(a.data?.date || 0).getTime();
             const dateB = new Date(b.data?.date || 0).getTime();
-            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+            // Handle NaN
+            const valA = isNaN(dateA) ? 0 : dateA;
+            const valB = isNaN(dateB) ? 0 : dateB;
+            return sortOrder === 'desc' ? valB - valA : valA - valB;
         });
 
         setFilteredInvoices(result);
