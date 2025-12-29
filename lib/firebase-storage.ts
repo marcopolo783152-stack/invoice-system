@@ -32,6 +32,7 @@ export interface SavedInvoice {
 }
 
 const COLLECTION_NAME = 'invoices';
+const DELETED_COLLECTION_NAME = 'deletedInvoices';
 
 /**
  * Save invoice to Firebase
@@ -222,4 +223,112 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
   }, (error) => {
     console.error('Error in invoice subscription:', error);
   });
+}
+
+/**
+ * Move invoice to Cloud Recycle Bin
+ */
+export async function moveToCloudBin(id: string): Promise<void> {
+  if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const sourceRef = doc(db!, COLLECTION_NAME, id);
+      const sourceSnap = await transaction.get(sourceRef);
+
+      if (!sourceSnap.exists()) throw new Error('Invoice not found');
+
+      const targetRef = doc(collection(db!, DELETED_COLLECTION_NAME));
+      transaction.set(targetRef, {
+        ...sourceSnap.data(),
+        deletedAt: Timestamp.now(),
+        originalId: id
+      });
+      transaction.delete(sourceRef);
+    });
+  } catch (error) {
+    console.error('Error moving to cloud bin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Restore invoice from Cloud Recycle Bin
+ */
+export async function restoreFromCloudBin(cloudBinId: string): Promise<void> {
+  if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const sourceRef = doc(db!, DELETED_COLLECTION_NAME, cloudBinId);
+      const sourceSnap = await transaction.get(sourceRef);
+
+      if (!sourceSnap.exists()) throw new Error('Deleted invoice not found');
+
+      const data = sourceSnap.data();
+      const originalId = data.originalId;
+
+      // We use originalId to maintain history if possible, or just generate new
+      const targetRef = originalId ? doc(db!, COLLECTION_NAME, originalId) : doc(collection(db!, COLLECTION_NAME));
+
+      const cleanData = { ...data };
+      delete cleanData.deletedAt;
+      delete cleanData.originalId;
+
+      transaction.set(targetRef, {
+        ...cleanData,
+        updatedAt: Timestamp.now()
+      });
+      transaction.delete(sourceRef);
+    });
+  } catch (error) {
+    console.error('Error restoring from cloud bin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch all invoices from Cloud Recycle Bin
+ */
+export async function getBinInvoicesFromCloud(): Promise<SavedInvoice[]> {
+  if (!isFirebaseConfigured() || !db) return [];
+
+  try {
+    const q = query(collection(db, DELETED_COLLECTION_NAME), orderBy('deletedAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+
+    const invoices: SavedInvoice[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      invoices.push({
+        id: doc.id,
+        invoiceNumber: data.invoiceNumber,
+        customerName: data.customerName,
+        date: data.date,
+        totalAmount: data.totalAmount,
+        data: data.data,
+        createdAt: data.createdAt.toDate()
+      });
+    });
+
+    return invoices;
+  } catch (error) {
+    console.error('Error getting bin invoices from cloud:', error);
+    return [];
+  }
+}
+
+/**
+ * Permanently delete from Cloud Recycle Bin
+ */
+export async function permanentlyDeleteFromCloudBin(ids: string[]): Promise<void> {
+  if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
+
+  try {
+    const deletePromises = ids.map(id => deleteDoc(doc(db!, DELETED_COLLECTION_NAME, id)));
+    await Promise.all(deletePromises);
+  } catch (error) {
+    console.error('Error permanently deleting from cloud bin:', error);
+    throw error;
+  }
 }

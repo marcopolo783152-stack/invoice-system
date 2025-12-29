@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoices, restoreMultipleInvoices, permanentlyDeleteInvoices, subscribeToInvoices, diagnoseAndSync } from '@/lib/invoice-storage';
+import {
+    getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoicesAsync, permanentlyDeleteInvoices,
+    restoreMultipleInvoices,
+    subscribeToInvoices,
+    diagnoseAndSync
+} from '@/lib/invoice-storage';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { calculateInvoice } from '@/lib/calculations';
 // Use type import to avoid runtime side effects
@@ -29,10 +34,23 @@ function InvoicesListContent() {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [isMounted, setIsMounted] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [binInvoices, setBinInvoices] = useState<SavedInvoice[]>([]); // New state for bin invoices
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (viewMode === 'bin') {
+            setLoading(true);
+            getDeletedInvoicesAsync().then(data => {
+                setBinInvoices(data);
+                setLoading(false);
+            });
+        } else {
+            setBinInvoices([]); // Clear bin invoices when not in bin view
+        }
+    }, [viewMode]);
 
     useEffect(() => {
         const view = searchParams.get('view') === 'bin' ? 'bin' : 'active';
@@ -74,11 +92,12 @@ function InvoicesListContent() {
                 });
             } else {
                 // Bin logic (local + sync check)
-                const binData = getDeletedInvoices();
+                const binData = await getDeletedInvoicesAsync(); // Use async version
                 const activeData = await getAllInvoices();
                 const activeIds = new Set(activeData.map(i => i.id));
                 const cleanBin = binData.filter(i => !activeIds.has(i.id));
-                setInvoices(cleanBin);
+                setInvoices(cleanBin); // Set invoices to cleanBin for display
+                setBinInvoices(cleanBin); // Also update binInvoices state
                 setLoading(false);
             }
         };
@@ -101,11 +120,12 @@ function InvoicesListContent() {
             // Subscription handles this automatically
         } else {
             setLoading(true);
-            const binData = getDeletedInvoices();
+            const binData = await getDeletedInvoicesAsync(); // Use async version
             const activeData = await getAllInvoices();
             const activeIds = new Set(activeData.map(i => i.id));
             const cleanBin = binData.filter(i => !activeIds.has(i.id));
             setInvoices(cleanBin);
+            setBinInvoices(cleanBin); // Update binInvoices state
             setLoading(false);
         }
         setSelectedIds([]);
@@ -140,7 +160,7 @@ function InvoicesListContent() {
     }, [isMounted, isAuthenticated]);
 
     useEffect(() => {
-        let result = [...invoices];
+        let result = [...(viewMode === 'active' ? invoices : binInvoices)]; // Use binInvoices for bin view
 
         // 1. Text Search
         if (searchTerm.trim()) {
@@ -171,7 +191,7 @@ function InvoicesListContent() {
         });
 
         setFilteredInvoices(result);
-    }, [searchTerm, typeFilter, sortOrder, invoices]);
+    }, [searchTerm, typeFilter, sortOrder, invoices, binInvoices, viewMode]); // Add binInvoices and viewMode to dependencies
 
     if (!isMounted || loading) return <div className="p-10 text-gray-500">Loading invoices...</div>;
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
@@ -265,13 +285,6 @@ function InvoicesListContent() {
             if (!confirm(`Move ${selectedIds.length} invoices to Recycle Bin?`)) return;
             await deleteMultipleInvoices(selectedIds);
             loadData();
-        } else {
-            if (!confirm(`Permanently delete ${selectedIds.length} invoices? This cannot be undone.`)) return;
-            const key = prompt('Enter security key to confirm permanent deletion:');
-            if (key !== 'Marcopolo$') return alert('Incorrect security key');
-
-            permanentlyDeleteInvoices(selectedIds);
-            loadData();
         }
     };
 
@@ -283,7 +296,22 @@ function InvoicesListContent() {
         loadData();
     };
 
+    const handlePermanentlyDelete = async () => {
+        if (selectedIds.length === 0) return;
 
+        const adminKey = prompt('Please enter the Admin Key to permanently delete these items:');
+        if (adminKey !== 'Marcopolo$') {
+            alert('Incorrect Admin Key. Permanent deletion aborted.');
+            return;
+        }
+
+        if (confirm(`Permanently delete ${selectedIds.length} selected items? THIS CANNOT BE UNDONE.`)) {
+            await permanentlyDeleteInvoices(selectedIds);
+            const updatedBin = await getDeletedInvoicesAsync();
+            setBinInvoices(updatedBin);
+            setSelectedIds([]);
+        }
+    };
 
     const handleSync = async () => {
         setIsSyncing(true);
@@ -438,7 +466,7 @@ function InvoicesListContent() {
                                     <RotateCcw size={18} /> Restore ({selectedIds.length})
                                 </button>
                                 <button
-                                    onClick={handleDeleteSelected}
+                                    onClick={handlePermanentlyDelete}
                                     style={{
                                         padding: '12px 16px', borderRadius: 12, background: '#fee2e2', color: '#ef4444', border: 'none', fontWeight: 600, cursor: 'pointer',
                                         display: 'flex', alignItems: 'center', gap: 8
