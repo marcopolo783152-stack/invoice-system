@@ -302,6 +302,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
           invoices[existingIndex] = savedInvoice;
         } catch (createError) {
           console.error('Firebase create fallback failed:', createError);
+          alert(`Sync Error: Could not upload to cloud. ${createError ? (createError as any).message : 'Unknown error'}`);
         }
       }
     }
