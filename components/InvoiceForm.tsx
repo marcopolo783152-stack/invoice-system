@@ -312,23 +312,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       </div>
       <h2>{documentType === 'CONSIGNMENT' ? 'Consignment Out Details' : 'Invoice Details'}</h2>
 
-      {/* Mode Selection */}
-      <div className={styles.formGroup}>
-        <label>Invoice Mode:</label>
-        <select
-          value={mode}
-          onChange={(e) => setMode(e.target.value as InvoiceMode)}
-          className={styles.select}
-        >
-          <option value="retail-per-rug">Retail - Per Rug</option>
-          <option value="wholesale-per-rug">Wholesale - Per Rug</option>
-          <option value="retail-per-sqft">Retail - Per Sq.Ft</option>
-          <option value="wholesale-per-sqft">Wholesale - Per Sq.Ft</option>
-        </select>
-      </div>
-
       {/* Invoice Info */}
-      <div className={styles.row}>
+      <div className={styles.topRow}>
         <div className={styles.formGroup}>
           <label>Invoice Number:*</label>
           <div className={styles.invoiceNumberGroup}>

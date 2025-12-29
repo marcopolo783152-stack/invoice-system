@@ -7,7 +7,7 @@
  * DO NOT modify calculation formulas without verification against Excel.
  */
 
-export type InvoiceMode = 'retail-per-rug' | 'wholesale-per-rug' | 'retail-per-sqft' | 'wholesale-per-sqft';
+export type InvoiceMode = 'retail-per-rug' | 'wholesale-per-rug' | 'retail-per-sqft' | 'wholesale-per-sqft' | 'wash';
 export type RugShape = 'rectangle' | 'round';
 
 export interface InvoiceItem {
