@@ -531,7 +531,9 @@ export function restoreInvoiceFromBin(id: string): boolean {
  */
 export function getDeletedInvoices(): SavedInvoice[] {
   try {
-    return JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
+    const parsed = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((inv: any) => inv && inv.data && typeof inv.data === 'object');
   } catch {
     return [];
   }

@@ -152,7 +152,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   const SALES_TAX_RATE = 0.06; // 6%
 
   // Calculate each line item
-  const calculatedItems: CalculatedItem[] = data.items.map(item => {
+  const calculatedItems: CalculatedItem[] = data.items.filter(item => item).map(item => {
     const squareFoot = calculateSquareFoot(
       item.widthFeet,
       item.widthInches,
