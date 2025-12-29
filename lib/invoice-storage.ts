@@ -155,16 +155,16 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
       const cloudIds = new Set(cloudInvoices.map(inv => inv.id));
 
       const nowTs = new Date().getTime();
-      const twoMinutesInMs = 2 * 60 * 1000;
+      const thirtySecondsInMs = 30 * 1000;
 
       // Preserve local-only invoices if:
       // 1. They haven't been uploaded yet (short IDs)
-      // 2. They were JUST saved on this device (less than 2 mins ago) to avoid race conditions
+      // 2. They were JUST saved on this device (less than 30s ago) to avoid race conditions
       const localOnly = localInvoices.filter(l => {
         if (cloudIds.has(l.id)) return false;
         const isShortId = l.id.length < 20;
         const updatedAt = new Date(l.updatedAt || 0).getTime();
-        const isVeryRecent = (nowTs - updatedAt) < twoMinutesInMs;
+        const isVeryRecent = (nowTs - updatedAt) < thirtySecondsInMs;
         return isShortId || isVeryRecent;
       });
 
@@ -784,16 +784,16 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
       const cloudIds = new Set(mappedCloudInvoices.map(i => i.id));
 
       const nowTs = new Date().getTime();
-      const twoMinutesInMs = 2 * 60 * 1000;
+      const thirtySecondsInMs = 30 * 1000;
 
       // Preserve local-only invoices if:
       // 1. They haven't been uploaded yet (short IDs)
-      // 2. They were JUST saved on this device (less than 2 mins ago) to avoid race conditions
+      // 2. They were JUST saved on this device (less than 30s ago) to avoid race conditions
       const localOnly = localInvoices.filter(l => {
         if (cloudIds.has(l.id)) return false;
         const isShortId = l.id.length < 20;
         const updatedAt = new Date(l.updatedAt || 0).getTime();
-        const isVeryRecent = (nowTs - updatedAt) < twoMinutesInMs;
+        const isVeryRecent = (nowTs - updatedAt) < thirtySecondsInMs;
         return isShortId || isVeryRecent;
       });
 
@@ -831,12 +831,13 @@ export async function diagnoseAndSync(): Promise<string> {
     const cloudInvoices = await getInvoicesFromCloud();
     const cloudIds = new Set(cloudInvoices.map(i => i.id));
 
-    // 3. Find Missing (Filter by Number to prevent duplication)
+    // 3. Find Missing (Truly local only - Short IDs)
+    // We ONLY auto-upload invoices that haven't reached the cloud yet (short IDs).
+    // If it has a long ID and is missing, it means it was likely deleted from the cloud.
     const cloudNumbers = new Set(cloudInvoices.map((i: CloudInvoice) => i.invoiceNumber));
     const cloudNumberToId = new Map(cloudInvoices.map((i: CloudInvoice) => [i.invoiceNumber, i.id]));
 
-    // Find local invoices that don't exist in cloud at all (by number)
-    const missing = localInvoices.filter(l => !cloudNumbers.has(l.data.invoiceNumber));
+    const missing = localInvoices.filter(l => l.id.length < 20 && !cloudNumbers.has(l.data.invoiceNumber));
 
     // Find local invoices that have a cloud match (by number) but have a different ID (promotion case)
     const toPromote = localInvoices.filter(l =>

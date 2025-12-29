@@ -201,7 +201,10 @@ function InvoicesListContent() {
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     const getStatusColor = (inv: SavedInvoice) => {
-        // ... (this logic is fine)
+        const isReturned = (inv.data?.returned === true) ||
+            (inv.data?.items?.length > 0 && inv.data.items.every(item => item.returned));
+
+        if (isReturned) return { bg: '#fee2e2', text: '#ef4444', label: 'Returned' };
         if (inv.data?.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
         if (inv.data?.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash' };
         if ((inv.data?.terms || '').toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
