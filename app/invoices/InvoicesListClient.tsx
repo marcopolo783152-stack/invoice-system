@@ -157,14 +157,20 @@ function InvoicesListContent() {
 
     const isSafeToRender = (inv: SavedInvoice) => {
         try {
-            if (!inv || !inv.data) return false;
-            // Access all properties used in render to trigger potential access errors
-            const _test1 = inv.id;
-            const _test2 = inv.data.invoiceNumber;
-            const _test3 = inv.data.soldTo?.name; // optional chain
-            const _test4 = inv.data.date;
-            const _test5 = (inv.data.items || []).length;
-            const _test6 = calculateInvoice(inv.data); // This is the heavy one
+            if (!inv || typeof inv !== 'object') return false;
+            if (!inv.data || typeof inv.data !== 'object') return false;
+            if (!inv.data.invoiceNumber || typeof inv.data.invoiceNumber !== 'string') return false;
+            if (!inv.data.soldTo || typeof inv.data.soldTo !== 'object') return false;
+            if (!inv.data.soldTo.name || typeof inv.data.soldTo.name !== 'string') return false;
+            // Optionally check for items array
+            if (!Array.isArray(inv.data.items)) return false;
+            // Try calculation, but catch errors
+            try {
+                calculateInvoice(inv.data);
+            } catch (e) {
+                console.error('Skipping invoice due to calculation error:', inv, e);
+                return false;
+            }
             return true;
         } catch (e) {
             console.error('Skipping corrupt invoice:', inv, e);
@@ -283,72 +289,77 @@ function InvoicesListContent() {
                         )}
                         <button
                             onClick={handleSync}
-                            disabled={isSyncing}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                padding: '4px 12px',
-                                borderRadius: 20,
-                                background: isSyncing ? '#e2e8f0' : '#f1f5f9',
-                                border: 'none',
-                                cursor: isSyncing ? 'wait' : 'pointer',
-                                fontSize: 13,
-                                color: '#475569',
-                                fontWeight: 600,
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <RotateCcw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                            {isSyncing ? 'Syncing...' : 'Sync Now'}
-                        </button>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    {/* Cloud Status Indicator */}
-                    <div style={{
-                        padding: '6px 12px',
-                        borderRadius: 20,
-                        background: isFirebaseConfigured() ? '#dcfce7' : '#fee2e2',
-                        color: isFirebaseConfigured() ? '#166534' : '#ef4444',
-                        fontWeight: 600,
-                        fontSize: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6
-                    }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: isFirebaseConfigured() ? '#22c55e' : '#ef4444' }}></div>
-                        {isFirebaseConfigured() ? 'Cloud Online' : 'Cloud Offline'}
-                    </div>
-
-                    {viewMode === 'active' ? (
-                        <>
-                            <button
-                                onClick={() => {
-                                    setLoading(true);
-                                    window.location.reload(); // Hard refresh to ensure full sync
-                                }}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
-                                    height: 48
-                                }}
-                                title="Force Refresh / Sync"
-                            >
-                                <RotateCcw size={20} />
-                            </button>
-                            <Link
-                                href="/invoices/new"
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                    color: 'white', padding: '12px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 600,
-                                    boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)',
-                                    height: 48
-                                }}
-                            >
-                                <Plus size={20} /> New Invoice
-                            </Link>
+                            {visibleInvoices.map((inv) => {
+                                try {
+                                    const status = getStatusColor(inv);
+                                    const isSelected = selectedIds.includes(inv.id);
+                                    return (
+                                        <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s', background: isSelected ? '#f0f9ff' : 'transparent' }} className="hover:bg-gray-50">
+                                            <td style={{ padding: '20px 24px' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => handleToggleSelect(inv.id)}
+                                                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                                />
+                                            </td>
+                                            <td style={{ padding: '20px 24px', fontWeight: 600, color: '#1a1f3c' }}>
+                                                <Link href={`/invoices/view?id=${inv.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                                        <div style={{ padding: 8, background: '#eff6ff', borderRadius: 8, color: '#3b82f6' }}>
+                                                            <FileText size={16} />
+                                                        </div>
+                                                        <span style={{ borderBottom: '1px dotted #3b82f6' }}>{inv.data.invoiceNumber}</span>
+                                                    </div>
+                                                </Link>
+                                            </td>
+                                            <td style={{ padding: '20px 24px' }}>
+                                                <span style={{
+                                                    padding: '6px 12px',
+                                                    borderRadius: 20,
+                                                    fontSize: 13,
+                                                    fontWeight: 600,
+                                                    background: status.bg,
+                                                    color: status.text
+                                                }}>
+                                                    {status.label}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '20px 24px', color: '#4b5563', fontWeight: 500 }}>{inv.data?.soldTo?.name || 'Unknown'}</td>
+                                            <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data?.date || ''}</td>
+                                            <td style={{ padding: '20px 24px', color: '#6b7280' }}>{(inv.data?.items || []).length} items</td>
+                                            <td style={{ padding: '20px 24px', fontWeight: 700, color: '#1a1f3c' }}>${calculateInvoice(inv.data || {} as any).totalDue.toLocaleString()}</td>
+                                            <td style={{ padding: '20px 24px' }}>
+                                                <div style={{ display: 'flex', gap: 8 }}>
+                                                    <button
+                                                        onClick={() => {
+                                                            const width = 1000;
+                                                            const height = 800;
+                                                            const left = (window.screen.width - width) / 2;
+                                                            const top = (window.screen.height - height) / 2;
+                                                            window.open(
+                                                                `/invoices/print?id=${inv.id}`,
+                                                                '_blank',
+                                                                `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
+                                                            );
+                                                        }}
+                                                        style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }}
+                                                        title="Print Invoice"
+                                                    >
+                                                        <Printer size={16} />
+                                                    </button>
+                                                    <Link href={`/invoices/view?id=${inv.id}`} style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }} title="View Invoice">
+                                                        <FileText size={16} />
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                } catch (e) {
+                                    console.error('Error rendering invoice row:', inv, e);
+                                    return null;
+                                }
+                            })}
                         </>
                     ) : (
                         <button
