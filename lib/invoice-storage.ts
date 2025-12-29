@@ -672,14 +672,25 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
   // But for now we only support real-time sync via Firebase as per plan
   if (isFirebaseConfigured()) {
     return subscribeToCloudInvoices((cloudInvoices) => {
-      const mappedInvoices: SavedInvoice[] = cloudInvoices.map(inv => ({
+      const mappedCloudInvoices: SavedInvoice[] = cloudInvoices.map(inv => ({
         id: inv.id,
         data: inv.data,
         createdAt: inv.createdAt.toISOString(),
-        updatedAt: inv.createdAt.toISOString(), // Firebase doesn't track updatedAt on root yet, using createdAt or could be added
+        updatedAt: inv.createdAt.toISOString(),
         documentType: (inv.data.documentType || 'INVOICE') as any
       }));
-      callback(mappedInvoices);
+
+      // Merge with Local Data (Offline Invoices)
+      const localInvoices = getAllInvoicesSync();
+      const cloudIds = new Set(mappedCloudInvoices.map(i => i.id));
+      const missingLocal = localInvoices.filter(l => !cloudIds.has(l.id));
+
+      const merged = [...mappedCloudInvoices, ...missingLocal];
+
+      // Sort desc by date
+      merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      callback(merged);
     });
   }
 
