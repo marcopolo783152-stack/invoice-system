@@ -194,14 +194,16 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   const subtotalAfterDiscount = subtotal - discount;
   const netSubtotalAfterDiscount = netSubtotal - netDiscount;
 
-  // Calculate sales tax (only for retail, applied after discount, but not for consignments)
+  const isWash = data.documentType === 'WASH';
+
+  // Calculate sales tax (only for retail, applied after discount, but not for consignments or wash)
   let salesTax = 0;
-  if (isRetail && !isConsignment) {
+  if (isRetail && !isConsignment && !isWash) {
     salesTax = subtotalAfterDiscount * SALES_TAX_RATE;
   }
 
   let netSalesTax = 0;
-  if (isRetail && !isConsignment) {
+  if (isRetail && !isConsignment && !isWash) {
     netSalesTax = netSubtotalAfterDiscount * SALES_TAX_RATE;
   }
 

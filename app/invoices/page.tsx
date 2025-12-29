@@ -110,23 +110,25 @@ function InvoicesPageContent() {
         // 1. Text Search
         if (searchTerm.trim()) {
             const lowerTerm = searchTerm.toLowerCase();
-            result = result.filter(inv =>
-                inv.data.invoiceNumber.toLowerCase().includes(lowerTerm) ||
-                inv.data.soldTo.name.toLowerCase().includes(lowerTerm)
-            );
+            result = result.filter(inv => {
+                const invNum = inv.data?.invoiceNumber || '';
+                const custName = inv.data?.soldTo?.name || '';
+                return invNum.toLowerCase().includes(lowerTerm) ||
+                    custName.toLowerCase().includes(lowerTerm);
+            });
         }
 
         // 2. Type Filter
         if (typeFilter !== 'ALL') {
             result = result.filter(inv =>
-                (inv.data.documentType || 'INVOICE') === typeFilter
+                (inv.data?.documentType || 'INVOICE') === typeFilter
             );
         }
 
         // 3. Sorting
         result.sort((a, b) => {
-            const dateA = new Date(a.data.date).getTime();
-            const dateB = new Date(b.data.date).getTime();
+            const dateA = new Date(a.data?.date || 0).getTime();
+            const dateB = new Date(b.data?.date || 0).getTime();
             return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
         });
 
@@ -137,9 +139,9 @@ function InvoicesPageContent() {
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     const getStatusColor = (inv: SavedInvoice) => {
-        if (inv.data.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
-        if (inv.data.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash' };
-        if (inv.data.terms?.toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
+        if (inv.data?.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
+        if (inv.data?.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash' };
+        if (inv.data?.terms?.toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
         return { bg: '#eff6ff', text: '#3b82f6', label: 'Sale' };
     };
 
