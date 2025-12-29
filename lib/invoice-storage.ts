@@ -271,8 +271,8 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
       ...invoices[existingIndex],
       data: {
         ...data,
-        returned: isReturn ? true : data.returned,
-        returnNote: isReturn ? data.returnNote : data.returnNote,
+        returned: isReturn ? true : (data.returned || false),
+        returnNote: (isReturn ? data.returnNote : data.returnNote) || '',
       },
       updatedAt: now,
     };
@@ -345,8 +345,8 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
       id: firebaseId || Math.random().toString(36).substr(2, 9),
       data: {
         ...data,
-        returned: isReturn ? true : data.returned,
-        returnNote: isReturn ? data.returnNote : data.returnNote,
+        returned: isReturn ? true : (data.returned || false),
+        returnNote: (isReturn ? data.returnNote : data.returnNote) || '',
       },
       createdAt: now,
       updatedAt: now,
