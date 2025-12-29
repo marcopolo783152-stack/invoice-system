@@ -132,7 +132,22 @@ export function calculateLineAmount(item: InvoiceItem, mode: InvoiceMode): numbe
  * Calculate all invoice totals with exact Excel logic
  */
 export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
-  const isRetail = data.mode.startsWith('retail');
+  // Safety check for corrupt data
+  if (!data || !data.items || !Array.isArray(data.items)) {
+    return {
+      items: [],
+      subtotal: 0,
+      discount: 0,
+      subtotalAfterDiscount: 0,
+      salesTax: 0,
+      totalDue: 0,
+      netSubtotal: 0,
+      netTotalDue: 0,
+      returnedAmount: 0
+    };
+  }
+
+  const isRetail = (data.mode || '').startsWith('retail');
   const isConsignment = data.documentType === 'CONSIGNMENT';
   const SALES_TAX_RATE = 0.06; // 6%
 
