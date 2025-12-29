@@ -135,13 +135,15 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
       ]);
 
       // Convert Firebase format to local format
-      cloudInvoices = rawCloudInvoices.map(invoice => ({
-        id: invoice.id,
-        data: invoice.data,
-        createdAt: invoice.createdAt.toISOString(),
-        updatedAt: invoice.createdAt.toISOString(),
-        documentType: (invoice.data.documentType || 'INVOICE') as any
-      }));
+      cloudInvoices = rawCloudInvoices
+        .filter(inv => inv && inv.data) // Filter out corrupt records
+        .map(invoice => ({
+          id: invoice.id,
+          data: invoice.data,
+          createdAt: invoice.createdAt.toISOString(),
+          updatedAt: invoice.createdAt.toISOString(),
+          documentType: (invoice.data.documentType || 'INVOICE') as any
+        }));
       fetchedFromCloud = true;
     } catch (error) {
       console.warn('Error fetching from Firebase (or timeout), using localStorage:', error);
@@ -230,7 +232,9 @@ export function getAllInvoicesSync(): SavedInvoice[] {
   if (!stored) return [];
 
   try {
-    return JSON.parse(stored);
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((inv: any) => inv && inv.data && typeof inv.data === 'object');
   } catch (error) {
     console.error('Error parsing invoices:', error);
     return [];
