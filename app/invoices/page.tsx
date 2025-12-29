@@ -487,10 +487,10 @@ function InvoicesPageContent() {
                                             {status.label}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '20px 24px', color: '#4b5563', fontWeight: 500 }}>{inv.data.soldTo.name}</td>
-                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data.date}</td>
-                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data.items.length} items</td>
-                                    <td style={{ padding: '20px 24px', fontWeight: 700, color: '#1a1f3c' }}>${calculateInvoice(inv.data).totalDue.toLocaleString()}</td>
+                                    <td style={{ padding: '20px 24px', color: '#4b5563', fontWeight: 500 }}>{inv.data?.soldTo?.name || 'Unknown'}</td>
+                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data?.date || ''}</td>
+                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{(inv.data?.items || []).length} items</td>
+                                    <td style={{ padding: '20px 24px', fontWeight: 700, color: '#1a1f3c' }}>${calculateInvoice(inv.data || {} as any).totalDue.toLocaleString()}</td>
                                     <td style={{ padding: '20px 24px' }}>
                                         <div style={{ display: 'flex', gap: 8 }}>
                                             <button
