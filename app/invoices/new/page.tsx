@@ -200,7 +200,16 @@ function InvoicePageContent() {
       localStorage.removeItem('currentInvoiceNumber');
     }).catch((error) => {
       console.error('Error saving invoice:', error);
-      alert('Invoice saved locally but cloud sync failed. Check Firebase configuration.');
+      // If error (like overwrite protection), show it to user
+      alert(`Failed to save invoice: ${error.message}`);
+      // If it's a duplicate number error, we might want to prompt user to regenerate
+      if (typeof error.message === 'string' && error.message.includes('already exists')) {
+        const shouldRegen = confirm('This invoice number is already taken. Would you like to generate a new number?');
+        if (shouldRegen) {
+          localStorage.removeItem('currentInvoiceNumber');
+          window.location.reload(); // Simplest way to get a fresh number
+        }
+      }
     });
 
     // Scroll to preview
