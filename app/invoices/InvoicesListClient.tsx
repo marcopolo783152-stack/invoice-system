@@ -4,7 +4,8 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoices, restoreMultipleInvoices, permanentlyDeleteInvoices, subscribeToInvoices, diagnoseAndSync } from '@/lib/invoice-storage';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { calculateInvoice } from '@/lib/calculations';
-import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
+// Use type import to avoid runtime side effects
+import type { ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -26,6 +27,11 @@ function InvoicesListContent() {
     const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
         const view = searchParams.get('view') === 'bin' ? 'bin' : 'active';
@@ -138,10 +144,11 @@ function InvoicesListContent() {
         setFilteredInvoices(result);
     }, [searchTerm, typeFilter, sortOrder, invoices]);
 
-    if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading invoices...</div>;
+    if (!isMounted || loading) return <div style={{ padding: 40, color: '#666' }}>Loading invoices...</div>;
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     const getStatusColor = (inv: SavedInvoice) => {
+        // ... (this logic is fine)
         if (inv.data?.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
         if (inv.data?.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash' };
         if ((inv.data?.terms || '').toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
@@ -189,6 +196,8 @@ function InvoicesListContent() {
 
         setIsExporting(true);
         try {
+            // Dynamic import to avoid initial bundle size and side effects
+            const { exportInvoicesAsPDFs } = await import('@/lib/bulk-export');
             await exportInvoicesAsPDFs(filteredInvoices, setExportProgress);
             alert('Export complete!');
         } catch (e) {
