@@ -123,26 +123,29 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
   let fetchedFromCloud = false;
 
   // 1. Try Firebase first
+  // 1. Try Firebase first
   if (isFirebaseConfigured()) {
-    // Race against a 5s timeout to prevent hanging on bad connections
-    const rawCloudInvoices = await Promise.race([
-      getInvoicesFromCloud(),
-      new Promise<any[]>((_, reject) =>
-        setTimeout(() => reject(new Error('Cloud fetch timeout (5s)')), 5000)
-      )
-    ]);
+    try {
+      // Race against a 5s timeout to prevent hanging on bad connections
+      const rawCloudInvoices = await Promise.race([
+        getInvoicesFromCloud(),
+        new Promise<any[]>((_, reject) =>
+          setTimeout(() => reject(new Error('Cloud fetch timeout (5s)')), 5000)
+        )
+      ]);
 
-    // Convert Firebase format to local format
-    cloudInvoices = rawCloudInvoices.map(invoice => ({
-      id: invoice.id,
-      data: invoice.data,
-      createdAt: invoice.createdAt.toISOString(),
-      updatedAt: invoice.createdAt.toISOString(),
-      documentType: (invoice.data.documentType || 'INVOICE') as any
-    }));
-    fetchedFromCloud = true;
-  } catch (error) {
-    console.warn('Error fetching from Firebase (or timeout), using localStorage:', error);
+      // Convert Firebase format to local format
+      cloudInvoices = rawCloudInvoices.map(invoice => ({
+        id: invoice.id,
+        data: invoice.data,
+        createdAt: invoice.createdAt.toISOString(),
+        updatedAt: invoice.createdAt.toISOString(),
+        documentType: (invoice.data.documentType || 'INVOICE') as any
+      }));
+      fetchedFromCloud = true;
+    } catch (error) {
+      console.warn('Error fetching from Firebase (or timeout), using localStorage:', error);
+    }
   }
 }
 
