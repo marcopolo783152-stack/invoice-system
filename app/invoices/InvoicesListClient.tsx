@@ -144,7 +144,7 @@ function InvoicesListContent() {
         setFilteredInvoices(result);
     }, [searchTerm, typeFilter, sortOrder, invoices]);
 
-    if (!isMounted || loading) return <div style={{ padding: 40, color: '#666' }}>Loading invoices...</div>;
+    if (!isMounted || loading) return <div className="p-10 text-gray-500">Loading invoices...</div>;
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     const getStatusColor = (inv: SavedInvoice) => {
