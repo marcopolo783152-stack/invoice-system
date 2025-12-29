@@ -238,6 +238,14 @@ export function getAllInvoicesSync(): SavedInvoice[] {
 }
 
 /**
+ * Save invoices synchronously (localStorage only)
+ */
+function saveInvoicesSync(invoices: SavedInvoice[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+}
+
+/**
  * Save an invoice (to both Firebase and localStorage)
  * If the customer is Martinez, force invoice number to MP00000002
  */
