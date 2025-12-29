@@ -111,6 +111,34 @@ function InvoicesListContent() {
         setSelectedIds([]);
     }
 
+    // Automatic Sync Logic
+    useEffect(() => {
+        if (!isMounted || !isAuthenticated || !isFirebaseConfigured()) return;
+
+        const performAutoSync = async () => {
+            console.log('AUTO-SYNC: Starting background reconciliation...');
+            try {
+                // We don't alert() here to avoid annoying the user
+                const result = await diagnoseAndSync();
+                console.log('AUTO-SYNC Result:', result);
+                if (result.includes('Successfully synced') || result.includes('Success')) {
+                    // loadData(); // The real-time subscription usually handles this, 
+                    // but loadData can force a local refresh if needed.
+                }
+            } catch (e) {
+                console.warn('AUTO-SYNC: Silent fail', e);
+            }
+        };
+
+        // 1. Sync immediately on mount/auth
+        performAutoSync();
+
+        // 2. Sync every 30 seconds
+        const interval = setInterval(performAutoSync, 30000);
+
+        return () => clearInterval(interval);
+    }, [isMounted, isAuthenticated]);
+
     useEffect(() => {
         let result = [...invoices];
 
