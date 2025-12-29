@@ -1,10 +1,10 @@
-import dynamic from 'next/dynamic';
-
-const InvoicesListClient = dynamic(() => import('./InvoicesListClient'), {
-    ssr: false,
-    loading: () => <div className="p-10 text-gray-500">Loading invoices...</div>
-});
+import NoSsrWrapper from '@/components/NoSsrWrapper';
+import InvoicesListClient from './InvoicesListClient';
 
 export default function InvoicesPage() {
-    return <InvoicesListClient />;
+    return (
+        <NoSsrWrapper fallback={<div className="p-10 text-gray-500">Loading invoices...</div>}>
+            <InvoicesListClient />
+        </NoSsrWrapper>
+    );
 }
