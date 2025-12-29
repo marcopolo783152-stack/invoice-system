@@ -8,6 +8,7 @@
 
 import { getNextInvoiceNumber as getNextInvoiceNumberFromCloud } from './firebase-storage';
 import { isFirebaseConfigured } from './firebase';
+import { getAllInvoicesSync } from './invoice-storage';
 
 const INVOICE_PREFIX = 'MP';
 const STORAGE_KEY = 'lastInvoiceNumber';
@@ -50,14 +51,31 @@ export async function generateInvoiceNumber(): Promise<string> {
     }
   }
 
-  // 2. Check local counter
-  const localLast = getLastInvoiceNumber();
-  const localNext = localLast + 1;
+  // 2. Check local counter (AND scan actual invoices for safety)
+  // Trusting 'getLastInvoiceNumber' alone is dangerous if invoices were imported or cache cleared.
+  // We scan the actual list to find the true max.
+  const invoices = getAllInvoicesSync();
+  let maxLocal = getLastInvoiceNumber(); // Start with stored counter
+
+  invoices.forEach(inv => {
+    const numStr = inv.data.invoiceNumber || '';
+    if (numStr.startsWith('MP')) {
+      const numPart = parseInt(numStr.replace('MP', ''), 10);
+      if (!isNaN(numPart) && numPart > maxLocal) {
+        maxLocal = numPart;
+      }
+    }
+  });
+
+  const localNext = maxLocal + 1;
 
   // 3. Take the higher of the two (Safety net)
   if (localNext > nextNumber) {
     nextNumber = localNext;
   }
+
+  // Double check we haven't produced a zero (if DB empty)
+  if (nextNumber === 0) nextNumber = 1;
 
   // Pad with zeros to make 8 digits
   const paddedNumber = nextNumber.toString().padStart(8, '0');
