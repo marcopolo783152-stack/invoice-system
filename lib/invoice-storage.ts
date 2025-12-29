@@ -278,18 +278,35 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
     };
     invoices[existingIndex] = savedInvoice;
 
-    if (isFirebaseConfigured() && savedInvoice.id && savedInvoice.id.length >= 20) {
-      try {
-        await updateInvoiceInCloud(
-          savedInvoice.id,
-          data.invoiceNumber,
-          data.soldTo.name,
-          0, // Will be calculated
-          savedInvoice.data
-        );
-      } catch (error) {
-        console.warn('Firebase update failed, attempting to create new doc:', error);
-        // Fallback: If update fails (e.g. doc deleted or local-only ID), try to create as new
+    if (isFirebaseConfigured()) {
+      if (savedInvoice.id && savedInvoice.id.length >= 20) {
+        try {
+          await updateInvoiceInCloud(
+            savedInvoice.id,
+            data.invoiceNumber,
+            data.soldTo.name,
+            0, // Will be calculated
+            savedInvoice.data
+          );
+        } catch (error) {
+          console.warn('Firebase update failed, attempting to create new doc:', error);
+          // Fallback logic...
+          try {
+            // ... existing fallback code ...
+            const newId = await saveInvoiceToCloud(
+              data.invoiceNumber,
+              data.soldTo.name,
+              0,
+              savedInvoice.data
+            );
+            savedInvoice.id = newId;
+            invoices[existingIndex] = savedInvoice;
+          } catch (e: any) {
+            alert(`Sync Error: ${e.message}`);
+          }
+        }
+      } else {
+        // Local ID (Short) - Needs Promotion to Cloud
         try {
           const newId = await saveInvoiceToCloud(
             data.invoiceNumber,
@@ -297,12 +314,12 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
             0,
             savedInvoice.data
           );
-          // Update local ID to match new Cloud ID
+          // Replace local ID with real Cloud ID
           savedInvoice.id = newId;
           invoices[existingIndex] = savedInvoice;
-        } catch (createError) {
-          console.error('Firebase create fallback failed:', createError);
-          alert(`Sync Error: Could not upload to cloud. ${createError ? (createError as any).message : 'Unknown error'}`);
+        } catch (error: any) {
+          console.error('Failed to promote local invoice to cloud:', error);
+          alert(`Sync Error: Failed to upload local invoice. ${error.message}`);
         }
       }
     }
