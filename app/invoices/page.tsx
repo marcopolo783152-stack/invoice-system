@@ -145,6 +145,25 @@ function InvoicesPageContent() {
         return { bg: '#eff6ff', text: '#3b82f6', label: 'Sale' };
     };
 
+    const isSafeToRender = (inv: SavedInvoice) => {
+        try {
+            if (!inv || !inv.data) return false;
+            // Access all properties used in render to trigger potential access errors
+            const _test1 = inv.id;
+            const _test2 = inv.data.invoiceNumber;
+            const _test3 = inv.data.soldTo?.name; // optional chain
+            const _test4 = inv.data.date;
+            const _test5 = (inv.data.items || []).length;
+            const _test6 = calculateInvoice(inv.data); // This is the heavy one
+            return true;
+        } catch (e) {
+            console.error('Skipping corrupt invoice:', inv, e);
+            return false;
+        }
+    };
+
+    const visibleInvoices = filteredInvoices.filter(isSafeToRender);
+
     const handleExportAddressBook = () => {
         const csv = exportAddressBook();
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -180,7 +199,7 @@ function InvoicesPageContent() {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            setSelectedIds(filteredInvoices.map(inv => inv.id));
+            setSelectedIds(visibleInvoices.map(inv => inv.id));
         } else {
             setSelectedIds([]);
         }
@@ -440,7 +459,7 @@ function InvoicesPageContent() {
                                 <input
                                     type="checkbox"
                                     onChange={handleSelectAll}
-                                    checked={filteredInvoices.length > 0 && selectedIds.length === filteredInvoices.length}
+                                    checked={visibleInvoices.length > 0 && selectedIds.length === visibleInvoices.length}
                                     style={{ width: 16, height: 16, cursor: 'pointer' }}
                                 />
                             </th>
@@ -454,7 +473,7 @@ function InvoicesPageContent() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredInvoices.map((inv) => {
+                        {visibleInvoices.map((inv) => {
                             const status = getStatusColor(inv);
                             const isSelected = selectedIds.includes(inv.id);
                             return (
@@ -520,7 +539,7 @@ function InvoicesPageContent() {
                                 </tr>
                             );
                         })}
-                        {filteredInvoices.length === 0 && (
+                        {visibleInvoices.length === 0 && (
                             <tr>
                                 <td colSpan={8} style={{ padding: 60, textAlign: 'center', color: '#9ca3af' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
