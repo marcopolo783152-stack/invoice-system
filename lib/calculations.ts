@@ -37,6 +37,7 @@ export interface InvoiceData {
   terms: string;
   soldTo: {
     name: string;
+    companyName?: string;
     address: string;
     city: string;
     state: string;
