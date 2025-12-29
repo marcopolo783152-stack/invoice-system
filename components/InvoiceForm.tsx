@@ -42,7 +42,6 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [mode, setMode] = useState<InvoiceMode>(
     initialData?.mode || 'retail-per-rug'
   );
-  const isPerSqFt = mode.includes('per-sqft');
   const [invoiceNumber, setInvoiceNumber] = useState(
     initialData?.invoiceNumber || ''
   );
