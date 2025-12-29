@@ -724,13 +724,15 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
   if (isFirebaseConfigured()) {
     return subscribeToCloudInvoices((cloudInvoices) => {
       console.log('CLOUD SUBSCRIPTION: Data received. Total items:', cloudInvoices.length);
-      const mappedCloudInvoices: SavedInvoice[] = cloudInvoices.map(inv => ({
-        id: inv.id,
-        data: inv.data,
-        createdAt: inv.createdAt.toISOString(),
-        updatedAt: inv.createdAt.toISOString(),
-        documentType: (inv.data.documentType || 'INVOICE') as any
-      }));
+      const mappedCloudInvoices: SavedInvoice[] = cloudInvoices
+        .filter(inv => inv && inv.data) // Filter out corrupt records
+        .map(inv => ({
+          id: inv.id,
+          data: inv.data,
+          createdAt: inv.createdAt ? inv.createdAt.toISOString() : new Date().toISOString(),
+          updatedAt: inv.createdAt ? inv.createdAt.toISOString() : new Date().toISOString(),
+          documentType: (inv.data.documentType || 'INVOICE') as any
+        }));
 
       // Merge with Local Data (Offline Invoices)
       const localInvoices = getAllInvoicesSync();
