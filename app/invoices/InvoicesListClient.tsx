@@ -28,6 +28,7 @@ function InvoicesListContent() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [isMounted, setIsMounted] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
@@ -254,7 +255,7 @@ function InvoicesListContent() {
         loadData();
     };
 
-    const [isSyncing, setIsSyncing] = useState(false);
+
 
     const handleSync = async () => {
         setIsSyncing(true);
@@ -576,10 +577,4 @@ function InvoicesListContent() {
     );
 }
 
-export default function InvoicesListClient() {
-    return (
-        <Suspense fallback={<div style={{ padding: 40, color: '#666' }}>Loading invoices...</div>}>
-            <InvoicesListContent />
-        </Suspense>
-    );
-}
+export default InvoicesListContent;
