@@ -35,23 +35,34 @@ function saveLastInvoiceNumber(number: number): void {
  * Format: MP########
  */
 export async function generateInvoiceNumber(): Promise<string> {
-  // Try Firebase first
+  let nextNumber = 0;
+
+  // 1. Try to get number from Cloud
   if (isFirebaseConfigured()) {
     try {
-      return await getNextInvoiceNumberFromCloud();
+      const cloudNextStr = await getNextInvoiceNumberFromCloud();
+      const match = cloudNextStr.match(/^MP(\d+)$/);
+      if (match && match[1]) {
+        nextNumber = parseInt(match[1], 10);
+      }
     } catch (e) {
-      console.warn('Failed to get number from cloud, falling back to local:', e);
+      console.warn('Failed to get number from cloud, falling back to local calculation:', e);
     }
   }
 
-  // Fallback to local
-  const lastNumber = getLastInvoiceNumber();
-  const nextNumber = lastNumber + 1;
+  // 2. Check local counter
+  const localLast = getLastInvoiceNumber();
+  const localNext = localLast + 1;
+
+  // 3. Take the higher of the two (Safety net)
+  if (localNext > nextNumber) {
+    nextNumber = localNext;
+  }
 
   // Pad with zeros to make 8 digits
   const paddedNumber = nextNumber.toString().padStart(8, '0');
 
-  // Save for next time
+  // Save for next time (keep local sync updated)
   saveLastInvoiceNumber(nextNumber);
 
   return `${INVOICE_PREFIX}${paddedNumber}`;

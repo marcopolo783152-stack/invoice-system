@@ -227,18 +227,34 @@ function InvoicesPageContent() {
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
                     {viewMode === 'active' ? (
-                        <Link
-                            href="/invoices/new"
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 8,
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                color: 'white', padding: '12px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 600,
-                                boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)',
-                                height: 48
-                            }}
-                        >
-                            <Plus size={20} /> New Invoice
-                        </Link>
+                        <>
+                            <button
+                                onClick={() => {
+                                    setLoading(true);
+                                    window.location.reload(); // Hard refresh to ensure full sync
+                                }}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
+                                    height: 48
+                                }}
+                                title="Force Refresh / Sync"
+                            >
+                                <RotateCcw size={20} />
+                            </button>
+                            <Link
+                                href="/invoices/new"
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    color: 'white', padding: '12px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 600,
+                                    boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)',
+                                    height: 48
+                                }}
+                            >
+                                <Plus size={20} /> New Invoice
+                            </Link>
+                        </>
                     ) : (
                         <button
                             onClick={() => handleSetViewMode('active')}

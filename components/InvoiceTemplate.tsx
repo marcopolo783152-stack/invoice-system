@@ -258,6 +258,10 @@ export default function InvoiceTemplate({
                   <table className={styles.totalsTable}>
                     <tbody>
                       <tr>
+                        <td className={styles.totalLabel}>Total Items:</td>
+                        <td className={styles.totalValue}>{calculations.items.length}</td>
+                      </tr>
+                      <tr>
                         <td className={styles.totalLabel}>Subtotal:</td>
                         <td className={styles.totalValue}>{formatCurrency(calculations.subtotal)}</td>
                       </tr>

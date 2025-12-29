@@ -15,7 +15,8 @@ import {
   deleteDoc,
   getDocs,
   query,
-  updateDoc
+  updateDoc,
+  limit
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
 import { InvoiceData } from './calculations';
@@ -69,26 +70,30 @@ export async function getNextInvoiceNumber(): Promise<string> {
     throw new Error('Firebase not configured can not generate global invoice number.');
   }
 
-  const counterRef = doc(db, 'counters', 'invoices');
-
   try {
-    const newNumber = await runTransaction(db, async (transaction) => {
-      const sfDoc = await transaction.get(counterRef);
+    // Query the most recent invoices by invoiceNumber (lexical sort works for fixed format)
+    // Actually, sorting by invoiceNumber string desc is safer to find the max number than createdAt
+    const q = query(collection(db, COLLECTION_NAME), orderBy('invoiceNumber', 'desc'), limit(1));
+    const querySnapshot = await getDocs(q);
 
-      let currentNumber = 0;
-      if (sfDoc.exists()) {
-        currentNumber = sfDoc.data().current;
+    let maxNumber = 0;
+
+    if (!querySnapshot.empty) {
+      const lastInvoice = querySnapshot.docs[0].data();
+      const lastInvoiceNumber = lastInvoice.invoiceNumber; // e.g., "MP00000011"
+
+      // Parse the numeric part
+      const match = lastInvoiceNumber.match(/^MP(\d+)$/);
+      if (match && match[1]) {
+        maxNumber = parseInt(match[1], 10);
       }
+    }
 
-      const next = currentNumber + 1;
-      transaction.set(counterRef, { current: next });
-      return next;
-    });
-
+    const next = maxNumber + 1;
     // Format: MP########
-    return `MP${newNumber.toString().padStart(8, '0')}`;
+    return `MP${next.toString().padStart(8, '0')}`;
   } catch (error) {
-    console.error('Transaction failed: ', error);
+    console.error('Failed to generate next invoice number from cloud:', error);
     throw error;
   }
 }
