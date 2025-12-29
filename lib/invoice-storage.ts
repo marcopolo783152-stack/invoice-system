@@ -110,7 +110,7 @@ export interface SavedInvoice {
   data: InvoiceData;
   createdAt: string;
   updatedAt: string;
-  documentType?: 'INVOICE' | 'CONSIGNMENT'; // For future compatibility
+  documentType?: 'INVOICE' | 'CONSIGNMENT' | 'WASH'; // For future compatibility
 }
 
 /**
