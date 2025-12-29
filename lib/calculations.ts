@@ -84,7 +84,12 @@ export function calculateSquareFoot(
   lengthInches: number,
   shape: RugShape = 'rectangle'
 ): number {
-  const widthInFeet = widthFeet + widthInches / 12;
+  const safeWidthFeet = isNaN(widthFeet) ? 0 : widthFeet;
+  const safeWidthInches = isNaN(widthInches) ? 0 : widthInches;
+  const safeLengthFeet = isNaN(lengthFeet) ? 0 : lengthFeet;
+  const safeLengthInches = isNaN(lengthInches) ? 0 : lengthInches;
+
+  const widthInFeet = safeWidthFeet + safeWidthInches / 12;
 
   if (shape === 'round') {
     // For round rugs, use diameter (from width) to calculate area
@@ -95,7 +100,7 @@ export function calculateSquareFoot(
   }
 
   // Rectangle calculation
-  const lengthInFeet = lengthFeet + lengthInches / 12;
+  const lengthInFeet = safeLengthFeet + safeLengthInches / 12;
   return widthInFeet * lengthInFeet;
 }
 
@@ -113,11 +118,13 @@ export function calculateLineAmount(item: InvoiceItem, mode: InvoiceMode): numbe
 
   // Per Sq.Ft modes
   if (mode === 'retail-per-sqft' || mode === 'wholesale-per-sqft') {
-    return squareFoot * (item.pricePerSqFt || 0);
+    const price = item.pricePerSqFt || 0;
+    return squareFoot * (isNaN(price) ? 0 : price);
   }
 
   // Per Rug modes
-  return item.fixedPrice || 0;
+  const price = item.fixedPrice || 0;
+  return isNaN(price) ? 0 : price;
 }
 
 /**
