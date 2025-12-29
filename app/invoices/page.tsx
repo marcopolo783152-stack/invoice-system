@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoices, restoreMultipleInvoices, permanentlyDeleteInvoices, subscribeToInvoices } from '@/lib/invoice-storage';
+import { getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoices, restoreMultipleInvoices, permanentlyDeleteInvoices, subscribeToInvoices, diagnoseAndSync } from '@/lib/invoice-storage';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { calculateInvoice } from '@/lib/calculations';
 import { exportInvoicesAsPDFs, ExportProgress } from '@/lib/bulk-export';
@@ -215,6 +215,23 @@ function InvoicesPageContent() {
         loadData();
     };
 
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    const handleSync = async () => {
+        setIsSyncing(true);
+        try {
+            const result = await diagnoseAndSync();
+            alert(result);
+            if (result.includes('Success')) {
+                // Reload data if needed, or let subscription handle it
+            }
+        } catch (e: any) {
+            alert('Sync failed: ' + e.message);
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     return (
         <div style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
             <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -222,9 +239,37 @@ function InvoicesPageContent() {
                     <h1 style={{ fontSize: 32, fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>
                         {viewMode === 'active' ? 'Invoices' : 'Recycle Bin'}
                     </h1>
-                    <p style={{ color: '#666' }}>
-                        {viewMode === 'active' ? 'Manage and view all your invoices' : 'View and restore deleted invoices'}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <p style={{ color: '#64748b', fontSize: 16 }}>
+                            {viewMode === 'active' ? 'Manage and view all your invoices' : 'View and restore deleted invoices'}
+                        </p>
+                        {isFirebaseConfigured() && (
+                            <span style={{ fontSize: 12, padding: '4px 8px', borderRadius: 12, background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
+                                Cloud Online
+                            </span>
+                        )}
+                        <button
+                            onClick={handleSync}
+                            disabled={isSyncing}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '4px 12px',
+                                borderRadius: 20,
+                                background: isSyncing ? '#e2e8f0' : '#f1f5f9',
+                                border: 'none',
+                                cursor: isSyncing ? 'wait' : 'pointer',
+                                fontSize: 13,
+                                color: '#475569',
+                                fontWeight: 600,
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <RotateCcw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                            {isSyncing ? 'Syncing...' : 'Sync Now'}
+                        </button>
+                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     {/* Cloud Status Indicator */}
