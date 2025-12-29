@@ -288,7 +288,21 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
           savedInvoice.data
         );
       } catch (error) {
-        console.error('Firebase update failed, saved locally:', error);
+        console.warn('Firebase update failed, attempting to create new doc:', error);
+        // Fallback: If update fails (e.g. doc deleted or local-only ID), try to create as new
+        try {
+          const newId = await saveInvoiceToCloud(
+            data.invoiceNumber,
+            data.soldTo.name,
+            0,
+            savedInvoice.data
+          );
+          // Update local ID to match new Cloud ID
+          savedInvoice.id = newId;
+          invoices[existingIndex] = savedInvoice;
+        } catch (createError) {
+          console.error('Firebase create fallback failed:', createError);
+        }
       }
     }
   } else {
