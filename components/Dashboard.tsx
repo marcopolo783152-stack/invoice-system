@@ -284,14 +284,22 @@ export default function Dashboard() {
                                             {inv.data.servedBy || '—'}
                                         </td>
                                         <td style={{ padding: '16px 0' }}>
-                                            <span style={{
-                                                padding: '4px 12px',
-                                                borderRadius: 20,
-                                                background: inv.data.documentType === 'WASH' ? '#e0f2fe' : 'rgba(16, 185, 129, 0.1)',
-                                                color: inv.data.documentType === 'WASH' ? '#0369a1' : '#059669',
-                                                fontSize: 12,
-                                                fontWeight: 600
-                                            }}>{inv.data.documentType || 'Paid'}</span>
+                                            {(() => {
+                                                let style = { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669', label: 'Sale' };
+                                                if (inv.data.documentType === 'CONSIGNMENT') style = { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
+                                                else if (inv.data.documentType === 'WASH') style = { bg: '#e0f2fe', text: '#0284c7', label: 'Wash' };
+
+                                                return (
+                                                    <span style={{
+                                                        padding: '4px 12px',
+                                                        borderRadius: 20,
+                                                        background: style.bg,
+                                                        color: style.text,
+                                                        fontSize: 12,
+                                                        fontWeight: 600
+                                                    }}>{style.label}</span>
+                                                );
+                                            })()}
                                         </td>
                                     </tr>
                                 );
