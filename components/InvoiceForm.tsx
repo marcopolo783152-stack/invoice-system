@@ -157,8 +157,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     field: keyof InvoiceItem,
     value: string | number
   ) => {
-    setItems(
-      items.map((item) =>
+    setItems((prevItems) =>
+      prevItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item
       )
     );
