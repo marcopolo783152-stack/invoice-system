@@ -143,12 +143,12 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   }
 
   const handleAddItem = () => {
-    setItems([...items, createEmptyItem()]);
+    setItems((prev) => [...prev, createEmptyItem()]);
   };
 
   const handleRemoveItem = (id: string) => {
     if (items.length > 1) {
-      setItems(items.filter((item) => item.id !== id));
+      setItems((prev) => prev.filter((item) => item.id !== id));
     }
   };
 
