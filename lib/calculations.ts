@@ -7,8 +7,9 @@
  * DO NOT modify calculation formulas without verification against Excel.
  */
 
-export type InvoiceMode = 'retail-per-rug' | 'wholesale-per-rug' | 'retail-per-sqft' | 'wholesale-per-sqft' | 'wash';
+export type InvoiceMode = 'retail' | 'wholesale' | 'wash' | 'retail-per-rug' | 'wholesale-per-rug' | 'retail-per-sqft' | 'wholesale-per-sqft';
 export type RugShape = 'rectangle' | 'round';
+export type PricingMethod = 'piece' | 'sqft';
 
 export interface InvoiceItem {
   id: string;
@@ -21,6 +22,7 @@ export interface InvoiceItem {
   lengthInches: number;
   pricePerSqFt?: number;  // Used in per-sqft modes
   fixedPrice?: number;    // Used in per-rug modes
+  pricingMethod?: PricingMethod; // New: per-item pricing method
   // Return support
   returned?: boolean;
   returnNote?: string;
@@ -106,7 +108,7 @@ export function calculateSquareFoot(
 }
 
 /**
- * Calculate line item amount based on mode
+ * Calculate line item amount based on mode and pricing method
  */
 export function calculateLineAmount(item: InvoiceItem, mode: InvoiceMode): number {
   const squareFoot = calculateSquareFoot(
@@ -117,13 +119,16 @@ export function calculateLineAmount(item: InvoiceItem, mode: InvoiceMode): numbe
     item.shape
   );
 
-  // Per Sq.Ft modes
-  if (mode === 'retail-per-sqft' || mode === 'wholesale-per-sqft') {
+  // New logic: Use item's pricingMethod if available
+  const effectivePricingMethod = item.pricingMethod ||
+    (mode.includes('per-sqft') ? 'sqft' : 'piece');
+
+  if (effectivePricingMethod === 'sqft') {
     const price = item.pricePerSqFt || 0;
     return squareFoot * (isNaN(price) ? 0 : price);
   }
 
-  // Per Rug modes
+  // Default to fixed price
   const price = item.fixedPrice || 0;
   return isNaN(price) ? 0 : price;
 }

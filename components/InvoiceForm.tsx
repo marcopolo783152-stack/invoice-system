@@ -40,7 +40,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   }, [currentUser, initialData]);
   const [documentType, setDocumentType] = useState<DocumentType>(initialData?.documentType || 'INVOICE');
   const [mode, setMode] = useState<InvoiceMode>(
-    initialData?.mode || 'retail-per-rug'
+    initialData?.mode || 'retail'
   );
   const [invoiceNumber, setInvoiceNumber] = useState(
     initialData?.invoiceNumber || ''
@@ -138,6 +138,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       lengthInches: 0,
       pricePerSqFt: 0,
       fixedPrice: 0,
+      pricingMethod: 'piece'
     };
   }
 
@@ -284,7 +285,6 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     logActivity('Invoice Saved', `${documentType} #${invoiceNumber} for ${soldTo.name} has been processed.`);
   };
 
-  const isPerSqFt = mode.includes('per-sqft');
   const isRetail = mode.startsWith('retail');
 
   return (
@@ -323,10 +323,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           onChange={(e) => setMode(e.target.value as InvoiceMode)}
           className={styles.select}
         >
-          <option value="retail-per-rug">Retail - Per Rug</option>
-          <option value="wholesale-per-rug">Wholesale - Per Rug</option>
-          <option value="retail-per-sqft">Retail - Per Sq.Ft</option>
-          <option value="wholesale-per-sqft">Wholesale - Per Sq.Ft</option>
+          <option value="retail">Retail</option>
+          <option value="wholesale">Wholesale</option>
           <option value="wash">Wash Service</option>
         </select>
       </div>
@@ -796,39 +794,48 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
               )}
             </div>
             <div className={styles.row}>
-              {isPerSqFt ? (
-                <div className={styles.formGroup}>
-                  <label>Price per Sq.Ft:*</label>
+              <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
+                <div className={styles.formGroup} style={{ flex: 1 }}>
+                  <label>Price per Piece:</label>
                   <input
                     type="number"
-                    value={item.pricePerSqFt}
-                    onChange={(e) =>
-                      handleItemChange(item.id, 'pricePerSqFt', Number(e.target.value))
-                    }
+                    value={item.fixedPrice || ''}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      handleItemChange(item.id, 'fixedPrice', val);
+                      if (val > 0) {
+                        handleItemChange(item.id, 'pricingMethod', 'piece');
+                        handleItemChange(item.id, 'pricePerSqFt', 0);
+                      }
+                    }}
                     onFocus={(e) => e.target.select()}
                     min="0"
                     step="0.01"
-                    required
                     className={styles.input}
+                    placeholder="0.00"
                   />
                 </div>
-              ) : (
-                <div className={styles.formGroup}>
-                  <label>Fixed Price:*</label>
+                <div className={styles.formGroup} style={{ flex: 1 }}>
+                  <label>Price per Sq.Ft:</label>
                   <input
                     type="number"
-                    value={item.fixedPrice}
-                    onChange={(e) =>
-                      handleItemChange(item.id, 'fixedPrice', Number(e.target.value))
-                    }
+                    value={item.pricePerSqFt || ''}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      handleItemChange(item.id, 'pricePerSqFt', val);
+                      if (val > 0) {
+                        handleItemChange(item.id, 'pricingMethod', 'sqft');
+                        handleItemChange(item.id, 'fixedPrice', 0);
+                      }
+                    }}
                     onFocus={(e) => e.target.select()}
                     min="0"
                     step="0.01"
-                    required
                     className={styles.input}
+                    placeholder="0.00"
                   />
                 </div>
-              )}
+              </div>
             </div>
           </div>
         ))}

@@ -62,7 +62,7 @@ export default function InvoiceTemplate({
     return `${mm}/${dd}/${yyyy}`;
   }
   const isRetail = data.mode.startsWith('retail');
-  const isPerSqFt = data.mode.includes('per-sqft');
+  // We no longer rely on a global isPerSqFt flag for the whole invoice
 
   // PAGINATION LOGIC
   const ITEMS_PER_PAGE = 20;
@@ -183,7 +183,7 @@ export default function InvoiceTemplate({
                     <th colSpan={2}>Width/Diameter</th>
                     <th colSpan={2}>Length</th>
                     <th>Sq.Ft</th>
-                    {isPerSqFt && <th>Price/Sq.Ft</th>}
+                    <th>Price</th>
                     <th>Amount</th>
                   </tr>
                   <tr className={styles.subheader}>
@@ -195,7 +195,7 @@ export default function InvoiceTemplate({
                     <th className={styles.smallCol}>Ft</th>
                     <th className={styles.smallCol}>In</th>
                     <th></th>
-                    {isPerSqFt && <th></th>}
+                    <th></th>
                     <th></th>
                   </tr>
                 </thead>
@@ -224,11 +224,12 @@ export default function InvoiceTemplate({
                         {item.shape === 'rectangle' ? item.lengthInches : '-'}
                       </td>
                       <td className={styles.numeric}>{formatSquareFoot(item.squareFoot)}</td>
-                      {isPerSqFt && (
-                        <td className={styles.numeric}>
-                          {item.pricePerSqFt ? formatCurrency(item.pricePerSqFt) : '-'}
-                        </td>
-                      )}
+                      <td className={styles.numeric}>
+                        {item.pricingMethod === 'sqft'
+                          ? (item.pricePerSqFt ? `${formatCurrency(item.pricePerSqFt)}/sf` : '-')
+                          : (item.fixedPrice ? formatCurrency(item.fixedPrice) : '-')
+                        }
+                      </td>
                       <td className={styles.numeric}>{formatCurrency(item.amount)}</td>
                     </tr>
                   ))}
