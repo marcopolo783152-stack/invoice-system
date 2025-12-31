@@ -803,7 +803,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       handleItemChange(item.id, 'fixedPrice', val);
-                      if (val > 0) {
+                      if (e.target.value !== '') {
                         handleItemChange(item.id, 'pricingMethod', 'piece');
                         handleItemChange(item.id, 'pricePerSqFt', 0);
                       }
@@ -823,7 +823,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       handleItemChange(item.id, 'pricePerSqFt', val);
-                      if (val > 0) {
+                      if (e.target.value !== '') {
                         handleItemChange(item.id, 'pricingMethod', 'sqft');
                         handleItemChange(item.id, 'fixedPrice', 0);
                       }

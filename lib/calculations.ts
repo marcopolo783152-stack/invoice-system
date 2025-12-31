@@ -278,12 +278,15 @@ export function validateInvoiceData(data: InvoiceData): string[] {
       errors.push(`Item ${index + 1}: Description is required`);
     }
 
-    const isPerSqFt = data.mode.includes('per-sqft');
-    if (isPerSqFt && (item.pricePerSqFt === undefined || item.pricePerSqFt < 0)) {
-      errors.push(`Item ${index + 1}: Valid price per sq.ft is required`);
-    }
-    if (!isPerSqFt && (item.fixedPrice === undefined || item.fixedPrice < 0)) {
-      errors.push(`Item ${index + 1}: Valid fixed price is required`);
+    const effectivePricingMethod = item.pricingMethod || (data.mode.includes('per-sqft') ? 'sqft' : 'piece');
+    if (effectivePricingMethod === 'sqft') {
+      if (item.pricePerSqFt === undefined || isNaN(item.pricePerSqFt) || item.pricePerSqFt < 0) {
+        errors.push(`Item ${index + 1}: Valid price per sq.ft is required`);
+      }
+    } else {
+      if (item.fixedPrice === undefined || isNaN(item.fixedPrice) || item.fixedPrice < 0) {
+        errors.push(`Item ${index + 1}: Valid fixed price is required`);
+      }
     }
   });
 
