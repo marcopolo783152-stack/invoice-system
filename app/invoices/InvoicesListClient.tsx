@@ -206,7 +206,7 @@ function InvoicesListContent() {
 
         if (isReturned) return { bg: '#fee2e2', text: '#ef4444', label: 'Returned' };
         if (inv.data?.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
-        if (inv.data?.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash' };
+        if (inv.data?.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash/Repair' };
         if ((inv.data?.terms || '').toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
         return { bg: '#eff6ff', text: '#3b82f6', label: 'Sale' };
     };
@@ -478,7 +478,7 @@ function InvoicesListContent() {
                     <option value="ALL">All Types</option>
                     <option value="INVOICE">Invoices</option>
                     <option value="CONSIGNMENT">Consignments</option>
-                    <option value="WASH">Wash Invoices</option>
+                    <option value="WASH">Wash/Repair</option>
                 </select>
 
                 <select

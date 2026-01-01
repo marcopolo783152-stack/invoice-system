@@ -310,7 +310,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         >
           <option value="INVOICE">Invoice</option>
           <option value="CONSIGNMENT">Consignment</option>
-          <option value="WASH">Wash Invoice</option>
+          <option value="WASH">Wash/Repair</option>
         </select>
       </div>
       <h2>{documentType === 'CONSIGNMENT' ? 'Consignment Out Details' : 'Invoice Details'}</h2>
@@ -325,7 +325,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         >
           <option value="retail">Retail</option>
           <option value="wholesale">Wholesale</option>
-          <option value="wash">Wash Service</option>
+          <option value="wash">Wash/Repair</option>
         </select>
       </div>
 
