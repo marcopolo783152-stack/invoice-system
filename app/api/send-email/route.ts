@@ -1,8 +1,6 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { File } from 'buffer'; // Import File from 'buffer' module (Node 20+) or use global if available
-// If global 'File' is not available in this env (older Node), we can полиfill or use Blob.
-// But Next.js 'nodejs' runtime usually has global File. Let's try global first.
+import FormData from 'form-data';
+import axios from 'axios';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,15 +18,15 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Use standard global FormData (undici/native in Next.js)
+        // Create form-data instance
         const formData = new FormData();
         formData.append('service_id', service_id);
         formData.append('template_id', template_id);
         formData.append('user_id', user_id);
         formData.append('accessToken', accessToken);
 
+        // Flatten parameters
         if (template_params && typeof template_params === 'object') {
-            // Check for and remove invoice_html if present
             if ('invoice_html' in template_params) {
                 delete template_params['invoice_html'];
             }
@@ -42,34 +40,47 @@ export async function POST(req: NextRequest) {
             });
         }
 
+        // Handle attachment
         if (attachment_data && attachment_data.name && attachment_data.base64) {
             const base64Data = attachment_data.base64.split(',')[1];
             const buffer = Buffer.from(base64Data, 'base64');
 
-            // Use explicit 'File' constructor to ensure EmailJS treats it as an attachment
-            // content-type is critical
-            const file = new File([buffer], attachment_data.name, { type: 'application/pdf' });
+            console.log('Attaching file:', attachment_data.name);
+            console.log('Size:', buffer.length);
 
-            formData.append('invoice_file', file as any);
-            console.log('Attached file:', attachment_data.name, 'Size:', buffer.length);
+            // Append using form-data specific options for filename and content-type
+            // using 'invoice_file' as key. 
+            formData.append('invoice_file', buffer, {
+                filename: attachment_data.name,
+                contentType: 'application/pdf',
+                knownLength: buffer.length
+            });
         }
 
-        const response = await fetch('https://api.emailjs.com/api/v1.0/email/send-form', {
-            method: 'POST',
-            body: formData,
-            // Header is set automatically by fetch for FormData
+        console.log('Sending request to EmailJS via Axios...');
+
+        // Use Axios to post the form data
+        // Axios handles the multipart boundary headers automatically when passed a FormData instance
+        const response = await axios.post('https://api.emailjs.com/api/v1.0/email/send-form', formData, {
+            headers: {
+                ...formData.getHeaders(),
+            },
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
         });
 
-        if (response.ok) {
+        console.log('EmailJS Response:', response.status, response.data);
+
+        if (response.status === 200 || response.status === 201) {
             return NextResponse.json({ success: true });
         } else {
-            const text = await response.text();
-            console.error('EmailJS Error:', text);
-            return NextResponse.json({ error: text }, { status: response.status });
+            return NextResponse.json({ error: 'Failed' }, { status: response.status });
         }
 
     } catch (error: any) {
-        console.error('API Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('API Error:', error.response?.data || error.message);
+        // Extract EmailJS specific error if available
+        const errorMsg = typeof error.response?.data === 'string' ? error.response.data : error.message;
+        return NextResponse.json({ error: errorMsg }, { status: error.response?.status || 500 });
     }
 }
