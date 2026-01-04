@@ -5,16 +5,69 @@
 
 import emailjs from '@emailjs/browser';
 
-// EmailJS Configuration (Get these from emailjs.com after signup)
-const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID'; // Replace with your EmailJS service ID
-const EMAILJS_TEMPLATE_ID_INVOICE = 'YOUR_TEMPLATE_ID'; // Template for sending invoices
-const EMAILJS_TEMPLATE_ID_CONFIRM = 'YOUR_CONFIRM_TEMPLATE_ID'; // Template for security confirmation
-const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY'; // Your EmailJS public key
+// EmailJS Configuration Keys
+const STORAGE_KEY_EMAIL_CONFIG = 'emailjs_config';
+
+export interface EmailConfig {
+  serviceId: string;
+  templateIdInvoice: string;
+  templateIdConfirm: string; // Optional for now
+  publicKey: string;
+}
+
+const DEFAULT_CONFIG: EmailConfig = {
+  serviceId: '',
+  templateIdInvoice: '',
+  templateIdConfirm: '',
+  publicKey: ''
+};
+
+// Admin email for security confirmations
 const ADMIN_EMAIL = 'marcopolorugs@aol.com';
 
-// Initialize EmailJS
+/**
+ * Get email configuration from local storage
+ */
+export function getEmailConfig(): EmailConfig {
+  if (typeof window === 'undefined') return DEFAULT_CONFIG;
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_EMAIL_CONFIG);
+    if (stored) {
+      return { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
+    }
+  } catch (e) {
+    console.error('Failed to parse email config', e);
+  }
+  return DEFAULT_CONFIG;
+}
+
+/**
+ * Save email configuration to local storage
+ */
+export function saveEmailConfig(config: EmailConfig): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEY_EMAIL_CONFIG, JSON.stringify(config));
+  // Re-init emailjs with new key
+  if (config.publicKey) {
+    emailjs.init(config.publicKey);
+  }
+}
+
+/**
+ * Check if email service is configured
+ */
+export function isEmailConfigured(): boolean {
+  const config = getEmailConfig();
+  return !!(config.serviceId && config.templateIdInvoice && config.publicKey);
+}
+
+// Initialize EmailJS on load if configured
 if (typeof window !== 'undefined') {
-  emailjs.init(EMAILJS_PUBLIC_KEY);
+  const config = getEmailConfig();
+  if (config.publicKey) {
+    emailjs.init(config.publicKey);
+  }
 }
 
 /**
@@ -27,8 +80,18 @@ export async function sendInvoiceEmail(
   invoiceHTML: string,
   pdfBlob?: Blob
 ): Promise<boolean> {
+  const config = getEmailConfig();
+
+  // Basic validation
+  if (!config.serviceId || !config.templateIdInvoice || !config.publicKey) {
+    throw new Error('Email service not configured. Please check settings.');
+  }
+
   try {
-    const templateParams = {
+    // Initialize just in case (e.g. first run)
+    emailjs.init(config.publicKey);
+
+    const templateParams: Record<string, any> = {
       to_email: customerEmail,
       to_name: customerName,
       from_name: 'Marco Polo Oriental Rugs',
@@ -37,9 +100,29 @@ export async function sendInvoiceEmail(
       invoice_html: invoiceHTML,
     };
 
+    // If PDF blob is provided, we would ideally attach it.
+    // However, EmailJS client-side SDK has limitations with attachments in the free/standard tier directly from blob 
+    // without a backend or specific paid features usually. 
+    // BUT checking docs: EmailJS specifically implementation often requires passing the content.
+    // Standard template params are text. 
+    // For attachments, we usually need specific file-input handling or base64 if supported by the provider.
+    // 
+    // CRITICAL NOTE: EmailJS browser-side `send` does NOT easily support arbitrary Blob attachments 
+    // unless using the `sendForm` method with a form element containing a file input.
+    // 
+    // Since we are generating a Blob programmatically, `emailjs.send` is preferred.
+    // Many users just send a link or HTML. 
+    // However, if the user requested "send the invoice", a link or the body is often enough.
+    // 
+    // Re-reading user request: "send the invoice by email".
+    // I will stick to sending the HTML body + text for now as it's most reliable with the free EmailJS tier and no backend proxy.
+    // 
+    // Feature add: If we really want attachments, we might need a more complex flow or base64 if the template allows it.
+    // I will proceed with sending the Invoice data rendered in the email body, which is what the current code seemed to intend (`invoice_html`).
+
     const response = await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID_INVOICE,
+      config.serviceId,
+      config.templateIdInvoice,
       templateParams
     );
 
@@ -49,7 +132,7 @@ export async function sendInvoiceEmail(
     return false;
   } catch (error) {
     console.error('Error sending invoice email:', error);
-    return false;
+    throw error; // Throw so UI can handle it
   }
 }
 
@@ -60,8 +143,13 @@ export async function sendSecurityConfirmation(
   action: string,
   details: string
 ): Promise<string> {
+  const config = getEmailConfig();
+
+  if (!config.serviceId || !config.templateIdConfirm || !config.publicKey) {
+    throw new Error('Email service not configured for security confirmations.');
+  }
+
   try {
-    // Generate 6-digit confirmation code
     const confirmationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     const templateParams = {
@@ -73,8 +161,8 @@ export async function sendSecurityConfirmation(
     };
 
     const response = await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID_CONFIRM,
+      config.serviceId,
+      config.templateIdConfirm,
       templateParams
     );
 
@@ -157,7 +245,7 @@ export async function requestSecurityConfirmation(
 export function prepareInvoiceForEmail(invoiceElement: HTMLElement): string {
   // Clone the element to avoid modifying the original
   const clone = invoiceElement.cloneNode(true) as HTMLElement;
-  
+
   // Add inline styles for email compatibility
   const styles = `
     <style>
@@ -168,17 +256,7 @@ export function prepareInvoiceForEmail(invoiceElement: HTMLElement): string {
       th { background-color: #f2f2f2; }
     </style>
   `;
-  
+
   return styles + clone.outerHTML;
 }
 
-/**
- * Check if email service is configured
- */
-export function isEmailConfigured(): boolean {
-  return (
-    EMAILJS_SERVICE_ID !== 'YOUR_SERVICE_ID' &&
-    EMAILJS_TEMPLATE_ID_INVOICE !== 'YOUR_TEMPLATE_ID' &&
-    EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY'
-  );
-}

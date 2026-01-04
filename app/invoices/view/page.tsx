@@ -3,13 +3,16 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart, Mail } from 'lucide-react';
 import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { ReturnedReceipt } from '@/components/ReturnedReceipt';
 import { businessConfig } from '@/config/business';
 import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
+
+import { prepareInvoiceForEmail } from '@/lib/email-service';
+import EmailModal from '@/components/EmailModal';
 
 function InvoiceViewContent() {
     const searchParams = useSearchParams();
@@ -21,6 +24,10 @@ function InvoiceViewContent() {
     const [loading, setLoading] = useState(true);
     const invoiceRef = useRef<HTMLDivElement>(null);
     const [showPickupModal, setShowPickupModal] = useState(false);
+
+    // Email State
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [invoiceHTML, setInvoiceHTML] = useState('');
 
     // Lazy load SignaturePad to avoid SSR issues
     const SignaturePad = React.useMemo(() => React.lazy(() => import('@/components/SignaturePad')), []);
@@ -76,6 +83,14 @@ function InvoiceViewContent() {
             } catch (error) {
                 alert('Failed to generate PDF. Please try using Print instead.');
             }
+        }
+    };
+
+    const handleEmail = () => {
+        if (invoiceRef.current && invoice) {
+            const html = prepareInvoiceForEmail(invoiceRef.current);
+            setInvoiceHTML(html);
+            setShowEmailModal(true);
         }
     };
 
@@ -291,6 +306,17 @@ function InvoiceViewContent() {
                                     <Edit size={18} /> Edit
                                 </button>
                                 <button
+                                    onClick={handleEmail}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 8,
+                                        padding: '10px 20px', background: '#e0f2fe', color: '#0369a1',
+                                        border: '1px solid #7dd3fc', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                                        boxShadow: '0 2px 4px rgba(3, 105, 161, 0.1)'
+                                    }}
+                                >
+                                    <Mail size={18} /> Email
+                                </button>
+                                <button
                                     onClick={handlePrint}
                                     disabled={isPrinting}
                                     style={{
@@ -316,6 +342,16 @@ function InvoiceViewContent() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Email Modal */}
+                    <EmailModal
+                        isOpen={showEmailModal}
+                        onClose={() => setShowEmailModal(false)}
+                        customerEmail={invoice.data.soldTo.email || ''}
+                        customerName={invoice.data.soldTo.name}
+                        invoiceNumber={invoice.data.invoiceNumber}
+                        invoiceHTML={invoiceHTML}
+                    />
 
                     {/* Return Modal Overlay */}
                     {showReturnModal && (
