@@ -771,7 +771,6 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                   }
                   onFocus={(e) => e.target.select()}
                   min="0"
-                  required
                   className={styles.input}
                 />
               </div>
@@ -786,7 +785,6 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                   onFocus={(e) => e.target.select()}
                   min="0"
                   max="11"
-                  required
                   className={styles.input}
                 />
               </div>
@@ -802,7 +800,6 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                       }
                       onFocus={(e) => e.target.select()}
                       min="0"
-                      required
                       className={styles.input}
                     />
                   </div>
@@ -817,7 +814,6 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                       onFocus={(e) => e.target.select()}
                       min="0"
                       max="11"
-                      required
                       className={styles.input}
                     />
                   </div>
