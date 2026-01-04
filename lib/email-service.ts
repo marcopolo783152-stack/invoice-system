@@ -18,10 +18,12 @@ export interface EmailConfig {
 
 const DEFAULT_CONFIG: EmailConfig = {
   serviceId: 'Marcopolo-Rugs',
-  templateIdInvoice: '',
+  templateIdInvoice: '', // User still needs to set this or we rely on them verifying it? 
+  // Actually, user likely has this in local storage. 
+  // But let's leave blank if we don't know it, or keep existing.
   templateIdConfirm: '',
-  publicKey: '',
-  privateKey: 'ZgV1UYxVUy0UQKBmgj3I5', // Default provided by user
+  publicKey: 'Anj9zrEUo-VEWvMVw', // From Screenshot
+  privateKey: 'ZgV1UYxVUy0UQKBmgj3I5', // From Screenshot
 };
 
 // Admin email for security confirmations
