@@ -1,122 +1,91 @@
 import { NextRequest, NextResponse } from 'next/server';
-import emailjs from '@emailjs/nodejs';
+import FormData from 'form-data';
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-    console.log('API /send-email: Request received (SDK Version)');
+    console.log('API /send-email: Request received (Axios Stream Version)');
     try {
         const body = await req.json();
         const { service_id, template_id, user_id, accessToken, template_params, attachment_data } = body;
 
+        // Validation
         if (!service_id || !template_id || !user_id || !accessToken) {
             return NextResponse.json(
-                { error: 'Missing required parameters (service_id, template_id, user_id, accessToken)' },
+                { error: 'Missing required parameters' },
                 { status: 400 }
             );
         }
 
-        // Initialize EmailJS with the Public Key (User ID) and Private Key
-        // The SDK manual says: emailjs.init({ publicKey, privateKey })
-        emailjs.init({
-            publicKey: user_id,
-            privateKey: accessToken, // This is key for allowing attachments
-        });
+        const formData = new FormData();
+        formData.append('service_id', service_id);
+        formData.append('template_id', template_id);
+        formData.append('user_id', user_id);
+        formData.append('accessToken', accessToken);
 
-        // Prepare parameters
-        const sendParams = { ...template_params };
+        // Parameters
+        if (template_params && typeof template_params === 'object') {
+            if ('invoice_html' in template_params) delete template_params['invoice_html'];
 
-        // Remove known large text field if present
-        if (sendParams.invoice_html) {
-            delete sendParams.invoice_html;
+            Object.entries(template_params).forEach(([key, value]) => {
+                const strValue = String(value);
+                if (strValue.length > 5000) return;
+                formData.append(key, strValue);
+            });
         }
 
-        // Handle Attachment
-        // For @emailjs/nodejs, attachments are usually not part of standard params unless using a specific plugin?
-        // Wait, standard usage is `emailjs.send(serviceID, templateID, templateParams, options)`
-        // BUT, documentation suggests passing file path.
-        // Since we are in memory (Buffer), we might need to write to /tmp or pass stream?
-        // ACTUALLY, checking the source of @emailjs/nodejs:
-        // It often relies on "send-form" logic if you want attachments comfortably?
-        // But let's try passing it as a parameter if using the Service ID that supports it.
-        //
-        // NOTE: If this fails, we will have to write to /tmp/invoice.pdf and pass the path.
-        // Next.js allows writing to /tmp.
-        // This is safer.
-
-        let pathToFile = '';
+        // Attachment Handling: Write to Temp -> Stream
+        let tempFilePath = '';
         if (attachment_data && attachment_data.base64) {
-            const fs = require('fs');
-            const path = require('path');
-            const os = require('os');
-
-            // Create temp file
             const tempDir = os.tmpdir();
-            const fileName = attachment_data.name || 'invoice.pdf';
-            pathToFile = path.join(tempDir, fileName);
+            // Sanitize filename
+            const safeName = (attachment_data.name || 'invoice.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
+            tempFilePath = path.join(tempDir, safeName);
 
+            // Convert Base64 to Buffer and Write to Disk
             const base64Data = attachment_data.base64.split(',')[1];
-            fs.writeFileSync(pathToFile, base64Data, { encoding: 'base64' });
-            console.log('Created temp file:', pathToFile);
+            fs.writeFileSync(tempFilePath, base64Data, { encoding: 'base64' });
 
-            // Add to params?
-            // Actually, usually send() takes `templateParams`.
-            // How to attach? 
-            // There is `emailjs.sendForm`? No, that's browser.
-            //
-            // Many users report simply adding the file path to params works if using the nodejs sdk?
-            // OR using the `content` property in a specific object?
-            //
-            // Let's safe bet: The SDK likely exports a send() that assumes JSON.
-            // But valid attachments require multipart.
-            //
-            // RE-READING: "Variables size limit" is the error. 
-            // This happens when sending JSON.
-            //
-            // The SDK *wraps* the API. If we use `useCORS`? No.
-            //
-            // ALTERNATIVE:
-            // Construct the `FormData` manually but use the library's `send` method? No.
-            //
-            // Let's stick with the path approach which is standard for Node libraries (like Nodemailer).
-            // Docs for @emailjs/nodejs are very sparse publicly without login.
-            //
-            // I will try passing the *stream* which is idiomatic Node.
-            // sendParams['invoice_file'] = fs.createReadStream(pathToFile);
-            // And enable multipart?
-            //
-            // This assumes the SDK detects the stream and uses Multipart.
-            // If not, we are back to square one.
+            console.log('Created temp file:', tempFilePath);
+
+            // Create Stream
+            const fileStream = fs.createReadStream(tempFilePath);
+
+            // KEY: Append as 'invoice_file'
+            // This MUST match the variable name in EmailJS Dashboard > Template > Attachments
+            formData.append('invoice_file', fileStream);
         }
 
-        console.log('Sending via SDK...');
+        console.log('Sending via Axios...');
 
-        // We will try to pass the path as a value. 
-        // If the SDK is smart, it handles it. If not, we might get an error.
-        // To be safe, let's TRY to attach it as a stream to the param 'invoice_file'.
-        if (pathToFile) {
-            const fs = require('fs');
-            // Attempt to pass stream. This forces multipart in many libraries.
-            sendParams['invoice_file'] = fs.createReadStream(pathToFile);
-        }
-
-        const response = await emailjs.send(service_id, template_id, sendParams, {
-            publicKey: user_id,
-            privateKey: accessToken,
+        const response = await axios.post('https://api.emailjs.com/api/v1.0/email/send-form', formData, {
+            headers: {
+                ...formData.getHeaders(),
+            },
+            // Important for large files
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
         });
 
-        console.log('SDK Response:', response);
-
-        // Clean up temp file
-        if (pathToFile) {
-            try { require('fs').unlinkSync(pathToFile); } catch (e) { }
+        // Cleanup
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
+            try { fs.unlinkSync(tempFilePath); } catch (e) { console.error('Cleanup error:', e); }
         }
 
-        return NextResponse.json({ success: true, api_response: response });
+        if (response.status === 200 || response.status === 201) {
+            return NextResponse.json({ success: true });
+        } else {
+            return NextResponse.json({ error: 'Failed' }, { status: response.status });
+        }
 
     } catch (error: any) {
-        console.error('API Error:', error);
-        return NextResponse.json({ error: error.message || error.text || 'Unknown Error' }, { status: 500 });
+        console.error('API Error:', error.response?.data || error.message);
+        const errorMsg = typeof error.response?.data === 'string' ? error.response.data : error.message;
+        return NextResponse.json({ error: errorMsg }, { status: error.response?.status || 500 });
     }
 }
