@@ -308,25 +308,26 @@ export default function InvoiceTemplate({
                     </tbody>
                   </table>
 
-                  {data.signature && (
+                  {/* Signature Section - Only show one signature (Pickup replaces original) */}
+                  {(data.pickupSignature || data.signature) && (
                     <div className={styles.signatureSection}>
                       <div className={styles.signatureBlock}>
-                        <div className={styles.signatureLabel}>Customer Signature:</div>
+                        <div className={styles.signatureLabel}>
+                          {data.pickupSignature ? 'Pickup Signature:' : 'Customer Signature:'}
+                        </div>
                         <div className={styles.signatureImage}>
-                          <img src={data.signature} alt="Customer signature" />
+                          <img
+                            src={data.pickupSignature || data.signature}
+                            alt="Signature"
+                          />
                         </div>
-                        <div className={styles.signatureDate}>Date: {data.date}</div>
+                        <div className={styles.signatureDate}>
+                          {data.pickupSignature ?
+                            `Picked Up: ${formatDateMMDDYYYY(new Date().toISOString())}` :
+                            `Date: ${formatDateMMDDYYYY(data.date)}`
+                          }
+                        </div>
                       </div>
-
-                      {data.pickupSignature && (
-                        <div className={styles.signatureBlock} style={{ marginLeft: 20 }}>
-                          <div className={styles.signatureLabel}>Pickup Signature:</div>
-                          <div className={styles.signatureImage}>
-                            <img src={data.pickupSignature} alt="Pickup Signature" />
-                          </div>
-                          <div className={styles.signatureDate}>Picked Up: {new Date().toLocaleDateString()}</div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
