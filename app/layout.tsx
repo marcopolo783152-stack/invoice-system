@@ -78,15 +78,14 @@ export default function RootLayout({
   };
 
   const isPrintPage = pathname?.startsWith('/invoices/print');
-
-
+  const isPublicPage = pathname?.startsWith('/public');
 
   return (
     <html lang="en">
       <body className={inter.className}>
         <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
-          {/* Global Modals - Only render if authenticated */}
-          {isAuthenticated && (
+          {/* Global Modals - Only render if authenticated AND not public */}
+          {isAuthenticated && !isPublicPage && (
             <>
               <AddressBookModal
                 isOpen={showAddressBook}
@@ -100,7 +99,7 @@ export default function RootLayout({
           )}
 
           {/* Mobile Overlay */}
-          {isAuthenticated && isSidebarOpen && (
+          {isAuthenticated && isSidebarOpen && !isPublicPage && (
             <div
               onClick={() => setIsSidebarOpen(false)}
               style={{
@@ -116,8 +115,8 @@ export default function RootLayout({
             />
           )}
 
-          <Suspense fallback={<div style={{ width: isAuthenticated ? (isCollapsed ? 80 : 280) : 0, background: '#1e293b' }} />}>
-            {isAuthenticated && (
+          <Suspense fallback={<div style={{ width: isAuthenticated && !isPublicPage ? (isCollapsed ? 80 : 280) : 0, background: '#1e293b' }} />}>
+            {isAuthenticated && !isPublicPage && (
               <>
                 <div
                   className={`sidebar-container ${isSidebarOpen ? 'mobile-open' : ''}`}
@@ -163,12 +162,12 @@ export default function RootLayout({
           <div className="main-content" style={{
             flex: 1,
             minHeight: '100vh',
-            background: '#f8fafc',
+            background: isPublicPage ? '#fff' : '#f8fafc',
             width: '100%',
             transition: 'margin-left 0.3s ease-in-out'
           }}>
-            {/* Mobile Header - Only if authenticated */}
-            {isAuthenticated && (
+            {/* Mobile Header - Only if authenticated AND not public */}
+            {isAuthenticated && !isPublicPage && (
               <header className="mobile-only-header" style={{
                 display: 'none', // Overridden by media query in globals.css
                 padding: '16px',
