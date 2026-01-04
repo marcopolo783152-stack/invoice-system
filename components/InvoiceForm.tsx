@@ -935,6 +935,35 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         <button type="button" onClick={handleAddItem} className={styles.addBtn}>
           + Add Item
         </button>
+
+        {/* Static Summary Block */}
+        <div style={{ marginTop: 24, padding: 20, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16, color: '#334155' }}>Summary</h3>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <table style={{ borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Subtotal:</td>
+                  <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
+                    {(() => {
+                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
+                      return formatCurrency(calc.subtotal);
+                    })()}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Total Due:</td>
+                  <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
+                    {(() => {
+                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
+                      return formatCurrency(calc.totalDue);
+                    })()}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* Additional Options */}

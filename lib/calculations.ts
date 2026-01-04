@@ -35,9 +35,21 @@ export interface InvoiceItem {
   };
   // Condition tracking
   conditions?: {
-    used: boolean;
-    damage: boolean;
-    stained: boolean;
+    used?: boolean;
+    heavyWear?: boolean;
+    damagedEdges?: boolean;
+    frayedEnds?: boolean;
+    holes?: boolean;
+    thinAreas?: boolean;
+    looseKnots?: boolean;
+    fading?: boolean;
+    bleeding?: boolean;
+    stains?: boolean;
+    petStains?: boolean;
+    waterDamage?: boolean;
+    mold?: boolean;
+    insectDamage?: boolean;
+    sunDamage?: boolean;
     other?: string;
   };
 }
