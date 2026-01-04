@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
             // content-type is critical
             const file = new File([buffer], attachment_data.name, { type: 'application/pdf' });
 
-            formData.append('invoice_file', file);
+            formData.append('invoice_file', file as any);
             console.log('Attached file:', attachment_data.name, 'Size:', buffer.length);
         }
 
