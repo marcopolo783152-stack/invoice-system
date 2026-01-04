@@ -13,13 +13,15 @@ export interface EmailConfig {
   templateIdInvoice: string;
   templateIdConfirm: string; // Optional for now
   publicKey: string;
+  privateKey?: string; // Optional, only needed for backend sending with attachments
 }
 
 const DEFAULT_CONFIG: EmailConfig = {
   serviceId: 'Marcopolo-Rugs',
   templateIdInvoice: '',
   templateIdConfirm: '',
-  publicKey: ''
+  publicKey: '',
+  privateKey: 'ZgV1UYxVUy0UQKBmgj3I5', // Default provided by user
 };
 
 // Admin email for security confirmations
@@ -134,6 +136,73 @@ export async function sendInvoiceEmail(
     console.error('Error sending invoice email:', error);
     throw error; // Throw so UI can handle it
   }
+}
+
+/**
+ * Send invoice email via Server-Side API (allows PDF attachments)
+ */
+export async function sendInvoiceEmailServer(
+  customerEmail: string,
+  customerName: string,
+  invoiceNumber: string,
+  invoiceHTML: string,
+  pdfBlob: Blob
+): Promise<boolean> {
+  const config = getEmailConfig();
+
+  if (!config.serviceId || !config.templateIdInvoice || !config.publicKey || !config.privateKey) {
+    throw new Error('Missing configuration for secure email sending (Private Key required).');
+  }
+
+  // Convert Blob to Base64
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onloadend = async () => {
+      try {
+        const base64data = reader.result as string;
+
+        const payload = {
+          service_id: config.serviceId,
+          template_id: config.templateIdInvoice,
+          user_id: config.publicKey,
+          accessToken: config.privateKey,
+          template_params: {
+            to_email: customerEmail,
+            to_name: customerName,
+            from_name: 'Marco Polo Oriental Rugs',
+            invoice_number: invoiceNumber,
+            // We can still include the HTML body as fallback or main content
+            invoice_html: invoiceHTML,
+            message: `Dear ${customerName},\n\nPlease find attached your invoice ${invoiceNumber} (PDF).\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
+          },
+          attachment_data: {
+            name: `Invoice_${invoiceNumber}.pdf`,
+            base64: base64data
+          }
+        };
+
+        const res = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'Failed to send email via server');
+        }
+
+        resolve(true);
+
+      } catch (err) {
+        console.error('Server email send error:', err);
+        reject(err);
+      }
+    };
+
+    reader.onerror = () => reject(new Error('Failed to read PDF blob'));
+    reader.readAsDataURL(pdfBlob);
+  });
 }
 
 /**

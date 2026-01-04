@@ -351,6 +351,23 @@ function InvoiceViewContent() {
                         customerName={invoice.data.soldTo.name}
                         invoiceNumber={invoice.data.invoiceNumber}
                         invoiceHTML={invoiceHTML}
+                        onSend={async (email, config) => {
+                            if (!invoiceRef.current) throw new Error('Invoice content missing');
+
+                            // Generate PDF Blob client-side
+                            const { getInvoicePDFBlob } = await import('@/lib/pdf-utils');
+                            const pdfBlob = await getInvoicePDFBlob(invoiceRef.current, invoice.data.invoiceNumber);
+
+                            // Send via server-side API (which supports attachments)
+                            const { sendInvoiceEmailServer } = await import('@/lib/email-service');
+                            await sendInvoiceEmailServer(
+                                email,
+                                invoice.data.soldTo.name,
+                                invoice.data.invoiceNumber,
+                                invoiceHTML,
+                                pdfBlob
+                            );
+                        }}
                     />
 
                     {/* Return Modal Overlay */}
