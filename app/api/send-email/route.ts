@@ -70,12 +70,24 @@ export async function POST(req: NextRequest) {
         formData.append('template_id', template_id);
         formData.append('user_id', user_id);
         formData.append('accessToken', accessToken);
-        // Flatten template_params so each key becomes a form field
-        // This is safer for EmailJS send-form and avoids "variable size limit" on the JSON blob itself
         if (template_params && typeof template_params === 'object') {
+            // Defensive coding: Explicitly remove invoice_html in case cached client sends it
+            // This ensures we never hit the 50KB limit even if the browser sends old data
+            if ('invoice_html' in template_params) {
+                delete template_params['invoice_html'];
+                console.log('Sanitized: Removed invoice_html from payload');
+            }
+
             Object.entries(template_params).forEach(([key, value]) => {
                 const strValue = String(value);
-                console.log(`Param '${key}' size:`, strValue.length); // Log size for debugging
+
+                // Skip any other huge variables just in case
+                if (strValue.length > 5000) {
+                    console.warn(`Skipping large param '${key}' (size: ${strValue.length})`);
+                    return;
+                }
+
+                console.log(`Param '${key}' size:`, strValue.length);
                 formData.append(key, strValue);
             });
         }
