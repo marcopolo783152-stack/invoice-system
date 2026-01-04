@@ -765,7 +765,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                 <label>{item.shape === 'round' ? 'Diameter (Feet):' : 'Width (Feet):'}*</label>
                 <input
                   type="number"
-                  value={item.widthFeet}
+                  value={item.widthFeet || ''}
                   onChange={(e) =>
                     handleItemChange(item.id, 'widthFeet', Number(e.target.value))
                   }
@@ -779,7 +779,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                 <label>{item.shape === 'round' ? 'Diameter (Inches):' : 'Width (Inches):'}*</label>
                 <input
                   type="number"
-                  value={item.widthInches}
+                  value={item.widthInches || ''}
                   onChange={(e) =>
                     handleItemChange(item.id, 'widthInches', Number(e.target.value))
                   }
