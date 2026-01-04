@@ -364,7 +364,6 @@ function InvoiceViewContent() {
                                 email,
                                 invoice.data.soldTo.name,
                                 invoice.data.invoiceNumber,
-                                invoiceHTML,
                                 pdfBlob
                             );
                         }}

@@ -145,7 +145,6 @@ export async function sendInvoiceEmailServer(
   customerEmail: string,
   customerName: string,
   invoiceNumber: string,
-  invoiceHTML: string,
   pdfBlob: Blob
 ): Promise<boolean> {
   const config = getEmailConfig();
