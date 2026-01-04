@@ -1,7 +1,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'nodejs'; // Ensure Node.js runtime for Buffer support
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
+    console.log('API /send-email: Request received');
     try {
         const body = await req.json();
         const { service_id, template_id, user_id, accessToken, template_params, attachment_data } = body;

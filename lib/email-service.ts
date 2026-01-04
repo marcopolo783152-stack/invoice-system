@@ -188,8 +188,13 @@ export async function sendInvoiceEmailServer(
         });
 
         if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || 'Failed to send email via server');
+          const text = await res.text();
+          try {
+            const json = JSON.parse(text);
+            throw new Error(json.error || 'Failed to send email via server');
+          } catch (e: any) {
+            throw new Error(`Server Error (${res.status}): ${text.substring(0, 200)}...`);
+          }
         }
 
         resolve(true);
