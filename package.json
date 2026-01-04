@@ -19,11 +19,13 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "axios": "^1.13.2",
     "compression": "^1.8.1",
     "date-fns": "^3.0.6",
     "express": "^5.2.1",
     "file-saver": "^2.0.5",
     "firebase": "^12.7.0",
+    "form-data": "^4.0.5",
     "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",
     "jspdf": "^2.5.1",
