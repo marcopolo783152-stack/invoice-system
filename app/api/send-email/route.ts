@@ -1,10 +1,10 @@
+```typescript
 import { NextRequest, NextResponse } from 'next/server';
+import { File } from 'buffer'; // Import File from 'buffer' module (Node 20+) or use global if available
+// If global 'File' is not available in this env (older Node), we can полиfill or use Blob.
+// But Next.js 'nodejs' runtime usually has global File. Let's try global first.
 
-// Use 'form-data' package for reliable multipart handling in Node.js
-import FormData from 'form-data';
-// Note: api/send-email/route.ts
-
-export const runtime = 'nodejs'; // Ensure Node.js runtime for Buffer support
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -20,13 +20,13 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Construct FormData using the 'form-data' package
+        // Use standard global FormData (undici/native in Next.js)
         const formData = new FormData();
         formData.append('service_id', service_id);
         formData.append('template_id', template_id);
         formData.append('user_id', user_id);
         formData.append('accessToken', accessToken);
-
+        
         if (template_params && typeof template_params === 'object') {
             // Check for and remove invoice_html if present
             if ('invoice_html' in template_params) {
@@ -43,29 +43,21 @@ export async function POST(req: NextRequest) {
         }
 
         if (attachment_data && attachment_data.name && attachment_data.base64) {
-            // Convert base64 to Buffer
-            const base64Data = attachment_data.base64.split(',')[1];
-            const buffer = Buffer.from(base64Data, 'base64');
-
-            console.log('Attachment Size (Base64 Chars):', base64Data.length);
-            console.log('Buffer Size (Bytes):', buffer.length);
-
-            // Append Buffer directly with filename options
-            // 'form-data' library handles Content-Disposition correctly
-            formData.append('invoice_file', buffer, {
-                filename: attachment_data.name,
-                contentType: 'application/pdf',
-                knownLength: buffer.length
-            });
+             const base64Data = attachment_data.base64.split(',')[1];
+             const buffer = Buffer.from(base64Data, 'base64');
+             
+             // Use explicit 'File' constructor to ensure EmailJS treats it as an attachment
+             // content-type is critical
+             const file = new File([buffer], attachment_data.name, { type: 'application/pdf' });
+             
+             formData.append('invoice_file', file);
+             console.log('Attached file:', attachment_data.name, 'Size:', buffer.length);
         }
 
-        // Use standard fetch but with headers from form-data
-        // Note: We need to convert the form-data stream or use it as body
-        // node-fetch supports form-data instance directly
         const response = await fetch('https://api.emailjs.com/api/v1.0/email/send-form', {
             method: 'POST',
-            body: formData as any, // Cast to any to bypass Next.js fetch type mismatch for Node streams
-            headers: formData.getHeaders() // CRITICAL: This sets the correct boundary
+            body: formData,
+            // Header is set automatically by fetch for FormData
         });
 
         if (response.ok) {
