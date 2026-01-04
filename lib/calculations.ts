@@ -28,6 +28,11 @@ export interface InvoiceItem {
   returnNote?: string;
   // Image support
   image?: string; // Base64 encoded image
+  // Wash/Repair specific
+  serviceType?: {
+    wash: boolean;
+    repair: boolean;
+  };
 }
 
 export type DocumentType = 'INVOICE' | 'CONSIGNMENT' | 'WASH';
@@ -55,6 +60,9 @@ export interface InvoiceData {
   returned?: boolean; // True if invoice is a return
   returnNote?: string; // Reason or note for return
   servedBy?: string; // User who served this invoice
+  // Wash/Repair specific
+  pickupDate?: string;
+  status?: 'washing' | 'repairing' | 'ready' | 'picked_up';
 }
 
 export interface CalculatedItem extends InvoiceItem {

@@ -211,6 +211,11 @@ export default function InvoiceTemplate({
                             <img src={item.image} alt="Item" style={{ maxHeight: 60, maxWidth: 100, objectFit: 'contain', border: '1px solid #eee' }} />
                           </div>
                         )}
+                        {item.serviceType && (item.serviceType.wash || item.serviceType.repair) && (
+                          <div style={{ marginTop: 4, fontSize: '0.85em', color: '#0369a1', fontStyle: 'italic' }}>
+                            Service: {[item.serviceType.wash && 'Wash', item.serviceType.repair && 'Repair'].filter(Boolean).join(' & ')}
+                          </div>
+                        )}
                       </td>
                       <td className={styles.shape}>
                         {item.shape === 'round' ? 'Round' : 'Rect'}

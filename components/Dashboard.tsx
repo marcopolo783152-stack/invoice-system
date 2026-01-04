@@ -214,6 +214,47 @@ export default function Dashboard() {
                 </div>
             </header>
 
+            {/* ALERTS SECTION */}
+            <div className="no-print" style={{ marginBottom: 40 }}>
+                {invoices.filter(inv => {
+                    if (inv.data.status === 'picked_up') return false;
+                    if (!inv.data.pickupDate) return false;
+                    // Check if pickup date is within next 2 days or past due
+                    const pickup = new Date(inv.data.pickupDate);
+                    const now = new Date();
+                    const diffTime = pickup.getTime() - now.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays <= 2; // Show if due within 2 days or overdue
+                }).length > 0 && (
+                        <div style={{ padding: 20, background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 16 }}>
+                            <h3 style={{ marginTop: 0, color: '#b45309', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                ⚠️ Upcoming Pickups
+                            </h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
+                                {invoices.filter(inv => {
+                                    if (inv.data.status === 'picked_up') return false;
+                                    if (!inv.data.pickupDate) return false;
+                                    const pickup = new Date(inv.data.pickupDate);
+                                    const now = new Date();
+                                    const diffTime = pickup.getTime() - now.getTime();
+                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                    return diffDays <= 2;
+                                }).map(inv => (
+                                    <div key={inv.id} style={{ background: 'white', padding: 12, borderRadius: 8, border: '1px solid #fcd34d', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <div style={{ fontWeight: 700, color: '#1e293b' }}>{inv.data.invoiceNumber} - {inv.data.soldTo.name}</div>
+                                            <div style={{ fontSize: 13, color: '#b45309' }}>Due: {inv.data.pickupDate}</div>
+                                        </div>
+                                        <Link href={`/invoices/view?id=${inv.id}`} style={{ padding: '6px 12px', background: '#fff7ed', color: '#c2410c', textDecoration: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
+                                            View
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+            </div>
+
             {/* KPI Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 40 }}>
                 <KpiCard
@@ -287,7 +328,11 @@ export default function Dashboard() {
                                             {(() => {
                                                 let style = { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669', label: 'Sale' };
                                                 if (inv.data.documentType === 'CONSIGNMENT') style = { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
-                                                else if (inv.data.documentType === 'WASH') style = { bg: '#e0f2fe', text: '#0284c7', label: 'Wash/Repair' };
+                                                else if (inv.data.documentType === 'WASH') {
+                                                    if (inv.data.status === 'ready') style = { bg: '#dcfce7', text: '#166534', label: 'Ready' };
+                                                    else if (inv.data.status === 'picked_up') style = { bg: '#f1f5f9', text: '#475569', label: 'Picked Up' };
+                                                    else style = { bg: '#e0f2fe', text: '#0284c7', label: inv.data.status || 'Wash/Repair' };
+                                                }
 
                                                 return (
                                                     <span style={{

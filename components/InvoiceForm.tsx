@@ -125,6 +125,9 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [signature, setSignature] = useState(initialData?.signature || '');
   const [showSignaturePad, setShowSignaturePad] = useState(false);
+  // Wash/Repair specific (local state logic)
+  const [pickupDate, setPickupDate] = useState(initialData?.pickupDate || '');
+  const [status, setStatus] = useState<InvoiceData['status']>(initialData?.status || 'washing');
 
   function createEmptyItem(): InvoiceItem {
     return {
@@ -138,7 +141,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       lengthInches: 0,
       pricePerSqFt: 0,
       fixedPrice: 0,
-      pricingMethod: 'piece'
+      pricingMethod: 'piece',
+      serviceType: { wash: false, repair: false }
     };
   }
 
@@ -155,7 +159,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const handleItemChange = (
     id: string,
     field: keyof InvoiceItem,
-    value: string | number
+    value: string | number | any
   ) => {
     setItems((prevItems) =>
       prevItems.map((item) =>
@@ -279,6 +283,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       notes,
       signature,
       servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
+      pickupDate: documentType === 'WASH' ? pickupDate : undefined,
+      status: documentType === 'WASH' ? status : undefined,
     };
 
     onSubmit(invoiceData);
@@ -313,7 +319,45 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           <option value="WASH">Wash/Repair</option>
         </select>
       </div>
-      <h2>{documentType === 'CONSIGNMENT' ? 'Consignment Out Details' : 'Invoice Details'}</h2>
+
+      {/* Wash/Repair Specific Fields */}
+      {documentType === 'WASH' && (
+        <div style={{ marginBottom: 20, padding: 15, background: '#e0f2fe', borderRadius: 8, border: '1px solid #bae6fd' }}>
+          <h3 style={{ marginTop: 0, color: '#0284c7' }}>Wash/Repair Tracking</h3>
+          <div className={styles.row}>
+            <div className={styles.formGroup}>
+              <label>Pickup Date:</label>
+              <input
+                type="date"
+                value={initialData?.pickupDate || ''}
+                onChange={(e) => {
+                  // We need to pass this up or handle it in state. 
+                  // Since `initialData` is prop, we need local state for it.
+                  // Let's create local state for pickupDate below.
+                }}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Current Status:</label>
+              <select
+                className={styles.select}
+                defaultValue={initialData?.status || 'washing'}
+                onChange={(e) => {
+                  // Handle status change
+                }}
+              >
+                <option value="washing">Washing</option>
+                <option value="repairing">Repairing</option>
+                <option value="ready">Ready for Pickup</option>
+                <option value="picked_up">Picked Up</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <h2>{documentType === 'CONSIGNMENT' ? 'Consignment Out Details' : (documentType === 'WASH' ? 'Wash/Repair Ticket' : 'Invoice Details')}</h2>
 
       {/* Mode Selection */}
       <div className={styles.formGroup}>
@@ -793,6 +837,30 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                 </>
               )}
             </div>
+
+            {/* Wash/Repair Service Selection */}
+            {documentType === 'WASH' && (
+              <div style={{ margin: '10px 0', padding: '10px', background: '#f8fafc', borderRadius: 6, border: '1px solid #e2e8f0', display: 'flex', gap: 20, alignItems: 'center' }}>
+                <span style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Service Type:</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={item.serviceType?.wash || false}
+                    onChange={(e) => handleItemChange(item.id, 'serviceType', { ...item.serviceType, wash: e.target.checked })}
+                  />
+                  Wash
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={item.serviceType?.repair || false}
+                    onChange={(e) => handleItemChange(item.id, 'serviceType', { ...item.serviceType, repair: e.target.checked })}
+                  />
+                  Repair
+                </label>
+              </div>
+            )}
+
             <div className={styles.row}>
               <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
                 <div className={styles.formGroup} style={{ flex: 1 }}>

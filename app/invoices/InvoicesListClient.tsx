@@ -206,6 +206,10 @@ function InvoicesListContent() {
 
         if (isReturned) return { bg: '#fee2e2', text: '#ef4444', label: 'Returned' };
         if (inv.data?.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
+        if (inv.data?.status === 'ready') return { bg: '#dcfce7', text: '#166534', label: 'Ready for Pickup' };
+        if (inv.data?.status === 'picked_up') return { bg: '#f1f5f9', text: '#475569', label: 'Picked Up' };
+        if (inv.data?.status === 'washing') return { bg: '#e0f2fe', text: '#0284c7', label: 'Washing' };
+        if (inv.data?.status === 'repairing') return { bg: '#e0f2fe', text: '#0284c7', label: 'Repairing' };
         if (inv.data?.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash/Repair' };
         if ((inv.data?.terms || '').toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
         return { bg: '#eff6ff', text: '#3b82f6', label: 'Sale' };
