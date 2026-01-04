@@ -1,4 +1,3 @@
-```typescript
 import { NextRequest, NextResponse } from 'next/server';
 
 // Use 'form-data' package for reliable multipart handling in Node.js
@@ -27,7 +26,7 @@ export async function POST(req: NextRequest) {
         formData.append('template_id', template_id);
         formData.append('user_id', user_id);
         formData.append('accessToken', accessToken);
-        
+
         if (template_params && typeof template_params === 'object') {
             // Check for and remove invoice_html if present
             if ('invoice_html' in template_params) {
@@ -36,20 +35,20 @@ export async function POST(req: NextRequest) {
 
             Object.entries(template_params).forEach(([key, value]) => {
                 const strValue = String(value);
-                 // Skip huge variables
+                // Skip huge variables
                 if (strValue.length > 5000) return;
-                
+
                 formData.append(key, strValue);
             });
         }
 
         if (attachment_data && attachment_data.name && attachment_data.base64) {
-             // Convert base64 to Buffer
-             const base64Data = attachment_data.base64.split(',')[1];
-             const buffer = Buffer.from(base64Data, 'base64');
-             
-             console.log('Attachment Size (Base64 Chars):', base64Data.length);
-             console.log('Buffer Size (Bytes):', buffer.length);
+            // Convert base64 to Buffer
+            const base64Data = attachment_data.base64.split(',')[1];
+            const buffer = Buffer.from(base64Data, 'base64');
+
+            console.log('Attachment Size (Base64 Chars):', base64Data.length);
+            console.log('Buffer Size (Bytes):', buffer.length);
 
             // Append Buffer directly with filename options
             // 'form-data' library handles Content-Disposition correctly
