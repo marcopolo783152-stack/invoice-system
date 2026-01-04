@@ -249,11 +249,136 @@ export function prepareInvoiceForEmail(invoiceElement: HTMLElement): string {
   // Add inline styles for email compatibility
   const styles = `
     <style>
-      body { font-family: Arial, sans-serif; }
-      .invoice { max-width: 800px; margin: 0 auto; padding: 20px; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-      th { background-color: #f2f2f2; }
+      .email-invoice {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        background: white;
+        color: black;
+      }
+      .email-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+      }
+      .email-business-info h1 {
+        margin: 0 0 5px 0;
+        font-size: 16pt;
+        font-weight: bold;
+        color: #000;
+      }
+      .email-business-info p {
+        margin: 2px 0;
+        font-size: 8pt;
+        line-height: 1.3;
+      }
+      .email-logo {
+        max-width: 120px;
+      }
+      .email-document-title h2 {
+        text-align: center;
+        margin: 10px 0 5px 0;
+        letter-spacing: 2px;
+      }
+      .email-info-section {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        gap: 20px;
+      }
+      .email-client-details {
+        flex: 1;
+      }
+      .email-invoice-info {
+        flex: 0 0 220px;
+        border: 2px solid #000;
+        padding: 10px;
+      }
+      .email-invoice-info table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .email-invoice-info td {
+        padding: 3px 0;
+        font-size: 9pt;
+      }
+      .email-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 8pt;
+      }
+      .email-items-table th {
+        background-color: #f0f0f0;
+        border: 1px solid #000;
+        padding: 4px 3px;
+        text-align: center;
+        font-weight: bold;
+      }
+      .email-items-table td {
+        border: 1px solid #999;
+        padding: 3px 2px;
+      }
+      .email-subheader th {
+        background-color: #e0e0e0;
+        font-size: 7pt;
+      }
+      .email-footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+        gap: 20px;
+      }
+      .email-notes-section {
+        flex: 1;
+      }
+      .email-notes-section h4 {
+        margin: 0 0 5px 0;
+        font-size: 9pt;
+        font-weight: bold;
+        text-decoration: underline;
+      }
+      .email-notes-section p {
+        margin: 3px 0;
+        font-size: 8pt;
+      }
+      .email-sales-terms {
+        margin-top: 10px;
+        padding: 8px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .email-totals-section {
+        flex: 0 0 240px;
+      }
+      .email-totals-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .email-totals-table td {
+        padding: 4px 8px;
+        font-size: 9pt;
+      }
+      .email-total-due-row td {
+        border-top: 2px double #000;
+        border-bottom: 2px double #000;
+        padding: 8px;
+        font-size: 11pt;
+        font-weight: bold;
+      }
+      .email-signature-section {
+        margin-top: 30px;
+        padding: 20px;
+        border-top: 1px solid #ddd;
+      }
+      .email-signature-section img {
+        max-width: 200px;
+        height: auto;
+      }
     </style>
   `;
 

@@ -80,10 +80,10 @@ export default function InvoiceTemplate({
         const pageItems = items.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
         return (
-          <div key={pageIndex} className={`${styles.invoice} pdf-page`}>
+          <div key={pageIndex} className={`${styles.invoice} email-invoice pdf-page`}>
             {/* Header Section - Repeated on every page */}
-            <div className={styles.header}>
-              <div className={styles.businessInfo}>
+            <div className={`${styles.header} email-header`}>
+              <div className={`${styles.businessInfo} email-business-info`}>
                 <h1>{businessInfo.name}</h1>
                 <p>{businessInfo.address}</p>
                 <p>
@@ -94,11 +94,11 @@ export default function InvoiceTemplate({
                 {businessInfo.website && <p>Website: {businessInfo.website}</p>}
                 {businessInfo.email && <p>Email: {businessInfo.email}</p>}
               </div>
-              <div className={styles.logoSection}>
+              <div className={`${styles.logoSection} email-logo-section`}>
                 <img
                   src="/LOGO.png"
                   alt="Marco Polo Oriental Rugs"
-                  className={`${styles.logoImage} invoice-logo`}
+                  className={`${styles.logoImage} email-logo invoice-logo`}
                   onError={e => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -120,7 +120,7 @@ export default function InvoiceTemplate({
             </div>
 
             {/* Document Title & Page Number */}
-            <div className={styles.documentTitle}>
+            <div className={`${styles.documentTitle} email-document-title`}>
               <h2 style={{ textAlign: 'center', margin: '10px 0 5px 0', letterSpacing: 2 }}>
                 {data.documentType === 'CONSIGNMENT' ? 'CONSIGNMENT OUT' : 'INVOICE'}
               </h2>
@@ -132,9 +132,9 @@ export default function InvoiceTemplate({
             </div>
 
             {/* Customer and Invoice Info Section - Repeated */}
-            <div className={styles.infoSection}>
+            <div className={`${styles.infoSection} email-info-section`}>
               {/* Client Details */}
-              <div>
+              <div className="email-client-details">
                 <p style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Bill To:</p>
                 {data.soldTo.companyName && (
                   <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 2 }}>{data.soldTo.companyName}</p>
@@ -152,7 +152,7 @@ export default function InvoiceTemplate({
                   <p style={{ fontSize: 11, color: '#475569' }}><b>Served by:</b> {data.servedBy}</p>
                 )}
               </div>
-              <div className={styles.invoiceInfo}>
+              <div className={`${styles.invoiceInfo} email-invoice-info`}>
                 <table>
                   <tbody>
                     <tr>
@@ -173,8 +173,8 @@ export default function InvoiceTemplate({
             </div>
 
             {/* Items Table */}
-            <div className={styles.itemsSection}>
-              <table className={styles.itemsTable}>
+            <div className={`${styles.itemsSection} email-items-section`}>
+              <table className={`${styles.itemsTable} email-items-table`}>
                 <thead>
                   <tr>
                     <th>SKU</th>
@@ -186,7 +186,7 @@ export default function InvoiceTemplate({
                     <th>Price</th>
                     <th>Amount</th>
                   </tr>
-                  <tr className={styles.subheader}>
+                  <tr className={`${styles.subheader} email-subheader`}>
                     <th></th>
                     <th></th>
                     <th></th>
@@ -260,15 +260,15 @@ export default function InvoiceTemplate({
 
             {/* Footer Section - ONLY ON LAST PAGE */}
             {isLastPage ? (
-              <div className={styles.footer}>
-                <div className={styles.notesSection}>
+              <div className={`${styles.footer} email-footer`}>
+                <div className={`${styles.notesSection} email-notes-section`}>
                   {data.notes && (
                     <>
                       <h4>Notes:</h4>
                       <p>{data.notes}</p>
                     </>
                   )}
-                  <div className={styles.salesTerms}>
+                  <div className={`${styles.salesTerms} email-sales-terms`}>
                     <h4>Terms & Conditions:</h4>
                     {data.documentType === 'CONSIGNMENT' ? (
                       <p>All items remain property of Marco Polo Oriental Rugs until sold. Payment due upon sale or return. Items not sold within 90 days may be returned.</p>
@@ -281,8 +281,8 @@ export default function InvoiceTemplate({
                   </div>
                 </div>
 
-                <div className={styles.totalsSection}>
-                  <table className={styles.totalsTable}>
+                <div className={`${styles.totalsSection} email-totals-section`}>
+                  <table className={`${styles.totalsTable} email-totals-table`}>
                     <tbody>
                       <tr>
                         <td className={styles.totalLabel}>Total Items:</td>
@@ -306,7 +306,7 @@ export default function InvoiceTemplate({
                           <td className={styles.totalValue}>{formatCurrency(calculations.salesTax)}</td>
                         </tr>
                       )}
-                      <tr className={styles.totalDueRow}>
+                      <tr className={`${styles.totalDueRow} email-total-due-row`}>
                         <td className={styles.totalLabel}>
                           {data.documentType === 'CONSIGNMENT' ? 'TOTAL VALUE ON HOLD:' : 'TOTAL DUE:'}
                         </td>
@@ -325,7 +325,7 @@ export default function InvoiceTemplate({
 
                   {/* Signature Section - Only show one signature (Pickup replaces original) */}
                   {(data.pickupSignature || data.signature) && (
-                    <div className={styles.signatureSection}>
+                    <div className={`${styles.signatureSection} email-signature-section`}>
                       <div className={styles.signatureBlock}>
                         <div className={styles.signatureLabel}>
                           {data.pickupSignature ? 'Pickup Signature:' : 'Customer Signature:'}
@@ -348,7 +348,7 @@ export default function InvoiceTemplate({
                 </div>
               </div>
             ) : (
-              <div className={styles.footer} style={{ marginTop: 20, borderTop: '1px solid #eee', paddingTop: 10 }}>
+              <div className={`${styles.footer} email-footer`} style={{ marginTop: 20, borderTop: '1px solid #eee', paddingTop: 10 }}>
                 <p style={{ fontStyle: 'italic', fontSize: '9pt' }}>Continued on next page...</p>
               </div>
             )}
