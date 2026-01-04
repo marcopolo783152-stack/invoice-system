@@ -246,6 +246,17 @@ export function prepareInvoiceForEmail(invoiceElement: HTMLElement): string {
   // Clone the element to avoid modifying the original
   const clone = invoiceElement.cloneNode(true) as HTMLElement;
 
+  // Convert relative image paths to absolute URLs
+  if (typeof window !== 'undefined') {
+    const images = clone.querySelectorAll('img');
+    images.forEach((img) => {
+      const src = img.getAttribute('src');
+      if (src && src.startsWith('/')) {
+        img.src = `${window.location.origin}${src}`;
+      }
+    });
+  }
+
   // Add inline styles for email compatibility
   const styles = `
     <style>
