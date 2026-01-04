@@ -77,12 +77,14 @@ if (typeof window !== 'undefined') {
 /**
  * Send invoice to customer via email
  */
+/**
+ * Send invoice to customer via email (Link Strategy)
+ */
 export async function sendInvoiceEmail(
   customerEmail: string,
   customerName: string,
   invoiceNumber: string,
-  invoiceHTML: string,
-  pdfBlob?: Blob
+  invoiceLink: string
 ): Promise<boolean> {
   const config = getEmailConfig();
 
@@ -100,29 +102,11 @@ export async function sendInvoiceEmail(
       to_name: customerName,
       from_name: 'Marco Polo Oriental Rugs',
       invoice_number: invoiceNumber,
-      message: `Dear ${customerName},\n\nPlease find attached your invoice ${invoiceNumber}.\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
-      invoice_html: invoiceHTML,
+      // Updated message with Direct Link
+      message: `Dear ${customerName},\n\nYou can view and download your invoice #${invoiceNumber} at the link below:\n\n${invoiceLink}\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
+      invoice_link: invoiceLink, // Sending as separate param too just in case template uses it
+      // invoice_html: removed to save size
     };
-
-    // If PDF blob is provided, we would ideally attach it.
-    // However, EmailJS client-side SDK has limitations with attachments in the free/standard tier directly from blob 
-    // without a backend or specific paid features usually. 
-    // BUT checking docs: EmailJS specifically implementation often requires passing the content.
-    // Standard template params are text. 
-    // For attachments, we usually need specific file-input handling or base64 if supported by the provider.
-    // 
-    // CRITICAL NOTE: EmailJS browser-side `send` does NOT easily support arbitrary Blob attachments 
-    // unless using the `sendForm` method with a form element containing a file input.
-    // 
-    // Since we are generating a Blob programmatically, `emailjs.send` is preferred.
-    // Many users just send a link or HTML. 
-    // However, if the user requested "send the invoice", a link or the body is often enough.
-    // 
-    // Re-reading user request: "send the invoice by email".
-    // I will stick to sending the HTML body + text for now as it's most reliable with the free EmailJS tier and no backend proxy.
-    // 
-    // Feature add: If we really want attachments, we might need a more complex flow or base64 if the template allows it.
-    // I will proceed with sending the Invoice data rendered in the email body, which is what the current code seemed to intend (`invoice_html`).
 
     const response = await emailjs.send(
       config.serviceId,
