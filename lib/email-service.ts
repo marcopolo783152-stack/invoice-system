@@ -171,8 +171,7 @@ export async function sendInvoiceEmailServer(
             to_name: customerName,
             from_name: 'Marco Polo Oriental Rugs',
             invoice_number: invoiceNumber,
-            // We can still include the HTML body as fallback or main content
-            invoice_html: invoiceHTML,
+            // Removed invoice_html to avoid 50kb EmailJS variable limit
             message: `Dear ${customerName},\n\nPlease find attached your invoice ${invoiceNumber} (PDF).\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
           },
           attachment_data: {
