@@ -827,24 +827,61 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
 
             {/* Wash/Repair Service Selection */}
             {documentType === 'WASH' && (
-              <div style={{ margin: '10px 0', padding: '10px', background: '#f8fafc', borderRadius: 6, border: '1px solid #e2e8f0', display: 'flex', gap: 20, alignItems: 'center' }}>
-                <span style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Service Type:</span>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
+              <div style={{ margin: '10px 0', padding: '10px', background: '#f8fafc', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', gap: 20, alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Service Type:</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={item.serviceType?.wash || false}
+                      onChange={(e) => handleItemChange(item.id, 'serviceType', { ...item.serviceType, wash: e.target.checked })}
+                    />
+                    Wash
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={item.serviceType?.repair || false}
+                      onChange={(e) => handleItemChange(item.id, 'serviceType', { ...item.serviceType, repair: e.target.checked })}
+                    />
+                    Repair
+                  </label>
+                </div>
+
+                <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Condition:</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', color: '#64748b' }}>
+                    <input
+                      type="checkbox"
+                      checked={item.conditions?.used || false}
+                      onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, used: e.target.checked })}
+                    />
+                    Used
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', color: '#ef4444' }}>
+                    <input
+                      type="checkbox"
+                      checked={item.conditions?.damage || false}
+                      onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, damage: e.target.checked })}
+                    />
+                    Damage
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', color: '#d97706' }}>
+                    <input
+                      type="checkbox"
+                      checked={item.conditions?.stained || false}
+                      onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, stained: e.target.checked })}
+                    />
+                    Stained
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={item.serviceType?.wash || false}
-                    onChange={(e) => handleItemChange(item.id, 'serviceType', { ...item.serviceType, wash: e.target.checked })}
+                    type="text"
+                    placeholder="Other notes..."
+                    value={item.conditions?.other || ''}
+                    onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, other: e.target.value })}
+                    style={{ padding: '4px 8px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 4, width: 200 }}
                   />
-                  Wash
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={item.serviceType?.repair || false}
-                    onChange={(e) => handleItemChange(item.id, 'serviceType', { ...item.serviceType, repair: e.target.checked })}
-                  />
-                  Repair
-                </label>
+                </div>
               </div>
             )}
 
