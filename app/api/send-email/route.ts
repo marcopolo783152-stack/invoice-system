@@ -96,7 +96,9 @@ export async function POST(req: NextRequest) {
             const buffer = Buffer.from(base64Data, 'base64');
             const blob = new Blob([buffer], { type: 'application/pdf' });
 
-            formData.append('attachment', blob, attachment_data.name);
+            // Rename to 'invoice_file' to avoid potential conflicts or misinterpretation as a text variable
+            // Ensure filename is passed as 3rd argument so it handles it as a file
+            formData.append('invoice_file', blob, attachment_data.name);
         }
 
         const response = await fetch('https://api.emailjs.com/api/v1.0/email/send-form', {
