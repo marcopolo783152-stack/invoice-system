@@ -31,7 +31,6 @@ export interface InvoiceItem {
   // Wash/Repair specific
   serviceType?: {
     wash: boolean;
-    wash: boolean;
     repair: boolean;
   };
   // Condition tracking
