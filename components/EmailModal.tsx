@@ -8,61 +8,7 @@ import {
     isEmailConfigured
 } from '@/lib/email-service';
 
-const [config, setConfig] = useState<EmailConfig>({
-    serviceId: '',
-    templateIdInvoice: '',
-    templateIdConfirm: '',
-    publicKey: '',
-    privateKey: '' // Added privateKey
-});
 
-const [emailTo, setEmailTo] = useState(customerEmail);
-const [sending, setSending] = useState(false);
-const [saving, setSaving] = useState(false);
-
-    // We need to import these specific functions for PDF generation
-    // Assuming they are available or we can use the ref we might need to pass in?
-    // Actually, in page.tsx we have the `invoiceRef`. 
-    // `EmailModal` received `invoiceHTML`. 
-    // To generate a PDF blob cleanly we might need the ref or regenerate it.
-    // However, `getInvoicePDFBlob` takes an HTMLElement. 
-    // We can try to construct one or pass the ref.
-    // 
-    // Better approach: Pass a callback `onSend` from page.tsx that handles the heavy lifting?
-    // Or just pass the Ref to this modal?
-    // Passing the Ref is tricky if conditional.
-    // 
-    // Let's modify the props to accept an `getBlob` function or similar.
-    // OR we can parse the HTML string back to an element (messy).
-    // 
-    // Best quick solution: Import executing logic here but we need the ELEMENT.
-    // Let's updated `EmailModal` to accept `invoiceRef`? 
-    // Or just `onSend: (email: string) => Promise<void>`?
-    // 
-    // Let's refactor `EmailModal` to take `onSend` prop which will be implemented in `page.tsx`
-    // using the existing `invoiceRef` there. This keeps PDF logic near the Ref.
-    //
-    // WAIT: I can't easily change `page.tsx` AND `EmailModal.tsx` in one step without breaking interface.
-    // 
-    // Alternative:
-    // `EmailModal` is already imported in `page.tsx`.
-    // I will change `handleSendEmail` inside `EmailModal` to call a new prop `onSend` IF it exists.
-    // If not, fall back to old behavior?
-    // 
-    // Actually, the user wants PDF.
-    // I will change the component to accept `onSend` and REMOVE the internal `sendInvoiceEmail` call from the actual sending button,
-    // lifting the state up.
-    // But `EmailModal` manages the CONFIG.
-    //
-    // Hybrid:
-    // `EmailModal` manages Config. 
-    // When "Send" is clicked, it calls `onSend(email, config)`.
-    // Then `page.tsx` uses that config + its `invoiceRef` to call `sendInvoiceEmailServer`.
-
-    // Let's update the interface first.
-}
-
-// ... imports ...
 
 interface EmailModalProps {
     isOpen: boolean;
