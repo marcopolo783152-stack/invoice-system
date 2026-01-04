@@ -63,6 +63,7 @@ export interface InvoiceData {
   // Wash/Repair specific
   pickupDate?: string;
   status?: 'washing' | 'repairing' | 'ready' | 'picked_up';
+  pickupSignature?: string; // Signature collected at pickup
 }
 
 export interface CalculatedItem extends InvoiceItem {

@@ -20,6 +20,10 @@ function InvoiceViewContent() {
     const [calculations, setCalculations] = useState<InvoiceCalculations | null>(null);
     const [loading, setLoading] = useState(true);
     const invoiceRef = useRef<HTMLDivElement>(null);
+    const [showPickupModal, setShowPickupModal] = useState(false);
+
+    // Lazy load SignaturePad to avoid SSR issues
+    const SignaturePad = React.useMemo(() => React.lazy(() => import('@/components/SignaturePad')), []);
 
     // Return Logic State
     const [showReturnModal, setShowReturnModal] = useState(false);
@@ -159,6 +163,27 @@ function InvoiceViewContent() {
         }
     };
 
+    const handleProcessPickup = async (signatureData: string) => {
+        if (!invoice) return;
+        try {
+            const updatedInvoice = {
+                ...invoice,
+                data: {
+                    ...invoice.data,
+                    status: 'picked_up' as const,
+                    pickupSignature: signatureData
+                },
+                updatedAt: new Date().toISOString()
+            };
+            await saveInvoice(updatedInvoice.data, invoice.id);
+            await loadInvoice(invoice.id);
+            setShowPickupModal(false);
+        } catch (error) {
+            console.error('Failed to process pickup:', error);
+            alert('Failed to save pickup information.');
+        }
+    };
+
     if (loading) return <div style={{ padding: 40 }}>Loading...</div>;
 
     if (!invoice || !calculations) {
@@ -228,6 +253,19 @@ function InvoiceViewContent() {
                                         }}
                                     >
                                         <ShoppingCart size={18} /> Sell Items
+                                    </button>
+                                )}
+                                {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && (
+                                    <button
+                                        onClick={() => setShowPickupModal(true)}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8,
+                                            padding: '10px 20px', background: '#059669', color: 'white',
+                                            border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                                            boxShadow: '0 2px 4px rgba(5, 150, 105, 0.3)'
+                                        }}
+                                    >
+                                        <Edit size={18} /> Process Pickup
                                     </button>
                                 )}
                                 <button
@@ -316,6 +354,24 @@ function InvoiceViewContent() {
                                     <button onClick={handleProcessReturn} disabled={returnProcessing} style={{ padding: '8px 16px', background: isConverting ? '#10b981' : '#ef4444', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: returnProcessing ? 0.7 : 1 }}>
                                         {returnProcessing ? 'Processing...' : (isConverting ? 'Convert to Sale' : 'Confirm Return')}
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pickup Signature Modal */}
+                    {showPickupModal && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <div style={{ background: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 600, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Confirm Pickup</h3>
+                                <p style={{ color: '#64748b', marginBottom: 20 }}>Please satisfy the customer signature below to confirm receipt of items.</p>
+                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                                    <Suspense fallback={<div>Loading signature pad...</div>}>
+                                        <SignaturePad
+                                            onSave={handleProcessPickup}
+                                            onCancel={() => setShowPickupModal(false)}
+                                        />
+                                    </Suspense>
                                 </div>
                             </div>
                         </div>

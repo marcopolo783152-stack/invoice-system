@@ -284,7 +284,12 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       signature,
       servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
       pickupDate: documentType === 'WASH' ? pickupDate : undefined,
-      status: documentType === 'WASH' ? status : undefined,
+      // Auto-calculate status if it's currently 'washing' or 'repairing' (initial states)
+      // If it is already 'ready' or 'picked_up', keep it.
+      status: documentType === 'WASH' ? (
+        ['ready', 'picked_up'].includes(status || '') ? status :
+          (items.some(i => i.serviceType?.wash) ? 'washing' : 'repairing')
+      ) : undefined,
     };
 
     onSubmit(invoiceData);

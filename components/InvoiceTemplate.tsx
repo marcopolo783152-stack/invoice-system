@@ -310,11 +310,23 @@ export default function InvoiceTemplate({
 
                   {data.signature && (
                     <div className={styles.signatureSection}>
-                      <div className={styles.signatureLabel}>Customer Signature:</div>
-                      <div className={styles.signatureImage}>
-                        <img src={data.signature} alt="Customer signature" />
+                      <div className={styles.signatureBlock}>
+                        <div className={styles.signatureLabel}>Customer Signature:</div>
+                        <div className={styles.signatureImage}>
+                          <img src={data.signature} alt="Customer signature" />
+                        </div>
+                        <div className={styles.signatureDate}>Date: {data.date}</div>
                       </div>
-                      <div className={styles.signatureDate}>Date: {data.date}</div>
+
+                      {data.pickupSignature && (
+                        <div className={styles.signatureBlock} style={{ marginLeft: 20 }}>
+                          <div className={styles.signatureLabel}>Pickup Signature:</div>
+                          <div className={styles.signatureImage}>
+                            <img src={data.pickupSignature} alt="Pickup Signature" />
+                          </div>
+                          <div className={styles.signatureDate}>Picked Up: {new Date().toLocaleDateString()}</div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
