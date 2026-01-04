@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency } from '@/lib/calculations';
+import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency, calculateInvoice } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
 import { getItemBySku } from '@/lib/inventory-storage';
 import { Customer, searchCustomers } from '@/lib/customer-storage';
@@ -848,39 +848,45 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                   </label>
                 </div>
 
-                <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Condition:</span>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', color: '#64748b' }}>
+                <div style={{ marginTop: 12 }}>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: '#475569', display: 'block', marginBottom: 8 }}>Conditions:</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+                    {[
+                      { key: 'used', label: 'Used / General wear' },
+                      { key: 'heavyWear', label: 'Heavy wear' },
+                      { key: 'damagedEdges', label: 'Damaged edges' },
+                      { key: 'frayedEnds', label: 'Frayed ends / fringe damage' },
+                      { key: 'holes', label: 'Holes or tears' },
+                      { key: 'thinAreas', label: 'Thin or worn areas' },
+                      { key: 'looseKnots', label: 'Loose knots / weaving' },
+                      { key: 'fading', label: 'Color fading' },
+                      { key: 'bleeding', label: 'Color bleeding risk' },
+                      { key: 'stains', label: 'Stains (type unknown)' },
+                      { key: 'petStains', label: 'Pet stains / odor' },
+                      { key: 'waterDamage', label: 'Water damage' },
+                      { key: 'mold', label: 'Mold / mildew' },
+                      { key: 'insectDamage', label: 'Insect damage' },
+                      { key: 'sunDamage', label: 'Sun damage' }
+                    ].map((cond: any) => (
+                      <label key={cond.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', color: '#334155' }}>
+                        <input
+                          type="checkbox"
+                          checked={(item.conditions as any)?.[cond.key] || false}
+                          onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, [cond.key]: e.target.checked })}
+                        />
+                        {cond.label}
+                      </label>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 8 }}>
                     <input
-                      type="checkbox"
-                      checked={item.conditions?.used || false}
-                      onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, used: e.target.checked })}
+                      type="text"
+                      placeholder="Other condition notes..."
+                      value={item.conditions?.other || ''}
+                      onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, other: e.target.value })}
+                      style={{ padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 4, width: '100%' }}
                     />
-                    Used
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', color: '#ef4444' }}>
-                    <input
-                      type="checkbox"
-                      checked={item.conditions?.damage || false}
-                      onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, damage: e.target.checked })}
-                    />
-                    Damage
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', color: '#d97706' }}>
-                    <input
-                      type="checkbox"
-                      checked={item.conditions?.stained || false}
-                      onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, stained: e.target.checked })}
-                    />
-                    Stained
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Other notes..."
-                    value={item.conditions?.other || ''}
-                    onChange={(e) => handleItemChange(item.id, 'conditions', { ...item.conditions, other: e.target.value })}
-                    style={{ padding: '4px 8px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 4, width: 200 }}
-                  />
+                  </div>
                 </div>
               </div>
             )}
