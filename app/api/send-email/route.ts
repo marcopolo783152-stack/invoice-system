@@ -94,6 +94,9 @@ export async function POST(req: NextRequest) {
         // formData.append('template_params', JSON.stringify(template_params)); // REMOVED
 
         if (attachment_data && attachment_data.name && attachment_data.base64) {
+            console.log('Attachment Size (Base64 Chars):', attachment_data.base64.length);
+            console.log('Approx File Size (KB):', (attachment_data.base64.length * 0.75) / 1024);
+
             // We need to convert base64 back to a Blob to append to FormData?
             // Node environment doesn't always have exact "Blob" fully compatible with fetch?
             // Actually, we can just pass the file.
