@@ -334,30 +334,12 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
               <label>Pickup Date:</label>
               <input
                 type="date"
-                value={initialData?.pickupDate || ''}
-                onChange={(e) => {
-                  // We need to pass this up or handle it in state. 
-                  // Since `initialData` is prop, we need local state for it.
-                  // Let's create local state for pickupDate below.
-                }}
+                value={pickupDate}
+                onChange={(e) => setPickupDate(e.target.value)}
                 className={styles.input}
               />
             </div>
-            <div className={styles.formGroup}>
-              <label>Current Status:</label>
-              <select
-                className={styles.select}
-                defaultValue={initialData?.status || 'washing'}
-                onChange={(e) => {
-                  // Handle status change
-                }}
-              >
-                <option value="washing">Washing</option>
-                <option value="repairing">Repairing</option>
-                <option value="ready">Ready for Pickup</option>
-                <option value="picked_up">Picked Up</option>
-              </select>
-            </div>
+            {/* Status is automatically managed based on service type or pickup action */}
           </div>
         </div>
       )}
