@@ -70,7 +70,16 @@ export async function POST(req: NextRequest) {
         formData.append('template_id', template_id);
         formData.append('user_id', user_id);
         formData.append('accessToken', accessToken);
-        formData.append('template_params', JSON.stringify(template_params));
+        // Flatten template_params so each key becomes a form field
+        // This is safer for EmailJS send-form and avoids "variable size limit" on the JSON blob itself
+        if (template_params && typeof template_params === 'object') {
+            Object.entries(template_params).forEach(([key, value]) => {
+                const strValue = String(value);
+                console.log(`Param '${key}' size:`, strValue.length); // Log size for debugging
+                formData.append(key, strValue);
+            });
+        }
+        // formData.append('template_params', JSON.stringify(template_params)); // REMOVED
 
         if (attachment_data && attachment_data.name && attachment_data.base64) {
             // We need to convert base64 back to a Blob to append to FormData?
