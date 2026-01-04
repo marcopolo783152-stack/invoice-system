@@ -216,6 +216,21 @@ export default function InvoiceTemplate({
                             Service: {[item.serviceType.wash && 'Wash', item.serviceType.repair && 'Repair'].filter(Boolean).join(' & ')}
                           </div>
                         )}
+                        {/* Render all boolean conditions */}
+                        {item.conditions && (
+                          <div style={{ marginTop: 4, fontSize: '9pt', color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: 6, lineHeight: 1.4 }}>
+                            {[
+                              { k: 'used', l: 'Used/Wear' }, { k: 'heavyWear', l: 'Heavy wear' }, { k: 'damagedEdges', l: 'Damaged edges' },
+                              { k: 'frayedEnds', l: 'Frayed ends' }, { k: 'holes', l: 'Holes/tears' }, { k: 'thinAreas', l: 'Thin areas' },
+                              { k: 'looseKnots', l: 'Loose knots' }, { k: 'fading', l: 'Fading' }, { k: 'bleeding', l: 'Bleeding risk' },
+                              { k: 'stains', l: 'Stains' }, { k: 'petStains', l: 'Pet stains/odor' }, { k: 'waterDamage', l: 'Water damage' },
+                              { k: 'mold', l: 'Mold' }, { k: 'insectDamage', l: 'Insect damage' }, { k: 'sunDamage', l: 'Sun damage' }
+                            ].map(c => (item.conditions as any)?.[c.k] && (
+                              <span key={c.k} style={{ background: '#f1f5f9', padding: '1px 4px', borderRadius: 3, border: '1px solid #e2e8f0' }}>• {c.l}</span>
+                            ))}
+                            {item.conditions.other && <span style={{ fontWeight: 500, background: '#fff7ed', padding: '1px 4px' }}>Notes: {item.conditions.other}</span>}
+                          </div>
+                        )}
                       </td>
                       <td className={styles.shape}>
                         {item.shape === 'round' ? 'Round' : 'Rect'}
