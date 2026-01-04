@@ -796,7 +796,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     <label>Length (Feet):*</label>
                     <input
                       type="number"
-                      value={item.lengthFeet}
+                      value={item.lengthFeet || ''}
                       onChange={(e) =>
                         handleItemChange(item.id, 'lengthFeet', Number(e.target.value))
                       }
@@ -810,7 +810,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     <label>Length (Inches):*</label>
                     <input
                       type="number"
-                      value={item.lengthInches}
+                      value={item.lengthInches || ''}
                       onChange={(e) =>
                         handleItemChange(item.id, 'lengthInches', Number(e.target.value))
                       }
