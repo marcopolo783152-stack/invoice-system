@@ -168,11 +168,22 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
         return isShortId || isVeryRecent;
       });
 
-      const merged = [...cloudInvoices, ...localOnly];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      let finalInvoices = [...cloudInvoices, ...localOnly];
+
+      // CRITICAL FIX: Filter out invoices that appear in the Cloud but are deleted locally (Zombies)
+      try {
+        const localBinString = localStorage.getItem('deleted_invoices');
+        if (localBinString) {
+          const localBin: SavedInvoice[] = JSON.parse(localBinString);
+          const dataInBinIds = new Set(localBin.map(i => i.id));
+          finalInvoices = finalInvoices.filter(inv => !dataInBinIds.has(inv.id));
+        }
+      } catch (e) { }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(finalInvoices));
       console.log('CLOUD-SYNC: Local storage updated (preserved local entries).');
 
-      return merged;
+      return finalInvoices;
     } catch (error) {
       console.warn('Cloud fetch failed, falling back to local storage:', error);
     }
