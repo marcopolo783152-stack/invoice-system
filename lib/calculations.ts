@@ -112,6 +112,8 @@ export interface InvoiceCalculations {
   netSubtotal: number;
   netTotalDue: number;
   returnedAmount: number;
+  downpayment?: number;
+  balanceDue?: number;
 }
 
 /**
@@ -187,7 +189,9 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
       totalDue: 0,
       netSubtotal: 0,
       netTotalDue: 0,
-      returnedAmount: 0
+      returnedAmount: 0,
+      downpayment: 0,
+      balanceDue: 0
     };
   }
 
@@ -265,6 +269,8 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     netSubtotal,
     netTotalDue,
     returnedAmount: totalDue - netTotalDue, // Total value of returned items including tax and discount
+    downpayment: data.downpayment || 0,
+    balanceDue: totalDue - (data.downpayment || 0)
   };
 }
 

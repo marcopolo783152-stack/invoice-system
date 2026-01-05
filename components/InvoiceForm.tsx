@@ -127,6 +127,20 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [discountPercentage, setDiscountPercentage] = useState(
     initialData?.discountPercentage || 0
   );
+  const [downpayment, setDownpayment] = useState(
+    initialData?.downpayment || 0
+  );
+
+  // Auto-switch to Wholesale for Consignment
+  useEffect(() => {
+    if (documentType === 'CONSIGNMENT') {
+      // Only switch if not already a wholesale mode to preserve specific wholesale choices if any
+      if (!mode.includes('wholesale')) {
+        setMode('wholesale');
+      }
+    }
+  }, [documentType]);
+
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [signature, setSignature] = useState(initialData?.signature || '');
   const [showSignaturePad, setShowSignaturePad] = useState(false);
@@ -1106,37 +1120,70 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     })()}
                   </td>
                 </tr>
-                <tr>
-                  <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Total Due:</td>
-                  <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
-                    {(() => {
-                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
-                      return formatCurrency(calc.totalDue);
-                    })()}
-                  </td>
-                </tr>
+
+                {documentType === 'CONSIGNMENT' && (
+                  <>
+                    <tr>
+                      <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Downpayment:</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', minWidth: 100 }}>
+                        <input
+                          type="number"
+                          value={downpayment}
+                          onChange={(e) => setDownpayment(Number(e.target.value))}
+                          onFocus={(e) => e.target.select()}
+                          min="0"
+                          step="0.01"
+                          style={{ width: '100%', textAlign: 'right', padding: '4px', borderRadius: 4, border: '1px solid #cbd5e1', fontWeight: 600, color: '#0f172a' }}
+                          placeholder="0.00"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Balance Due:</td>
+                      <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
+                        {(() => {
+                          const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, downpayment });
+                          return formatCurrency(calc.balanceDue || 0);
+                        })()}
+                      </td>
+                    </tr>
+                  </>
+                )}
+                {documentType !== 'CONSIGNMENT' && (
+                  <tr>
+                    <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Total Due:</td>
+                    <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
+                      {(() => {
+                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
+                        return formatCurrency(calc.totalDue);
+                      })()}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
+      </div >
 
       {/* Additional Options */}
-      {isRetail && (
-        <div className={styles.formGroup}>
-          <label>Discount (%):</label>
-          <input
-            type="number"
-            value={discountPercentage}
-            onChange={(e) => setDiscountPercentage(Number(e.target.value))}
-            onFocus={(e) => e.target.select()}
-            min="0"
-            max="100"
-            step="0.01"
-            className={styles.input}
-          />
-        </div>
-      )}
+      {
+        isRetail && (
+          <div className={styles.formGroup}>
+            <label>Discount (%):</label>
+            <input
+              type="number"
+              value={discountPercentage}
+              onChange={(e) => setDiscountPercentage(Number(e.target.value))}
+              onFocus={(e) => e.target.select()}
+              min="0"
+              max="100"
+              step="0.01"
+              className={styles.input}
+            />
+          </div>
+        )
+      }
 
       <div className={styles.formGroup}>
         <label>Notes:</label>
@@ -1198,6 +1245,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                 invoiceNumber, date, terms, soldTo, items, mode, documentType, notes,
                 discountPercentage: discountPercentage,
                 signature, servedBy,
+                downpayment: downpayment, // Save downpayment
                 isDraft: true // MARK AS DRAFT
               };
               // Clear auto-save on manual save
@@ -1228,43 +1276,47 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       </div>
 
       {/* Auto Save Resume Prompt */}
-      {showAutoSavePrompt && (
-        <div style={{
-          position: 'fixed', bottom: 20, right: 20, background: '#1e293b', color: 'white',
-          padding: 16, borderRadius: 8, boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 9999,
-          display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300
-        }}>
-          <div style={{ fontWeight: 600 }}>Unsaved Invoice Found</div>
-          <div style={{ fontSize: 13, color: '#cbd5e1' }}>You have an unfinished invoice from a previous session. Do you want to resume it?</div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <button
-              type="button"
-              onClick={handleResumeAutoSave}
-              style={{ padding: '6px 16px', background: '#3b82f6', border: 'none', borderRadius: 4, color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
-            >
-              Resume
-            </button>
-            <button
-              type="button"
-              onClick={clearAutoSave}
-              style={{ padding: '6px 16px', background: 'transparent', border: '1px solid #64748b', borderRadius: 4, color: '#e2e8f0', cursor: 'pointer', fontSize: 12 }}
-            >
-              Discard
-            </button>
+      {
+        showAutoSavePrompt && (
+          <div style={{
+            position: 'fixed', bottom: 20, right: 20, background: '#1e293b', color: 'white',
+            padding: 16, borderRadius: 8, boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 9999,
+            display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300
+          }}>
+            <div style={{ fontWeight: 600 }}>Unsaved Invoice Found</div>
+            <div style={{ fontSize: 13, color: '#cbd5e1' }}>You have an unfinished invoice from a previous session. Do you want to resume it?</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={handleResumeAutoSave}
+                style={{ padding: '6px 16px', background: '#3b82f6', border: 'none', borderRadius: 4, color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+              >
+                Resume
+              </button>
+              <button
+                type="button"
+                onClick={clearAutoSave}
+                style={{ padding: '6px 16px', background: 'transparent', border: '1px solid #64748b', borderRadius: 4, color: '#e2e8f0', cursor: 'pointer', fontSize: 12 }}
+              >
+                Discard
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Signature Pad Modal */}
       {/* Signature Pad Modal - REMOVED (Now Inline) */}
 
       {/* Barcode Scanner Modal */}
-      {scanningItemId && (
-        <BarcodeScanner
-          onScan={handleScanSuccess}
-          onClose={() => setScanningItemId(null)}
-        />
-      )}
-    </form>
+      {
+        scanningItemId && (
+          <BarcodeScanner
+            onScan={handleScanSuccess}
+            onClose={() => setScanningItemId(null)}
+          />
+        )
+      }
+    </form >
   );
 }
