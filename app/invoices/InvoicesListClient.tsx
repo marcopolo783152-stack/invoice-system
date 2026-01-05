@@ -340,8 +340,8 @@ function InvoicesListContent() {
     };
 
     return (
-        <div style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
-            <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: 'var(--dashboard-padding, 40px)', maxWidth: 1200, margin: '0 auto' }}>
+            <header className="flex-stack-mobile" style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h1 style={{ fontSize: 32, fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>
                         {viewMode === 'active' ? 'Invoices' : 'Recycle Bin'}
@@ -353,7 +353,7 @@ function InvoicesListContent() {
                         {/* Sync button hidden - system is now autonomous */}
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div className="w-full-mobile" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     {/* Simplified Status */}
 
                     {viewMode === 'active' ? (
@@ -413,7 +413,7 @@ function InvoicesListContent() {
             )}
 
             {/* Controls Bar */}
-            <div style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="flex-stack-mobile" style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
                 {selectedIds.length > 0 && (
                     <div style={{ display: 'flex', gap: 12 }}>
                         {viewMode === 'active' ? (
@@ -497,8 +497,7 @@ function InvoicesListContent() {
                 </select>
             </div>
 
-            {/* Invoice Table */}
-            <div style={{ background: 'white', borderRadius: 24, padding: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+            <div className="mobile-hidden" style={{ background: 'white', borderRadius: 24, padding: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ borderBottom: '1px solid #eee', textAlign: 'left', background: '#f9fafb' }}>
@@ -600,6 +599,51 @@ function InvoicesListContent() {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card List */}
+            <div className="mobile-visible" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {visibleInvoices.map((inv) => {
+                    const status = getStatusColor(inv);
+                    const calcs = calculateInvoice(inv.data || {} as any);
+                    return (
+                        <Link href={`/invoices/view?id=${inv.id}`} key={inv.id} style={{ textDecoration: 'none', color: 'inherit' }}>
+                            <div style={{ background: 'white', borderRadius: 16, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                    <div>
+                                        <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1f3c', display: 'block' }}>{inv.data.invoiceNumber}</span>
+                                        <span style={{ fontSize: 13, color: '#64748b' }}>{inv.data.date}</span>
+                                    </div>
+                                    <span style={{
+                                        padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                                        background: status.bg, color: status.text
+                                    }}>
+                                        {status.label}
+                                    </span>
+                                </div>
+
+                                <div style={{ marginBottom: 16 }}>
+                                    <div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>{inv.data?.soldTo?.name || 'Unknown'}</div>
+                                    <div style={{ fontSize: 13, color: '#64748b' }}>{(inv.data?.items || []).length} items</div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+                                    <div style={{ fontSize: 18, fontWeight: 800, color: '#1a1f3c' }}>
+                                        ${calcs.totalDue.toLocaleString()}
+                                    </div>
+                                    <div style={{ padding: 8, background: '#eff6ff', borderRadius: '50%', color: '#3b82f6' }}>
+                                        <FileText size={18} />
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
+                    )
+                })}
+                {visibleInvoices.length === 0 && (
+                    <div style={{ padding: 40, textAlign: 'center', color: '#9ca3af', background: 'white', borderRadius: 16 }}>
+                        <div style={{ marginBottom: 8 }}>No invoices found</div>
+                    </div>
+                )}
             </div>
         </div>
     );

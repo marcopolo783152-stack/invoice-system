@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // output: 'export', // Disabled to allow API routes for email
+  output: 'export',
   images: {
     unoptimized: true,
   },

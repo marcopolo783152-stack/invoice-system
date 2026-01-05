@@ -20,6 +20,7 @@ import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
 
 import SignaturePad from './SignaturePad';
+import InventorySearch from './InventorySearch';
 import styles from './InvoiceForm.module.css';
 
 interface InvoiceFormProps {
@@ -47,6 +48,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   );
   const [showCounterManager, setShowCounterManager] = useState(false);
   const [counterValue, setCounterValue] = useState('');
+  const [showInventorySearch, setShowInventorySearch] = useState(false);
 
   // Load or generate invoice number on mount
   useEffect(() => {
@@ -260,6 +262,35 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       setShowCounterManager(false);
       alert(`Counter set to ${num}. Next invoice will be MP${(num + 1).toString().padStart(8, '0')}`);
     }
+  };
+
+  const handleInventorySelect = (item: any) => { // Type should be InventoryItem
+    // Add item to invoice
+    setItems(prev => [...prev, {
+      id: Math.random().toString(36).substr(2, 9),
+      sku: item.sku,
+      description: item.description,
+      shape: item.shape,
+      widthFeet: item.widthFeet,
+      widthInches: item.widthInches,
+      lengthFeet: item.lengthFeet,
+      lengthInches: item.lengthInches,
+      pricePerSqFt: 0,
+      fixedPrice: item.price,
+      pricingMethod: 'piece',
+      // Extended fields
+      origin: item.origin,
+      material: item.material,
+      quality: item.quality,
+      design: item.design,
+      colorBg: item.colorBg,
+      colorBorder: item.colorBorder,
+      importCost: item.importCost,
+      totalCost: item.totalCost,
+      zone: item.zone,
+      image: item.image
+    }]);
+    setShowInventorySearch(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -600,6 +631,15 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           >
             📥 Download Excel Template
           </button>
+
+          <button
+            type="button"
+            onClick={() => setShowInventorySearch(true)}
+            style={{ padding: '6px 12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            🔎 Search Inventory
+          </button>
+
           <label style={{ padding: '6px 12px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13, display: 'inline-block' }}>
             📤 Import from Excel
             <input

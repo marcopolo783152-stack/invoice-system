@@ -34,6 +34,17 @@ export interface InventoryItem {
     image?: string; // Base64
     createdAt: string;
     updatedAt: string;
+    // New Fields
+    category?: string; // e.g. "Runner", "9x12"
+    origin?: string;
+    material?: string;
+    quality?: string;
+    design?: string;
+    colorBorder?: string;
+    colorBg?: string;
+    importCost?: number;
+    totalCost?: number;
+    zone?: string;
 }
 
 const STORAGE_KEY = 'inventory_items';
@@ -44,6 +55,37 @@ const COLLECTION_NAME = 'inventory';
  */
 function generateId(): string {
     return 'inv_' + Math.random().toString(36).substr(2, 9);
+}
+
+/**
+ * Derive category from dimensions and shape
+ */
+export function deriveCategory(widthFt: number, widthIn: number, lengthFt: number, lengthIn: number, shape: RugShape): string {
+    if (shape === 'round') return 'Round';
+
+    // Calculate total feet for comparison
+    const width = widthFt + (widthIn / 12);
+    const length = lengthFt + (lengthIn / 12);
+
+    // Swap if width > length (standardize)
+    const min = Math.min(width, length);
+    const max = Math.max(width, length);
+
+    // Runner Logic: Length is > 2.5x Width (approx) AND Width is usually < 4ft
+    if (max > (min * 2.2) && min < 4.5) return 'Runner';
+
+    // Size Buckets (Approximate)
+    const area = min * max;
+
+    if (min < 2.5 && max < 4) return 'Small / 2x3';
+    if (min >= 2.5 && min < 3.5 && max >= 4 && max < 6) return '3x5 / 4x6';
+    if (min >= 3.5 && min < 5.5 && max >= 6 && max < 8.5) return '5x7 / 6x9';
+    if (min >= 5.5 && min < 7.5 && max >= 8.5 && max < 11) return '8x10';
+    if (min >= 7.5 && min < 9.5 && max >= 11 && max < 13) return '9x12';
+    if (min >= 9.5 && min < 11 && max >= 13 && max < 15) return '10x14';
+    if (min >= 11) return 'Oversize / Palace';
+
+    return 'Other';
 }
 
 /**
@@ -100,9 +142,94 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
 /**
  * Get item by SKU
  */
-export async function getItemBySku(sku: string): Promise<InventoryItem | null> {
-    const items = await getInventoryItems(); // This uses the cache/fetch logic
-    return items.find(i => i.sku.toLowerCase() === sku.toLowerCase()) || null;
+return items.find(i => i.sku.toLowerCase() === sku.toLowerCase()) || null;
+}
+
+/**
+ * Search Inventory (Advanced)
+ */
+export async function searchInventory(query: string, category?: string): Promise<InventoryItem[]> {
+    const items = await getInventoryItems();
+    const term = query.toLowerCase().trim();
+
+    return items.filter(item => {
+        // Filter by category if provided
+        if (category && category !== 'All' && item.category !== category) {
+            return false;
+        }
+
+        if (!term) return true;
+
+        // Search text fields
+        return (
+            item.sku.toLowerCase().includes(term) ||
+            item.description.toLowerCase().includes(term) ||
+            (item.origin || '').toLowerCase().includes(term) ||
+            (item.design || '').toLowerCase().includes(term) ||
+            (item.quality || '').toLowerCase().includes(term) ||
+            (item.colorBg || '').toLowerCase().includes(term) ||
+            (item.colorBorder || '').toLowerCase().includes(term)
+        );
+    });
+}
+
+/**
+ * Bulk Import Inventory
+ */
+export async function importInventoryBatch(newItems: Partial<InventoryItem>[]): Promise<number> {
+    const currentItems = await getInventoryItems();
+    const now = new Date().toISOString();
+    let count = 0;
+
+    // We process locally first to avoid 500 Firebase writes at once if not needed, 
+    // but ideally we should batch write to Firebase.
+    // For now, let's just append to local and background sync or let the standard save logic handle it.
+    // To be safe and fast:
+
+    // 1. Map to full objects
+    const processed: InventoryItem[] = newItems.map(item => ({
+        id: item.id || generateId(),
+        sku: item.sku || '',
+        description: item.description || '',
+        shape: item.shape || 'rectangle',
+        widthFeet: Number(item.widthFeet) || 0,
+        widthInches: Number(item.widthInches) || 0,
+        lengthFeet: Number(item.lengthFeet) || 0,
+        lengthInches: Number(item.lengthInches) || 0,
+        price: Number(item.price) || 0,
+        status: item.status || 'AVAILABLE',
+        image: item.image || '',
+        createdAt: now,
+        updatedAt: now,
+        // New Fields
+        category: item.category || deriveCategory(
+            Number(item.widthFeet) || 0, Number(item.widthInches) || 0,
+            Number(item.lengthFeet) || 0, Number(item.lengthInches) || 0,
+            item.shape || 'rectangle'
+        ),
+        origin: item.origin || '',
+        material: item.material || '',
+        quality: item.quality || '',
+        design: item.design || '',
+        colorBorder: item.colorBorder || '',
+        colorBg: item.colorBg || '',
+        importCost: Number(item.importCost) || 0,
+        totalCost: Number(item.totalCost) || 0,
+        zone: item.zone || ''
+    }));
+
+    // 2. Merge (Deduplicate by SKU preferred, but for now just add)
+    // Actually, let's remove existing SKUs if they exist in the import (Update/Overwrite)
+    const newSkus = new Set(processed.map(i => i.sku.toLowerCase()));
+
+    const preserved = currentItems.filter(i => !newSkus.has(i.sku.toLowerCase()));
+
+    const final = [...preserved, ...processed];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(final));
+
+    // Todo: Trigger background upload to Cloud if needed
+    // For now we return count
+    return processed.length;
 }
 
 /**
@@ -123,7 +250,18 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
         price: Number(item.price) || 0,
         status: item.status || 'AVAILABLE',
         image: item.image || '',
-        updatedAt: now.toISOString()
+        updatedAt: now.toISOString(),
+        // New Fields
+        category: item.category || deriveCategory(Number(item.widthFeet) || 0, Number(item.widthInches) || 0, Number(item.lengthFeet) || 0, Number(item.lengthInches) || 0, item.shape as RugShape),
+        origin: item.origin || '',
+        material: item.material || '',
+        quality: item.quality || '',
+        design: item.design || '',
+        colorBorder: item.colorBorder || '',
+        colorBg: item.colorBg || '',
+        importCost: Number(item.importCost) || 0,
+        totalCost: Number(item.totalCost) || 0,
+        zone: item.zone || ''
     };
 
     // 1. Cloud Save
@@ -142,7 +280,16 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
                 const docRef = await addDoc(collection(db, COLLECTION_NAME), {
                     ...itemData,
                     createdAt: Timestamp.now(),
-                    updatedAt: Timestamp.now()
+                    updatedAt: Timestamp.now(),
+                    category: itemData.category || deriveCategory(itemData.widthFeet, itemData.widthInches, itemData.lengthFeet, itemData.lengthInches, itemData.shape as RugShape),
+                    zone: item.zone || '',
+                    origin: item.origin || '',
+                    design: item.design || '',
+                    quality: item.quality || '',
+                    colorBg: item.colorBg || '',
+                    colorBorder: item.colorBorder || '',
+                    importCost: item.importCost || 0,
+                    totalCost: item.totalCost || 0
                 });
                 return { ...itemData, id: docRef.id, createdAt: now.toISOString() } as InventoryItem;
             }

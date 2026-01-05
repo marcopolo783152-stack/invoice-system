@@ -126,11 +126,11 @@ export default function Dashboard() {
         <div style={{ padding: 'var(--dashboard-padding, 40px)', maxWidth: 1200, margin: '0 auto' }}>
             <header style={{ marginBottom: 40 }}>
                 <h1 style={{ fontSize: 'var(--h1-size, 32px)', fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>Dashboard</h1>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap' }}>
+                <div className="flex-stack-mobile" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap' }}>
                     <p style={{ color: '#666', fontSize: 'var(--p-size, 16px)' }}>Performance analysis and financial reports.</p>
 
-                    <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12 }}>
+                    <div className="no-print w-full-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12, overflowX: 'auto', maxWidth: '100vw' }}>
                             {(['today', 'this-week', 'last-week', 'this-month', 'this-year', 'all-time'] as Period[]).map((p) => (
                                 <button
                                     key={p}
@@ -211,6 +211,24 @@ export default function Dashboard() {
                     >
                         <FileText size={18} /> Print Report
                     </button>
+
+                    <Link
+                        href="/inventory"
+                        className="no-print"
+                        style={{
+                            padding: '10px 20px',
+                            background: '#3b82f6',
+                            color: 'white',
+                            textDecoration: 'none',
+                            borderRadius: 10,
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8
+                        }}
+                    >
+                        📦 Inventory
+                    </Link>
                 </div>
             </header>
 
@@ -298,7 +316,7 @@ export default function Dashboard() {
                     <Link href="/invoices" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }} className="no-print">View All</Link>
                 </div>
 
-                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }} className="mobile-hidden">
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                         <thead>
                             <tr style={{ borderBottom: '1px solid #eee', textAlign: 'left' }}>
@@ -356,6 +374,32 @@ export default function Dashboard() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="mobile-visible">
+                    {filteredInvoices.slice(0, 10).map((inv) => {
+                        const calcs = calculateInvoice(inv.data);
+                        return (
+                            <div key={inv.id} style={{ background: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 12 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <span style={{ fontWeight: 700, color: '#1a1f3c' }}>{inv.data.invoiceNumber}</span>
+                                    <span style={{ color: '#64748b', fontSize: 13 }}>{inv.data.date}</span>
+                                </div>
+                                <div style={{ marginBottom: 8, color: '#4b5563' }}>{inv.data.soldTo.name}</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 700, fontSize: 16 }}>${calcs.totalDue.toLocaleString()}</span>
+                                    {/* Recycle the status badge logic or simplify */}
+                                    <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 8px', borderRadius: 8, background: '#e2e8f0', color: '#475569' }}>
+                                        {inv.data.documentType === 'INVOICE' ? 'Sale' : inv.data.documentType}
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    {filteredInvoices.length === 0 && (
+                        <div style={{ padding: 20, textAlign: 'center', color: '#888' }}>No invoices found.</div>
+                    )}
                 </div>
             </div>
         </div>

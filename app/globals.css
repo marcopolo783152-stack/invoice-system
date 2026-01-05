@@ -104,3 +104,38 @@ a {
     width: 100%;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Mobile Utilities */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  .mobile-visible {
+    display: block !important;
+  }
+
+  /* Force flexbox to stack vertically on mobile */
+  .flex-stack-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .w-full-mobile {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Hide table headers on mobile if using CSS grid approach */
+  .table-header-mobile-hidden thead {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-visible {
+    display: none !important;
+  }
+}

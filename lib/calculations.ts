@@ -52,6 +52,16 @@ export interface InvoiceItem {
     sunDamage?: boolean;
     other?: string;
   };
+  // Expanded Inventory Fields (Mapped from Excel)
+  origin?: string;
+  material?: string;
+  quality?: string;
+  design?: string;
+  colorBorder?: string;
+  colorBg?: string;
+  importCost?: number; // Cost per sq ft
+  totalCost?: number;  // Total cost
+  zone?: string;       // Warehouse Zone
 }
 
 export type DocumentType = 'INVOICE' | 'CONSIGNMENT' | 'WASH';
