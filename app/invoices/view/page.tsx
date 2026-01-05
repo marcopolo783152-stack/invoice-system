@@ -363,7 +363,8 @@ function InvoiceViewContent() {
                                 email,
                                 invoice.data.soldTo.name,
                                 invoice.data.invoiceNumber,
-                                link
+                                link,
+                                config
                             );
                         }}
                     />

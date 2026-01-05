@@ -84,9 +84,10 @@ export async function sendInvoiceEmail(
   customerEmail: string,
   customerName: string,
   invoiceNumber: string,
-  invoiceLink: string
+  invoiceLink: string,
+  configOverride?: EmailConfig
 ): Promise<boolean> {
-  const config = getEmailConfig();
+  const config = configOverride || getEmailConfig();
 
   // Basic validation
   if (!config.serviceId || !config.templateIdInvoice || !config.publicKey) {

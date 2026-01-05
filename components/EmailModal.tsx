@@ -99,10 +99,13 @@ export default function EmailModal({
             alert('Email sent successfully!');
             onClose();
         } catch (error: any) {
-            console.error(error);
-            alert(`Failed to send email: ${error.message || 'Unknown error'}`);
+            console.error('Email send failed:', error);
+            // EmailJS often returns an object { status: ..., text: ... } instead of Error
+            const msg = error?.message || error?.text || JSON.stringify(error) || 'Unknown error';
+            alert(`Failed to send email: ${msg}`);
+
             // If auth error, maybe suggest config?
-            if (error.message && (error.message.includes('configured') || error.message.includes('Key'))) {
+            if (msg.includes('configured') || msg.includes('Key') || msg.includes('user_id')) {
                 setMode('CONFIG');
             }
         } finally {
