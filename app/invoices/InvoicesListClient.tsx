@@ -350,6 +350,18 @@ function InvoicesListContent() {
         }
     };
 
+    const handleDeleteSingle = async (id: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (!confirm('Move this invoice to Recycle Bin?')) return;
+
+        // Optimistic UI Update
+        setInvoices(prev => prev.filter(inv => inv.id !== id));
+        setFilteredInvoices(prev => prev.filter(inv => inv.id !== id));
+
+        await deleteMultipleInvoices([id]);
+        loadData(); // Re-sync just in case
+    };
+
     return (
         <div style={{ padding: 'var(--dashboard-padding, 40px)', maxWidth: 1200, margin: '0 auto' }}>
             <header className="flex-stack-mobile" style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -604,6 +616,15 @@ function InvoicesListContent() {
                                             <Link href={`/invoices/view?id=${inv.id}`} style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }} title="View Invoice">
                                                 <FileText size={16} />
                                             </Link>
+                                            {(viewMode === 'active' || viewMode === 'drafts') && (
+                                                <button
+                                                    onClick={(e) => handleDeleteSingle(inv.id, e)}
+                                                    style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center' }}
+                                                    title="Delete Invoice"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -631,36 +652,44 @@ function InvoicesListContent() {
                     const status = getStatusColor(inv);
                     const calcs = calculateInvoice(inv.data || {} as any);
                     return (
-                        <Link href={`/invoices/view?id=${inv.id}`} key={inv.id} style={{ textDecoration: 'none', color: 'inherit' }}>
-                            <div style={{ background: 'white', borderRadius: 16, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                                    <div>
-                                        <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1f3c', display: 'block' }}>{inv.data.invoiceNumber}</span>
-                                        <span style={{ fontSize: 13, color: '#64748b' }}>{inv.data.date}</span>
-                                    </div>
-                                    <span style={{
-                                        padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                                        background: status.bg, color: status.text
-                                    }}>
-                                        {status.label}
-                                    </span>
+                        <div key={inv.id}
+                            onClick={() => router.push(`/invoices/view?id=${inv.id}`)}
+                            style={{ background: 'white', borderRadius: 16, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', cursor: 'pointer' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                <div>
+                                    <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1f3c', display: 'block' }}>{inv.data.invoiceNumber}</span>
+                                    <span style={{ fontSize: 13, color: '#64748b' }}>{inv.data.date}</span>
                                 </div>
+                                <span style={{
+                                    padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                                    background: status.bg, color: status.text
+                                }}>
+                                    {status.label}
+                                </span>
+                            </div>
 
-                                <div style={{ marginBottom: 16 }}>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>{inv.data?.soldTo?.name || 'Unknown'}</div>
-                                    <div style={{ fontSize: 13, color: '#64748b' }}>{(inv.data?.items || []).length} items</div>
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>{inv.data?.soldTo?.name || 'Unknown'}</div>
+                                <div style={{ fontSize: 13, color: '#64748b' }}>{(inv.data?.items || []).length} items</div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+                                <div style={{ fontSize: 18, fontWeight: 800, color: '#1a1f3c' }}>
+                                    ${calcs.totalDue.toLocaleString()}
                                 </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
-                                    <div style={{ fontSize: 18, fontWeight: 800, color: '#1a1f3c' }}>
-                                        ${calcs.totalDue.toLocaleString()}
-                                    </div>
+                                <div style={{ display: 'flex', gap: 8 }}>
                                     <div style={{ padding: 8, background: '#eff6ff', borderRadius: '50%', color: '#3b82f6' }}>
                                         <FileText size={18} />
                                     </div>
+                                    <button
+                                        onClick={(e) => handleDeleteSingle(inv.id, e)}
+                                        style={{ padding: 8, background: '#fee2e2', borderRadius: '50%', color: '#ef4444', border: 'none', cursor: 'pointer' }}
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
                                 </div>
                             </div>
-                        </Link>
+                        </div>
                     )
                 })}
                 {visibleInvoices.length === 0 && (
