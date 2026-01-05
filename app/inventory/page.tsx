@@ -414,8 +414,18 @@ export default function InventoryManager() {
                                         </div>
                                     </td>
                                     <td style={{ padding: 16 }}>
-                                        <div style={{ fontWeight: 600 }}>{item.description}</div>
-                                        <div style={{ fontSize: 12, color: '#64748b' }}>{item.colorBg && `Color: ${item.colorBg}`}</div>
+                                        <div style={{ fontWeight: 600, fontSize: 14 }}>{item.description || item.design}</div>
+                                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                            {item.quality && <span style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>Qty: {item.quality}</span>}
+                                            {item.origin && <span style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>Org: {item.origin}</span>}
+                                            {item.zone && <span style={{ background: '#fff7ed', color: '#c2410c', padding: '2px 6px', borderRadius: 4 }}>{item.zone}</span>}
+                                        </div>
+                                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                                            {[
+                                                item.colorBg && `Bg: ${item.colorBg}`,
+                                                item.colorBorder && `Border: ${item.colorBorder}`
+                                            ].filter(Boolean).join(' • ')}
+                                        </div>
                                     </td>
                                     <td style={{ padding: 16 }}>
                                         {item.design}
