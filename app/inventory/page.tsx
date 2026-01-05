@@ -70,23 +70,23 @@ export default function InventoryManager() {
                     if (!sku) return null;
 
                     return {
-                        sku: sku,
-                        description: getValue(row, 'Design', 'Description', 'Pattern') || '',
+                        sku: getValue(row, 'Rug Number', 'SKU', 'Stock Number', 'ID')?.toString(),
+                        description: '', // Leave description empty, avoid duplicating Design
                         shape: (getValue(row, 'Shape')?.toString() || '').toLowerCase().includes('round') ? 'round' : 'rectangle',
-                        widthFeet: Number(getValue(row, 'W Foot', 'Width_Ft', 'Width Feet', 'W Ft')) || 0,
-                        widthInches: Number(getValue(row, 'W Inch', 'Width_In', 'Width Inches', 'W In')) || 0,
-                        lengthFeet: Number(getValue(row, 'Length Foot', 'Length_Ft', 'Length Feet', 'L Ft')) || 0,
-                        lengthInches: Number(getValue(row, 'Length Inch', 'Length_In', 'Length Inches', 'L In')) || 0,
-                        price: Number(getValue(row, 'Selling Price', 'Price', 'Fixed Top', 'Retail Price')) || 0,
-                        origin: getValue(row, 'Origin', 'Country') || '',
-                        quality: getValue(row, 'Quality') || '',
-                        design: getValue(row, 'Design', 'Pattern') || '',
-                        colorBg: getValue(row, 'Color Bg', 'Background Color', 'Field Color') || '',
+                        widthFeet: Number(getValue(row, 'W Foot', 'Width_Ft')) || 0,
+                        widthInches: Number(getValue(row, 'W Inch', 'Width_In')) || 0,
+                        lengthFeet: Number(getValue(row, 'length Foot', 'Length_Ft')) || 0,
+                        lengthInches: Number(getValue(row, 'Length Inch', 'Length_In')) || 0,
+                        price: Number(getValue(row, 'Selling Price', 'Price')) || 0,
+                        origin: getValue(row, 'origin', 'Country') || '',
+                        quality: getValue(row, 'quality', 'Quality') || '',
+                        design: getValue(row, 'Desing', 'Desc', 'Design') || '',
+                        colorBg: getValue(row, 'Color Bg', 'Background Color') || '',
                         colorBorder: getValue(row, 'Color Border', 'Border Color') || '',
-                        importCost: Number(getValue(row, 'Total cost', 'Cost', 'Import Cost')) || 0,
+                        importCost: Number(getValue(row, 'cost per sq foot', 'Cost', 'Import Cost')) || 0,
                         totalCost: Number(getValue(row, 'Total cost', 'Total Cost')) || 0,
                         zone: getValue(row, 'Zone', 'Location') || '',
-                        material: getValue(row, 'Material', 'Content', 'Composition') || ''
+                        material: getValue(row, 'quality', 'Material', 'Content') || '' // Fallback to quality if material explicit column missing
                     };
                 }).filter(Boolean) as Partial<InventoryItem>[]; // Filter out nulls
 
