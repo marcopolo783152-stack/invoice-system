@@ -45,9 +45,13 @@ export default function InventoryManager() {
                 let allItems: any[] = [];
 
                 // Iterate ALL sheets
-                wb.SheetNames.forEach(sheetName => {
+                wb.SheetNames.forEach((sheetName, index) => {
                     const ws = wb.Sheets[sheetName];
                     const data = XLSX.utils.sheet_to_json(ws);
+                    if (data.length > 0 && index === 0) {
+                        const firstRowKeys = Object.keys(data[0] as any).join(', ');
+                        alert(`Debug: Reading Sheet "${sheetName}". Found columns: ${firstRowKeys}`);
+                    }
                     allItems = [...allItems, ...data];
                 });
 
@@ -60,6 +64,12 @@ export default function InventoryManager() {
                         // Case insensitive match
                         const foundKey = rowKeys.find(rk => rk.toLowerCase().trim() === k.toLowerCase().trim());
                         if (foundKey && row[foundKey] !== undefined) return row[foundKey];
+
+                        // "Contains" match (useful for "Zone 15" when searching for "Zone")
+                        if (k === 'Zone') {
+                            const containsKey = rowKeys.find(rk => rk.toLowerCase().includes('zone'));
+                            if (containsKey) return row[containsKey];
+                        }
                     }
                     return undefined;
                 };
