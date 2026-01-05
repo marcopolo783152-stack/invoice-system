@@ -275,7 +275,8 @@ function InvoicePageContent() {
     const customerEmail = prompt(
       `Send Invoice ${invoiceData.invoiceNumber} to Customer\n\n` +
       `Customer: ${invoiceData.soldTo.name}\n\n` +
-      `Enter customer email address:`
+      `Enter customer email address:`,
+      invoiceData.soldTo.email || ''
     );
 
     if (!customerEmail) return;
