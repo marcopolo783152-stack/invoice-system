@@ -414,7 +414,7 @@ function InvoicesListContent() {
                             onClick={() => handleSetViewMode(viewMode === 'active' ? 'drafts' : 'active')}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: 8,
-                                padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: viewMode === 'drafts' ? '#f1f5f9' : 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
+                                padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
                                 height: 48
                             }}
                         >
