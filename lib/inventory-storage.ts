@@ -353,7 +353,8 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
  */
 export async function deleteInventoryItem(id: string): Promise<void> {
     // Cloud
-    if (isFirebaseConfigured() && db && !id.startsWith('inv_')) {
+    // Cloud
+    if (isFirebaseConfigured() && db) {
         try {
             await deleteDoc(doc(db, COLLECTION_NAME, id));
         } catch (e) {
@@ -378,11 +379,9 @@ export async function deleteInventoryBatch(ids: string[]): Promise<void> {
         const firestore = db;
         try {
             const batchSize = 500;
-            // Filter only cloud IDs
-            const cloudIds = ids.filter(id => !id.startsWith('inv_'));
 
-            for (let i = 0; i < cloudIds.length; i += batchSize) {
-                const chunk = cloudIds.slice(i, i + batchSize);
+            for (let i = 0; i < ids.length; i += batchSize) {
+                const chunk = ids.slice(i, i + batchSize);
                 const batch = writeBatch(firestore);
                 chunk.forEach(id => {
                     const ref = doc(firestore, COLLECTION_NAME, id);

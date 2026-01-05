@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency, calculateInvoice } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
-import { getItemBySku } from '@/lib/inventory-storage';
+import { getItemBySku, searchInventory, InventoryItem } from '@/lib/inventory-storage';
 import { Customer, searchCustomers } from '@/lib/customer-storage';
 import { getCustomerDebt } from '@/lib/invoice-storage';
 import { logActivity } from '@/lib/audit-logger';
@@ -147,6 +147,53 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       serviceType: { wash: false, repair: false }
     };
   }
+
+  // SKU Suggestion Logic
+  const [skuSuggestions, setSkuSuggestions] = useState<{ [itemId: string]: InventoryItem[] }>({});
+  const [showSkuSuggestions, setShowSkuSuggestions] = useState<{ [itemId: string]: boolean }>({});
+
+  const handleSkuChange = async (itemId: string, value: string) => {
+    handleItemChange(itemId, 'sku', value);
+
+    if (value.length > 1) {
+      const results = await searchInventory(value);
+      setSkuSuggestions(prev => ({ ...prev, [itemId]: results }));
+      setShowSkuSuggestions(prev => ({ ...prev, [itemId]: true }));
+    } else {
+      setShowSkuSuggestions(prev => ({ ...prev, [itemId]: false }));
+    }
+  };
+
+  const selectSkuFromSuggestion = (itemId: string, item: InventoryItem) => {
+    setItems(prevItems => prevItems.map(i => {
+      if (i.id === itemId) {
+        return {
+          ...i,
+          sku: item.sku,
+          description: item.description,
+          shape: item.shape,
+          widthFeet: item.widthFeet,
+          widthInches: item.widthInches,
+          lengthFeet: item.lengthFeet,
+          lengthInches: item.lengthInches,
+          fixedPrice: item.price,
+          image: item.image,
+          // Extended
+          origin: item.origin,
+          material: item.material,
+          quality: item.quality,
+          design: item.design,
+          colorBg: item.colorBg,
+          colorBorder: item.colorBorder,
+          importCost: item.importCost,
+          totalCost: item.totalCost,
+          zone: item.zone
+        };
+      }
+      return i;
+    }));
+    setShowSkuSuggestions(prev => ({ ...prev, [itemId]: false }));
+  };
 
   const handleAddItem = () => {
     setItems((prev) => [...prev, createEmptyItem()]);
@@ -708,17 +755,17 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
               )}
             </div>
             <div className={styles.row}>
-              <div className={styles.formGroup}>
+              <div className={styles.formGroup} style={{ position: 'relative' }}>
                 <label>SKU:*</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
                     value={item.sku}
-                    onChange={(e) =>
-                      handleItemChange(item.id, 'sku', e.target.value)
-                    }
+                    onChange={(e) => handleSkuChange(item.id, e.target.value)}
+                    onBlur={() => setTimeout(() => setShowSkuSuggestions(prev => ({ ...prev, [item.id]: false })), 200)}
                     required
                     className={styles.input}
+                    autoComplete="off"
                   />
                   <button
                     type="button"
@@ -729,6 +776,22 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     📷
                   </button>
                 </div>
+                {showSkuSuggestions[item.id] && skuSuggestions[item.id]?.length > 0 && (
+                  <div className={styles.suggestionsList} style={{ top: '100%', left: 0, width: '100%', maxHeight: '200px', overflowY: 'auto' }}>
+                    {skuSuggestions[item.id].map(suggestion => (
+                      <div
+                        key={suggestion.id}
+                        className={styles.suggestionItem}
+                        onClick={() => selectSkuFromSuggestion(item.id, suggestion)}
+                      >
+                        <span style={{ fontWeight: 700 }}>{suggestion.sku}</span>
+                        <span style={{ fontSize: 12, marginLeft: 8, color: '#64748b' }}>
+                          {suggestion.widthFeet}'{suggestion.widthInches}x{suggestion.lengthFeet}'{suggestion.lengthInches} - {suggestion.design}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className={styles.formGroup} style={{ flex: 2 }}>
                 <label>Description:*</label>
