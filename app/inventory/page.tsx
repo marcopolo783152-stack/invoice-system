@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getInventoryItems, InventoryItem, importInventoryBatch, deleteInventoryItem, deriveCategory } from '@/lib/inventory-storage';
+import { getInventoryItems, InventoryItem, importInventoryBatch, deleteInventoryItem, deleteInventoryBatch, deriveCategory } from '@/lib/inventory-storage';
 import * as XLSX from 'xlsx';
 import Link from 'next/link';
 
@@ -11,6 +11,7 @@ export default function InventoryManager() {
     const [activeTab, setActiveTab] = useState('All');
     const [activeMaterial, setActiveMaterial] = useState('All'); // New Material Filter
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
     const categories = ['All', 'Small / 2x3', '3x5 / 4x6', '5x7 / 6x9', '8x10', '9x12', '10x14', 'Oversize / Palace', 'Runner', 'Round', 'Other'];
     const materials = ['All', 'Silk', 'Wool', 'Silk/Wool', 'Wool/Silk'];
@@ -157,6 +158,36 @@ export default function InventoryManager() {
         }
     };
 
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            const allIds = filteredItems.map(i => i.id);
+            setSelectedItems(new Set(allIds));
+        } else {
+            setSelectedItems(new Set());
+        }
+    };
+
+    const handleSelectOne = (id: string) => {
+        const newSet = new Set(selectedItems);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        setSelectedItems(newSet);
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedItems.size === 0) return;
+        if (confirm(`Are you sure you want to delete ${selectedItems.size} items?`)) {
+            setIsLoading(true);
+            await deleteInventoryBatch(Array.from(selectedItems));
+            setSelectedItems(new Set());
+            await loadInventory();
+            setIsLoading(false);
+        }
+    };
+
     // Filter Logic
     const filteredItems = items.filter(item => {
         // 1. Tab Filter
@@ -202,9 +233,28 @@ export default function InventoryManager() {
     return (
         <div style={{ padding: 40, background: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif' }}>
             <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h1 style={{ fontSize: 28, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>Inventory Manager</h1>
-                    <p style={{ color: '#64748b' }}>Manage your digital pick list.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div>
+                        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>Inventory Manager</h1>
+                        <p style={{ color: '#64748b' }}>Manage your digital pick list.</p>
+                    </div>
+                    {selectedItems.size > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            style={{
+                                padding: '8px 16px',
+                                background: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 8,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
+                            }}
+                        >
+                            Delete Selected ({selectedItems.size})
+                        </button>
+                    )}
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
                     <Link href="/" style={{ textDecoration: 'none', padding: '10px 20px', background: 'white', border: '1px solid #cbd5e1', borderRadius: 8, color: '#475569', fontWeight: 600 }}>
@@ -294,6 +344,14 @@ export default function InventoryManager() {
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead style={{ background: '#f1f5f9' }}>
                             <tr>
+                                <th style={{ padding: 16, width: 40 }}>
+                                    <input
+                                        type="checkbox"
+                                        onChange={handleSelectAll}
+                                        checked={filteredItems.length > 0 && selectedItems.size === filteredItems.length}
+                                        style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                    />
+                                </th>
                                 <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Rug #</th>
                                 <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Preview</th>
                                 <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Description</th>
@@ -307,8 +365,16 @@ export default function InventoryManager() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredItems.slice(0, 50).map(item => (
-                                <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            {filteredItems.slice(0, 500).map(item => (
+                                <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', background: selectedItems.has(item.id) ? '#f0fdf4' : 'white' }}>
+                                    <td style={{ padding: 16 }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedItems.has(item.id)}
+                                            onChange={() => handleSelectOne(item.id)}
+                                            style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                        />
+                                    </td>
                                     <td style={{ padding: 16, fontWeight: 700 }}>{item.sku}</td>
                                     <td style={{ padding: 16 }}>
                                         <div style={{ width: 48, height: 48, background: '#f1f5f9', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

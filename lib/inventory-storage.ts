@@ -368,6 +368,41 @@ export async function deleteInventoryItem(id: string): Promise<void> {
 }
 
 /**
+ * Bulk Delete Inventory Items
+ */
+export async function deleteInventoryBatch(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+
+    // Cloud (Batch Delete)
+    if (isFirebaseConfigured() && db) {
+        const firestore = db;
+        try {
+            const batchSize = 500;
+            // Filter only cloud IDs
+            const cloudIds = ids.filter(id => !id.startsWith('inv_'));
+
+            for (let i = 0; i < cloudIds.length; i += batchSize) {
+                const chunk = cloudIds.slice(i, i + batchSize);
+                const batch = writeBatch(firestore);
+                chunk.forEach(id => {
+                    const ref = doc(firestore, COLLECTION_NAME, id);
+                    batch.delete(ref);
+                });
+                await batch.commit();
+            }
+        } catch (error) {
+            console.error('Error batch deleting from Firebase:', error);
+        }
+    }
+
+    // Local
+    const items = await getInventoryItems();
+    const idSet = new Set(ids);
+    const filtered = items.filter(i => !idSet.has(i.id));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+}
+
+/**
  * Update inventory status based on invoice data
  */
 export async function updateInventoryStatusFromInvoice(invoiceData: InvoiceData): Promise<void> {
