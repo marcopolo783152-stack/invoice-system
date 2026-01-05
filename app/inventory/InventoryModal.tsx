@@ -130,8 +130,10 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                             <input
                                 type="number"
                                 placeholder="In"
-                                value={formData.widthInches || ''}
-                                onChange={e => handleChange('widthInches', Number(e.target.value))}
+                                min={0}
+                                max={11}
+                                value={formData.widthInches === 0 ? '' : formData.widthInches}
+                                onChange={e => handleChange('widthInches', e.target.value === '' ? 0 : Number(e.target.value))}
                                 style={{ width: '50%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
                             />
                         </div>
@@ -149,8 +151,10 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                             <input
                                 type="number"
                                 placeholder="In"
-                                value={formData.lengthInches || ''}
-                                onChange={e => handleChange('lengthInches', Number(e.target.value))}
+                                min={0}
+                                max={11}
+                                value={formData.lengthInches === 0 ? '' : formData.lengthInches}
+                                onChange={e => handleChange('lengthInches', e.target.value === '' ? 0 : Number(e.target.value))}
                                 style={{ width: '50%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
                             />
                         </div>
