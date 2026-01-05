@@ -723,10 +723,22 @@ export async function deleteMultipleInvoices(ids: string[]): Promise<boolean> {
   // 1. Move to Cloud Bin
   if (isFirebaseConfigured()) {
     for (const id of ids) {
-      try { await moveToCloudBin(id); } catch (e) { }
+      try {
+        await moveToCloudBin(id);
+      } catch (e) {
+        console.error(`Failed to move ${id} to cloud bin, using local bin fallback`);
+        // Fallback: Add to local bin
+        const invoice = toDelete.find(inv => inv.id === id);
+        if (invoice) {
+          let bin: SavedInvoice[] = [];
+          try { bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]'); } catch { }
+          bin.push(invoice);
+          localStorage.setItem('deleted_invoices', JSON.stringify(bin));
+        }
+      }
     }
   } else {
-    // Local fallback
+    // Local only
     let bin = getDeletedInvoices();
     bin.push(...toDelete);
     localStorage.setItem('deleted_invoices', JSON.stringify(bin));
