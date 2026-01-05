@@ -44,15 +44,37 @@ export default function EmailModal({
     useEffect(() => {
         if (isOpen) {
             const currentConfig = getEmailConfig();
-            setConfig(currentConfig);
-            setEmailTo(customerEmail);
 
-            // Auto-switch to config if basic keys missing
-            if (!isEmailConfigured()) {
-                setMode('CONFIG');
+            // If local config is missing, try fetching from cloud
+            if (!currentConfig.serviceId) {
+                import('@/lib/settings-storage').then(({ getSettingsFromCloud }) => {
+                    getSettingsFromCloud().then(settings => {
+                        if (settings?.emailConfig) {
+                            setConfig(settings.emailConfig);
+                            // Also save to local for next time
+                            saveEmailConfig(settings.emailConfig);
+                            setMode('SEND');
+                        } else {
+                            setConfig(currentConfig);
+                            // Auto-switch to config if basic keys missing
+                            if (!isEmailConfigured()) {
+                                setMode('CONFIG');
+                            } else {
+                                setMode('SEND');
+                            }
+                        }
+                    });
+                });
             } else {
-                setMode('SEND');
+                setConfig(currentConfig);
+                if (!isEmailConfigured()) {
+                    setMode('CONFIG');
+                } else {
+                    setMode('SEND');
+                }
             }
+
+            setEmailTo(customerEmail);
         }
     }, [isOpen, customerEmail]);
 

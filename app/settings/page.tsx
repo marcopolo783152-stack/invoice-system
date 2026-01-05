@@ -3,6 +3,81 @@
 import React, { useState, useEffect } from 'react';
 import UserManagement from '@/components/UserManagement';
 import Login from '@/components/Login';
+import { getEmailConfig, saveEmailConfig, EmailConfig } from '@/lib/email-service';
+import { saveSettingsToCloud, getSettingsFromCloud } from '@/lib/settings-storage';
+
+function EmailSettingsForm() {
+    const [config, setConfig] = useState<EmailConfig>({
+        serviceId: '',
+        templateIdInvoice: '',
+        templateIdConfirm: '',
+        publicKey: '',
+        privateKey: ''
+    });
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        // Load from local
+        const local = getEmailConfig();
+        if (local.serviceId) setConfig(local);
+
+        // Try fetch from cloud to be sure
+        getSettingsFromCloud().then(cloudSettings => {
+            if (cloudSettings?.emailConfig) {
+                setConfig(cloudSettings.emailConfig);
+            }
+        });
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setConfig({ ...config, [e.target.name]: e.target.value });
+    };
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            // Save Local
+            saveEmailConfig(config);
+            // Save Cloud
+            await saveSettingsToCloud({ emailConfig: config });
+            alert('Settings saved and synced to cloud!');
+        } catch (err) {
+            console.error(err);
+            alert('Saved locally, but failed to sync to cloud.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Service ID</label>
+                    <input name="serviceId" value={config.serviceId} onChange={handleChange} placeholder="gmail" style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Template ID (Invoice)</label>
+                    <input name="templateIdInvoice" value={config.templateIdInvoice} onChange={handleChange} placeholder="template_..." style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Public Key</label>
+                    <input name="publicKey" value={config.publicKey} onChange={handleChange} placeholder="User ID" style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Private Key (Optional)</label>
+                    <input name="privateKey" value={config.privateKey || ''} onChange={handleChange} placeholder="For secure sending" style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
+                </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button type="submit" disabled={loading} style={{ background: '#0f172a', color: 'white', padding: '10px 24px', borderRadius: 8, fontWeight: 600, border: 'none', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>
+                    {loading ? 'Syncing...' : 'Save Configuration'}
+                </button>
+            </div>
+        </form>
+    );
+}
 
 export default function SettingsPage() {
     const [user, setUser] = useState<any>(null);
@@ -145,6 +220,15 @@ export default function SettingsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Email Configuration Section */}
+            {user?.role === 'admin' && (
+                <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', marginBottom: 32 }}>
+                    <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1f3c', marginBottom: 24 }}>Email Configuration (Syncs to Cloud)</h2>
+                    <EmailSettingsForm />
+                </div>
+            )}
+
 
             {user?.role === 'admin' && Array.isArray(users) && (
                 <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
