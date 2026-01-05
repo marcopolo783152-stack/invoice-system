@@ -94,6 +94,7 @@ export interface InvoiceData {
   status?: 'washing' | 'repairing' | 'ready' | 'picked_up';
   pickupSignature?: string; // Signature collected at pickup
   isDraft?: boolean; // True if invoice is in draft mode
+  downpayment?: number; // Optional downpayment for consignment
 }
 
 export interface CalculatedItem extends InvoiceItem {
