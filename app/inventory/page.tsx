@@ -71,7 +71,7 @@ export default function InventoryManager() {
 
                     return {
                         sku: getValue(row, 'Rug Number', 'SKU', 'Stock Number', 'ID')?.toString(),
-                        description: '', // Leave description empty, avoid duplicating Design
+                        description: getValue(row, 'Design', 'Description', 'Pattern') || getValue(row, 'Desing') || '', // Fallback to Design
                         shape: (getValue(row, 'Shape')?.toString() || '').toLowerCase().includes('round') ? 'round' : 'rectangle',
                         widthFeet: Number(getValue(row, 'W Foot', 'Width_Ft')) || 0,
                         widthInches: Number(getValue(row, 'W Inch', 'Width_In')) || 0,
