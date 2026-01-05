@@ -93,6 +93,7 @@ export interface InvoiceData {
   pickupDate?: string;
   status?: 'washing' | 'repairing' | 'ready' | 'picked_up';
   pickupSignature?: string; // Signature collected at pickup
+  isDraft?: boolean; // True if invoice is in draft mode
 }
 
 export interface CalculatedItem extends InvoiceItem {

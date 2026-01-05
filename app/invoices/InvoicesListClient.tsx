@@ -22,7 +22,7 @@ function InvoicesListContent() {
     const router = useRouter();
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
     const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([]);
-    const [viewMode, setViewMode] = useState<'active' | 'bin'>('active');
+    const [viewMode, setViewMode] = useState<'active' | 'drafts' | 'bin'>('active');
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<'ALL' | 'INVOICE' | 'CONSIGNMENT' | 'WASH'>('ALL');
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
@@ -53,13 +53,16 @@ function InvoicesListContent() {
     }, [viewMode]);
 
     useEffect(() => {
-        const view = searchParams.get('view') === 'bin' ? 'bin' : 'active';
-        setViewMode(view);
+        const view = searchParams.get('view');
+        if (view === 'bin') setViewMode('bin');
+        else if (view === 'drafts') setViewMode('drafts');
+        else setViewMode('active');
     }, [searchParams]);
 
-    const handleSetViewMode = (mode: 'active' | 'bin') => {
+    const handleSetViewMode = (mode: 'active' | 'drafts' | 'bin') => {
         const params = new URLSearchParams(searchParams.toString());
         if (mode === 'bin') params.set('view', 'bin');
+        else if (mode === 'drafts') params.set('view', 'drafts');
         else params.delete('view');
         router.push(`/invoices?${params.toString()}`);
     };
@@ -87,9 +90,17 @@ function InvoicesListContent() {
             if (viewMode === 'active') {
                 // Real-time listener for active invoices
                 unsubscribe = subscribeToInvoices((data) => {
-                    setInvoices(data);
+                    // Filter OUT drafts for active view
+                    const activeOnly = data.filter(i => !i.data.isDraft);
+                    setInvoices(activeOnly);
                     setLoading(false);
                 });
+            } else if (viewMode === 'drafts') {
+                // Drafts View
+                const activeData = await getAllInvoices();
+                const drafts = activeData.filter(i => i.data.isDraft === true);
+                setInvoices(drafts);
+                setLoading(false);
             } else {
                 // Bin logic (local + sync check)
                 const binData = await getDeletedInvoicesAsync(); // Use async version
@@ -292,7 +303,7 @@ function InvoicesListContent() {
     const handleDeleteSelected = async () => {
         if (selectedIds.length === 0) return;
 
-        if (viewMode === 'active') {
+        if (viewMode === 'active' || viewMode === 'drafts') {
             if (!confirm(`Move ${selectedIds.length} invoices to Recycle Bin?`)) return;
             await deleteMultipleInvoices(selectedIds);
             loadData();
@@ -344,11 +355,11 @@ function InvoicesListContent() {
             <header className="flex-stack-mobile" style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h1 style={{ fontSize: 32, fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>
-                        {viewMode === 'active' ? 'Invoices' : 'Recycle Bin'}
+                        {viewMode === 'active' ? 'Invoices' : viewMode === 'drafts' ? 'Draft Box' : 'Recycle Bin'}
                     </h1>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <p style={{ color: '#64748b', fontSize: 16 }}>
-                            {viewMode === 'active' ? 'Manage and view all your invoices' : 'View and restore deleted invoices'}
+                            {viewMode === 'active' ? 'Manage and view all your invoices' : viewMode === 'drafts' ? 'Resume unfinished invoices' : 'View and restore deleted invoices'}
                         </p>
                         {/* Sync button hidden - system is now autonomous */}
                     </div>
@@ -397,6 +408,19 @@ function InvoicesListContent() {
                             <FileText size={20} /> Back to Invoices
                         </button>
                     )}
+                    {/* Drafts Button Toggle */}
+                    {viewMode !== 'drafts' && (
+                        <button
+                            onClick={() => handleSetViewMode(viewMode === 'active' ? 'drafts' : 'active')}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: viewMode === 'drafts' ? '#f1f5f9' : 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
+                                height: 48
+                            }}
+                        >
+                            {viewMode === 'active' ? '📂 Drafts' : '📄 Active Invoices'}
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -416,7 +440,7 @@ function InvoicesListContent() {
             <div className="flex-stack-mobile" style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
                 {selectedIds.length > 0 && (
                     <div style={{ display: 'flex', gap: 12 }}>
-                        {viewMode === 'active' ? (
+                        {(viewMode === 'active' || viewMode === 'drafts') ? (
                             <button
                                 onClick={handleDeleteSelected}
                                 style={{
