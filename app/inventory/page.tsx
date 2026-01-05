@@ -34,46 +34,120 @@ export default function InventoryManager() {
 
         const reader = new FileReader();
         reader.onload = async (evt) => {
-            const bstr = evt.target?.result;
-            const wb = XLSX.read(bstr, { type: 'binary' });
-            const wsname = wb.SheetNames[0];
-            const ws = wb.Sheets[wsname];
-            const data = XLSX.utils.sheet_to_json(ws);
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
 
-            // Map standard Excel columns to our schema
-            const mapped: Partial<InventoryItem>[] = data.map((row: any) => ({
-                sku: row['Rug Number']?.toString() || row['SKU'] || '',
-                description: row['Design'] || row['Description'] || '',
-                shape: (row['Shape'] || '').toLowerCase().includes('round') ? 'round' : 'rectangle',
-                widthFeet: Number(row['W Foot'] || row['Width_Ft']) || 0,
-                widthInches: Number(row['W Inch'] || row['Width_In']) || 0,
-                lengthFeet: Number(row['Length Foot'] || row['Length_Ft']) || 0,
-                lengthInches: Number(row['Length Inch'] || row['Length_In']) || 0,
-                price: Number(row['Selling Price'] || row['Price'] || row['Fixed Top']) || 0,
-                origin: row['Origin'] || '',
-                quality: row['Quality'] || row['quality'] || '',
-                design: row['Design'] || '',
-                colorBg: row['Color Bg'] || '',
-                colorBorder: row['Color Border'] || '',
-                importCost: Number(row['Total cost'] || row['Cost']) || 0,
-                totalCost: Number(row['Total cost']) || 0,
-                zone: row['Zone'] || '',
-                material: row['Material'] || row['Content'] || row['Composition'] || ''
-            }));
+                let allItems: any[] = [];
 
+                // Iterate ALL sheets
+                wb.SheetNames.forEach(sheetName => {
+                    const ws = wb.Sheets[sheetName];
+                    const data = XLSX.utils.sheet_to_json(ws);
+                    allItems = [...allItems, ...data];
+                });
 
-            if (mapped.length > 0) {
-                if (confirm(`Found ${mapped.length} items. Import them?`)) {
-                    await importInventoryBatch(mapped);
-                    alert('Import successful!');
-                    loadInventory();
+                // Helper to find value case-insensitively
+                const getValue = (row: any, ...keys: string[]) => {
+                    const rowKeys = Object.keys(row);
+                    for (const k of keys) {
+                        // Exact match
+                        if (row[k] !== undefined) return row[k];
+                        // Case insensitive match
+                        const foundKey = rowKeys.find(rk => rk.toLowerCase().trim() === k.toLowerCase().trim());
+                        if (foundKey && row[foundKey] !== undefined) return row[foundKey];
+                    }
+                    return undefined;
+                };
+
+                // Map standard Excel columns to our schema
+                const mapped: Partial<InventoryItem>[] = allItems.map((row: any) => {
+                    // Try multiple variations for each field
+                    const sku = getValue(row, 'Rug Number', 'SKU', 'Stock Number', 'ID')?.toString();
+
+                    // Skip empty rows
+                    if (!sku) return null;
+
+                    return {
+                        sku: sku,
+                        description: getValue(row, 'Design', 'Description', 'Pattern') || '',
+                        shape: (getValue(row, 'Shape')?.toString() || '').toLowerCase().includes('round') ? 'round' : 'rectangle',
+                        widthFeet: Number(getValue(row, 'W Foot', 'Width_Ft', 'Width Feet', 'W Ft')) || 0,
+                        widthInches: Number(getValue(row, 'W Inch', 'Width_In', 'Width Inches', 'W In')) || 0,
+                        lengthFeet: Number(getValue(row, 'Length Foot', 'Length_Ft', 'Length Feet', 'L Ft')) || 0,
+                        lengthInches: Number(getValue(row, 'Length Inch', 'Length_In', 'Length Inches', 'L In')) || 0,
+                        price: Number(getValue(row, 'Selling Price', 'Price', 'Fixed Top', 'Retail Price')) || 0,
+                        origin: getValue(row, 'Origin', 'Country') || '',
+                        quality: getValue(row, 'Quality') || '',
+                        design: getValue(row, 'Design', 'Pattern') || '',
+                        colorBg: getValue(row, 'Color Bg', 'Background Color', 'Field Color') || '',
+                        colorBorder: getValue(row, 'Color Border', 'Border Color') || '',
+                        importCost: Number(getValue(row, 'Total cost', 'Cost', 'Import Cost')) || 0,
+                        totalCost: Number(getValue(row, 'Total cost', 'Total Cost')) || 0,
+                        zone: getValue(row, 'Zone', 'Location') || '',
+                        material: getValue(row, 'Material', 'Content', 'Composition') || ''
+                    };
+                }).filter(Boolean) as Partial<InventoryItem>[]; // Filter out nulls
+
+                if (mapped.length > 0) {
+                    if (confirm(`Found ${mapped.length} valid items across ${wb.SheetNames.length} sheets. Import them?`)) {
+                        const count = await importInventoryBatch(mapped);
+                        alert(`Successfully imported ${count} items!`);
+                        loadInventory();
+                    }
+                } else {
+                    alert('No valid items found. Please check column headers (Rug Number, Design, W Foot, etc.)');
                 }
-            } else {
-                alert('No items found. Please check column headers (Rug Number, Design, W Foot, etc.)');
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Error parsing file. Please ensure it is a valid Excel file.');
             }
             e.target.value = ''; // Reset
         };
         reader.readAsBinaryString(file);
+    };
+
+    const downloadTemplate = () => {
+        const templateData = [
+            {
+                'Rug Number': 'EXAMPLE-001',
+                'Design': 'Tabriz',
+                'Material': 'Wool/Silk',
+                'Shape': 'Rectangle',
+                'W Foot': 8,
+                'W Inch': 0,
+                'Length Foot': 10,
+                'Length Inch': 0,
+                'Origin': 'India',
+                'Color Bg': 'Red',
+                'Color Border': 'Navy',
+                'Quality': 'Fine',
+                'Price': 2500,
+                'Cost': 1200,
+                'Zone': 'A1'
+            },
+            {
+                'Rug Number': 'EXAMPLE-002',
+                'Design': 'Modern',
+                'Material': 'Silk',
+                'Shape': 'Round',
+                'W Foot': 6,
+                'W Inch': 0,
+                'Length Foot': 6,
+                'Length Inch': 0,
+                'Origin': 'China',
+                'Color Bg': 'Beige',
+                'Color Border': '',
+                'Quality': 'High',
+                'Price': 1800,
+                'Cost': 800,
+                'Zone': 'B2'
+            }
+        ];
+        const ws = XLSX.utils.json_to_sheet(templateData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Inventory Template");
+        XLSX.writeFile(wb, "inventory_import_template.xlsx");
     };
 
     const handleDelete = async (id: string) => {
@@ -136,6 +210,12 @@ export default function InventoryManager() {
                     <Link href="/" style={{ textDecoration: 'none', padding: '10px 20px', background: 'white', border: '1px solid #cbd5e1', borderRadius: 8, color: '#475569', fontWeight: 600 }}>
                         ← Back to Dashboard
                     </Link>
+                    <button
+                        onClick={downloadTemplate}
+                        style={{ padding: '10px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                        📝 Template
+                    </button>
                     <label style={{ cursor: 'pointer', padding: '10px 20px', background: '#3b82f6', color: 'white', borderRadius: 8, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span>📥 Bulk Upload</span>
                         <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} style={{ display: 'none' }} />
