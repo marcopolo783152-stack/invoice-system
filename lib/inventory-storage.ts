@@ -17,7 +17,7 @@ import {
     query,
     orderBy,
     Timestamp,
-    where
+    writeBatch
 } from 'firebase/firestore';
 
 export interface InventoryItem {
@@ -229,8 +229,33 @@ export async function importInventoryBatch(newItems: Partial<InventoryItem>[]): 
     const final = [...preserved, ...processed];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(final));
 
-    // Todo: Trigger background upload to Cloud if needed
-    // For now we return count
+    // Cloud Sync (Firebase Batch Write)
+    if (isFirebaseConfigured() && db) {
+        const firestore = db;
+        try {
+            const batchSize = 500;
+            for (let i = 0; i < processed.length; i += batchSize) {
+                const chunk = processed.slice(i, i + batchSize);
+                const batch = writeBatch(firestore);
+
+                chunk.forEach(item => {
+                    const ref = doc(firestore, COLLECTION_NAME, item.id);
+                    // Use set to overwrite or create
+                    batch.set(ref, {
+                        ...item,
+                        createdAt: Timestamp.fromDate(new Date(item.createdAt)),
+                        updatedAt: Timestamp.fromDate(new Date(item.updatedAt))
+                    });
+                });
+
+                await batch.commit();
+            }
+        } catch (error) {
+            console.error('Error batch writing to Firebase:', error);
+            // We don't throw, so local fallback still works essentially
+        }
+    }
+
     return processed.length;
 }
 
