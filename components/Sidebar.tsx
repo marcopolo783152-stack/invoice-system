@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
@@ -16,7 +16,8 @@ export default function Sidebar({
     isCollapsed,
     onToggleCollapse,
     onShowAddressBook,
-    onShowExportPreview
+    onShowExportPreview,
+    onShowHelp
 }: {
     user: any,
     onLogout: () => void,
@@ -24,7 +25,8 @@ export default function Sidebar({
     isCollapsed?: boolean,
     onToggleCollapse?: () => void,
     onShowAddressBook?: () => void,
-    onShowExportPreview?: () => void
+    onShowExportPreview?: () => void,
+    onShowHelp?: () => void
 }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -126,6 +128,19 @@ export default function Sidebar({
                         </div>
                     </div>
                 )}
+
+                {onShowHelp && (
+                    <button
+                        onClick={onShowHelp}
+                        className={styles.navItem}
+                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', marginTop: 8, color: '#2563eb' }}
+                        title="Help & Support"
+                    >
+                        <HelpCircle size={20} />
+                        <span className={styles.label}>Help & Support</span>
+                    </button>
+                )}
+
                 <button
                     onClick={onLogout}
                     className={styles.navItem}
