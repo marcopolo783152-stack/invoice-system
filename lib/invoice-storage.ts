@@ -528,7 +528,7 @@ export async function updateInvoice(id: string, updates: Partial<InvoiceData>): 
       // updateInvoice is used by... mostly status updates?
       // If we change status, total doesn't change.
       // We should calculate total if possible.
-      const total = calculateInvoice(updatedInvoice.data).total;
+      const total = calculateInvoice(updatedInvoice.data).totalDue;
 
       await updateInvoiceInCloud(
         id,
