@@ -305,7 +305,14 @@ function InvoicesListContent() {
 
         if (viewMode === 'active' || viewMode === 'drafts') {
             if (!confirm(`Move ${selectedIds.length} invoices to Recycle Bin?`)) return;
-            await deleteMultipleInvoices(selectedIds);
+
+            // Optimistic UI Update
+            const idsToRemove = selectedIds;
+            setInvoices(prev => prev.filter(inv => !idsToRemove.includes(inv.id)));
+            setFilteredInvoices(prev => prev.filter(inv => !idsToRemove.includes(inv.id)));
+            setSelectedIds([]);
+
+            await deleteMultipleInvoices(idsToRemove);
             loadData();
         }
     };

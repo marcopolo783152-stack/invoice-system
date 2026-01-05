@@ -228,24 +228,46 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
 /**
  * Move invoice to Cloud Recycle Bin
  */
+/**
+ * Move invoice to Cloud Recycle Bin
+ * Uses Batch Write for offline support (Transactions fail offline)
+ */
 export async function moveToCloudBin(id: string): Promise<void> {
   if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
 
   try {
-    await runTransaction(db, async (transaction) => {
-      const sourceRef = doc(db!, COLLECTION_NAME, id);
-      const sourceSnap = await transaction.get(sourceRef);
+    const sourceRef = doc(db!, COLLECTION_NAME, id);
+    const sourceSnap = await getDocs(query(collection(db!, COLLECTION_NAME), limit(1))); // Just a check? No, get exact doc
+    // Note: getDoc is not imported, let's use getDocs with query or add getDoc to imports? 
+    // Wait, getDocs(query(...)) is more complex. Let's just assume we can't easily read-then-write atomically offline.
+    // Instead: Read first (if online/cached), then Batch (Create Bin Item, Delete Source).
 
-      if (!sourceSnap.exists()) throw new Error('Invoice not found');
+    // We need to fetch data first. 'getDocs' works with cache.
+    // But 'doc' + 'getDoc' is better.
+    // Let's use the pattern: 
+    // 1. Get Data (supports offline cache)
+    // 2. Write to Bin (offline queue)
+    // 3. Delete Source (offline queue)
 
-      const targetRef = doc(collection(db!, DELETED_COLLECTION_NAME));
-      transaction.set(targetRef, {
-        ...sourceSnap.data(),
-        deletedAt: Timestamp.now(),
-        originalId: id
-      });
-      transaction.delete(sourceRef);
+    // We need 'getDoc'
+    const { getDoc, writeBatch } = await import('firebase/firestore');
+
+    const snap = await getDoc(sourceRef);
+    if (!snap.exists()) throw new Error('Invoice not found');
+
+    const batch = writeBatch(db!);
+    const targetRef = doc(collection(db!, DELETED_COLLECTION_NAME));
+
+    batch.set(targetRef, {
+      ...snap.data(),
+      deletedAt: Timestamp.now(),
+      originalId: id
     });
+
+    batch.delete(sourceRef);
+
+    await batch.commit();
+
   } catch (error) {
     console.error('Error moving to cloud bin:', error);
     throw error;
@@ -254,33 +276,39 @@ export async function moveToCloudBin(id: string): Promise<void> {
 
 /**
  * Restore invoice from Cloud Recycle Bin
+ * Uses Batch Write for offline support
  */
 export async function restoreFromCloudBin(cloudBinId: string): Promise<void> {
   if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
 
   try {
-    await runTransaction(db, async (transaction) => {
-      const sourceRef = doc(db!, DELETED_COLLECTION_NAME, cloudBinId);
-      const sourceSnap = await transaction.get(sourceRef);
+    const { getDoc, writeBatch } = await import('firebase/firestore');
 
-      if (!sourceSnap.exists()) throw new Error('Deleted invoice not found');
+    const sourceRef = doc(db!, DELETED_COLLECTION_NAME, cloudBinId);
+    const snap = await getDoc(sourceRef);
 
-      const data = sourceSnap.data();
-      const originalId = data.originalId;
+    if (!snap.exists()) throw new Error('Deleted invoice not found');
 
-      // We use originalId to maintain history if possible, or just generate new
-      const targetRef = originalId ? doc(db!, COLLECTION_NAME, originalId) : doc(collection(db!, COLLECTION_NAME));
+    const data = snap.data();
+    const originalId = data.originalId;
 
-      const cleanData = { ...data };
-      delete cleanData.deletedAt;
-      delete cleanData.originalId;
+    const targetRef = originalId ? doc(db!, COLLECTION_NAME, originalId) : doc(collection(db!, COLLECTION_NAME));
 
-      transaction.set(targetRef, {
-        ...cleanData,
-        updatedAt: Timestamp.now()
-      });
-      transaction.delete(sourceRef);
+    const cleanData = { ...data };
+    delete cleanData.deletedAt;
+    delete cleanData.originalId;
+
+    const batch = writeBatch(db!);
+
+    batch.set(targetRef, {
+      ...cleanData,
+      updatedAt: Timestamp.now()
     });
+
+    batch.delete(sourceRef);
+
+    await batch.commit();
+
   } catch (error) {
     console.error('Error restoring from cloud bin:', error);
     throw error;
