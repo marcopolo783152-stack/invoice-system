@@ -192,7 +192,12 @@ function InvoicePageContent() {
     setShowSearch(false);
 
     // Save invoice to storage (async)
-    saveInvoice(data, editId || undefined).then(async () => {
+    saveInvoice(data, editId || undefined).then(async (savedInv) => {
+      // Capture the ID for email/link generation
+      if (savedInv && savedInv.id) {
+        setSavedInvoiceId(savedInv.id);
+      }
+
       // Update count from Firebase
       const invoices = await getAllInvoices();
       setInvoiceCount(invoices.length);
@@ -248,34 +253,46 @@ function InvoicePageContent() {
     }
   };
 
+  // Capture the saved ID to use for links
+  const [savedInvoiceId, setSavedInvoiceId] = useState<string | null>(null);
+
   const handleSendEmail = async () => {
+    // Determine the ID: Pre-existing editId, or newly saved ID
+    const activeId = editId || savedInvoiceId;
+
+    if (!activeId) {
+      alert('Invoice must be saved before sending.');
+      return;
+    }
+
     if (!invoiceRef.current || !invoiceData) return;
 
     if (!isEmailConfigured()) {
-      alert('Email service is not configured yet.\\n\\nPlease set up EmailJS to enable email functionality.\\n\\nSee email-service.ts for setup instructions.');
+      alert('Email service is not configured yet.\n\nPlease set up EmailJS to enable email functionality.\n\nSee email-service.ts for setup instructions.');
       return;
     }
 
     const customerEmail = prompt(
-      `Send Invoice ${invoiceData.invoiceNumber} to Customer\\n\\n` +
-      `Customer: ${invoiceData.soldTo.name}\\n\\n` +
+      `Send Invoice ${invoiceData.invoiceNumber} to Customer\n\n` +
+      `Customer: ${invoiceData.soldTo.name}\n\n` +
       `Enter customer email address:`
     );
 
     if (!customerEmail) return;
 
-    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customerEmail)) {
       alert('Invalid email address. Please try again.');
       return;
     }
 
-    const invoiceHTML = prepareInvoiceForEmail(invoiceRef.current);
+    // Generate Link using the actual ID
+    const link = `${window.location.origin}/public/invoice?id=${activeId}`;
 
     const sending = confirm(
-      `Send invoice to ${customerEmail}?\\n\\n` +
-      `Invoice: ${invoiceData.invoiceNumber}\\n` +
-      `Customer: ${invoiceData.soldTo.name}\\n\\n` +
+      `Send invoice to ${customerEmail}?\n\n` +
+      `Invoice: ${invoiceData.invoiceNumber}\n` +
+      `Customer: ${invoiceData.soldTo.name}\n\n` +
       `Click OK to send.`
     );
 
@@ -286,7 +303,7 @@ function InvoicePageContent() {
         customerEmail,
         invoiceData.soldTo.name,
         invoiceData.invoiceNumber,
-        invoiceHTML
+        link // Pass LINK, not HTML
       );
 
       if (success) {
