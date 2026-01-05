@@ -387,7 +387,10 @@ export default function InventoryManager() {
                                     </td>
                                     <td style={{ padding: 16 }}>
                                         <div style={{ fontWeight: 600 }}>{item.description}</div>
-                                        <div style={{ fontSize: 12, color: '#64748b' }}>{item.design} {item.colorBg && `• ${item.colorBg}`}</div>
+                                        <div style={{ fontSize: 12, color: '#64748b' }}>{item.colorBg && `Color: ${item.colorBg}`}</div>
+                                    </td>
+                                    <td style={{ padding: 16 }}>
+                                        {item.design}
                                     </td>
                                     <td style={{ padding: 16 }}>
                                         {item.widthFeet}'{item.widthInches}" x {item.lengthFeet}'{item.lengthInches}"
