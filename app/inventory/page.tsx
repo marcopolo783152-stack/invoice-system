@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getInventoryItems, InventoryItem, importInventoryBatch, deleteInventoryItem, deleteInventoryBatch, deriveCategory } from '@/lib/inventory-storage';
+import { getInventoryItems, InventoryItem, importInventoryBatch, deleteInventoryItem, deleteInventoryBatch, deriveCategory, saveInventoryItem } from '@/lib/inventory-storage';
 import * as XLSX from 'xlsx';
 import Link from 'next/link';
+import InventoryModal from './InventoryModal';
 
 export default function InventoryManager() {
     const [items, setItems] = useState<InventoryItem[]>([]);
@@ -12,6 +13,8 @@ export default function InventoryManager() {
     const [activeMaterial, setActiveMaterial] = useState('All'); // New Material Filter
     const [isLoading, setIsLoading] = useState(true);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
     const categories = ['All', 'Small / 2x3', '3x5 / 4x6', '5x7 / 6x9', '8x10', '9x12', '10x14', 'Oversize / Palace', 'Runner', 'Round', 'Other'];
     const materials = ['All', 'Silk', 'Wool', 'Silk/Wool', 'Wool/Silk'];
@@ -106,6 +109,18 @@ export default function InventoryManager() {
             e.target.value = ''; // Reset
         };
         reader.readAsBinaryString(file);
+    };
+
+    const handleSaveItem = async (item: Partial<InventoryItem>) => {
+        try {
+            await saveInventoryItem(item);
+            setIsModalOpen(false);
+            setEditingItem(null);
+            loadInventory(); // Refresh list
+        } catch (error) {
+            console.error(error);
+            alert('Failed to save item');
+        }
     };
 
     const downloadTemplate = () => {
@@ -257,8 +272,21 @@ export default function InventoryManager() {
                     )}
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
-                    <Link href="/" style={{ textDecoration: 'none', padding: '10px 20px', background: 'white', border: '1px solid #cbd5e1', borderRadius: 8, color: '#475569', fontWeight: 600 }}>
-                        ← Back to Dashboard
+                    <button
+                        onClick={() => {
+                            setEditingItem(null);
+                            setIsModalOpen(true);
+                        }}
+                        style={{
+                            padding: '8px 16px', borderRadius: 8, border: 'none', background: '#3b82f6', color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13
+                        }}
+                    >
+                        ➕ Add Item
+                    </button>
+                    <Link href="/dashboard">
+                        <button style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}>
+                            ← Back to Dashboard
+                        </button>
                     </Link>
                     <button
                         onClick={downloadTemplate}
@@ -416,12 +444,23 @@ export default function InventoryManager() {
                                         </span>
                                     </td>
                                     <td style={{ padding: 16 }}>
-                                        <button
-                                            onClick={() => handleDelete(item.id)}
-                                            style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600 }}
-                                        >
-                                            Delete
-                                        </button>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <button
+                                                onClick={() => {
+                                                    setEditingItem(item);
+                                                    setIsModalOpen(true);
+                                                }}
+                                                style={{ color: '#3b82f6', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600 }}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(item.id)}
+                                                style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600 }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -436,6 +475,13 @@ export default function InventoryManager() {
                     </table>
                 </div>
             )}
+            {/* Inventory Modal */}
+            <InventoryModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSaveItem}
+                initialData={editingItem}
+            />
         </div>
     );
 }
