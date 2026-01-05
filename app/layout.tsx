@@ -7,6 +7,7 @@ import './print.css';
 import Sidebar from '@/components/Sidebar';
 import AddressBookModal from '@/components/AddressBookModal';
 import ExportPreviewModal from '@/components/ExportPreviewModal';
+import HelpModal from '@/components/HelpModal';
 import { useState, useEffect, Suspense } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -22,6 +23,7 @@ export default function RootLayout({
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [showAddressBook, setShowAddressBook] = useState(false);
   const [showExportPreview, setShowExportPreview] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -95,6 +97,10 @@ export default function RootLayout({
                 isOpen={showExportPreview}
                 onClose={() => setShowExportPreview(false)}
               />
+              <HelpModal
+                isOpen={showHelpModal}
+                onClose={() => setShowHelpModal(false)}
+              />
             </>
           )}
 
@@ -150,6 +156,7 @@ export default function RootLayout({
                     onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
                     onShowAddressBook={() => setShowAddressBook(true)}
                     onShowExportPreview={() => setShowExportPreview(true)}
+                    onShowHelp={() => setShowHelpModal(true)}
                   />
                 </div>
 
