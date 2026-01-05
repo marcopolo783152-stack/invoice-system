@@ -171,7 +171,7 @@ function InvoicesListContent() {
     }, [isMounted, isAuthenticated]);
 
     useEffect(() => {
-        let result = [...(viewMode === 'active' ? invoices : binInvoices)]; // Use binInvoices for bin view
+        let result = [...(viewMode === 'bin' ? binInvoices : invoices)];
 
         // 1. Text Search
         if (searchTerm.trim()) {
