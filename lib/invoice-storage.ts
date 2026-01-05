@@ -253,6 +253,28 @@ function saveInvoicesSync(invoices: SavedInvoice[]): void {
 }
 
 /**
+ * Helper to sanitize data for Firestore (remove undefined)
+ */
+const sanitizeForFirestore = (obj: any): any => {
+  if (obj === undefined) return null;
+  if (obj === null) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirestore);
+  }
+  if (typeof obj === 'object' && !(obj instanceof Date)) {
+    const newObj: any = {};
+    Object.keys(obj).forEach(key => {
+      const val = sanitizeForFirestore(obj[key]);
+      if (val !== undefined) {
+        newObj[key] = val;
+      }
+    });
+    return newObj;
+  }
+  return obj;
+};
+
+/**
  * Save an invoice (to both Firebase and localStorage)
  * If the customer is Martinez, force invoice number to MP00000002
  */
@@ -309,7 +331,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
             data.invoiceNumber,
             data.soldTo.name,
             0, // Will be calculated
-            savedInvoice.data
+            sanitizeForFirestore(savedInvoice.data)
           );
           alert('Sync Success: Invoice updated in cloud.');
         } catch (error) {
@@ -321,7 +343,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
               data.invoiceNumber,
               data.soldTo.name,
               0,
-              savedInvoice.data
+              sanitizeForFirestore(savedInvoice.data)
             );
             savedInvoice.id = newId;
             invoices[existingIndex] = savedInvoice;
@@ -337,7 +359,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
             data.invoiceNumber,
             data.soldTo.name,
             0,
-            savedInvoice.data
+            sanitizeForFirestore(savedInvoice.data)
           );
           // Replace local ID with real Cloud ID
           savedInvoice.id = newId;
@@ -358,7 +380,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
           data.invoiceNumber,
           data.soldTo.name,
           0, // Will be calculated
-          data
+          sanitizeForFirestore(data)
         );
       } catch (error) {
         console.error('Firebase save failed, saved locally:', error);
@@ -479,6 +501,47 @@ export async function searchInvoices(query: string): Promise<SavedInvoice[]> {
 }
 
 /**
+ * Update an existing invoice
+ */
+export async function updateInvoice(id: string, updates: Partial<InvoiceData>): Promise<void> {
+  const invoices = await getAllInvoices();
+  const index = invoices.findIndex(inv => inv.id === id);
+
+  if (index !== -1) {
+    const updatedInvoice = {
+      ...invoices[index],
+      data: { ...invoices[index].data, ...updates },
+      updatedAt: new Date().toISOString()
+    };
+
+    // Update Local
+    invoices[index] = updatedInvoice;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+
+    // Update Cloud
+    if (isFirebaseConfigured()) {
+      const safeData = sanitizeForFirestore(updatedInvoice.data);
+      // Calculate total amount (rough estimate or recalculate)
+      // Since we need to pass total, and we have updatedInvoice.data, let's use it.
+      // But updatedInvoice.data might not have total calculated if we just updated a field?
+      // Usually updates are full saves. But here it's partial?
+      // updateInvoice is used by... mostly status updates?
+      // If we change status, total doesn't change.
+      // We should calculate total if possible.
+      const total = calculateInvoice(updatedInvoice.data).total;
+
+      await updateInvoiceInCloud(
+        id,
+        updatedInvoice.data.invoiceNumber,
+        updatedInvoice.data.soldTo.name,
+        total,
+        safeData
+      );
+    }
+  }
+}
+
+/**
  * Delete an invoice (Moves to Cloud Bin + Local Item removal)
  */
 export async function deleteInvoice(id: string): Promise<boolean> {
@@ -546,6 +609,8 @@ export function getDeletedInvoices(): SavedInvoice[] {
     return [];
   }
 }
+
+
 
 /**
  * Get deleted invoices (Async, merging Cloud + Local)
