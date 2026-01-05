@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart, Mail } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart, Mail, Trash2 } from 'lucide-react';
 import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
