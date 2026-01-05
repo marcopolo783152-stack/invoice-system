@@ -142,7 +142,9 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
 /**
  * Get item by SKU
  */
-return items.find(i => i.sku.toLowerCase() === sku.toLowerCase()) || null;
+export async function getItemBySku(sku: string): Promise<InventoryItem | null> {
+    const items = await getInventoryItems();
+    return items.find(i => i.sku.toLowerCase() === sku.toLowerCase()) || null;
 }
 
 /**
