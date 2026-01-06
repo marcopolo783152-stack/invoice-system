@@ -63,9 +63,9 @@
 		overflow: visible !important;
 	}
 
-	/* 5. Printable formatting - Handled in globals.css now */
-	/* @page {
-		margin: 10mm;
-		size: A4 portrait;
-	} */
+	/* 5. Printable formatting */
+	@page {
+		margin: 0.3in;
+		size: letter portrait;
+	}
 }

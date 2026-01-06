@@ -629,6 +629,14 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                           {invoice.data.items.length} item{invoice.data.items.length !== 1 ? 's' : ''}
                         </span>
                       </div>
+
+                      {/* Show matching items if searching */}
+                      {searchQuery && invoice.data.items.some(i => i.sku?.toLowerCase().includes(searchQuery.toLowerCase())) && (
+                        <div style={{ marginTop: 8, fontSize: 12, color: '#059669', background: '#ecfdf5', padding: '4px 8px', borderRadius: 4 }}>
+                          Contains: {invoice.data.items.filter(i => i.sku?.toLowerCase().includes(searchQuery.toLowerCase())).map(i => i.sku).join(', ')}
+                        </div>
+                      )}
+
                       <div className={styles.timestamp}>
                         Created: {formatDate(invoice.createdAt)}
                       </div>
