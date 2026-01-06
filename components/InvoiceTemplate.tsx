@@ -65,9 +65,24 @@ export default function InvoiceTemplate({
   // We no longer rely on a global isPerSqFt flag for the whole invoice
 
   // PAGINATION LOGIC
-  const ITEMS_PER_PAGE = 20;
+  const ITEMS_PER_PAGE = 20; // Default items per page
   const items = calculations.items;
-  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE) || 1;
+
+  // Calculate total pages
+  let totalPages = Math.ceil(items.length / ITEMS_PER_PAGE) || 1;
+
+  // Check if the last page is "full" (more than 12 items).
+  // If so, the footer (notes + totals + signature) might get cut off or overflow.
+  // In that case, we add an EXTRA page just for the footer.
+  // 12 items leave enough room for a moderate footer. >12 risks cutoff on strict Letter size.
+  const itemsOnLastPage = items.length % ITEMS_PER_PAGE;
+  // If itemsOnLastPage is 0, it means it's exactly 20 (full page), so we definitely need a new page.
+  // If itemsOnLastPage > 12, we also force a new page.
+  const needsFooterPage = itemsOnLastPage === 0 || itemsOnLastPage > 12;
+
+  if (needsFooterPage) {
+    totalPages += 1;
+  }
 
   // Create array of page indices [0, 1, 2...]
   const pages = Array.from({ length: totalPages }, (_, i) => i);
@@ -75,12 +90,23 @@ export default function InvoiceTemplate({
   return (
     <>
       {pages.map((pageIndex) => {
+        // Determine if this is the footer page
+        // If needsFooterPage is true, the last page (totalPages-1) is the footer page (no items).
+        // The items for pageIndex (if pageIndex < totalPages - 1) are normal.
+
+        let startIdx = 0;
+        let pageItems: any[] = [];
+        const isFooterPage = needsFooterPage && pageIndex === totalPages - 1;
+
+        if (!isFooterPage) {
+          startIdx = pageIndex * ITEMS_PER_PAGE;
+          pageItems = items.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+        }
+
         const isLastPage = pageIndex === totalPages - 1;
-        const startIdx = pageIndex * ITEMS_PER_PAGE;
-        const pageItems = items.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
         return (
-          <div key={pageIndex} className={`${styles.invoice} email-invoice pdf-page`}>
+          <div key={pageIndex} className={`${styles.invoice} email-invoice pdf-page`} style={{ position: 'relative', minHeight: '11in' }}>
             {/* Header Section - Repeated on every page */}
             <div className={`${styles.header} email-header`}>
               <div className={`${styles.businessInfo} email-business-info`}>
