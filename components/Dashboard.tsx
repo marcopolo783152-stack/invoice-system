@@ -9,6 +9,112 @@ import Login from './Login';
 
 type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
+import { exportOrganizedBackup } from '@/lib/bulk-export';
+import { HardDrive, AlertTriangle, CheckCircle } from 'lucide-react'; // Import icons
+
+const BACKUP_KEY = 'last_backup_date';
+
+function BackupReminder({ invoices }: { invoices: any[] }) {
+    const [needsBackup, setNeedsBackup] = useState(false);
+    const [backingUp, setBackingUp] = useState(false);
+    const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
+
+    useEffect(() => {
+        const checkBackup = () => {
+            const now = new Date();
+            const hour = now.getHours();
+            // Start checking after 6 PM (18:00)
+            if (hour >= 18) {
+                const lastBackup = localStorage.getItem(BACKUP_KEY);
+                const today = now.toDateString(); // "Mon Jan 06 2026"
+
+                if (lastBackup !== today) {
+                    setNeedsBackup(true);
+                }
+            }
+        };
+
+        checkBackup();
+        // Check every minute just in case user leaves dashboard open
+        const interval = setInterval(checkBackup, 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleBackup = async () => {
+        if (backingUp) return;
+        setBackingUp(true);
+        try {
+            await exportOrganizedBackup(invoices, (p) => {
+                setProgress({ current: p.current, total: p.total, status: p.status });
+            });
+            // Mark as done for today
+            localStorage.setItem(BACKUP_KEY, new Date().toDateString());
+            setNeedsBackup(false);
+            alert('Backup saved successfully! Please copy the file to your Backup Drive.');
+        } catch (error) {
+            console.error(error);
+            alert('Backup failed. Please try again.');
+        } finally {
+            setBackingUp(false);
+        }
+    };
+
+    if (backingUp) {
+        return (
+            <div style={{
+                position: 'fixed', bottom: 20, right: 20, zIndex: 9999,
+                background: 'white', padding: 20, borderRadius: 12,
+                boxShadow: '0 10px 25px rgba(0,0,0,0.2)', maxWidth: 300, border: '1px solid #e2e8f0'
+            }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: 16, fontWeight: 700 }}>Backing Up...</h4>
+                <div style={{ marginBottom: 8, fontSize: 13, color: '#64748b' }}>{progress.status}</div>
+                <div style={{ height: 6, width: '100%', background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(progress.current / Math.max(progress.total, 1)) * 100}%`, background: '#3b82f6', transition: 'width 0.2s' }} />
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, textAlign: 'right', color: '#94a3b8' }}>{progress.current} / {progress.total}</div>
+            </div>
+        );
+    }
+
+    if (!needsBackup) return null;
+
+    return (
+        <div style={{
+            marginTop: 20, padding: 16, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+            animation: 'pulse 2s infinite'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ background: '#f97316', padding: 8, borderRadius: '50%', color: 'white' }}>
+                    <AlertTriangle size={20} />
+                </div>
+                <div>
+                    <h4 style={{ margin: 0, color: '#c2410c', fontSize: 15 }}>Daily Backup Required</h4>
+                    <p style={{ margin: '2px 0 0 0', fontSize: 13, color: '#9a3412' }}>It's past 6 PM. Please save your daily backup.</p>
+                </div>
+            </div>
+            <button
+                onClick={handleBackup}
+                style={{
+                    whiteSpace: 'nowrap', padding: '10px 20px', background: '#ea580c', color: 'white',
+                    border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(234, 88, 12, 0.2)'
+                }}
+            >
+                <HardDrive size={16} style={{ display: 'inline', marginRight: 8, verticalAlign: 'text-bottom' }} />
+                Backup Now
+            </button>
+            <style>{`
+                @keyframes pulse {
+                    0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.4); }
+                    70% { box-shadow: 0 0 0 10px rgba(234, 88, 12, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
+                }
+            `}</style>
+        </div>
+    );
+}
+
 export default function Dashboard() {
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
     const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([]);
@@ -378,6 +484,9 @@ export default function Dashboard() {
 
                 {/* Mobile Card View */}
                 <div className="mobile-visible">
+                    {/* <div className={styles.statLabel}>Total Receivables</div>
+                    <div className={styles.statValue}>{formatCurrency(stats.totalReceivable)}</div>
+                    <div className={styles.statSubtext}>Outstanding balance</div> */}
                     {filteredInvoices.slice(0, 10).map((inv) => {
                         const calcs = calculateInvoice(inv.data);
                         return (
