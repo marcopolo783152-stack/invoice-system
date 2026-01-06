@@ -205,7 +205,10 @@ export default function RootLayout({
                   <div style={{ width: 24, height: 2, background: 'currentColor', marginBottom: 5 }} />
                   <div style={{ width: 24, height: 2, background: 'currentColor' }} />
                 </button>
-                <div style={{ fontWeight: 800, color: '#1a1f3c', fontSize: '1.2rem' }}>Marco Polo</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <img src="/LOGO.png" alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                  <div style={{ fontWeight: 800, color: '#1a1f3c', fontSize: '1.2rem' }}>Marco Polo</div>
+                </div>
                 <div style={{ width: 40 }} /> {/* Spacer */}
               </header>
             )}
