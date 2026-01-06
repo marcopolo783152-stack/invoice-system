@@ -9,8 +9,8 @@ import Login from './Login';
 
 type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
-import { exportOrganizedBackup } from '@/lib/bulk-export';
-import { HardDrive, AlertTriangle, CheckCircle } from 'lucide-react'; // Import icons
+import { exportToDirectory } from '@/lib/bulk-export';
+import { HardDrive, AlertTriangle } from 'lucide-react'; // Import icons
 
 const BACKUP_KEY = 'last_backup_date';
 
@@ -44,16 +44,19 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
         if (backingUp) return;
         setBackingUp(true);
         try {
-            await exportOrganizedBackup(invoices, (p) => {
+            await exportToDirectory(invoices, (p) => {
                 setProgress({ current: p.current, total: p.total, status: p.status });
             });
             // Mark as done for today
             localStorage.setItem(BACKUP_KEY, new Date().toDateString());
             setNeedsBackup(false);
-            alert('Backup saved successfully! Please copy the file to your Backup Drive.');
-        } catch (error) {
+            alert('Backup Complete! All files have been saved to your drive.');
+        } catch (error: any) {
             console.error(error);
-            alert('Backup failed. Please try again.');
+            // Don't alert if user just cancelled the picker
+            if (error.name !== 'AbortError') {
+                alert('Backup failed. Please try again.');
+            }
         } finally {
             setBackingUp(false);
         }

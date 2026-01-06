@@ -147,10 +147,10 @@ export async function exportSelectedInvoices(
 }
 
 /**
- * Export ALL invoices organized by folder for Backup
- * Folders: Sales, Consignment, Wash_Repair_Services
+ * Export ALL invoices directly to a selected folder on disk
+ * Structure: Root -> Sales/Consignment/Wash -> [Invoice#] [Name] [Phone].pdf
  */
-export async function exportOrganizedBackup(
+export async function exportToDirectory(
   invoices: SavedInvoice[],
   onProgress?: ProgressCallback
 ): Promise<void> {
@@ -158,21 +158,30 @@ export async function exportOrganizedBackup(
     throw new Error('No invoices to backup');
   }
 
-  const zip = new JSZip();
-  const total = invoices.length;
+  // 1. Request Directory Handle
+  let rootHandle: any;
+  try {
+    // @ts-ignore - showDirectoryPicker is not yet in standard TS lib
+    rootHandle = await window.showDirectoryPicker();
+  } catch (e) {
+    // User cancelled
+    return;
+  }
 
-  // Folders
-  const salesFolder = zip.folder("Sales");
-  const consignmentFolder = zip.folder("Consignment");
-  const washFolder = zip.folder("Wash_Repair_Services");
+  const total = invoices.length;
 
   try {
     onProgress?.({
       current: 0,
       total,
-      status: 'Starting backup...',
+      status: 'Preparing backup folders...',
       percentage: 0,
     });
+
+    // 2. Create Subdirectories
+    const salesHandle = await rootHandle.getDirectoryHandle('Sales', { create: true });
+    const consignmentHandle = await rootHandle.getDirectoryHandle('Consignment', { create: true });
+    const washHandle = await rootHandle.getDirectoryHandle('Wash_Repair_Services', { create: true });
 
     // Container (Hidden)
     const container = document.createElement('div');
@@ -211,41 +220,31 @@ export async function exportOrganizedBackup(
       // Generate Blob
       const pdfBlob = await getInvoicePDFBlob(container, invoice.data.invoiceNumber);
 
-      // Filename
-      const invoiceNum = invoice.data.invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_');
-      // Add date to filename for easier sorting in folder
-      const dateStr = invoice.data.date || new Date().toISOString().split('T')[0];
-      const customerName = invoice.data.soldTo.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `${dateStr}_${invoiceNum}_${customerName}.pdf`;
+      // Filename: [Invoice#] [Name] [Phone].pdf
+      // Sanitize filename to be safe for Windows
+      const safe = (str: string) => (str || '').replace(/[^a-zA-Z0-9- ]/g, '').trim();
+      const invNum = safe(invoice.data.invoiceNumber);
+      const name = safe(invoice.data.soldTo.name);
+      const phone = safe(invoice.data.soldTo.phone);
 
-      // Determine Folder
+      const filename = `${invNum} ${name} ${phone}.pdf`;
+
+      // Determine Target Folder
+      let targetHandle = salesHandle;
       const type = invoice.data.documentType || 'INVOICE';
-      if (type === 'CONSIGNMENT') {
-        consignmentFolder?.file(filename, pdfBlob);
-      } else if (type === 'WASH') {
-        washFolder?.file(filename, pdfBlob);
-      } else {
-        salesFolder?.file(filename, pdfBlob);
-      }
+      if (type === 'CONSIGNMENT') targetHandle = consignmentHandle;
+      else if (type === 'WASH') targetHandle = washHandle;
+
+      // Write File
+      const fileHandle = await targetHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(pdfBlob);
+      await writable.close();
     }
 
     // Cleanup
     root.unmount();
     document.body.removeChild(container);
-
-    // Generate ZIP
-    onProgress?.({ current: total, total, status: 'Compressing backup...', percentage: 100 });
-
-    const zipBlob = await zip.generateAsync({
-      type: 'blob',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
-    });
-
-    // Save
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
-    const dateTimeStr = `${timestamp[0]}_${timestamp[1].slice(0, 5)}`; // YYYY-MM-DD_HH-mm
-    saveAs(zipBlob, `INVOICES_BACKUP_${dateTimeStr}.zip`);
 
     onProgress?.({ current: total, total, status: 'Backup Complete!', percentage: 100 });
 
