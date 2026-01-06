@@ -14,6 +14,76 @@ import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
 import { prepareInvoiceForEmail } from '@/lib/email-service';
 import EmailModal from '@/components/EmailModal';
 
+function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isOpen: boolean, items: any[], onClose: () => void, onConvert: (selectedIds: string[], note: string) => void }) {
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [note, setNote] = useState('Converted to Sale');
+    const [processing, setProcessing] = useState(false);
+
+    if (!isOpen) return null;
+
+    const filteredItems = items.filter(item =>
+        (item.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (item.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ background: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 500, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Select Items to Sell</h3>
+
+                <input
+                    type="text"
+                    placeholder="Search by SKU or Description..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', marginBottom: 16, border: '1px solid #cbd5e1', borderRadius: 8 }}
+                    autoFocus
+                />
+
+                <div style={{ maxHeight: 300, overflowY: 'auto', marginBottom: 16, border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                    {filteredItems.length === 0 ? (
+                        <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>No items found</div>
+                    ) : (
+                        filteredItems.map(item => (
+                            <label key={item.id} style={{ display: 'flex', gap: 12, padding: 12, borderBottom: '1px solid #f1f5f9', cursor: item.returned ? 'default' : 'pointer', background: item.returned ? '#f8fafc' : 'white' }}>
+                                <input
+                                    type="checkbox"
+                                    disabled={item.returned}
+                                    checked={selectedIds.includes(item.id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) setSelectedIds([...selectedIds, item.id]);
+                                        else setSelectedIds(selectedIds.filter(id => id !== item.id));
+                                    }}
+                                />
+                                <div style={{ opacity: item.returned ? 0.6 : 1 }}>
+                                    <div style={{ fontWeight: 600 }}>{item.sku}</div>
+                                    <div style={{ fontSize: 13, color: '#64748b' }}>{item.description}</div>
+                                    {item.returned && <div style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Already Returned</div>}
+                                </div>
+                            </label>
+                        ))
+                    )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, color: '#64748b', marginRight: 'auto' }}>
+                        {selectedIds.length} selected
+                    </span>
+                    <button onClick={onClose} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
+                    <button
+                        onClick={() => { setProcessing(true); onConvert(selectedIds, note); }}
+                        disabled={processing || selectedIds.length === 0}
+                        style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: (processing || selectedIds.length === 0) ? 0.7 : 1 }}
+                    >
+                        {processing ? 'Processing...' : 'Convert to Sale'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function InvoiceViewContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -422,19 +492,9 @@ function InvoiceViewContent() {
                             isOpen={true}
                             items={invoice.data.items}
                             onClose={() => setShowReturnModal(false)}
-                            onConvert={(ids, note) => {
+                            onConvert={(ids: string[], note: string) => {
                                 setReturnItems(ids);
                                 setReturnNote(note);
-                                // Hack: trigger existing logic which depends on state update. 
-                                // Ideally refactor handleProcessReturn to accept args. 
-                                // Since state updates are async, we use a timeout or useEffect. 
-                                // Actually, let's just modify the handler to look at args, or we update state and call a wrapper?
-                                // Better: We just updated state, but we need to wait. 
-                                // Let's call a specific effect or just duplicate the logic briefly for safety.
-                                // Or, refactor handleProcessReturn to use ARGUMENTS instead of state.
-                                // For now, we update state and then call handleProcessReturn in a timeout to be safe? 
-                                // No, that's flaky. 
-                                // Let's just update handleProcessReturn to take arguments!
                                 handleProcessReturnWithArgs(ids, note);
                             }}
                         />
