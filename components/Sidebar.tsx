@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle } from 'lucide-react';
 import styles from './Sidebar.module.css';
@@ -57,7 +58,15 @@ export default function Sidebar({
         <div className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}>
             <div className={styles.logo}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <TrendingUp className={styles.logoIcon} size={28} />
+                    <div style={{ position: 'relative', width: 40, height: 40 }}>
+                        <Image
+                            src="/LOGO.png"
+                            alt="Logo"
+                            fill
+                            style={{ objectFit: 'contain' }}
+                            priority
+                        />
+                    </div>
                     <span className={styles.label}>Marco Polo</span>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
