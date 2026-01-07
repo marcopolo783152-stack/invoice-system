@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search } from 'lucide-react';
-import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
+import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import Link from 'next/link';
 import Login from './Login';
@@ -11,7 +11,6 @@ import { formatDateMMDDYYYY } from '@/lib/date-utils';
 type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
 import { exportToDirectory } from '@/lib/bulk-export';
-import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices } from '@/lib/invoice-storage';
 import { HardDrive, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react'; // Import icons
 function BackupReminder({ invoices }: { invoices: any[] }) {
     const [status, setStatus] = useState<'checking' | 'uptodate' | 'needed'>('checking');
