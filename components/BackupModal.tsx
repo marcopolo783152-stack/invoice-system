@@ -97,12 +97,21 @@ export default function BackupModal({ onClose }: BackupModalProps) {
                         <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
                             Backup Location
                         </label>
+                        {typeof window !== 'undefined' && !(window as any).electron && (
+                            <div style={{ marginBottom: 10, padding: 8, background: '#fffbeb', borderRadius: 4, color: '#92400e', fontSize: 13, border: '1px solid #fcd34d' }}>
+                                <strong>Note:</strong> Automated automatic backups to local drives (like Z:\) ONLY work in the <strong>Desktop Application</strong>. On the web version, please use the download button below.
+                            </div>
+                        )}
                         <div style={{ display: 'flex', gap: 10 }}>
                             <input
                                 type="text"
                                 value={backupPath}
-                                readOnly
-                                placeholder="No folder selected"
+                                onChange={(e) => {
+                                    setBackupPath(e.target.value);
+                                    localStorage.setItem('backup_path', e.target.value);
+                                    setStatus('idle');
+                                }}
+                                placeholder="Select folder or type path (e.g. Z:\Backups)"
                                 style={{ flex: 1, padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
                             />
                             <button
