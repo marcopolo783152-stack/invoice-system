@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart, Mail, Trash2 } from 'lucide-react';
 import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
+import { formatDateMMDDYYYY } from '@/lib/date-utils';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { ReturnedReceipt } from '@/components/ReturnedReceipt';
 import { businessConfig } from '@/config/business';
@@ -434,7 +435,7 @@ function InvoiceViewContent() {
                                         {invoice.data.documentType || 'INVOICE'}
                                     </span>
                                 </h1>
-                                <p style={{ color: '#64748b', marginTop: 4 }}>Created on {new Date(invoice.createdAt).toLocaleDateString()}</p>
+                                <p style={{ color: '#64748b', marginTop: 4 }}>Created on {formatDateMMDDYYYY(invoice.createdAt)}</p>
                             </div>
 
                             <div style={{ display: 'flex', gap: 12 }}>

@@ -6,6 +6,7 @@ import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import Link from 'next/link';
 import Login from './Login';
+import { formatDateMMDDYYYY } from '@/lib/date-utils';
 
 type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
@@ -230,7 +231,7 @@ export default function Dashboard() {
         });
 
         setFilteredInvoices(filtered);
-    }, [invoices, period]);
+    }, [invoices, period, startDate, endDate]);
 
     // KPIs
     const salesInvoices = filteredInvoices.filter(inv => inv.data.documentType !== 'CONSIGNMENT');
@@ -410,7 +411,7 @@ export default function Dashboard() {
                                     <div key={inv.id} style={{ background: 'white', padding: 12, borderRadius: 8, border: '1px solid #fcd34d', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div>
                                             <div style={{ fontWeight: 700, color: '#1e293b' }}>{inv.data.invoiceNumber} - {inv.data.soldTo.name}</div>
-                                            <div style={{ fontSize: 13, color: '#b45309' }}>Due: {inv.data.pickupDate}</div>
+                                            <div style={{ fontSize: 13, color: '#b45309' }}>Due: {formatDateMMDDYYYY(inv.data.pickupDate)}</div>
                                         </div>
                                         <Link href={`/invoices/view?id=${inv.id}`} style={{ padding: '6px 12px', background: '#fff7ed', color: '#c2410c', textDecoration: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
                                             View

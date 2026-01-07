@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDateMMDDYYYY } from '@/lib/date-utils';
 
 /**
  * ReturnedReceipt component for professional returned receipt
@@ -40,7 +41,7 @@ export function ReturnedReceipt({ receiptData }: { receiptData: any }) {
             <h3 style={{ textAlign: 'center', margin: '16px 0', letterSpacing: 2 }}>RETURNED RECEIPT</h3>
             <div style={{ marginBottom: 12, fontSize: 14 }}>
                 <b>Invoice #:</b> {data.invoiceNumber || ''}<br />
-                <b>Date:</b> {new Date().toLocaleDateString()}<br />
+                <b>Date:</b> {formatDateMMDDYYYY(new Date())}<br />
                 <b>Customer:</b> {data.soldTo?.name || ''}<br />
                 <b>Address:</b> {data.soldTo?.address || ''}, {data.soldTo?.city || ''}, {data.soldTo?.state || ''} {data.soldTo?.zip || ''}<br />
                 <b>Phone:</b> {data.soldTo?.phone || ''}<br />

@@ -6,6 +6,8 @@ import { ArrowLeft, FileText, Calendar, Download } from 'lucide-react';
 import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import { generateSalesReportPDF } from '@/lib/pdf-reports';
+import { openPDFInNewTab, isMobileDevice } from '@/lib/pdf-utils';
+import { formatDateMMDDYYYY } from '@/lib/date-utils';
 
 export default function ReportsPage() {
     const router = useRouter();
@@ -163,7 +165,7 @@ export default function ReportsPage() {
                             <tbody>
                                 {filteredData.map((inv) => (
                                     <tr key={inv.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: '12px 16px', color: '#334155' }}>{inv.data.date}</td>
+                                        <td style={{ padding: '12px 16px', color: '#334155' }}>{formatDateMMDDYYYY(inv.data.date)}</td>
                                         <td style={{ padding: '12px 16px', color: '#334155', fontWeight: 500 }}>{inv.data.invoiceNumber}</td>
                                         <td style={{ padding: '12px 16px', color: '#334155' }}>{inv.data.soldTo.name}</td>
                                         <td style={{ padding: '12px 16px', color: '#334155', textAlign: 'right', fontWeight: 600 }}>

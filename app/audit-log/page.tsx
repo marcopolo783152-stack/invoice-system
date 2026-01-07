@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { getAuditLogs, AuditEntry } from '@/lib/audit-logger';
+import { formatDateMMDDYYYY } from '@/lib/date-utils';
 import { History, Search, Filter } from 'lucide-react';
 import Login from '@/components/Login';
 
@@ -40,8 +41,7 @@ export default function AuditLogPage() {
     );
 
     const formatDate = (isoString: string) => {
-        const d = new Date(isoString);
-        return d.toLocaleString();
+        return formatDateMMDDYYYY(isoString);
     };
 
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading logs...</div>;

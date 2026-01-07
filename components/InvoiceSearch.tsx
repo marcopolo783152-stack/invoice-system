@@ -35,7 +35,7 @@ export function ReturnedReceipt({ receiptData }: { receiptData: any }) {
       <h3 style={{ textAlign: 'center', margin: '16px 0', letterSpacing: 2 }}>RETURNED RECEIPT</h3>
       <div style={{ marginBottom: 12 }}>
         <b>Invoice #:</b> {data.invoiceNumber || ''}<br />
-        <b>Date:</b> {data.date ? new Date(data.date).toLocaleDateString() : new Date().toLocaleDateString()}<br />
+        <b>Date:</b> {formatDateMMDDYYYY(new Date())}<br />
         <b>Customer:</b> {data.soldTo?.name || ''}<br />
         <b>Address:</b> {data.soldTo?.address || ''}, {data.soldTo?.city || ''}, {data.soldTo?.state || ''} {data.soldTo?.zip || ''}<br />
         <b>Phone:</b> {data.soldTo?.phone || ''} {data.soldTo?.email && (<span>| <b>Email:</b> {data.soldTo.email}</span>)}<br />
@@ -68,6 +68,7 @@ export function ReturnedReceipt({ receiptData }: { receiptData: any }) {
  */
 
 import React, { useState, useEffect } from 'react';
+import { formatDateMMDDYYYY } from '@/lib/date-utils';
 import { createPortal } from 'react-dom';
 import { searchInvoices, getAllInvoices, deleteInvoice, deleteMultipleInvoices, SavedInvoice, exportAddressBook } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
@@ -569,7 +570,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                           {invoice.data.invoiceNumber}
                         </span>
                         <span className={styles.invoiceDate}>
-                          {invoice.data.date}
+                          {formatDateMMDDYYYY(invoice.data.date)}
                         </span>
                         {(invoice.data.documentType === 'CONSIGNMENT' || invoice.documentType === 'CONSIGNMENT') && (
                           <span className={styles.consignBadge}>Consignment</span>
@@ -638,7 +639,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
                       )}
 
                       <div className={styles.timestamp}>
-                        Created: {formatDate(invoice.createdAt)}
+                        Created: {formatDateMMDDYYYY(invoice.createdAt)}
                       </div>
                     </div>
                   </div>
@@ -773,7 +774,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
               <div className={styles.previewSection}>
                 <h4>Invoice Details</h4>
                 <p><strong>Invoice #:</strong> {selectedInvoice.data.invoiceNumber}</p>
-                <p><strong>Date:</strong> {selectedInvoice.data.date}</p>
+                <p><strong>Date:</strong> {formatDateMMDDYYYY(selectedInvoice.data.date)}</p>
                 <p><strong>Terms:</strong> {selectedInvoice.data.terms}</p>
                 <p><strong>Mode:</strong> {selectedInvoice.data.mode}</p>
                 {selectedInvoice.data.returned && (

@@ -4,6 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ReturnedReceipt } from '@/components/InvoiceSearch';
 import { openPDFInNewTab, isMobileDevice } from '@/lib/pdf-utils';
+import { formatDateMMDDYYYY } from '@/lib/date-utils';
 
 function parseData(dataParam: string | null) {
   if (!dataParam) return null;
@@ -100,7 +101,7 @@ export default function ReturnedReceiptPrintPage() {
         {/* DEBUG: Always show something printable */}
         <div style={{ background: '#eef', color: '#222', padding: 20, marginBottom: 20 }}>
           <div>Hello Print Test</div>
-          <div>Current Date: {new Date().toLocaleString()}</div>
+          <div>Current Date: {formatDateMMDDYYYY(new Date())}</div>
         </div>
         <ReturnedReceipt receiptData={receiptData} />
       </div>

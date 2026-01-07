@@ -14,6 +14,7 @@ import type { ExportProgress } from '@/lib/bulk-export';
 import { requestSecurityConfirmation } from '@/lib/email-service';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { formatDateMMDDYYYY } from '@/lib/date-utils';
 import { Search, Plus, FileText, Download, Trash2, Users, FileDown, RotateCcw, AlertTriangle, Archive, Printer } from 'lucide-react';
 import Login from '@/components/Login';
 
@@ -248,7 +249,7 @@ function InvoicesListContent() {
                 statuses.push({
                     bg,
                     text,
-                    label: `Due: ${inv.data.pickupDate}`
+                    label: `Due: ${formatDateMMDDYYYY(inv.data.pickupDate)}`
                 });
             }
         } else {
@@ -639,7 +640,7 @@ function InvoicesListContent() {
                                         </div>
                                     </td>
                                     <td style={{ padding: '20px 24px', color: '#4b5563', fontWeight: 500 }}>{inv.data?.soldTo?.name || 'Unknown'}</td>
-                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data?.date || ''}</td>
+                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{formatDateMMDDYYYY(inv.data?.date)}</td>
                                     <td style={{ padding: '20px 24px', color: '#6b7280' }}>{(inv.data?.items || []).length} items</td>
                                     <td style={{ padding: '20px 24px', fontWeight: 700, color: '#1a1f3c' }}>${calculateInvoice(inv.data || {} as any).totalDue.toLocaleString()}</td>
                                     <td style={{ padding: '20px 24px' }}>
