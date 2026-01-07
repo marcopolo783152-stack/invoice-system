@@ -28,6 +28,8 @@ export interface InvoiceItem {
   returnNote?: string;
   // Image support
   image?: string; // Base64 encoded image
+  // Item visibility/status
+  sold?: boolean; // New: track if item in consignment is sold
   // Wash/Repair specific
   serviceType?: {
     wash: boolean;
@@ -113,6 +115,7 @@ export interface InvoiceCalculations {
   netSubtotal: number;
   netTotalDue: number;
   returnedAmount: number;
+  soldAmount: number; // New: total value of items marked as sold
   downpayment?: number;
   balanceDue?: number;
 }
@@ -191,6 +194,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
       netSubtotal: 0,
       netTotalDue: 0,
       returnedAmount: 0,
+      soldAmount: 0,
       downpayment: 0,
       balanceDue: 0
     };
@@ -260,6 +264,15 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   const totalDue = subtotalAfterDiscount + salesTax;
   const netTotalDue = netSubtotalAfterDiscount + netSalesTax;
 
+  // Calculate sold amount (specifically for consignments)
+  const soldAmount = calculatedItems
+    .filter(item => item.sold && !item.returned)
+    .reduce((sum, item) => sum + item.amount, 0);
+
+  // For Consignments, the "Revenue" or "Paid" part is the soldAmount
+  // For standard Sales, it's the netTotalDue
+  const netTotalDueFinal = isConsignment ? soldAmount : netTotalDue;
+
   return {
     items: calculatedItems,
     subtotal,
@@ -268,8 +281,9 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     salesTax,
     totalDue,
     netSubtotal,
-    netTotalDue,
+    netTotalDue: netTotalDueFinal,
     returnedAmount: totalDue - netTotalDue, // Total value of returned items including tax and discount
+    soldAmount,
     downpayment: data.downpayment || 0,
     balanceDue: totalDue - (data.downpayment || 0)
   };

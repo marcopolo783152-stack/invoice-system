@@ -236,8 +236,8 @@ export default function Dashboard() {
     const salesInvoices = filteredInvoices.filter(inv => inv.data.documentType !== 'CONSIGNMENT');
     const consignmentInvoices = filteredInvoices.filter(inv => inv.data.documentType === 'CONSIGNMENT');
 
-    const totalNetRevenue = salesInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).netTotalDue, 0);
-    const totalConsignmentValue = consignmentInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).netTotalDue, 0);
+    const totalNetRevenue = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).netTotalDue, 0);
+    const totalConsignmentValue = consignmentInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).totalDue, 0);
     const totalReturned = filteredInvoices.reduce((sum, inv) => sum + calculateInvoice(inv.data).returnedAmount, 0);
 
     // Counts
@@ -428,7 +428,7 @@ export default function Dashboard() {
                     title="Sales Revenue"
                     value={`$${totalNetRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<DollarSign size={24} color="#10b981" />}
-                    trend={`Total - Refunds`}
+                    trend={`Net Revenue`}
                     trendColor="#10b981"
                     color="rgba(16, 185, 129, 0.1)"
                 />

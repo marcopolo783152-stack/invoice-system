@@ -84,6 +84,78 @@ function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isO
     );
 }
 
+function MarkSoldModal({ isOpen, items, onClose, onConfirm }: { isOpen: boolean, items: any[], onClose: () => void, onConfirm: (selectedIds: string[]) => void }) {
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    if (!isOpen) return null;
+
+    const filteredItems = items.filter(item =>
+        !item.sold && // Only show items NOT yet sold
+        ((item.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (item.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()))
+    );
+
+    return (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ background: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 500, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Confirm Payment (Mark as Sold)</h3>
+                <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>Select items that have been paid for. This will mark them as SOLD.</p>
+
+                <input
+                    type="text"
+                    placeholder="Search by SKU or Description..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', marginBottom: 16, border: '1px solid #cbd5e1', borderRadius: 8 }}
+                    autoFocus
+                />
+
+                <div style={{ maxHeight: 300, overflowY: 'auto', marginBottom: 16, border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                    {filteredItems.length === 0 ? (
+                        <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>No unsold items found</div>
+                    ) : (
+                        filteredItems.map(item => (
+                            <label key={item.id} style={{ display: 'flex', gap: 12, padding: 12, borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.includes(item.id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) setSelectedIds([...selectedIds, item.id]);
+                                        else setSelectedIds(selectedIds.filter(id => id !== item.id));
+                                    }}
+                                />
+                                <div>
+                                    <div style={{ fontWeight: 600 }}>{item.sku}</div>
+                                    <div style={{ fontSize: 13, color: '#64748b' }}>{item.description}</div>
+                                </div>
+                            </label>
+                        ))
+                    )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, color: '#64748b', marginRight: 'auto' }}>
+                        {selectedIds.length} selected
+                    </span>
+                    <button onClick={onClose} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
+                    <button
+                        onClick={() => {
+                            if (confirm(`Are you sure these ${selectedIds.length} items sold? Confirm payment.`)) {
+                                onConfirm(selectedIds);
+                            }
+                        }}
+                        disabled={selectedIds.length === 0}
+                        style={{ padding: '8px 16px', background: '#059669', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: selectedIds.length === 0 ? 0.7 : 1 }}
+                    >
+                        Confirm Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function InvoiceViewContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -110,6 +182,7 @@ function InvoiceViewContent() {
     const [showReturnReceipt, setShowReturnReceipt] = useState(false);
     const [returnedReceiptData, setReturnedReceiptData] = useState<any>(null);
     const [isConverting, setIsConverting] = useState(false);
+    const [showMarkSoldModal, setShowMarkSoldModal] = useState(false);
 
     const [isPrinting, setIsPrinting] = useState(false);
 
@@ -185,6 +258,34 @@ function InvoiceViewContent() {
         setReturnNote('Converted to Sale');
     };
 
+    const handleMarkSold = async (selectedIds: string[]) => {
+        if (!invoice) return;
+        setLoading(true);
+        try {
+            const updatedItems = invoice.data.items.map(item =>
+                selectedIds.includes(item.id) ? { ...item, sold: true } : item
+            );
+
+            const updatedInvoice = {
+                ...invoice,
+                data: {
+                    ...invoice.data,
+                    items: updatedItems
+                },
+                updatedAt: new Date().toISOString()
+            };
+
+            await saveInvoice(updatedInvoice.data, invoice.id);
+            await loadInvoice(invoice.id);
+            setShowMarkSoldModal(false);
+        } catch (error) {
+            console.error('Failed to mark items as sold:', error);
+            alert('Failed to update items.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleProcessReturn = async () => {
         handleProcessReturnWithArgs(returnItems, returnNote);
     };
@@ -255,13 +356,18 @@ function InvoiceViewContent() {
 
     const handleProcessPickup = async (signatureData: string) => {
         if (!invoice) return;
+
+        // Ask for payment confirmation
+        const isPaid = window.confirm('Has the payment been received for this Wash/Repair?');
+
         try {
             const updatedInvoice = {
                 ...invoice,
                 data: {
                     ...invoice.data,
                     status: 'picked_up' as const,
-                    pickupSignature: signatureData
+                    pickupSignature: signatureData,
+                    terms: isPaid ? 'Paid' : invoice.data.terms // Auto-mark as Paid if confirmed
                 },
                 updatedAt: new Date().toISOString()
             };
@@ -333,17 +439,29 @@ function InvoiceViewContent() {
 
                             <div style={{ display: 'flex', gap: 12 }}>
                                 {invoice.data.documentType === 'CONSIGNMENT' && (
-                                    <button
-                                        onClick={handleConvertClick}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: 8,
-                                            padding: '10px 20px', background: '#10b981', color: 'white',
-                                            border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                                            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
-                                        }}
-                                    >
-                                        <ShoppingCart size={18} /> Sell Items
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={() => setShowMarkSoldModal(true)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 8,
+                                                padding: '10px 20px', background: '#059669', color: 'white',
+                                                border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                                                boxShadow: '0 2px 4px rgba(5, 150, 105, 0.3)'
+                                            }}
+                                        >
+                                            <ShoppingCart size={18} /> Confirm Payment
+                                        </button>
+                                        <button
+                                            onClick={handleConvertClick}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 8,
+                                                padding: '10px 20px', background: '#e2e8f0', color: '#475569',
+                                                border: 'none', borderRadius: 8, fontWeight: 500, cursor: 'pointer',
+                                            }}
+                                        >
+                                            <Undo size={18} /> Convert to Sale
+                                        </button>
+                                    </>
                                 )}
                                 {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && (
                                     <button
@@ -499,6 +617,14 @@ function InvoiceViewContent() {
                             }}
                         />
                     )}
+
+                    {/* Mark Sold Modal */}
+                    <MarkSoldModal
+                        isOpen={showMarkSoldModal}
+                        items={invoice.data.items}
+                        onClose={() => setShowMarkSoldModal(false)}
+                        onConfirm={handleMarkSold}
+                    />
 
                     {/* Pickup Signature Modal */}
                     {showPickupModal && (

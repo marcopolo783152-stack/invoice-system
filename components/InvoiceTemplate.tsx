@@ -227,10 +227,11 @@ export default function InvoiceTemplate({
                 </thead>
                 <tbody>
                   {pageItems.map((item) => (
-                    <tr key={item.id} style={item.returned ? { color: '#dc2626', backgroundColor: '#fef2f2' } : {}}>
+                    <tr key={item.id} style={item.returned ? { color: '#dc2626', backgroundColor: '#fef2f2' } : item.sold ? { color: '#059669', backgroundColor: '#ecfdf5' } : {}}>
                       <td>{item.sku}</td>
                       <td className={styles.description}>
                         {item.returned && <span style={{ fontWeight: 'bold', marginRight: 4 }}>[RETURNED]</span>}
+                        {item.sold && <span style={{ fontWeight: 'bold', marginRight: 4, color: '#059669' }}>[SOLD/PAID]</span>}
                         {item.description}
                         {item.image && (
                           <div style={{ marginTop: 4 }}>
@@ -334,10 +335,22 @@ export default function InvoiceTemplate({
                       )}
                       <tr className={`${styles.totalDueRow} email-total-due-row`}>
                         <td className={styles.totalLabel}>
-                          {data.documentType === 'CONSIGNMENT' ? 'TOTAL VALUE ON HOLD:' : 'TOTAL DUE:'}
+                          {data.documentType === 'CONSIGNMENT' ? 'TOTAL CONSIGNMENT VALUE:' : 'TOTAL DUE:'}
                         </td>
                         <td className={styles.totalValue}>{formatCurrency(calculations.totalDue)}</td>
                       </tr>
+                      {data.documentType === 'CONSIGNMENT' && calculations.soldAmount > 0 && (
+                        <>
+                          <tr style={{ color: '#059669' }}>
+                            <td className={styles.totalLabel}>Less Sold/Paid:</td>
+                            <td className={styles.totalValue}>-{formatCurrency(calculations.soldAmount)}</td>
+                          </tr>
+                          <tr style={{ fontWeight: 'bold', borderTop: '2px solid #334155' }}>
+                            <td className={styles.totalLabel}>REMAINING ON HOLD:</td>
+                            <td className={styles.totalValue}>{formatCurrency(calculations.totalDue - calculations.soldAmount)}</td>
+                          </tr>
+                        </>
+                      )}
                       {calculations.returnedAmount > 0 && (
                         <>
                           <tr style={{ color: '#dc2626' }}>

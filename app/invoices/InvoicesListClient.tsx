@@ -226,6 +226,31 @@ function InvoicesListContent() {
             if (washStatus === 'ready') statuses.push({ bg: '#dcfce7', text: '#166534', label: 'Ready' });
             else if (washStatus === 'picked_up') statuses.push({ bg: '#f1f5f9', text: '#475569', label: 'Picked Up' });
             else statuses.push({ bg: '#e0f2fe', text: '#0284c7', label: 'Washing/Repair' });
+
+            // 1b. Pickup Date Status
+            if (inv.data?.pickupDate) {
+                const pickup = new Date(inv.data.pickupDate);
+                const now = new Date();
+                const diffTime = pickup.getTime() - now.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                let bg = '#fff7ed';
+                let text = '#c2410c';
+
+                if (diffDays < 0) { // Overdue
+                    bg = '#fee2e2';
+                    text = '#ef4444';
+                } else if (diffDays <= 2) { // Due soon
+                    bg = '#fef3c7';
+                    text = '#92400e';
+                }
+
+                statuses.push({
+                    bg,
+                    text,
+                    label: `Due: ${inv.data.pickupDate}`
+                });
+            }
         } else {
             statuses.push({ bg: '#eff6ff', text: '#3b82f6', label: 'Sale' });
         }
