@@ -58,11 +58,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   return (
     <div className={styles.loginContainer}>
+      <img src="/LOGO.png" alt="" className={styles.watermark} aria-hidden="true" />
+
       <form className={styles.loginForm} onSubmit={handleSubmit}>
-        <h2>Login</h2>
+        <div className={styles.logoWrapper}>
+          <img src="/LOGO.png" alt="Marco Polo Logo" className={styles.logo} />
+        </div>
+
+        <h2>Sign In</h2>
+
         <input
           type="email"
-          placeholder="Username"
+          placeholder="Email Address"
           value={username}
           onChange={e => setUsername(e.target.value)}
           autoFocus
@@ -76,7 +83,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           required
         />
         <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+          {loading ? "Authenticating..." : "Login to Dashboard"}
         </button>
         {error && <div className={styles.error}>{error}</div>}
       </form>
