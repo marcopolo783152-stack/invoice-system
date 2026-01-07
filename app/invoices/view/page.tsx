@@ -507,7 +507,20 @@ function InvoiceViewContent() {
                                             boxShadow: '0 2px 4px rgba(5, 150, 105, 0.3)'
                                         }}
                                     >
-                                        <Edit size={18} /> Process Pickup
+                                        <ShoppingCart size={18} /> Process Pickup
+                                    </button>
+                                )}
+                                {invoice.data.status === 'picked_up' && (
+                                    <button
+                                        onClick={handleUndoPickup}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8,
+                                            padding: '10px 20px', background: '#fff1f2', color: '#e11d48',
+                                            border: '1px solid #fecdd3', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                                            boxShadow: '0 2px 4px rgba(225, 29, 72, 0.1)'
+                                        }}
+                                    >
+                                        <RotateCcw size={18} /> Undo Pickup
                                     </button>
                                 )}
                                 <button
