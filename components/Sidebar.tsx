@@ -9,8 +9,6 @@ import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
 import ExportPreviewModal from './ExportPreviewModal';
-import BackupModal from './BackupModal';
-import AutoBackup from './AutoBackup';
 
 export default function Sidebar({
     user,
@@ -202,7 +200,7 @@ export default function Sidebar({
                 </button>
             </div>
 
-            <AutoBackup />
+
 
         </div>
     );

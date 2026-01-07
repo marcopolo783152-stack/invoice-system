@@ -58,28 +58,4 @@ app.on('activate', () => {
   }
 });
 
-// IPC Handlers for Backup
-ipcMain.handle('select-backup-folder', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory', 'createDirectory'],
-    title: 'Select Backup Folder',
-    buttonLabel: 'Select Backup Location'
-  });
 
-  if (result.canceled) return null;
-  return result.filePaths[0];
-});
-
-ipcMain.handle('save-backup', async (event, filePath, data) => {
-  try {
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(filePath, data, 'utf8');
-    return { success: true };
-  } catch (error) {
-    console.error('Backup save failed:', error);
-    return { success: false, error: error.message };
-  }
-});
