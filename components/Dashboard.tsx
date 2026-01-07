@@ -12,10 +12,11 @@ type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' |
 
 import { exportToDirectory } from '@/lib/bulk-export';
 import { HardDrive, AlertTriangle } from 'lucide-react'; // Import icons
+import BackupModal from './BackupModal'; // Import BackupModal
 
 const BACKUP_KEY = 'last_backup_date';
 
-function BackupReminder({ invoices }: { invoices: any[] }) {
+function BackupReminder({ invoices, onShowBackup }: { invoices: any[], onShowBackup: () => void }) {
     const [needsBackup, setNeedsBackup] = useState(false);
     const [backingUp, setBackingUp] = useState(false);
     const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
@@ -101,7 +102,7 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
                 </div>
             </div>
             <button
-                onClick={handleBackup}
+                onClick={onShowBackup} // Open Modal
                 className="luxury-button"
                 style={{
                     background: '#ea580c', color: 'white',
@@ -131,6 +132,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [showBackupModal, setShowBackupModal] = useState(false);
 
     useEffect(() => {
         // Authenticate
@@ -412,7 +414,7 @@ export default function Dashboard() {
 
             {/* Backup Reminder */}
             <div className="no-print" style={{ marginBottom: 20 }}>
-                <BackupReminder invoices={invoices} />
+                <BackupReminder invoices={invoices} onShowBackup={() => setShowBackupModal(true)} />
             </div>
 
             {/* ALERTS SECTION */}
@@ -580,6 +582,9 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
+            {showBackupModal && (
+                <BackupModal onClose={() => setShowBackupModal(false)} />
+            )}
         </div>
     );
 }

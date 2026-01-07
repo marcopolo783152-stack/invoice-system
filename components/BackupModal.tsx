@@ -22,6 +22,16 @@ export default function BackupModal({ onClose }: BackupModalProps) {
     }, []);
 
     const handleSelectFolder = async () => {
+        // Web Environment Fallback
+        if (typeof window !== 'undefined' && !(window as any).electron) {
+            // Web Download Mode
+            const data = (window as any).getAllInvoicesBackup ? (window as any).getAllInvoicesBackup() : '[]'; // Basic stub, actual logic needs import
+            // Better: Just tell user to use the "Download JSON" button which we will add
+            setMessage('Web Mode: Use "Download Backup" below.');
+            setStatus('idle');
+            return;
+        }
+
         if (!(window as any).electron) {
             setMessage('Backup is only available in the Desktop App.');
             setStatus('error');
@@ -42,6 +52,24 @@ export default function BackupModal({ onClose }: BackupModalProps) {
             setStatus('error');
             setMessage('Failed to select folder.');
         }
+    };
+
+    const handleWebBackup = async () => {
+        // Import dynamically or assume logic exists
+        const { exportInvoices } = await import('@/lib/invoice-storage');
+        const data = exportInvoices();
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        localStorage.setItem('last_backup_date', new Date().toISOString().split('T')[0]);
+        setLastBackup(new Date().toISOString().split('T')[0]);
+        setStatus('success');
+        setMessage('Backup downloaded successfully!');
     };
 
     const handleManualBackup = () => {
@@ -88,6 +116,23 @@ export default function BackupModal({ onClose }: BackupModalProps) {
                                 <Folder size={16} /> Select
                             </button>
                         </div>
+
+                        {/* Web Fallback Button */}
+                        {typeof window !== 'undefined' && !(window as any).electron && (
+                            <div style={{ marginTop: 10 }}>
+                                <button
+                                    onClick={handleWebBackup}
+                                    style={{
+                                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                        background: '#0f172a', color: 'white', border: 'none',
+                                        padding: '10px', borderRadius: 6, cursor: 'pointer', fontSize: 13
+                                    }}
+                                >
+                                    <Save size={16} /> Download Backup Manually (Web)
+                                </button>
+                            </div>
+                        )}
+
                         <p style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
                             Invoices will be automatically saved here as JSON files daily.
                         </p>

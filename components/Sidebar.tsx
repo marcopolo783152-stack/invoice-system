@@ -76,7 +76,6 @@ export default function Sidebar({
         { label: 'Inventory DB', href: '/inventory', icon: Package },
         { label: 'Address Book', icon: Users, type: 'button' as const, onClick: onShowAddressBook },
         { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
-        { label: 'Backup', icon: DatabaseBackup, type: 'button' as const, onClick: () => setShowBackupModal(true) },
         { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
         { label: 'Reports', href: '/reports', icon: BarChart },
         { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
@@ -204,9 +203,7 @@ export default function Sidebar({
             </div>
 
             <AutoBackup />
-            {showBackupModal && (
-                <BackupModal onClose={() => setShowBackupModal(false)} />
-            )}
+
         </div>
     );
 }
