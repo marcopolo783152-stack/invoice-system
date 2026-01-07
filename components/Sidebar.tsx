@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
 import ExportPreviewModal from './ExportPreviewModal';
+import BackupModal from './BackupModal';
+import AutoBackup from './AutoBackup';
 
 export default function Sidebar({
     user,
@@ -43,6 +45,9 @@ export default function Sidebar({
 
     const isRecycleBin = pathname === '/invoices' && searchParams?.get('view') === 'bin';
 
+
+
+    const [showBackupModal, setShowBackupModal] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
 
     React.useEffect(() => {
@@ -71,6 +76,7 @@ export default function Sidebar({
         { label: 'Inventory DB', href: '/inventory', icon: Package },
         { label: 'Address Book', icon: Users, type: 'button' as const, onClick: onShowAddressBook },
         { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
+        { label: 'Backup', icon: DatabaseBackup, type: 'button' as const, onClick: () => setShowBackupModal(true) },
         { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
         { label: 'Reports', href: '/reports', icon: BarChart },
         { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
@@ -196,6 +202,11 @@ export default function Sidebar({
                     <span className={styles.label}>Logout</span>
                 </button>
             </div>
+
+            <AutoBackup />
+            {showBackupModal && (
+                <BackupModal onClose={() => setShowBackupModal(false)} />
+            )}
         </div>
     );
 }

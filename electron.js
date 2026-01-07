@@ -4,8 +4,9 @@
  * Desktop application entry point for Windows EXE
  */
 
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
@@ -54,5 +55,27 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
+  }
+});
+
+// IPC Handlers for Backup
+ipcMain.handle('select-backup-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory', 'createDirectory'],
+    title: 'Select Backup Folder',
+    buttonLabel: 'Select Backup Location'
+  });
+
+  if (result.canceled) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle('save-backup', async (event, filePath, data) => {
+  try {
+    fs.writeFileSync(filePath, data, 'utf8');
+    return { success: true };
+  } catch (error) {
+    console.error('Backup save failed:', error);
+    return { success: false, error: error.message };
   }
 });
