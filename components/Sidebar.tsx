@@ -18,7 +18,8 @@ export default function Sidebar({
     onToggleCollapse,
     onShowAddressBook,
     onShowExportPreview,
-    onShowHelp
+    onShowHelp,
+    onShowNotifications
 }: {
     user: any,
     onLogout: () => void,
@@ -27,7 +28,8 @@ export default function Sidebar({
     onToggleCollapse?: () => void,
     onShowAddressBook?: () => void,
     onShowExportPreview?: () => void,
-    onShowHelp?: () => void
+    onShowHelp?: () => void,
+    onShowNotifications?: () => void
 }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -41,6 +43,27 @@ export default function Sidebar({
 
     const isRecycleBin = pathname === '/invoices' && searchParams?.get('view') === 'bin';
 
+    const [notificationCount, setNotificationCount] = useState(0);
+
+    React.useEffect(() => {
+        const loadCounts = async () => {
+            const data = await getAllInvoices();
+            const count = data.filter(inv => {
+                if (inv.data.status === 'picked_up') return false;
+                if (!inv.data.pickupDate) return false;
+                const pickup = new Date(inv.data.pickupDate);
+                const now = new Date();
+                const diffTime = pickup.getTime() - now.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 2;
+            }).length;
+            setNotificationCount(count);
+        };
+        loadCounts();
+        const interval = setInterval(loadCounts, 60000); // Check every minute
+        return () => clearInterval(interval);
+    }, []);
+
     const navItems = [
         { label: 'Dashboard', href: '/', icon: LayoutDashboard, exact: true },
         { label: 'Invoices', href: '/invoices', icon: FileText, activeCondition: pathname === '/invoices' && !isRecycleBin },
@@ -48,7 +71,7 @@ export default function Sidebar({
         { label: 'Inventory DB', href: '/inventory', icon: Package },
         { label: 'Address Book', icon: Users, type: 'button' as const, onClick: onShowAddressBook },
         { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
-        { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, badge: 6 },
+        { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
         { label: 'Reports', href: '/reports', icon: BarChart },
         { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
         { label: 'Settings', href: '/settings', icon: Settings },

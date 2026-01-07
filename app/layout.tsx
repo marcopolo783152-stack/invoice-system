@@ -8,6 +8,7 @@ import Sidebar from '@/components/Sidebar';
 import AddressBookModal from '@/components/AddressBookModal';
 import ExportPreviewModal from '@/components/ExportPreviewModal';
 import HelpModal from '@/components/HelpModal';
+import NotificationModal from '@/components/NotificationModal';
 import { useState, useEffect, Suspense } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -24,6 +25,7 @@ export default function RootLayout({
   const [showAddressBook, setShowAddressBook] = useState(false);
   const [showExportPreview, setShowExportPreview] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -57,8 +59,13 @@ export default function RootLayout({
 
     // Also listen for storage changes for cross-tab or logout sync
     window.addEventListener('storage', checkAuth);
+
+    const handleOpenNotifications = () => setShowNotifications(true);
+    window.addEventListener('open-notifications', handleOpenNotifications);
+
     return () => {
       window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('open-notifications', handleOpenNotifications);
       clearInterval(interval);
     };
   }, []);
@@ -100,6 +107,10 @@ export default function RootLayout({
               <HelpModal
                 isOpen={showHelpModal}
                 onClose={() => setShowHelpModal(false)}
+              />
+              <NotificationModal
+                isOpen={showNotifications}
+                onClose={() => setShowNotifications(false)}
               />
             </>
           )}
@@ -157,6 +168,7 @@ export default function RootLayout({
                     onShowAddressBook={() => setShowAddressBook(true)}
                     onShowExportPreview={() => setShowExportPreview(true)}
                     onShowHelp={() => setShowHelpModal(true)}
+                    onShowNotifications={() => setShowNotifications(true)}
                   />
                 </div>
 

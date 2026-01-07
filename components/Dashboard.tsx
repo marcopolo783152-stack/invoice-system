@@ -248,6 +248,16 @@ export default function Dashboard() {
     const salesCount = salesInvoices.length;
     const consignmentCount = consignmentInvoices.length;
 
+    const hasUpcomingPickups = invoices.filter(inv => {
+        if (inv.data.status === 'picked_up') return false;
+        if (!inv.data.pickupDate) return false;
+        const pickup = new Date(inv.data.pickupDate);
+        const now = new Date();
+        const diffTime = pickup.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays <= 2;
+    }).length > 0;
+
     if (loading) return <div style={{ padding: 40, color: '#666' }}>Loading dashboard...</div>;
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
@@ -289,10 +299,22 @@ export default function Dashboard() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', position: 'relative', background: '#fff' }}>
+                        <button
+                            onClick={() => window.dispatchEvent(new CustomEvent('open-notifications'))}
+                            style={{
+                                width: 44, height: 44, borderRadius: '50%',
+                                border: '1px solid var(--surface-border)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'var(--text-main)', position: 'relative', background: '#fff',
+                                cursor: 'pointer', transition: 'all 0.2s'
+                            }}
+                            className="luxury-button-hover"
+                        >
                             <AlertTriangle size={20} />
-                            <div style={{ position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-rose)', border: '2px solid #fff' }} />
-                        </div>
+                            {hasUpcomingPickups && (
+                                <div style={{ position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-rose)', border: '2px solid #fff' }} />
+                            )}
+                        </button>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <div style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', border: '2px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                                 <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--primary) 0%, #6366f1 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
