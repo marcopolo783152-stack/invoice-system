@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { DollarSign, FileText, TrendingUp, Users, Printer } from 'lucide-react';
+import { DollarSign, FileText, TrendingUp, Users, Printer, Search } from 'lucide-react';
 import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import Link from 'next/link';
@@ -125,7 +125,7 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
 export default function Dashboard() {
     const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
     const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([]);
-    const [period, setPeriod] = useState<Period>('all-time');
+    const [period, setPeriod] = useState<Period>('today');
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(true);
@@ -261,72 +261,132 @@ export default function Dashboard() {
                 flexWrap: 'wrap',
                 gap: 24
             }}>
-                <div className="animate-fade-in">
-                    <h1 style={{
-                        fontSize: 'var(--h1-size)',
-                        fontWeight: 800,
-                        color: 'var(--text-main)',
-                        letterSpacing: '-0.02em',
-                        fontFamily: 'Outfit, sans-serif',
-                        marginBottom: 4
-                    }}>
-                        Analytics Overview
-                    </h1>
-                    <p style={{ color: 'var(--text-dim)', fontSize: 'var(--p-size)', margin: 0 }}>
-                        Welcome back to Marco Polo Dashboard
-                    </p>
+                {/* Top Header - Search & User Profile */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, gap: 24 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Hello {currentUser?.fullName?.split(' ')[0] || 'User'}</h1>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0 0' }}>Welcome Back!</p>
+                    </div>
+
+                    <div style={{ flex: 1, maxWidth: 600, position: 'relative' }}>
+                        <input
+                            type="text"
+                            placeholder="Search a transaction..."
+                            style={{
+                                width: '100%',
+                                padding: '12px 20px 12px 48px',
+                                borderRadius: 12,
+                                border: '1px solid var(--surface-border)',
+                                background: '#ffffff',
+                                fontSize: 14,
+                                color: 'var(--text-main)',
+                                boxShadow: '0 2px 10px rgba(0,0,0,0.01)'
+                            }}
+                        />
+                        <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }}>
+                            <Search size={18} /> {/* Placeholder for Search icon */}
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', position: 'relative', background: '#fff' }}>
+                            <AlertTriangle size={20} />
+                            <div style={{ position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-rose)', border: '2px solid #fff' }} />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', border: '2px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--primary) 0%, #6366f1 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
+                                    {currentUser?.fullName?.[0] || 'U'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="no-print" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="no-print" style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 32 }}>
                     <div style={{
                         display: 'flex',
-                        gap: 4,
-                        background: 'var(--glass-bg)',
-                        padding: 6,
-                        borderRadius: 14,
-                        border: '1px solid var(--glass-border)',
-                        backdropFilter: 'blur(10px)'
+                        background: '#ffffff',
+                        padding: 4,
+                        borderRadius: 10,
+                        border: '1px solid var(--surface-border)'
                     }}>
-                        {(['today', 'this-week', 'this-month', 'this-year', 'all-time'] as Period[]).map((p) => (
+                        {(['today', 'this-week', 'this-month', 'this-year', 'all-time', 'custom'] as Period[]).map((p) => (
                             <button
                                 key={p}
                                 onClick={() => setPeriod(p)}
                                 style={{
                                     padding: '8px 16px',
-                                    borderRadius: 10,
+                                    borderRadius: 8,
                                     border: 'none',
                                     background: period === p ? 'var(--primary)' : 'transparent',
-                                    color: period === p ? 'white' : 'var(--text-muted)',
-                                    fontWeight: 700,
-                                    fontSize: 12,
+                                    color: period === p ? '#ffffff' : 'var(--text-muted)',
+                                    fontWeight: 600,
+                                    fontSize: 11,
                                     cursor: 'pointer',
                                     transition: 'all 0.3s',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em'
+                                    textTransform: 'capitalize'
                                 }}
                             >
-                                {p.replace('-', ' ')}
+                                {p === 'custom' ? 'Custom' : p.replace('-', ' ')}
                             </button>
                         ))}
                     </div>
 
-                    <button
-                        onClick={() => window.print()}
-                        className="luxury-button"
-                        style={{ background: 'var(--bg-midnight)', border: '1px solid var(--glass-border)', padding: '10px 20px' }}
-                    >
-                        <Printer size={18} /> Print
-                    </button>
-
                     <Link
                         href="/inventory"
                         className="luxury-button"
-                        style={{ padding: '10px 20px' }}
+                        style={{ padding: '10px 20px', marginLeft: 'auto' }}
                     >
                         📦 Inventory
                     </Link>
                 </div>
             </header>
+
+            {period === 'custom' && (
+                <div className="no-print animate-slide-up" style={{
+                    display: 'flex',
+                    gap: 16,
+                    marginBottom: 32,
+                    alignItems: 'center',
+                    background: 'var(--bg-nebula)',
+                    padding: '16px 24px',
+                    borderRadius: 12,
+                    border: '1px solid var(--surface-border)',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>FROM</span>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                border: '1px solid var(--surface-border)',
+                                borderRadius: 8,
+                                fontSize: 14,
+                                background: '#fff'
+                            }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>TO</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                border: '1px solid var(--surface-border)',
+                                borderRadius: 8,
+                                fontSize: 14,
+                                background: '#fff'
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Backup Reminder */}
             <div className="no-print" style={{ marginBottom: 20 }}>
@@ -385,153 +445,142 @@ export default function Dashboard() {
             </div>
 
             {/* KPI Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 40 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, marginBottom: 32 }}>
                 <KpiCard
-                    title="Sales Revenue"
+                    title="Current Balance"
                     value={`$${totalNetRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    icon={<DollarSign size={24} color="#10b981" />}
-                    trend={`Net Revenue`}
-                    trendColor="#10b981"
-                    color="rgba(16, 185, 129, 0.1)"
+                    icon={<DollarSign size={22} />}
+                    color="#1e50ff"
+                    bg="rgba(30, 80, 255, 0.08)"
+                />
+                <KpiCard
+                    title="Total Profit"
+                    value={`$${(totalNetRevenue * 0.2).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    icon={<TrendingUp size={22} />}
+                    color="#10b981"
+                    bg="rgba(16, 185, 129, 0.08)"
                 />
                 <KpiCard
                     title="Consignment Value"
                     value={`$${totalConsignmentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    icon={<FileText size={24} color="#f59e0b" />}
-                    trend={`${consignmentCount} Docs`}
-                    trendColor="#f59e0b"
-                    color="rgba(245, 158, 11, 0.1)"
-                />
-                <KpiCard
-                    title="Sales Invoices"
-                    value={salesCount.toString()}
-                    icon={<FileText size={24} color="#6366f1" />}
-                    trend={`${period.replace('-', ' ')}`}
-                    trendColor="#64748b"
-                    color="rgba(99, 102, 241, 0.1)"
+                    icon={<FileText size={22} />}
+                    color="#6366f1"
+                    bg="rgba(99, 102, 241, 0.08)"
                 />
                 <KpiCard
                     title="Total Returns"
                     value={`$${totalReturned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    icon={<TrendingUp size={24} color="#ef4444" />}
-                    trend="Refunded"
-                    trendColor="#ef4444"
-                    color="rgba(239, 68, 68, 0.1)"
+                    icon={<TrendingUp size={22} />}
+                    color="#f43f5e"
+                    bg="rgba(244, 63, 94, 0.08)"
                 />
             </div>
 
-            {/* Recent Activity */}
-            <div className="luxury-card animate-slide-up" style={{ padding: 0, overflow: 'hidden', marginTop: 40 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '32px 40px', borderBottom: '1px solid var(--surface-border)', background: '#fff' }}>
-                    <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>Recent Activity</h2>
-                    <Link href="/invoices" style={{ color: 'var(--accent-gold)', fontWeight: 600, fontSize: 12, textDecoration: 'none', letterSpacing: '0.02em', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: 6 }} className="no-print">VIEW LEDGER</Link>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32 }}>
+                <div>
+                    {/* Activity Chart Area */}
+                    <div className="luxury-card" style={{ padding: 32, marginBottom: 32 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Activity</h2>
+                        </div>
+                        <div style={{ height: 260, position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 12 }}>
+                            {/* Simple visual representation of a chart */}
+                            {[40, 60, 45, 70, 50, 85, 65, 90, 75, 55, 60, 80].map((h, i) => (
+                                <div key={i} style={{ flex: 1, height: `${h}%`, background: 'var(--bg-slate)', borderRadius: 4, position: 'relative', overflow: 'hidden' }}>
+                                    <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '60%', background: 'linear-gradient(to top, var(--primary) 0%, #6366f1 100%)', opacity: 0.8 }} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
-                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }} className="mobile-hidden">
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid var(--surface-border)', background: '#fbfcfd' }}>
-                                <th style={{ padding: '16px 40px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Reference</th>
-                                <th style={{ padding: '16px 40px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Counterparty</th>
-                                <th style={{ padding: '16px 40px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Record Date</th>
-                                <th style={{ padding: '16px 40px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Valuation</th>
-                                <th style={{ padding: '16px 40px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>Classification</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredInvoices.slice(0, 10).map((inv) => {
+                    {/* Latest Transactions Area */}
+                    <div className="luxury-card" style={{ padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--surface-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Latest Transaction</h2>
+                            <Link href="/invoices" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>View all</Link>
+                        </div>
+                        <div style={{ padding: '12px 32px' }}>
+                            {filteredInvoices.slice(0, 5).map((inv) => {
                                 const calcs = calculateInvoice(inv.data);
                                 return (
-                                    <tr key={inv.id} style={{ borderBottom: '1px solid var(--surface-border)', transition: 'background 0.2s' }}>
-                                        <td style={{ padding: '16px 40px', fontWeight: 600, color: 'var(--text-main)' }}>{inv.data.invoiceNumber}</td>
-                                        <td style={{ padding: '16px 40px', color: 'var(--text-muted)' }}>{inv.data.soldTo.name}</td>
-                                        <td style={{ padding: '16px 40px', color: 'var(--text-dim)', fontSize: 13 }}>{inv.data.date}</td>
-                                        <td style={{ padding: '16px 40px', textAlign: 'right', fontWeight: 600, color: 'var(--text-main)', fontSize: 15 }}>
-                                            ${calcs.totalDue.toLocaleString()}
-                                        </td>
-                                        <td style={{ padding: '16px 40px', textAlign: 'center' }}>
-                                            {(() => {
-                                                let badge = { bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--accent-royal)', label: 'Sale' };
-                                                if (inv.data.documentType === 'CONSIGNMENT') badge = { bg: 'rgba(168, 85, 247, 0.1)', text: 'var(--accent-neon)', label: 'Consignment' };
-                                                else if (inv.data.documentType === 'WASH') {
-                                                    if (inv.data.status === 'ready') badge = { bg: 'rgba(16, 185, 129, 0.1)', text: 'var(--accent-emerald)', label: 'Ready' };
-                                                    else if (inv.data.status === 'picked_up') badge = { bg: 'rgba(148, 163, 184, 0.1)', text: 'var(--text-muted)', label: 'Picked Up' };
-                                                    else badge = { bg: 'rgba(34, 211, 238, 0.1)', text: 'var(--accent-cyber)', label: inv.data.status || 'Process' };
-                                                }
-
-                                                return (
-                                                    <span style={{
-                                                        padding: '4px 12px',
-                                                        borderRadius: 4,
-                                                        background: 'var(--bg-slate)',
-                                                        color: 'var(--text-main)',
-                                                        fontSize: 10,
-                                                        fontWeight: 700,
-                                                        textTransform: 'uppercase',
-                                                        letterSpacing: '0.05em',
-                                                        border: `1px solid var(--surface-border)`
-                                                    }}>
-                                                        {badge.label}
-                                                    </span>
-                                                );
-                                            })()}
-                                        </td>
-                                    </tr>
+                                    <div key={inv.id} style={{ display: 'flex', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid var(--surface-border)' }}>
+                                        <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg-void)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', marginRight: 16 }}>
+                                            <FileText size={20} />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 14 }}>{inv.data.soldTo.name || 'Anonymous Counterparty'}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{inv.data.documentType === 'INVOICE' ? 'Technology' : 'Acquisition'}</div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontWeight: 700, color: calcs.totalDue >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)', fontSize: 15 }}>
+                                                {calcs.totalDue >= 0 ? '+' : ''} ${calcs.totalDue.toLocaleString()}
+                                            </div>
+                                        </div>
+                                    </div>
                                 );
                             })}
-                            {filteredInvoices.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} style={{ padding: 40, textAlign: 'center', color: '#888' }}>No invoices found for this period.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Mobile Card View */}
-                <div className="mobile-visible">
-                    {/* <div className={styles.statLabel}>Total Receivables</div>
-                    <div className={styles.statValue}>{formatCurrency(stats.totalReceivable)}</div>
-                    <div className={styles.statSubtext}>Outstanding balance</div> */}
-                    {filteredInvoices.slice(0, 10).map((inv) => {
-                        const calcs = calculateInvoice(inv.data);
-                        return (
-                            <div key={inv.id} style={{ background: 'var(--glass-bg)', padding: 16, borderRadius: 12, marginBottom: 12, border: '1px solid var(--glass-border)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{inv.data.invoiceNumber}</span>
-                                    <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{inv.data.date}</span>
-                                </div>
-                                <div style={{ marginBottom: 8, color: 'var(--text-muted)' }}>{inv.data.soldTo.name}</div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-main)' }}>${calcs.totalDue.toLocaleString()}</span>
-                                    <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 8px', borderRadius: 8, background: 'rgba(99,102,241,0.1)', color: 'var(--primary)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                                        {inv.data.documentType === 'INVOICE' ? 'Sale' : inv.data.documentType}
-                                    </span>
-                                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+                    {/* Statistics Widget */}
+                    <div className="luxury-card" style={{ padding: 32 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Statistics</h2>
+                        </div>
+                        <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                            <svg width="160" height="160" viewBox="0 0 160 160">
+                                <circle cx="80" cy="80" r="70" fill="none" stroke="var(--bg-slate)" strokeWidth="12" />
+                                <circle cx="80" cy="80" r="70" fill="none" stroke="var(--primary)" strokeWidth="12" strokeDasharray="300 440" strokeLinecap="round" transform="rotate(-90 80 80)" />
+                                <circle cx="80" cy="80" r="70" fill="none" stroke="#6366f1" strokeWidth="12" strokeDasharray="100 440" strokeLinecap="round" transform="rotate(150 80 80)" />
+                            </svg>
+                            <div style={{ position: 'absolute', textAlign: 'center' }}>
+                                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Success Rate</div>
+                                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-main)' }}>92%</div>
                             </div>
-                        );
-                    })}
-                    {filteredInvoices.length === 0 && (
-                        <div style={{ padding: 20, textAlign: 'center', color: '#888' }}>No invoices found.</div>
-                    )}
+                        </div>
+                    </div>
+
+                    {/* Quick Transactions / Contacts */}
+                    <div className="luxury-card" style={{ padding: 32 }}>
+                        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', margin: 0, marginBottom: 20 }}>Quick Transactions</h2>
+                        <div style={{ display: 'flex', gap: 12, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
+                            {[1, 2, 3, 4, 5].map(i => (
+                                <div key={i} style={{ width: 44, height: 44, borderRadius: '50%', background: `hsl(${i * 60}, 70%, 50%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                                    {String.fromCharCode(64 + i)}
+                                </div>
+                            ))}
+                        </div>
+                        <button className="luxury-button" style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
+                            View all beneficiary
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-function KpiCard({ title, value, icon, trend, trendColor }: any) {
+function KpiCard({ title, value, icon, color, bg }: any) {
     return (
-        <div className="luxury-card" style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '32px' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
-            <div style={{ color: 'var(--text-main)', fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', margin: '4px 0' }}>{value}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{
-                    fontSize: 11,
-                    color: trendColor || 'var(--accent-gold)',
-                    fontWeight: 600,
-                    letterSpacing: '0.01em'
-                }}>{trend}</span>
+        <div className="luxury-card" style={{ display: 'flex', alignItems: 'center', padding: '24px', gap: 20 }}>
+            <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: bg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: color,
+                flexShrink: 0
+            }}>
+                {icon}
+            </div>
+            <div>
+                <div style={{ color: 'var(--text-dim)', fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{title}</div>
+                <div style={{ color: 'var(--text-main)', fontSize: 20, fontWeight: 700 }}>{value}</div>
             </div>
         </div>
     );

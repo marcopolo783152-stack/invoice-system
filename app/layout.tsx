@@ -161,7 +161,7 @@ export default function RootLayout({
                 </div>
 
                 {/* Desktop Sidebar Placeholder */}
-                <div style={{ width: isCollapsed ? 80 : 280, flexShrink: 0, transition: 'width 0.3s ease-in-out' }} className="desktop-sidebar-space" />
+                <div style={{ width: isCollapsed ? 80 : 260, flexShrink: 0, transition: 'width 0.3s ease-in-out' }} className="desktop-sidebar-space" />
               </>
             )}
           </Suspense>
