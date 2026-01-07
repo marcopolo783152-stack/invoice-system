@@ -211,19 +211,31 @@ function InvoicesListContent() {
     if (!isMounted || loading) return <div className="p-10 text-gray-500">Loading invoices...</div>;
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
-    const getStatusColor = (inv: SavedInvoice) => {
+    const getInvoiceStatuses = (inv: SavedInvoice) => {
+        const statuses: { bg: string; text: string; label: string }[] = [];
         const isReturned = (inv.data?.returned === true) ||
             (inv.data?.items?.length > 0 && inv.data.items.every(item => item.returned));
 
-        if (isReturned) return { bg: '#fee2e2', text: '#ef4444', label: 'Returned' };
-        if (inv.data?.documentType === 'CONSIGNMENT') return { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
-        if (inv.data?.status === 'ready') return { bg: '#dcfce7', text: '#166534', label: 'Ready for Pickup' };
-        if (inv.data?.status === 'picked_up') return { bg: '#f1f5f9', text: '#475569', label: 'Picked Up' };
-        if (inv.data?.status === 'washing') return { bg: '#e0f2fe', text: '#0284c7', label: 'Washing' };
-        if (inv.data?.status === 'repairing') return { bg: '#e0f2fe', text: '#0284c7', label: 'Repairing' };
-        if (inv.data?.documentType === 'WASH') return { bg: '#e0f2fe', text: '#0284c7', label: 'Wash/Repair' };
-        if ((inv.data?.terms || '').toLowerCase().includes('paid')) return { bg: '#ecfdf5', text: '#059669', label: 'Paid' };
-        return { bg: '#eff6ff', text: '#3b82f6', label: 'Sale' };
+        // 1. Kind / Document Type Status
+        if (isReturned) {
+            statuses.push({ bg: '#fee2e2', text: '#ef4444', label: 'Returned' });
+        } else if (inv.data?.documentType === 'CONSIGNMENT') {
+            statuses.push({ bg: '#fff7ed', text: '#c2410c', label: 'Consignment' });
+        } else if (inv.data?.documentType === 'WASH') {
+            const washStatus = inv.data?.status || 'washing';
+            if (washStatus === 'ready') statuses.push({ bg: '#dcfce7', text: '#166534', label: 'Ready' });
+            else if (washStatus === 'picked_up') statuses.push({ bg: '#f1f5f9', text: '#475569', label: 'Picked Up' });
+            else statuses.push({ bg: '#e0f2fe', text: '#0284c7', label: 'Washing/Repair' });
+        } else {
+            statuses.push({ bg: '#eff6ff', text: '#3b82f6', label: 'Sale' });
+        }
+
+        // 2. Payment Status (Add "Paid" label if applicable)
+        if ((inv.data?.terms || '').toLowerCase().includes('paid')) {
+            statuses.push({ bg: '#ecfdf5', text: '#059669', label: 'Paid' });
+        }
+
+        return statuses;
     };
 
     const isSafeToRender = (inv: SavedInvoice) => {
@@ -563,7 +575,6 @@ function InvoicesListContent() {
                     </thead>
                     <tbody>
                         {visibleInvoices.map((inv) => {
-                            const status = getStatusColor(inv);
                             const isSelected = selectedIds.includes(inv.id);
                             return (
                                 <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s', background: isSelected ? '#f0f9ff' : 'transparent' }} className="hover:bg-gray-50">
@@ -586,16 +597,21 @@ function InvoicesListContent() {
                                         </Link>
                                     </td>
                                     <td style={{ padding: '20px 24px' }}>
-                                        <span style={{
-                                            padding: '6px 12px',
-                                            borderRadius: 20,
-                                            fontSize: 13,
-                                            fontWeight: 600,
-                                            background: status.bg,
-                                            color: status.text
-                                        }}>
-                                            {status.label}
-                                        </span>
+                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                            {getInvoiceStatuses(inv).map((status, idx) => (
+                                                <span key={idx} style={{
+                                                    padding: '4px 10px',
+                                                    borderRadius: 20,
+                                                    fontSize: 12,
+                                                    fontWeight: 700,
+                                                    background: status.bg,
+                                                    color: status.text,
+                                                    whiteSpace: 'nowrap'
+                                                }}>
+                                                    {status.label}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </td>
                                     <td style={{ padding: '20px 24px', color: '#4b5563', fontWeight: 500 }}>{inv.data?.soldTo?.name || 'Unknown'}</td>
                                     <td style={{ padding: '20px 24px', color: '#6b7280' }}>{inv.data?.date || ''}</td>
@@ -656,7 +672,6 @@ function InvoicesListContent() {
             {/* Mobile Card List */}
             <div className="mobile-visible" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {visibleInvoices.map((inv) => {
-                    const status = getStatusColor(inv);
                     const calcs = calculateInvoice(inv.data || {} as any);
                     return (
                         <div key={inv.id}
@@ -667,12 +682,16 @@ function InvoicesListContent() {
                                     <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1f3c', display: 'block' }}>{inv.data.invoiceNumber}</span>
                                     <span style={{ fontSize: 13, color: '#64748b' }}>{inv.data.date}</span>
                                 </div>
-                                <span style={{
-                                    padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                                    background: status.bg, color: status.text
-                                }}>
-                                    {status.label}
-                                </span>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                    {getInvoiceStatuses(inv).map((status, idx) => (
+                                        <span key={idx} style={{
+                                            padding: '4px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700,
+                                            background: status.bg, color: status.text
+                                        }}>
+                                            {status.label}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
 
                             <div style={{ marginBottom: 16 }}>

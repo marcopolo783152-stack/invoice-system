@@ -581,13 +581,14 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
               onClick={() => setTerms('Paid')}
               style={{
                 flex: 1,
-                padding: '8px',
-                border: terms === 'Paid' ? '2px solid #16a34a' : '1px solid #d1d5db',
-                background: terms === 'Paid' ? '#f0fdf4' : 'white',
-                color: terms === 'Paid' ? '#16a34a' : '#374151',
+                padding: '10px',
+                border: 'none',
+                background: terms === 'Paid' ? '#16a34a' : '#f3f4f6',
+                color: terms === 'Paid' ? 'white' : '#6b7280',
                 borderRadius: 6,
                 cursor: 'pointer',
-                fontWeight: 500
+                fontWeight: 'bold',
+                transition: 'all 0.2s'
               }}
             >
               ✅ Paid
@@ -597,13 +598,14 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
               onClick={() => setTerms('Due on Receipt')}
               style={{
                 flex: 1,
-                padding: '8px',
-                border: terms !== 'Paid' ? '2px solid #3b82f6' : '1px solid #d1d5db',
-                background: terms !== 'Paid' ? '#eff6ff' : 'white',
-                color: terms !== 'Paid' ? '#2563eb' : '#374151',
+                padding: '10px',
+                border: 'none',
+                background: terms !== 'Paid' ? '#dc2626' : '#f3f4f6',
+                color: terms !== 'Paid' ? 'white' : '#6b7280',
                 borderRadius: 6,
                 cursor: 'pointer',
-                fontWeight: 500
+                fontWeight: 'bold',
+                transition: 'all 0.2s'
               }}
             >
               ⏳ Unpaid
