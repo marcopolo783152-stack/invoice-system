@@ -161,6 +161,22 @@ export default function Dashboard() {
         loadData();
     };
 
+    const handleManualBackup = async () => {
+        const confirmBackup = confirm('Create a full backup of all invoices?');
+        if (!confirmBackup) return;
+
+        try {
+            await exportToDirectory(invoices, (p) => {
+                console.log(p.status);
+            });
+            alert('Backup Complete! Saved to your drive.');
+        } catch (error: any) {
+            if (error.name !== 'AbortError') {
+                alert('Backup failed. Please try again.');
+            }
+        }
+    };
+
     useEffect(() => {
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -304,6 +320,25 @@ export default function Dashboard() {
 
                     <button
                         className="no-print"
+                        onClick={handleManualBackup}
+                        style={{
+                            padding: '10px 20px',
+                            background: '#ea580c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 10,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8
+                        }}
+                    >
+                        <HardDrive size={18} /> Backup
+                    </button>
+
+                    <button
+                        className="no-print"
                         onClick={() => window.print()}
                         style={{
                             padding: '10px 20px',
@@ -340,6 +375,11 @@ export default function Dashboard() {
                     </Link>
                 </div>
             </header>
+
+            {/* Backup Reminder */}
+            <div className="no-print" style={{ marginBottom: 20 }}>
+                <BackupReminder invoices={invoices} />
+            </div>
 
             {/* ALERTS SECTION */}
             <div className="no-print" style={{ marginBottom: 40 }}>
