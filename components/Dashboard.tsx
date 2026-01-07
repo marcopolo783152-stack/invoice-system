@@ -23,21 +23,31 @@ function BackupReminder({ invoices, onShowBackup }: { invoices: any[], onShowBac
 
     useEffect(() => {
         const checkBackup = () => {
+            const hasPath = localStorage.getItem('backup_path');
+            if (!hasPath) {
+                setNeedsBackup(true); // Always show if not configured
+                return;
+            }
+
             const now = new Date();
             const hour = now.getHours();
-            // Start checking after 6 PM (18:00)
-            if (hour >= 18) {
-                const lastBackup = localStorage.getItem(BACKUP_KEY);
-                const today = now.toDateString(); // "Mon Jan 06 2026"
+            // Show if it's after 6 PM OR if it hasn't been done today
+            const lastBackup = localStorage.getItem(BACKUP_KEY);
+            const today = now.toDateString();
 
-                if (lastBackup !== today) {
-                    setNeedsBackup(true);
-                }
+            if (lastBackup !== today) {
+                // If it's valid time OR user explicitly wants to see status (maybe we should always show a small status?)
+                // For now, let's play it safe and show it if not done today, regardless of time, 
+                // essentially prompting them to ensure it happens.
+                // Or stick to the 6PM rule but allow manual access?
+                // The user wants a button "now". Let's show it if not done today.
+                setNeedsBackup(true);
+            } else {
+                setNeedsBackup(false);
             }
         };
 
         checkBackup();
-        // Check every minute just in case user leaves dashboard open
         const interval = setInterval(checkBackup, 60000);
         return () => clearInterval(interval);
     }, []);
@@ -97,8 +107,14 @@ function BackupReminder({ invoices, onShowBackup }: { invoices: any[], onShowBac
                     <AlertTriangle size={32} />
                 </div>
                 <div>
-                    <h4 style={{ margin: 0, color: 'var(--text-main)', fontSize: 18, fontWeight: 700, letterSpacing: '-0.01em' }}>Data Integrity Protocol</h4>
-                    <p style={{ margin: '4px 0 0 0', fontSize: 14, color: 'var(--text-muted)' }}>Daily synchronization required. Please verify your data snapshot.</p>
+                    <h4 style={{ margin: 0, color: 'var(--text-main)', fontSize: 18, fontWeight: 700, letterSpacing: '-0.01em' }}>
+                        {localStorage.getItem('backup_path') ? 'Daily Backup Pending' : 'Backup Configuration Required'}
+                    </h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: 14, color: 'var(--text-muted)' }}>
+                        {localStorage.getItem('backup_path')
+                            ? 'Your daily invoice snapshot has not been saved yet today.'
+                            : 'Please select a folder to enable automatic daily backups.'}
+                    </p>
                 </div>
             </div>
             <button
@@ -110,7 +126,7 @@ function BackupReminder({ invoices, onShowBackup }: { invoices: any[], onShowBac
                 }}
             >
                 <HardDrive size={18} />
-                Backup Now
+                {localStorage.getItem('backup_path') ? 'Backup Now' : 'Configure Backup'}
             </button>
             <style>{`
                 @keyframes pulse {
