@@ -8,45 +8,48 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Fintech Executive Palette - Ultra-Luxury Minimal */
+  /* Light Enterprise Luxury Palette */
   --primary: #c5a059;
-  /* Restrained Gold */
+  /* Champagne Gold */
   --primary-hover: #b48e4d;
-  --primary-glow: rgba(197, 160, 89, 0.2);
+  --primary-glow: rgba(197, 160, 89, 0.15);
 
-  --bg-void: #0a0b10;
-  /* Darkest Charcoal/Black */
-  --bg-nebula: #11141d;
-  /* Deep Charcoal */
-  --bg-slate: #1c212d;
-  /* Subtle elevation */
+  --bg-void: #f8f9fc;
+  /* Soft Off-White/Light Gray background */
+  --bg-nebula: #ffffff;
+  /* Pure White Surface */
+  --bg-slate: #f1f3f7;
+  /* Muted elevation/hover */
 
-  --text-main: #ffffff;
-  --text-muted: #9fa6b2;
-  --text-dim: #6b7280;
+  --text-main: #1a1c23;
+  /* Deep Slate/Corporate Black */
+  --text-muted: #5e6675;
+  /* Gray */
+  --text-dim: #94a3b8;
 
-  --surface-border: rgba(255, 255, 255, 0.06);
-  --surface-gold: rgba(197, 160, 89, 0.1);
+  --surface-border: #e2e8f0;
+  --surface-gold: rgba(197, 160, 89, 0.08);
 
   --accent-gold: #c5a059;
-  --accent-emerald: #10b981;
-  --accent-rose: #ef4444;
+  --accent-navy: #1a365d;
+  --accent-emerald: #059669;
+  --accent-rose: #dc2626;
 
-  /* Spacing & Radii - Refined */
+  /* Spacing & Radii - Refined Corporate */
   --dashboard-padding: 48px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 
-  /* Minimalist Depth */
-  --glass-bg: rgba(255, 255, 255, 0.02);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  /* Light Theme Depth - Subtle & Expensive */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
 
-  /* Form Color Override */
-  --input-bg: #0a0b10;
-  --input-text: #ffffff;
+  /* Form Color Override - Light Mode */
+  --input-bg: #ffffff;
+  --input-text: #1a1c23;
 }
 
 /* GLOBAL VISIBILITY FIXES */
@@ -60,8 +63,8 @@ textarea {
 }
 
 option {
-  background-color: #11141d !important;
-  color: white !important;
+  background-color: #ffffff !important;
+  color: #1a1c23 !important;
 }
 
 @media (max-width: 768px) {
@@ -174,38 +177,40 @@ h6 {
 /* Generic Layout Utilities */
 .luxury-card {
   background: var(--bg-nebula);
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--surface-border);
   border-radius: var(--radius-md);
   box-shadow: var(--glass-shadow);
   padding: 32px;
-  transition: border-color 0.3s ease, background 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .luxury-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: var(--bg-slate);
+  border-color: rgba(197, 160, 89, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
 }
 
 .luxury-button {
-  background: var(--primary);
-  color: #000;
+  background: var(--accent-navy);
+  color: #ffffff;
   border: none;
-  padding: 10px 20px;
+  padding: 10px 22px;
   border-radius: var(--radius-sm);
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 6px rgba(26, 54, 93, 0.1);
 }
 
 .luxury-button:hover {
-  background: var(--primary-hover);
-  box-shadow: 0 4px 12px rgba(197, 160, 89, 0.3);
+  background: #2a4365;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2);
 }
 
 .luxury-button:active {
@@ -220,8 +225,8 @@ h6 {
 
   .mobile-only-header {
     display: flex !important;
-    background: var(--bg-void) !important;
-    border-bottom: 1px solid var(--glass-border) !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid var(--surface-border) !important;
   }
 
   .main-content {

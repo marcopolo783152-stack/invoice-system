@@ -411,14 +411,12 @@ function InvoicesListContent() {
         <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto', animation: 'fadeIn 0.5s ease-out' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 48, flexWrap: 'wrap', gap: 24 }} className="animate-slide-up">
                 <div>
-                    <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.03em', marginBottom: 6 }}>
-                        {viewMode === 'bin' ? 'Recycle Storage' : viewMode === 'drafts' ? 'Draft Documents' : 'Transaction Registry'}
-                    </h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>Enterprise-grade record management and audit trail.</p>
+                    <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.03em', marginBottom: 6 }}>Transaction Ledger</h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>Official registry of financial instruments and records.</p>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ display: 'flex', background: 'var(--bg-nebula)', padding: 4, borderRadius: 8, border: '1px solid var(--glass-border)' }}>
+                    <div style={{ display: 'flex', background: 'var(--bg-nebula)', padding: 4, borderRadius: 8, border: '1px solid var(--surface-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                         {(['active', 'drafts', 'bin'] as const).map((mode) => (
                             <button
                                 key={mode}
@@ -427,10 +425,10 @@ function InvoicesListContent() {
                                     padding: '10px 24px',
                                     borderRadius: 6,
                                     fontSize: 12,
-                                    fontWeight: 700,
+                                    fontWeight: 600,
                                     transition: 'all 0.2s ease',
-                                    background: viewMode === mode ? 'var(--primary)' : 'transparent',
-                                    color: viewMode === mode ? '#000' : 'var(--text-muted)',
+                                    background: viewMode === mode ? 'var(--accent-gold)' : 'transparent',
+                                    color: viewMode === mode ? '#ffffff' : 'var(--text-muted)',
                                     border: 'none',
                                     cursor: 'pointer',
                                     textTransform: 'uppercase',
@@ -452,7 +450,7 @@ function InvoicesListContent() {
                 background: 'var(--bg-nebula)',
                 padding: '32px 40px',
                 borderRadius: 12,
-                border: '1px solid var(--glass-border)',
+                border: '1px solid var(--surface-border)',
                 boxShadow: 'var(--glass-shadow)'
             }} className="animate-slide-up">
 
@@ -461,20 +459,20 @@ function InvoicesListContent() {
                         <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                         <input
                             type="text"
-                            placeholder="Identify numbers, counterparts, or SKUs..."
+                            placeholder="Identify documents by reference or counterparty..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{
                                 width: '100%',
                                 padding: '12px 12px 12px 48px',
-                                background: 'var(--bg-void)',
-                                border: '1px solid var(--glass-border)',
+                                background: '#ffffff',
+                                border: '1px solid var(--surface-border)',
                                 borderRadius: 8,
                                 color: 'var(--text-main)',
                                 fontSize: 14,
                                 outline: 'none',
                                 transition: 'all 0.3s',
-                                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
                             }}
                             className="focus-glow"
                         />
@@ -486,35 +484,44 @@ function InvoicesListContent() {
                             onChange={(e) => setTypeFilter(e.target.value as any)}
                             style={{
                                 padding: '12px 16px',
-                                background: 'var(--bg-void)',
-                                border: '1px solid var(--glass-border)',
-                                borderRadius: 12,
+                                background: '#ffffff',
+                                border: '1px solid var(--surface-border)',
+                                borderRadius: 8,
                                 color: 'var(--text-main)',
                                 cursor: 'pointer',
                                 outline: 'none',
-                                fontWeight: 700,
+                                fontWeight: 600,
                                 fontSize: 13,
                                 minWidth: 160,
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
                             }}
                         >
-                            <option value="ALL">All Types</option>
+                            <option value="ALL">All Classifications</option>
                             <option value="INVOICE">Sale Invoices</option>
                             <option value="CONSIGNMENT">Consignments</option>
-                            <option value="WASH">Wash / Repairs</option>
+                            <option value="WASH">Service Records</option>
                         </select>
 
                         <button
                             onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                            className="luxury-button"
-                            style={{ padding: '12px 20px' }}
+                            className="no-print"
+                            style={{
+                                padding: '12px 20px',
+                                background: '#ffffff',
+                                border: '1px solid var(--surface-border)',
+                                borderRadius: 8,
+                                color: 'var(--text-muted)',
+                                fontWeight: 600,
+                                fontSize: 13,
+                                cursor: 'pointer'
+                            }}
                         >
-                            Sort: {sortOrder === 'desc' ? 'Newest' : 'Oldest'}
+                            Chronology: {sortOrder === 'desc' ? 'Newest' : 'Oldest'}
                         </button>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between', borderTop: '1px solid var(--glass-border)', paddingTop: 24 }}>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between', borderTop: '1px solid var(--surface-border)', paddingTop: 24 }}>
                     <div style={{ display: 'flex', gap: 12 }}>
                         {selectedIds.length > 0 && (
                             <div style={{ display: 'flex', gap: 8 }}>
@@ -558,22 +565,22 @@ function InvoicesListContent() {
             <div className="mobile-hidden luxury-card" style={{ padding: 0, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                            <th style={{ padding: '16px 24px', width: 40, borderBottom: '1px solid var(--glass-border)' }}>
+                        <tr style={{ background: '#fbfcfd' }}>
+                            <th style={{ padding: '16px 24px', width: 40, borderBottom: '1px solid var(--surface-border)' }}>
                                 <input
                                     type="checkbox"
                                     onChange={handleSelectAll}
                                     checked={visibleInvoices.length > 0 && selectedIds.length === visibleInvoices.length}
-                                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent-gold)' }}
                                 />
                             </th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Registry ID</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Status</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Counterparty</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Execution Date</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Volume</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Valuation</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Controls</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', borderBottom: '1px solid var(--surface-border)' }}>Reference</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', borderBottom: '1px solid var(--surface-border)' }}>Status</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', borderBottom: '1px solid var(--surface-border)' }}>Counterparty</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', borderBottom: '1px solid var(--surface-border)' }}>Entry Date</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', borderBottom: '1px solid var(--surface-border)' }}>Volume</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', borderBottom: '1px solid var(--surface-border)' }}>Valuation</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', borderBottom: '1px solid var(--surface-border)' }}>Controls</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -582,9 +589,9 @@ function InvoicesListContent() {
                             const calcs = calculateInvoice(inv.data || {} as any);
                             return (
                                 <tr key={inv.id} style={{
-                                    borderBottom: '1px solid var(--glass-border)',
-                                    transition: 'all 0.3s',
-                                    background: isSelected ? 'rgba(99, 102, 241, 0.05)' : 'transparent'
+                                    borderBottom: '1px solid var(--surface-border)',
+                                    transition: 'all 0.2s',
+                                    background: isSelected ? 'rgba(197, 160, 89, 0.03)' : 'transparent'
                                 }} className="hover-row">
                                     <td style={{ padding: '20px 24px' }}>
                                         <input

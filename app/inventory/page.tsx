@@ -259,16 +259,16 @@ export default function InventoryManager() {
         <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
             <header style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
                 <div className="animate-fade-in">
-                    <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.03em', marginBottom: 6 }}>Asset Inventory</h1>
+                    <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.03em', marginBottom: 6 }}>Portfolio Inventory</h1>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <p style={{ color: 'var(--text-muted)', margin: 0 }}>Portfolio of high-end transaction assets.</p>
+                        <p style={{ color: 'var(--text-muted)', margin: 0 }}>Active registry of physical assets and acquisitions.</p>
                         {selectedItems.size > 0 && (
                             <button
                                 onClick={handleBulkDelete}
                                 className="luxury-button"
-                                style={{ padding: '6px 14px', background: 'var(--accent-rose)', color: '#000', fontSize: 12 }}
+                                style={{ padding: '6px 14px', background: 'var(--accent-rose)', color: '#ffffff', fontSize: 12, border: 'none' }}
                             >
-                                DELETE SELECTED ({selectedItems.size})
+                                DELETE ENTRIES ({selectedItems.size})
                             </button>
                         )}
                     </div>
@@ -298,8 +298,8 @@ export default function InventoryManager() {
             </header>
 
             {/* Filters Section */}
-            <div className="luxury-card no-print" style={{ marginBottom: 32, padding: '32px 40px', background: 'var(--bg-nebula)' }}>
-                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 20, marginBottom: 24, borderBottom: '1px solid var(--glass-border)' }} className="hide-scrollbar">
+            <div className="luxury-card no-print" style={{ marginBottom: 32, padding: '32px 40px', background: '#ffffff', border: '1px solid var(--surface-border)' }}>
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 20, marginBottom: 24, borderBottom: '1px solid var(--surface-border)' }} className="hide-scrollbar">
                     {categories.map(cat => (
                         <button
                             key={cat}
@@ -307,16 +307,17 @@ export default function InventoryManager() {
                             style={{
                                 padding: '10px 24px',
                                 borderRadius: 6,
-                                border: '1px solid var(--glass-border)',
-                                background: activeTab === cat ? 'var(--primary)' : 'transparent',
-                                color: activeTab === cat ? '#000' : 'var(--text-muted)',
-                                fontWeight: 700,
+                                border: '1px solid var(--surface-border)',
+                                background: activeTab === cat ? 'var(--accent-gold)' : '#ffffff',
+                                color: activeTab === cat ? '#ffffff' : 'var(--text-muted)',
+                                fontWeight: 600,
                                 fontSize: 11,
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap',
                                 transition: 'all 0.2s ease',
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.05em'
+                                letterSpacing: '0.05em',
+                                boxShadow: activeTab === cat ? '0 2px 8px rgba(197, 160, 89, 0.2)' : 'none'
                             }}
                         >
                             {cat}
@@ -325,7 +326,7 @@ export default function InventoryManager() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', gap: 4, background: 'var(--bg-void)', padding: 4, borderRadius: 6, border: '1px solid var(--glass-border)' }}>
+                    <div style={{ display: 'flex', gap: 4, background: '#f8f9fa', padding: 4, borderRadius: 6, border: '1px solid var(--surface-border)' }}>
                         {materials.map(mat => (
                             <button
                                 key={mat}
@@ -334,9 +335,9 @@ export default function InventoryManager() {
                                     padding: '8px 16px',
                                     borderRadius: 4,
                                     border: 'none',
-                                    background: activeMaterial === mat ? 'var(--primary)' : 'transparent',
-                                    color: activeMaterial === mat ? '#000' : 'var(--text-muted)',
-                                    fontWeight: 700,
+                                    background: activeMaterial === mat ? 'var(--accent-gold)' : 'transparent',
+                                    color: activeMaterial === mat ? '#ffffff' : 'var(--text-muted)',
+                                    fontWeight: 600,
                                     cursor: 'pointer',
                                     fontSize: 11,
                                     transition: 'all 0.2s',
@@ -352,20 +353,20 @@ export default function InventoryManager() {
                     <div style={{ flex: 1, position: 'relative', minWidth: 320 }}>
                         <input
                             type="text"
-                            placeholder="Identify specific assets by SKU, Design, or Origin..."
+                            placeholder="Find specific items by ID, Design, or Provenance..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             style={{
                                 width: '100%',
                                 padding: '12px 16px 12px 42px',
                                 borderRadius: 8,
-                                border: '1px solid var(--glass-border)',
-                                background: 'var(--bg-void)',
+                                border: '1px solid var(--surface-border)',
+                                background: '#ffffff',
                                 color: 'var(--text-main)',
                                 fontSize: 14,
                                 outline: 'none',
                                 transition: 'all 0.3s',
-                                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
                             }}
                             className="focus-glow"
                         />
@@ -378,43 +379,43 @@ export default function InventoryManager() {
             {isLoading ? (
                 <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-dim)' }}>Loading inventory...</div>
             ) : (
-                <div className="luxury-card" style={{ padding: 0, overflow: 'hidden', background: 'var(--bg-nebula)' }}>
+                <div className="luxury-card" style={{ padding: 0, overflow: 'hidden', background: '#ffffff', border: '1px solid var(--surface-border)' }}>
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
-                                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                    <th style={{ padding: '16px 20px', width: 40, borderBottom: '1px solid var(--glass-border)' }}>
+                                <tr style={{ background: '#fbfcfd' }}>
+                                    <th style={{ padding: '16px 20px', width: 40, borderBottom: '1px solid var(--surface-border)' }}>
                                         <input
                                             type="checkbox"
                                             onChange={handleSelectAll}
                                             checked={filteredItems.length > 0 && selectedItems.size === filteredItems.length}
-                                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent-gold)' }}
                                         />
                                     </th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Identifier</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Visual</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Description</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Execution</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Dimensions</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Provenance</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Valuation</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Status</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Controls</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Registry ID</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Asset</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Details</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Execution</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Volume</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Provenance</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Valuation</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Status</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Controls</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredItems.slice(0, 500).map(item => (
                                     <tr key={item.id} style={{
-                                        borderBottom: '1px solid var(--glass-border)',
-                                        background: selectedItems.has(item.id) ? 'rgba(99, 102, 241, 0.05)' : 'transparent',
-                                        transition: 'background 0.3s'
+                                        borderBottom: '1px solid var(--surface-border)',
+                                        background: selectedItems.has(item.id) ? 'rgba(197, 160, 89, 0.03)' : 'transparent',
+                                        transition: 'background 0.2s'
                                     }} className="hover-row">
                                         <td style={{ padding: '16px 20px' }}>
                                             <input
                                                 type="checkbox"
                                                 checked={selectedItems.has(item.id)}
                                                 onChange={() => handleSelectOne(item.id)}
-                                                style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                                style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent-gold)' }}
                                             />
                                         </td>
                                         <td style={{ padding: '16px 20px', fontWeight: 800, color: 'var(--text-main)', fontSize: 15 }}>{item.sku}</td>
@@ -440,7 +441,7 @@ export default function InventoryManager() {
                                             <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-main)' }}>{item.description || item.design}</div>
                                             <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                                 {item.material && (
-                                                    <span style={{ background: 'var(--glass-bg)', padding: '3px 8px', borderRadius: 6, border: '1px solid var(--glass-border)' }}>
+                                                    <span style={{ background: '#f1f3f5', padding: '3px 8px', borderRadius: 4, border: '1px solid var(--surface-border)', color: 'var(--text-main)', fontSize: 10, fontWeight: 600 }}>
                                                         {item.material}
                                                     </span>
                                                 )}

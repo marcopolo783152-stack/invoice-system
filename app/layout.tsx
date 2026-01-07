@@ -177,9 +177,9 @@ export default function RootLayout({
             {isAuthenticated && !isPublicPage && (
               <header className="mobile-only-header" style={{
                 display: 'none', // Overridden by media query in globals.css
-                padding: '16px',
-                background: 'var(--bg-midnight)',
-                borderBottom: '1px solid var(--glass-border)',
+                padding: '16px 24px',
+                background: '#ffffff',
+                borderBottom: '1px solid var(--surface-border)',
                 position: 'sticky',
                 top: 0,
                 zIndex: 50,
@@ -207,7 +207,7 @@ export default function RootLayout({
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <img src="/LOGO.png" alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-                  <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '1.2rem' }}>Marco Polo</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '1.1rem', letterSpacing: '-0.02em' }}>Marco Polo</div>
                 </div>
                 <div style={{ width: 40 }} /> {/* Spacer */}
               </header>
