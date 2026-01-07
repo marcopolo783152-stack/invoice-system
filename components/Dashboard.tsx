@@ -411,6 +411,11 @@ export default function Dashboard() {
 
 
 
+            {/* Backup Reminder */}
+            <div className="no-print" style={{ marginBottom: 20 }}>
+                <BackupReminder invoices={invoices} />
+            </div>
+
             {/* ALERTS SECTION */}
             <div className="no-print" style={{ marginBottom: 40 }}>
                 {invoices.filter(inv => {
