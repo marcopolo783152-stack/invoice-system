@@ -72,6 +72,10 @@ ipcMain.handle('select-backup-folder', async () => {
 
 ipcMain.handle('save-backup', async (event, filePath, data) => {
   try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     fs.writeFileSync(filePath, data, 'utf8');
     return { success: true };
   } catch (error) {
