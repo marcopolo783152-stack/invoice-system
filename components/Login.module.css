@@ -69,17 +69,17 @@
 .loginForm input {
   margin-bottom: 16px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   font-size: 16px;
-  color: #fff;
+  color: #000000 !important;
   outline: none;
   transition: all 0.2s;
 }
 
 .loginForm input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: #94a3b8;
 }
 
 .loginForm input:focus {
