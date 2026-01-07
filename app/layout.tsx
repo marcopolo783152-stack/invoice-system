@@ -169,7 +169,7 @@ export default function RootLayout({
           <div className="main-content" style={{
             flex: 1,
             minHeight: '100vh',
-            background: isPublicPage ? '#fff' : 'var(--bg-deep)',
+            background: isPublicPage ? '#fff' : 'var(--bg-void)',
             width: '100%',
             transition: 'margin-left 0.3s ease-in-out'
           }}>
@@ -191,7 +191,7 @@ export default function RootLayout({
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#1e293b',
+                    color: 'var(--text-main)',
                     cursor: 'pointer',
                     padding: '12px',
                     margin: '-12px',

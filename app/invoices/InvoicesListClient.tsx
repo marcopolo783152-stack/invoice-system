@@ -219,14 +219,14 @@ function InvoicesListContent() {
 
         // 1. Kind / Document Type Status
         if (isReturned) {
-            statuses.push({ bg: '#fee2e2', text: '#ef4444', label: 'Returned' });
+            statuses.push({ bg: 'rgba(244, 63, 94, 0.1)', text: 'var(--accent-rose)', label: 'Returned' });
         } else if (inv.data?.documentType === 'CONSIGNMENT') {
-            statuses.push({ bg: '#fff7ed', text: '#c2410c', label: 'Consignment' });
+            statuses.push({ bg: 'rgba(168, 85, 247, 0.1)', text: 'var(--accent-neon)', label: 'Consignment' });
         } else if (inv.data?.documentType === 'WASH') {
             const washStatus = inv.data?.status || 'washing';
-            if (washStatus === 'ready') statuses.push({ bg: '#dcfce7', text: '#166534', label: 'Ready' });
-            else if (washStatus === 'picked_up') statuses.push({ bg: '#f1f5f9', text: '#475569', label: 'Picked Up' });
-            else statuses.push({ bg: '#e0f2fe', text: '#0284c7', label: 'Washing/Repair' });
+            if (washStatus === 'ready') statuses.push({ bg: 'rgba(16, 185, 129, 0.1)', text: 'var(--accent-emerald)', label: 'Ready' });
+            else if (washStatus === 'picked_up') statuses.push({ bg: 'rgba(148, 163, 184, 0.1)', text: 'var(--text-muted)', label: 'Picked Up' });
+            else statuses.push({ bg: 'rgba(34, 211, 238, 0.1)', text: 'var(--accent-cyber)', label: 'Washing/Repair' });
 
             // 1b. Pickup Date Status
             if (inv.data?.pickupDate) {
@@ -235,15 +235,15 @@ function InvoicesListContent() {
                 const diffTime = pickup.getTime() - now.getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                let bg = '#fff7ed';
-                let text = '#c2410c';
+                let bg = 'rgba(251, 191, 36, 0.1)';
+                let text = '#fbbf24';
 
                 if (diffDays < 0) { // Overdue
-                    bg = '#fee2e2';
-                    text = '#ef4444';
+                    bg = 'rgba(244, 63, 94, 0.15)';
+                    text = 'var(--accent-rose)';
                 } else if (diffDays <= 2) { // Due soon
-                    bg = '#fef3c7';
-                    text = '#92400e';
+                    bg = 'rgba(251, 191, 36, 0.2)';
+                    text = '#fbbf24';
                 }
 
                 statuses.push({
@@ -253,12 +253,12 @@ function InvoicesListContent() {
                 });
             }
         } else {
-            statuses.push({ bg: '#eff6ff', text: '#3b82f6', label: 'Sale' });
+            statuses.push({ bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--accent-royal)', label: 'Sale' });
         }
 
         // 2. Payment Status (Add "Paid" label if applicable)
         if ((inv.data?.terms || '').toLowerCase().includes('paid')) {
-            statuses.push({ bg: '#ecfdf5', text: '#059669', label: 'Paid' });
+            statuses.push({ bg: 'rgba(16, 185, 129, 0.15)', text: 'var(--accent-emerald)', label: 'Paid' });
         }
 
         return statuses;
@@ -453,7 +453,8 @@ function InvoicesListContent() {
                 padding: 24,
                 borderRadius: 24,
                 border: '1px solid var(--glass-border)',
-                backdropFilter: 'blur(10px)'
+                backdropFilter: 'blur(20px)',
+                boxShadow: 'inset 0 0 20px rgba(6, 182, 212, 0.05)'
             }} className="animate-slide-up">
 
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -467,13 +468,14 @@ function InvoicesListContent() {
                             style={{
                                 width: '100%',
                                 padding: '14px 14px 14px 48px',
-                                background: 'rgba(255, 255, 255, 0.03)',
+                                background: 'var(--bg-void)',
                                 border: '1px solid var(--glass-border)',
                                 borderRadius: 16,
-                                color: 'white',
+                                color: 'var(--text-main)',
                                 fontSize: 15,
                                 outline: 'none',
-                                transition: 'all 0.3s'
+                                transition: 'all 0.3s',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                             }}
                             className="focus-glow"
                         />
@@ -485,12 +487,16 @@ function InvoicesListContent() {
                             onChange={(e) => setTypeFilter(e.target.value as any)}
                             style={{
                                 padding: '12px 16px',
-                                background: 'rgba(255, 255, 255, 0.03)',
+                                background: 'var(--bg-void)',
                                 border: '1px solid var(--glass-border)',
                                 borderRadius: 12,
                                 color: 'var(--text-main)',
                                 cursor: 'pointer',
-                                outline: 'none'
+                                outline: 'none',
+                                fontWeight: 700,
+                                fontSize: 13,
+                                minWidth: 160,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                             }}
                         >
                             <option value="ALL">All Types</option>
@@ -554,8 +560,8 @@ function InvoicesListContent() {
             <div className="mobile-hidden luxury-card" style={{ padding: 0, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                            <th style={{ padding: '20px 24px', width: 40, borderBottom: '1px solid var(--glass-border)' }}>
+                        <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                            <th style={{ padding: '20px 24px', width: 40, borderBottom: '2px solid var(--glass-border)' }}>
                                 <input
                                     type="checkbox"
                                     onChange={handleSelectAll}
@@ -563,13 +569,13 @@ function InvoicesListContent() {
                                     style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--primary)' }}
                                 />
                             </th>
-                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Invoice</th>
-                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Status</th>
-                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Customer</th>
-                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Date</th>
-                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Items</th>
-                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Amount</th>
-                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Actions</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-main)', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.15em', textAlign: 'left', borderBottom: '2px solid var(--glass-border)' }}>Invoice</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-main)', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.15em', textAlign: 'left', borderBottom: '2px solid var(--glass-border)' }}>Status</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-main)', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.15em', textAlign: 'left', borderBottom: '2px solid var(--glass-border)' }}>Customer</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-main)', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.15em', textAlign: 'left', borderBottom: '2px solid var(--glass-border)' }}>Date</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-main)', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.15em', textAlign: 'right', borderBottom: '2px solid var(--glass-border)' }}>Items</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-main)', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.15em', textAlign: 'right', borderBottom: '2px solid var(--glass-border)' }}>Amount</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-main)', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.15em', textAlign: 'right', borderBottom: '2px solid var(--glass-border)' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -652,7 +658,7 @@ function InvoicesListContent() {
                                                 <button
                                                     onClick={(e) => handleDeleteSingle(inv.id, e)}
                                                     className="luxury-button"
-                                                    style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.2)' }}
+                                                    style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.2)' }}
                                                     title="Archive Record"
                                                 >
                                                     <Trash2 size={18} />
@@ -697,7 +703,7 @@ function InvoicesListContent() {
                                     {getInvoiceStatuses(inv).map((status, idx) => (
                                         <span key={idx} style={{
                                             padding: '4px 10px', borderRadius: 8, fontSize: 10, fontWeight: 800,
-                                            background: `${status.bg}20`, color: status.text, border: `1px solid ${status.text}30`, textTransform: 'uppercase'
+                                            background: status.bg, color: status.text, border: `1px solid ${status.text}30`, textTransform: 'uppercase'
                                         }}>
                                             {status.label}
                                         </span>
@@ -721,7 +727,7 @@ function InvoicesListContent() {
                                     <button
                                         onClick={(e) => handleDeleteSingle(inv.id, e)}
                                         className="luxury-button"
-                                        style={{ padding: 10, background: 'rgba(244, 63, 94, 0.1)', borderRadius: 12, color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.1)', cursor: 'pointer' }}
+                                        style={{ padding: 10, background: 'rgba(244, 63, 94, 0.15)', borderRadius: 12, color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.2)', cursor: 'pointer' }}
                                     >
                                         <Trash2 size={20} />
                                     </button>

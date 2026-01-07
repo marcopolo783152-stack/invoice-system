@@ -65,17 +65,17 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
 
     if (backingUp) {
         return (
-            <div style={{
+            <div className="luxury-card animate-pulse" style={{
                 position: 'fixed', bottom: 20, right: 20, zIndex: 9999,
-                background: 'white', padding: 20, borderRadius: 12,
-                boxShadow: '0 10px 25px rgba(0,0,0,0.2)', maxWidth: 300, border: '1px solid #e2e8f0'
+                background: 'var(--bg-nebula)', padding: 20, borderRadius: 20,
+                boxShadow: '0 10px 40px rgba(0,0,0,0.6)', maxWidth: 320, border: '1px solid var(--glass-border)'
             }}>
-                <h4 style={{ margin: '0 0 10px 0', fontSize: 16, fontWeight: 700 }}>Backing Up...</h4>
-                <div style={{ marginBottom: 8, fontSize: 13, color: '#64748b' }}>{progress.status}</div>
-                <div style={{ height: 6, width: '100%', background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(progress.current / Math.max(progress.total, 1)) * 100}%`, background: '#3b82f6', transition: 'width 0.2s' }} />
+                <h4 style={{ margin: '0 0 10px 0', fontSize: 16, fontWeight: 800, color: 'var(--text-main)' }}>Backing Up...</h4>
+                <div style={{ marginBottom: 8, fontSize: 13, color: 'var(--text-dim)' }}>{progress.status}</div>
+                <div style={{ height: 6, width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(progress.current / Math.max(progress.total, 1)) * 100}%`, background: 'var(--primary)', transition: 'width 0.2s', boxShadow: '0 0 10px var(--primary-glow)' }} />
                 </div>
-                <div style={{ marginTop: 8, fontSize: 12, textAlign: 'right', color: '#94a3b8' }}>{progress.current} / {progress.total}</div>
+                <div style={{ marginTop: 8, fontSize: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{progress.current} / {progress.total}</div>
             </div>
         );
     }
@@ -83,29 +83,32 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
     if (!needsBackup) return null;
 
     return (
-        <div style={{
-            marginTop: 20, padding: 16, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12,
+        <div className="luxury-card animate-slide-up" style={{
+            marginTop: 20, padding: 20,
+            background: 'rgba(251, 191, 36, 0.05)',
+            border: '1px solid rgba(251, 191, 36, 0.2)',
+            borderRadius: 20,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-            animation: 'pulse 2s infinite'
+            backdropFilter: 'blur(10px)'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ background: '#f97316', padding: 8, borderRadius: '50%', color: 'white' }}>
-                    <AlertTriangle size={20} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ background: 'rgba(251, 191, 36, 0.15)', padding: 12, borderRadius: '50%', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.2)' }}>
+                    <AlertTriangle size={24} />
                 </div>
                 <div>
-                    <h4 style={{ margin: 0, color: '#c2410c', fontSize: 15 }}>Daily Backup Required</h4>
-                    <p style={{ margin: '2px 0 0 0', fontSize: 13, color: '#9a3412' }}>It's past 6 PM. Please save your daily backup.</p>
+                    <h4 style={{ margin: 0, color: 'var(--text-main)', fontSize: 17, fontWeight: 800 }}>Daily Backup Required</h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: 14, color: 'var(--text-dim)' }}>It's past 6 PM. Please secure your daily data snapshot.</p>
                 </div>
             </div>
             <button
                 onClick={handleBackup}
+                className="luxury-button"
                 style={{
-                    whiteSpace: 'nowrap', padding: '10px 20px', background: '#ea580c', color: 'white',
-                    border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(234, 88, 12, 0.2)'
+                    background: '#ea580c', color: 'white',
+                    padding: '12px 24px', fontSize: 13
                 }}
             >
-                <HardDrive size={16} style={{ display: 'inline', marginRight: 8, verticalAlign: 'text-bottom' }} />
+                <HardDrive size={18} />
                 Backup Now
             </button>
             <style>{`
@@ -335,18 +338,17 @@ export default function Dashboard() {
                 {invoices.filter(inv => {
                     if (inv.data.status === 'picked_up') return false;
                     if (!inv.data.pickupDate) return false;
-                    // Check if pickup date is within next 2 days or past due
                     const pickup = new Date(inv.data.pickupDate);
                     const now = new Date();
                     const diffTime = pickup.getTime() - now.getTime();
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    return diffDays <= 2; // Show if due within 2 days or overdue
+                    return diffDays <= 2;
                 }).length > 0 && (
-                        <div style={{ padding: 20, background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 16 }}>
-                            <h3 style={{ marginTop: 0, color: '#b45309', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div className="luxury-card" style={{ padding: 24, background: 'rgba(244, 63, 94, 0.05)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 20 }}>
+                            <h3 style={{ marginTop: 0, color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', gap: 10, fontSize: 18, fontWeight: 800 }}>
                                 ⚠️ Upcoming Pickups
                             </h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16, marginTop: 16 }}>
                                 {invoices.filter(inv => {
                                     if (inv.data.status === 'picked_up') return false;
                                     if (!inv.data.pickupDate) return false;
@@ -356,12 +358,12 @@ export default function Dashboard() {
                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                                     return diffDays <= 2;
                                 }).map(inv => (
-                                    <div key={inv.id} style={{ background: 'white', padding: 12, borderRadius: 8, border: '1px solid #fcd34d', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div key={inv.id} style={{ background: 'var(--bg-void)', padding: 16, borderRadius: 14, border: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
                                         <div>
-                                            <div style={{ fontWeight: 700, color: '#1e293b' }}>{inv.data.invoiceNumber} - {inv.data.soldTo.name}</div>
-                                            <div style={{ fontSize: 13, color: '#b45309' }}>Due: {formatDateMMDDYYYY(inv.data.pickupDate)}</div>
+                                            <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: 14 }}>{inv.data.invoiceNumber} • {inv.data.soldTo.name}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--accent-rose)', marginTop: 4, fontWeight: 700 }}>Due: {formatDateMMDDYYYY(inv.data.pickupDate)}</div>
                                         </div>
-                                        <Link href={`/invoices/view?id=${inv.id}`} style={{ padding: '6px 12px', background: '#fff7ed', color: '#c2410c', textDecoration: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
+                                        <Link href={`/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '6px 14px', fontSize: 12, borderRadius: 10 }}>
                                             View
                                         </Link>
                                     </div>
@@ -438,27 +440,28 @@ export default function Dashboard() {
                                         </td>
                                         <td style={{ padding: '20px 32px', textAlign: 'center' }}>
                                             {(() => {
-                                                let style = { bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--primary)', label: 'Sale' };
-                                                if (inv.data.documentType === 'CONSIGNMENT') style = { bg: 'rgba(251, 191, 36, 0.1)', text: 'var(--accent-gold)', label: 'Consignment' };
+                                                let badge = { bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--accent-royal)', label: 'Sale' };
+                                                if (inv.data.documentType === 'CONSIGNMENT') badge = { bg: 'rgba(168, 85, 247, 0.1)', text: 'var(--accent-neon)', label: 'Consignment' };
                                                 else if (inv.data.documentType === 'WASH') {
-                                                    if (inv.data.status === 'ready') style = { bg: 'rgba(16, 185, 129, 0.1)', text: 'var(--accent-emerald)', label: 'Ready' };
-                                                    else if (inv.data.status === 'picked_up') style = { bg: 'rgba(255, 255, 255, 0.05)', text: 'var(--text-dim)', label: 'Picked Up' };
-                                                    else style = { bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--primary)', label: inv.data.status || 'Process' };
+                                                    if (inv.data.status === 'ready') badge = { bg: 'rgba(16, 185, 129, 0.1)', text: 'var(--accent-emerald)', label: 'Ready' };
+                                                    else if (inv.data.status === 'picked_up') badge = { bg: 'rgba(148, 163, 184, 0.1)', text: 'var(--text-muted)', label: 'Picked Up' };
+                                                    else badge = { bg: 'rgba(34, 211, 238, 0.1)', text: 'var(--accent-cyber)', label: inv.data.status || 'Process' };
                                                 }
 
                                                 return (
                                                     <span style={{
                                                         padding: '6px 14px',
                                                         borderRadius: 10,
-                                                        background: style.bg,
-                                                        color: style.text,
+                                                        background: badge.bg,
+                                                        color: badge.text,
                                                         fontSize: 11,
                                                         fontWeight: 800,
                                                         textTransform: 'uppercase',
                                                         letterSpacing: '0.05em',
-                                                        display: 'inline-block',
-                                                        border: `1px solid ${style.text}20`
-                                                    }}>{style.label}</span>
+                                                        border: `1px solid ${badge.text}20`
+                                                    }}>
+                                                        {badge.label}
+                                                    </span>
                                                 );
                                             })()}
                                         </td>
@@ -519,23 +522,24 @@ function KpiCard({ title, value, icon, trend, color, trendColor }: any) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     border: '1px solid rgba(255,255,255,0.05)',
-                    boxShadow: `0 8px 16px ${color.replace('0.1', '0.05')}`
+                    boxShadow: `0 8px 32px rgba(0,0,0,0.4)`
                 }}>
-                    {React.cloneElement(icon as React.ReactElement, { size: 26 })}
+                    {React.cloneElement(icon as React.ReactElement, { size: 26, color: trendColor })}
                 </div>
                 <span style={{
-                    fontSize: 12,
+                    fontSize: 11,
                     color: trendColor || 'var(--accent-emerald)',
-                    fontWeight: 700,
-                    background: `${trendColor || '#10b981'}15`,
+                    fontWeight: 800,
+                    background: `rgba(255,255,255,0.03)`,
                     padding: '6px 12px',
                     borderRadius: 10,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
+                    letterSpacing: '0.05em',
+                    border: '1px solid var(--glass-border)'
                 }}>{trend}</span>
             </div>
             <div>
-                <div style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{title}</div>
+                <div style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{title}</div>
                 <div style={{ color: 'var(--text-main)', fontSize: 32, fontWeight: 800, letterSpacing: '-0.03em' }}>{value}</div>
             </div>
         </div>

@@ -266,7 +266,7 @@ export default function InventoryManager() {
                             <button
                                 onClick={handleBulkDelete}
                                 className="luxury-button"
-                                style={{ padding: '6px 14px', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.2)', fontSize: 13 }}
+                                style={{ padding: '6px 14px', background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)', fontSize: 13 }}
                             >
                                 Delete Selected ({selectedItems.size})
                             </button>
@@ -299,22 +299,25 @@ export default function InventoryManager() {
 
             {/* Filters Section */}
             <div className="luxury-card no-print" style={{ marginBottom: 32, padding: 24 }}>
-                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid var(--glass-border)' }} className="hide-scrollbar">
+                <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid var(--glass-border)' }} className="hide-scrollbar">
                     {categories.map(cat => (
                         <button
                             key={cat}
                             onClick={() => setActiveTab(cat)}
                             style={{
-                                padding: '8px 16px',
-                                borderRadius: 12,
+                                padding: '10px 20px',
+                                borderRadius: 14,
                                 border: '1px solid var(--glass-border)',
                                 background: activeTab === cat ? 'var(--primary)' : 'var(--glass-bg)',
                                 color: activeTab === cat ? 'white' : 'var(--text-muted)',
-                                fontWeight: 700,
-                                fontSize: 13,
+                                fontWeight: 800,
+                                fontSize: 12,
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap',
-                                transition: 'all 0.3s'
+                                transition: 'all 0.3s',
+                                boxShadow: activeTab === cat ? '0 0 15px var(--primary-glow)' : 'none',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
                             }}
                         >
                             {cat}
@@ -353,17 +356,19 @@ export default function InventoryManager() {
                             onChange={e => setSearchTerm(e.target.value)}
                             style={{
                                 width: '100%',
-                                padding: '10px 16px',
-                                paddingLeft: 40,
-                                borderRadius: 12,
+                                padding: '12px 16px 12px 42px',
+                                borderRadius: 14,
                                 border: '1px solid var(--glass-border)',
-                                background: 'var(--glass-bg)',
+                                background: 'var(--bg-void)',
                                 color: 'var(--text-main)',
                                 fontSize: 14,
-                                outline: 'none'
+                                outline: 'none',
+                                transition: 'all 0.3s',
+                                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
                             }}
+                            className="focus-glow"
                         />
-                        <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }}>🔍</span>
+                        <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', opacity: 0.6 }}>🔍</span>
                     </div>
                 </div>
             </div>
@@ -376,24 +381,24 @@ export default function InventoryManager() {
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
-                                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                    <th style={{ padding: '16px 20px', width: 40, borderBottom: '1px solid var(--glass-border)' }}>
+                                <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                    <th style={{ padding: '20px 20px', width: 40, borderBottom: '2px solid var(--glass-border)' }}>
                                         <input
                                             type="checkbox"
                                             onChange={handleSelectAll}
                                             checked={filteredItems.length > 0 && selectedItems.size === filteredItems.length}
-                                            style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                            style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--primary)' }}
                                         />
                                     </th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Rug #</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Preview</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Info</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Design</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Size</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Origin</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Price</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Status</th>
-                                    <th style={{ padding: '16px 20px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Actions</th>
+                                    <th style={{ padding: '20px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Rug #</th>
+                                    <th style={{ padding: '20px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Preview</th>
+                                    <th style={{ padding: '20px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Info</th>
+                                    <th style={{ padding: '20px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Design</th>
+                                    <th style={{ padding: '20px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Size</th>
+                                    <th style={{ padding: '20px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Origin</th>
+                                    <th style={{ padding: '20px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Price</th>
+                                    <th style={{ padding: '20px 20px', textAlign: 'center', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Status</th>
+                                    <th style={{ padding: '20px 20px', textAlign: 'right', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>

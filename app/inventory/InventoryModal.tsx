@@ -83,15 +83,16 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
             backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
             <div className="luxury-card animate-slide-up" style={{
-                background: 'var(--bg-midnight)',
-                padding: 24,
-                borderRadius: 20,
-                width: '90%',
-                maxWidth: '600px',
+                background: 'var(--bg-nebula)',
+                padding: 32,
+                borderRadius: 24,
+                width: '95%',
+                maxWidth: '700px',
                 maxHeight: '90vh',
                 overflowY: 'auto',
                 border: '1px solid var(--glass-border)',
-                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+                boxShadow: '0 25px 80px rgba(0,0,0,0.8)',
+                backdropFilter: 'blur(40px)'
             }}>
                 <h2 style={{ marginTop: 0, marginBottom: 24, fontSize: 24, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
                     {initialData ? 'Edit Inventory Item' : 'Add New Item'}

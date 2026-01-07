@@ -8,24 +8,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Premium Palette */
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-glow: rgba(99, 102, 241, 0.4);
+  /* Crystalline Cyber-Luxury Palette */
+  --primary: #06b6d4;
+  /* Radiant Cyan */
+  --primary-hover: #0891b2;
+  --primary-glow: rgba(6, 182, 212, 0.4);
 
-  --bg-deep: #020617;
-  --bg-midnight: #0f172a;
+  --bg-void: #020617;
+  /* Deepest Void */
+  --bg-nebula: #0f172a;
+  /* Midnight Blue */
   --bg-slate: #1e293b;
 
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
 
-  --surface: rgba(30, 41, 59, 0.5);
+  --surface-crystalline: rgba(15, 23, 42, 0.6);
   --surface-border: rgba(255, 255, 255, 0.1);
-  --surface-glow: rgba(255, 255, 255, 0.05);
+  --surface-glow: rgba(6, 182, 212, 0.1);
 
-  --accent-gold: #fbbf24;
+  --accent-cyber: #22d3ee;
+  --accent-royal: #6366f1;
+  --accent-neon: #a855f7;
   --accent-emerald: #10b981;
   --accent-rose: #f43f5e;
 
@@ -36,10 +41,30 @@
   --radius-lg: 24px;
   --radius-xl: 32px;
 
-  /* Glassmorphism Defaults */
+  /* Enhanced Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+
+  /* Form Color Override */
+  --input-bg: rgba(15, 23, 42, 0.9);
+  --input-text: #f8fafc;
+}
+
+/* GLOBAL VISIBILITY FIXES */
+select,
+option,
+input,
+textarea {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--glass-border) !important;
+}
+
+option {
+  background-color: #0f172a !important;
+  /* Force solid background for options */
+  color: white !important;
 }
 
 @media (max-width: 768px) {

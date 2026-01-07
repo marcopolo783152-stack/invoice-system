@@ -42,16 +42,17 @@ export default function InventorySearch({ onClose, onSelect }: InventorySearchPr
             zIndex: 9999
         }}>
             <div className="luxury-card animate-slide-up" style={{
-                background: 'var(--bg-midnight)',
-                width: '90%',
-                maxWidth: 800,
-                borderRadius: 20,
+                background: 'var(--bg-nebula)',
+                width: '95%',
+                maxWidth: 900,
+                borderRadius: 24,
                 maxHeight: '85vh',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
                 border: '1px solid var(--glass-border)',
-                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+                boxShadow: '0 25px 80px rgba(0,0,0,0.8)',
+                backdropFilter: 'blur(40px)'
             }}>
                 <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Select Item from Inventory</h2>
@@ -67,11 +68,12 @@ export default function InventorySearch({ onClose, onSelect }: InventorySearchPr
                                 padding: '10px 16px',
                                 borderRadius: 12,
                                 border: '1px solid var(--glass-border)',
-                                background: 'var(--glass-bg)',
+                                background: 'var(--bg-void)',
                                 color: 'var(--text-main)',
                                 outline: 'none',
-                                fontWeight: 600,
-                                fontSize: 13
+                                fontWeight: 800,
+                                fontSize: 13,
+                                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.4)'
                             }}
                         >
                             <option value="All">All Categories</option>
@@ -93,11 +95,13 @@ export default function InventorySearch({ onClose, onSelect }: InventorySearchPr
                                 padding: '10px 16px',
                                 borderRadius: 12,
                                 border: '1px solid var(--glass-border)',
-                                background: 'var(--glass-bg)',
+                                background: 'var(--bg-void)',
                                 color: 'var(--text-main)',
                                 outline: 'none',
-                                fontSize: 14
+                                fontSize: 14,
+                                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.4)'
                             }}
+                            className="focus-glow"
                         />
                         <button
                             onClick={handleSearch}
@@ -118,14 +122,14 @@ export default function InventorySearch({ onClose, onSelect }: InventorySearchPr
 
                 <div style={{ overflowY: 'auto', flex: 1, padding: 0 }} className="hide-scrollbar">
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-midnight)', zIndex: 10 }}>
-                            <tr>
-                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Image</th>
-                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>SKU / Info</th>
-                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Size</th>
-                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Price</th>
-                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Status</th>
-                                <th style={{ padding: '12px 20px', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}></th>
+                        <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-nebula)', zIndex: 10 }}>
+                            <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Image</th>
+                                <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>SKU / Info</th>
+                                <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Size</th>
+                                <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Price</th>
+                                <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '2px solid var(--glass-border)' }}>Status</th>
+                                <th style={{ padding: '16px 20px', textAlign: 'left', borderBottom: '2px solid var(--glass-border)' }}></th>
                             </tr>
                         </thead>
                         <tbody>
