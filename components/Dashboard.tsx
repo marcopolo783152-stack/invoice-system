@@ -482,16 +482,15 @@ export default function Dashboard() {
                     {filteredInvoices.slice(0, 10).map((inv) => {
                         const calcs = calculateInvoice(inv.data);
                         return (
-                            <div key={inv.id} style={{ background: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 12 }}>
+                            <div key={inv.id} style={{ background: 'var(--glass-bg)', padding: 16, borderRadius: 12, marginBottom: 12, border: '1px solid var(--glass-border)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <span style={{ fontWeight: 700, color: '#1a1f3c' }}>{inv.data.invoiceNumber}</span>
-                                    <span style={{ color: '#64748b', fontSize: 13 }}>{inv.data.date}</span>
+                                    <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{inv.data.invoiceNumber}</span>
+                                    <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{inv.data.date}</span>
                                 </div>
-                                <div style={{ marginBottom: 8, color: '#4b5563' }}>{inv.data.soldTo.name}</div>
+                                <div style={{ marginBottom: 8, color: 'var(--text-muted)' }}>{inv.data.soldTo.name}</div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 700, fontSize: 16 }}>${calcs.totalDue.toLocaleString()}</span>
-                                    {/* Recycle the status badge logic or simplify */}
-                                    <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 8px', borderRadius: 8, background: '#e2e8f0', color: '#475569' }}>
+                                    <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-main)' }}>${calcs.totalDue.toLocaleString()}</span>
+                                    <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 8px', borderRadius: 8, background: 'rgba(99,102,241,0.1)', color: 'var(--primary)', border: '1px solid rgba(99,102,241,0.2)' }}>
                                         {inv.data.documentType === 'INVOICE' ? 'Sale' : inv.data.documentType}
                                     </span>
                                 </div>

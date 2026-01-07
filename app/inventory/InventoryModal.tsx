@@ -80,52 +80,83 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
     return (
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+            backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
-            <div style={{
-                background: 'white', padding: 24, borderRadius: 12, width: '90%', maxWidth: '600px',
-                maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+            <div className="luxury-card animate-slide-up" style={{
+                background: 'var(--bg-midnight)',
+                padding: 24,
+                borderRadius: 20,
+                width: '90%',
+                maxWidth: '600px',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                border: '1px solid var(--glass-border)',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
             }}>
-                <h2 style={{ marginTop: 0, marginBottom: 20, fontSize: 20 }}>
+                <h2 style={{ marginTop: 0, marginBottom: 24, fontSize: 24, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
                     {initialData ? 'Edit Inventory Item' : 'Add New Item'}
                 </h2>
 
                 <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     {/* Unique Identifier */}
                     <div style={{ gridColumn: 'span 2' }}>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>SKU / Rug Number *</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>SKU / Rug Number *</label>
                         <input
                             type="text"
                             required
                             value={formData.sku}
                             onChange={e => handleChange('sku', e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         />
                     </div>
 
                     {/* Basic Info */}
                     <div style={{ gridColumn: 'span 2' }}>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Design *</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Design *</label>
                         <input
                             type="text"
                             required
                             value={formData.design}
                             onChange={e => handleChange('design', e.target.value)}
                             placeholder="e.g. Tabriz, Oushak"
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         />
                     </div>
 
                     {/* Dimensions */}
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Width (Ft / In)</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Width (Ft / In)</label>
                         <div style={{ display: 'flex', gap: 8 }}>
                             <input
                                 type="number"
                                 placeholder="Ft"
                                 value={formData.widthFeet || ''}
                                 onChange={e => handleChange('widthFeet', Number(e.target.value))}
-                                style={{ width: '50%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                                style={{
+                                    width: '50%',
+                                    padding: '10px 14px',
+                                    borderRadius: 10,
+                                    border: '1px solid var(--glass-border)',
+                                    background: 'var(--glass-bg)',
+                                    color: 'var(--text-main)',
+                                    outline: 'none'
+                                }}
                             />
                             <input
                                 type="number"
@@ -134,19 +165,35 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                                 max={11}
                                 value={formData.widthInches === 0 ? '' : formData.widthInches}
                                 onChange={e => handleChange('widthInches', e.target.value === '' ? 0 : Number(e.target.value))}
-                                style={{ width: '50%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                                style={{
+                                    width: '50%',
+                                    padding: '10px 14px',
+                                    borderRadius: 10,
+                                    border: '1px solid var(--glass-border)',
+                                    background: 'var(--glass-bg)',
+                                    color: 'var(--text-main)',
+                                    outline: 'none'
+                                }}
                             />
                         </div>
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Length (Ft / In)</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Length (Ft / In)</label>
                         <div style={{ display: 'flex', gap: 8 }}>
                             <input
                                 type="number"
                                 placeholder="Ft"
                                 value={formData.lengthFeet || ''}
                                 onChange={e => handleChange('lengthFeet', Number(e.target.value))}
-                                style={{ width: '50%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                                style={{
+                                    width: '50%',
+                                    padding: '10px 14px',
+                                    borderRadius: 10,
+                                    border: '1px solid var(--glass-border)',
+                                    background: 'var(--glass-bg)',
+                                    color: 'var(--text-main)',
+                                    outline: 'none'
+                                }}
                             />
                             <input
                                 type="number"
@@ -155,17 +202,33 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                                 max={11}
                                 value={formData.lengthInches === 0 ? '' : formData.lengthInches}
                                 onChange={e => handleChange('lengthInches', e.target.value === '' ? 0 : Number(e.target.value))}
-                                style={{ width: '50%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                                style={{
+                                    width: '50%',
+                                    padding: '10px 14px',
+                                    borderRadius: 10,
+                                    border: '1px solid var(--glass-border)',
+                                    background: 'var(--glass-bg)',
+                                    color: 'var(--text-main)',
+                                    outline: 'none'
+                                }}
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Shape</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Shape</label>
                         <select
                             value={formData.shape}
                             onChange={e => handleChange('shape', e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         >
                             <option value="rectangle">Rectangle</option>
                             <option value="round">Round</option>
@@ -177,86 +240,156 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
 
                     {/* Details */}
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Material</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Material</label>
                         <input
                             type="text"
                             value={formData.material || ''}
                             onChange={e => handleChange('material', e.target.value)}
                             placeholder="Wool, Silk, etc."
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Origin</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Origin</label>
                         <input
                             type="text"
                             value={formData.origin || ''}
                             onChange={e => handleChange('origin', e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Color (Bg)</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Color (Bg)</label>
                         <input
                             type="text"
                             value={formData.colorBg || ''}
                             onChange={e => handleChange('colorBg', e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         />
                     </div>
 
                     {/* Financials */}
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Selling Price ($)</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Selling Price ($)</label>
                         <input
                             type="number"
                             value={formData.price || ''}
                             onChange={e => handleChange('price', Number(e.target.value))}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Cost ($) (Optional)</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Cost ($) (Optional)</label>
                         <input
                             type="number"
                             value={formData.totalCost || ''}
                             onChange={e => handleChange('totalCost', Number(e.target.value))}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         />
                     </div>
 
                     {/* Zone */}
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Zone / Location</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Zone / Location</label>
                         <input
                             type="text"
                             value={formData.zone || ''}
                             onChange={e => handleChange('zone', e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Quality</label>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Quality</label>
                         <input
                             type="text"
                             value={formData.quality || ''}
                             onChange={e => handleChange('quality', e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none'
+                            }}
                         />
                     </div>
 
-                    <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16 }}>
+                    <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
                         <button
                             type="button"
                             onClick={onClose}
-                            style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}
+                            className="luxury-button"
+                            style={{
+                                padding: '10px 24px',
+                                background: 'transparent',
+                                color: 'var(--text-dim)',
+                                border: '1px solid var(--glass-border)'
+                            }}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSaving}
-                            style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#0f172a', color: 'white', cursor: 'pointer', opacity: isSaving ? 0.7 : 1 }}
+                            className="luxury-button"
+                            style={{
+                                padding: '10px 32px',
+                                background: 'var(--primary)',
+                                color: 'white',
+                                border: 'none',
+                                opacity: isSaving ? 0.7 : 1,
+                                boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)'
+                            }}
                         >
                             {isSaving ? 'Saving...' : 'Save Item'}
                         </button>

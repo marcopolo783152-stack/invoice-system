@@ -169,7 +169,7 @@ export default function RootLayout({
           <div className="main-content" style={{
             flex: 1,
             minHeight: '100vh',
-            background: isPublicPage ? '#fff' : '#f8fafc',
+            background: isPublicPage ? '#fff' : 'var(--bg-deep)',
             width: '100%',
             transition: 'margin-left 0.3s ease-in-out'
           }}>
@@ -178,8 +178,8 @@ export default function RootLayout({
               <header className="mobile-only-header" style={{
                 display: 'none', // Overridden by media query in globals.css
                 padding: '16px',
-                background: 'white',
-                borderBottom: '1px solid #e2e8f0',
+                background: 'var(--bg-midnight)',
+                borderBottom: '1px solid var(--glass-border)',
                 position: 'sticky',
                 top: 0,
                 zIndex: 50,
@@ -207,7 +207,7 @@ export default function RootLayout({
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <img src="/LOGO.png" alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-                  <div style={{ fontWeight: 800, color: '#1a1f3c', fontSize: '1.2rem' }}>Marco Polo</div>
+                  <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '1.2rem' }}>Marco Polo</div>
                 </div>
                 <div style={{ width: 40 }} /> {/* Spacer */}
               </header>

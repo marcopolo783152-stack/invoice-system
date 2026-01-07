@@ -256,243 +256,249 @@ export default function InventoryManager() {
     });
 
     return (
-        <div style={{ padding: 40, background: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-            <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div>
-                        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>Inventory Manager</h1>
-                        <p style={{ color: '#64748b' }}>Manage your digital pick list.</p>
+        <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
+            <header style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
+                <div className="animate-fade-in">
+                    <h1 style={{ fontSize: 'var(--h1-size)', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: 4 }}>Inventory Manager</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <p style={{ color: 'var(--text-dim)', margin: 0 }}>Manage your digital pick list.</p>
+                        {selectedItems.size > 0 && (
+                            <button
+                                onClick={handleBulkDelete}
+                                className="luxury-button"
+                                style={{ padding: '6px 14px', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.2)', fontSize: 13 }}
+                            >
+                                Delete Selected ({selectedItems.size})
+                            </button>
+                        )}
                     </div>
-                    {selectedItems.size > 0 && (
-                        <button
-                            onClick={handleBulkDelete}
-                            style={{
-                                padding: '8px 16px',
-                                background: '#ef4444',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 8,
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
-                            }}
-                        >
-                            Delete Selected ({selectedItems.size})
-                        </button>
-                    )}
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }} className="no-print">
                     <button
                         onClick={() => {
                             setEditingItem(null);
                             setIsModalOpen(true);
                         }}
-                        style={{
-                            padding: '8px 16px', borderRadius: 8, border: 'none', background: '#3b82f6', color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13
-                        }}
+                        className="luxury-button"
                     >
                         ➕ Add Item
                     </button>
-                    <Link href="/dashboard">
-                        <button style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}>
-                            ← Back to Dashboard
-                        </button>
-                    </Link>
                     <button
                         onClick={downloadTemplate}
-                        style={{ padding: '10px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                        className="luxury-button"
+                        style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
                     >
                         📝 Template
                     </button>
-                    <label style={{ cursor: 'pointer', padding: '10px 20px', background: '#3b82f6', color: 'white', borderRadius: 8, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <label className="luxury-button" style={{ cursor: 'pointer' }}>
                         <span>📥 Bulk Upload</span>
                         <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} style={{ display: 'none' }} />
                     </label>
                 </div>
             </header>
 
-            {/* Categories */}
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 16, marginBottom: 24, borderBottom: '1px solid #e2e8f0' }}>
-                {categories.map(cat => (
-                    <button
-                        key={cat}
-                        onClick={() => setActiveTab(cat)}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: 20,
-                            border: 'none',
-                            background: activeTab === cat ? '#0f172a' : 'white',
-                            color: activeTab === cat ? 'white' : '#64748b',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            boxShadow: activeTab === cat ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none'
-                        }}
-                    >
-                        {cat}
-                    </button>
-                ))}
-            </div>
+            {/* Filters Section */}
+            <div className="luxury-card no-print" style={{ marginBottom: 32, padding: 24 }}>
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid var(--glass-border)' }} className="hide-scrollbar">
+                    {categories.map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveTab(cat)}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: 12,
+                                border: '1px solid var(--glass-border)',
+                                background: activeTab === cat ? 'var(--primary)' : 'var(--glass-bg)',
+                                color: activeTab === cat ? 'white' : 'var(--text-muted)',
+                                fontWeight: 700,
+                                fontSize: 13,
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.3s'
+                            }}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
 
-            {/* Material Tabs - Secondary Level */}
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 16, marginBottom: 24, borderBottom: '1px solid #e2e8f0' }}>
-                <span style={{ display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 600, color: '#64748b', marginRight: 8 }}>Material:</span>
-                {materials.map(mat => (
-                    <button
-                        key={mat}
-                        onClick={() => setActiveMaterial(mat)}
-                        style={{
-                            padding: '6px 14px',
-                            borderRadius: 16,
-                            border: '1px solid #e2e8f0',
-                            background: activeMaterial === mat ? '#475569' : 'white',
-                            color: activeMaterial === mat ? 'white' : '#64748b',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            fontSize: 13,
-                        }}
-                    >
-                        {mat}
-                    </button>
-                ))}
-            </div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 6, background: 'var(--glass-bg)', padding: 4, borderRadius: 12, border: '1px solid var(--glass-border)' }}>
+                        {materials.map(mat => (
+                            <button
+                                key={mat}
+                                onClick={() => setActiveMaterial(mat)}
+                                style={{
+                                    padding: '6px 14px',
+                                    borderRadius: 10,
+                                    border: 'none',
+                                    background: activeMaterial === mat ? 'var(--primary)' : 'transparent',
+                                    color: activeMaterial === mat ? 'white' : 'var(--text-dim)',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    fontSize: 12,
+                                    transition: 'all 0.3s'
+                                }}
+                            >
+                                {mat}
+                            </button>
+                        ))}
+                    </div>
 
-            {/* Search */}
-            <input
-                type="text"
-                placeholder="Search by SKU, Design, Origin..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                style={{
-                    width: '100%',
-                    padding: 16,
-                    borderRadius: 12,
-                    border: '1px solid #e2e8f0',
-                    marginBottom: 24,
-                    fontSize: 16,
-                    boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)'
-                }}
-            />
+                    <div style={{ flex: 1, position: 'relative', minWidth: 260 }}>
+                        <input
+                            type="text"
+                            placeholder="Search by SKU, Design, Origin..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '10px 16px',
+                                paddingLeft: 40,
+                                borderRadius: 12,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                fontSize: 14,
+                                outline: 'none'
+                            }}
+                        />
+                        <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }}>🔍</span>
+                    </div>
+                </div>
+            </div>
 
             {/* List */}
             {isLoading ? (
-                <div>Loading inventory...</div>
+                <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-dim)' }}>Loading inventory...</div>
             ) : (
-                <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead style={{ background: '#f1f5f9' }}>
-                            <tr>
-                                <th style={{ padding: 16, width: 40 }}>
-                                    <input
-                                        type="checkbox"
-                                        onChange={handleSelectAll}
-                                        checked={filteredItems.length > 0 && selectedItems.size === filteredItems.length}
-                                        style={{ width: 16, height: 16, cursor: 'pointer' }}
-                                    />
-                                </th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Rug #</th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Preview</th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Description</th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Design</th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Size</th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Material</th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Origin</th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Price</th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Status</th>
-                                <th style={{ padding: 16, textAlign: 'left', fontSize: 13, color: '#64748b' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredItems.slice(0, 500).map(item => (
-                                <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', background: selectedItems.has(item.id) ? '#f0fdf4' : 'white' }}>
-                                    <td style={{ padding: 16 }}>
+                <div className="luxury-card" style={{ padding: 0, overflow: 'hidden' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                    <th style={{ padding: '16px 20px', width: 40, borderBottom: '1px solid var(--glass-border)' }}>
                                         <input
                                             type="checkbox"
-                                            checked={selectedItems.has(item.id)}
-                                            onChange={() => handleSelectOne(item.id)}
-                                            style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                            onChange={handleSelectAll}
+                                            checked={filteredItems.length > 0 && selectedItems.size === filteredItems.length}
+                                            style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--primary)' }}
                                         />
-                                    </td>
-                                    <td style={{ padding: 16, fontWeight: 700 }}>{item.sku}</td>
-                                    <td style={{ padding: 16 }}>
-                                        <div style={{ width: 48, height: 48, background: '#f1f5f9', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {item.image ? (
-                                                <img src={item.image} alt="" style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                                            ) : (
-                                                <span style={{ fontSize: 20 }}>🖼️</span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: 16 }}>
-                                        <div style={{ fontWeight: 600, fontSize: 14 }}>{item.description || item.design}</div>
-                                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                            {item.quality && <span style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>Qty: {item.quality}</span>}
-                                            {item.origin && <span style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>Org: {item.origin}</span>}
-                                            {item.zone && <span style={{ background: '#fff7ed', color: '#c2410c', padding: '2px 6px', borderRadius: 4 }}>{item.zone}</span>}
-                                        </div>
-                                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
-                                            {[
-                                                item.colorBg && `Bg: ${item.colorBg}`,
-                                                item.colorBorder && `Border: ${item.colorBorder}`
-                                            ].filter(Boolean).join(' • ')}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: 16 }}>
-                                        {item.design}
-                                    </td>
-                                    <td style={{ padding: 16 }}>
-                                        {item.widthFeet}'{item.widthInches}" x {item.lengthFeet}'{item.lengthInches}"
-                                        {item.shape === 'round' && ' (Round)'}
-                                    </td>
-                                    <td style={{ padding: 16 }}>
-                                        <span style={{ fontSize: 13, padding: '2px 8px', borderRadius: 4, background: '#f1f5f9', color: '#475569' }}>
-                                            {item.material || '—'}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: 16 }}>{item.origin}</td>
-                                    <td style={{ padding: 16, fontWeight: 600 }}>${item.price.toLocaleString()}</td>
-                                    <td style={{ padding: 16 }}>
-                                        <span style={{
-                                            padding: '4px 10px',
-                                            borderRadius: 20,
-                                            fontSize: 12,
-                                            fontWeight: 600,
-                                            background: item.status === 'SOLD' ? '#fecaca' : '#dcfce7',
-                                            color: item.status === 'SOLD' ? '#991b1b' : '#166534'
-                                        }}>
-                                            {item.status}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: 16 }}>
-                                        <div style={{ display: 'flex', gap: 8 }}>
-                                            <button
-                                                onClick={() => {
-                                                    setEditingItem(item);
-                                                    setIsModalOpen(true);
-                                                }}
-                                                style={{ color: '#3b82f6', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600 }}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(item.id)}
-                                                style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600 }}
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </td>
+                                    </th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Rug #</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Preview</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Info</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Design</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Size</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Origin</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Price</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Status</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Actions</th>
                                 </tr>
-                            ))}
-                            {filteredItems.length === 0 && (
-                                <tr>
-                                    <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
-                                        No items found in this category.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {filteredItems.slice(0, 500).map(item => (
+                                    <tr key={item.id} style={{
+                                        borderBottom: '1px solid var(--glass-border)',
+                                        background: selectedItems.has(item.id) ? 'rgba(99, 102, 241, 0.05)' : 'transparent',
+                                        transition: 'background 0.3s'
+                                    }} className="hover-row">
+                                        <td style={{ padding: '16px 20px' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedItems.has(item.id)}
+                                                onChange={() => handleSelectOne(item.id)}
+                                                style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                            />
+                                        </td>
+                                        <td style={{ padding: '16px 20px', fontWeight: 800, color: 'var(--text-main)', fontSize: 15 }}>{item.sku}</td>
+                                        <td style={{ padding: '16px 20px' }}>
+                                            <div style={{
+                                                width: 54, height: 54,
+                                                background: 'var(--glass-bg)',
+                                                borderRadius: 10,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: 4,
+                                                border: '1px solid var(--glass-border)'
+                                            }}>
+                                                {item.image ? (
+                                                    <img src={item.image} alt="" style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 4 }} />
+                                                ) : (
+                                                    <span style={{ fontSize: 20, opacity: 0.5 }}>🖼️</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '16px 20px' }}>
+                                            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-main)' }}>{item.description || item.design}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                {item.material && (
+                                                    <span style={{ background: 'var(--glass-bg)', padding: '3px 8px', borderRadius: 6, border: '1px solid var(--glass-border)' }}>
+                                                        {item.material}
+                                                    </span>
+                                                )}
+                                                {item.quality && <span style={{ color: 'var(--text-muted)' }}>Quality: {item.quality}</span>}
+                                                {item.zone && <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>Loc: {item.zone}</span>}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '16px 20px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                            {item.design}
+                                        </td>
+                                        <td style={{ padding: '16px 20px', color: 'var(--text-main)', fontWeight: 700 }}>
+                                            {item.widthFeet}'{item.widthInches}" × {item.lengthFeet}'{item.lengthInches}"
+                                            {item.shape === 'round' && <span style={{ color: 'var(--text-dim)', fontSize: 11, marginLeft: 4 }}>[R]</span>}
+                                        </td>
+                                        <td style={{ padding: '16px 20px', color: 'var(--text-dim)' }}>{item.origin}</td>
+                                        <td style={{ padding: '16px 20px', fontWeight: 800, color: 'var(--text-main)', fontSize: 17 }}>${item.price.toLocaleString()}</td>
+                                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                                            <span style={{
+                                                padding: '6px 12px',
+                                                borderRadius: 10,
+                                                fontSize: 11,
+                                                fontWeight: 800,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.05em',
+                                                background: item.status === 'SOLD' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                                color: item.status === 'SOLD' ? 'var(--accent-rose)' : 'var(--accent-emerald)',
+                                                border: `1px solid ${item.status === 'SOLD' ? 'rgba(244, 63, 94, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`
+                                            }}>
+                                                {item.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingItem(item);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="luxury-button"
+                                                    style={{ padding: '8px 14px', fontSize: 12 }}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="luxury-button"
+                                                    style={{ padding: '8px', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.2)' }}
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredItems.length === 0 && (
+                                    <tr>
+                                        <td colSpan={10} style={{ padding: 80, textAlign: 'center' }}>
+                                            <div style={{ color: 'var(--text-dim)', fontSize: 16 }}>No items found match the filters.</div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
             {/* Inventory Modal */}

@@ -34,38 +34,44 @@ export default function InventorySearch({ onClose, onSelect }: InventorySearchPr
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 9999
         }}>
-            <div style={{
-                background: 'white',
+            <div className="luxury-card animate-slide-up" style={{
+                background: 'var(--bg-midnight)',
                 width: '90%',
                 maxWidth: 800,
-                borderRadius: 12,
+                borderRadius: 20,
                 maxHeight: '85vh',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                border: '1px solid var(--glass-border)',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
             }}>
-                <div style={{ padding: 20, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0, fontSize: 18 }}>Select Item from Inventory</h2>
-                    <button onClick={onClose} style={{ border: 'none', background: 'transparent', fontSize: 24, cursor: 'pointer', color: '#64748b' }}>×</button>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Select Item from Inventory</h2>
+                    <button onClick={onClose} style={{ border: 'none', background: 'transparent', fontSize: 24, cursor: 'pointer', color: 'var(--text-dim)', opacity: 0.7 }}>×</button>
                 </div>
 
-                <div style={{ padding: 16, background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ padding: 20, background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--glass-border)' }}>
                     <div style={{ display: 'flex', gap: 12 }}>
                         <select
                             value={category}
                             onChange={(e) => setCategory(e.target.value)}
                             style={{
                                 padding: '10px 16px',
-                                borderRadius: 8,
-                                border: '1px solid #e2e8f0',
-                                outline: 'none'
+                                borderRadius: 12,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none',
+                                fontWeight: 600,
+                                fontSize: 13
                             }}
                         >
                             <option value="All">All Categories</option>
@@ -85,21 +91,24 @@ export default function InventorySearch({ onClose, onSelect }: InventorySearchPr
                             style={{
                                 flex: 1,
                                 padding: '10px 16px',
-                                borderRadius: 8,
-                                border: '1px solid #e2e8f0',
-                                outline: 'none'
+                                borderRadius: 12,
+                                border: '1px solid var(--glass-border)',
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-main)',
+                                outline: 'none',
+                                fontSize: 14
                             }}
                         />
                         <button
                             onClick={handleSearch}
+                            className="luxury-button"
                             style={{
-                                padding: '10px 20px',
-                                background: '#3b82f6',
+                                padding: '10px 24px',
+                                background: 'var(--primary)',
                                 color: 'white',
                                 border: 'none',
-                                borderRadius: 8,
-                                fontWeight: 600,
-                                cursor: 'pointer'
+                                fontWeight: 700,
+                                fontSize: 13
                             }}
                         >
                             Search
@@ -107,65 +116,73 @@ export default function InventorySearch({ onClose, onSelect }: InventorySearchPr
                     </div>
                 </div>
 
-                <div style={{ overflowY: 'auto', flex: 1, padding: 0 }}>
+                <div style={{ overflowY: 'auto', flex: 1, padding: 0 }} className="hide-scrollbar">
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                        <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-midnight)', zIndex: 10 }}>
                             <tr>
-                                <th style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Image</th>
-                                <th style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>SKU / Info</th>
-                                <th style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Size</th>
-                                <th style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Price</th>
-                                <th style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                                <th style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}></th>
+                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Image</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>SKU / Info</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Size</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Price</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--glass-border)' }}>Status</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}></th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <tr><td colSpan={6} style={{ padding: 20, textAlign: 'center' }}>Searching...</td></tr>
+                                <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-dim)' }}>Searching...</td></tr>
                             ) : results.length === 0 ? (
-                                <tr><td colSpan={6} style={{ padding: 20, textAlign: 'center', color: '#94a3b8' }}>No items found.</td></tr>
+                                <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No items found.</td></tr>
                             ) : (
                                 results.map(item => (
-                                    <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: 12 }}>
-                                            <div style={{ width: 40, height: 40, background: '#f1f5f9', borderRadius: 4 }}>
-                                                {item.image && <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                                    <tr key={item.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="hover-row">
+                                        <td style={{ padding: '12px 20px' }}>
+                                            <div style={{ width: 44, height: 44, background: 'var(--glass-bg)', borderRadius: 8, border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 3 }}>
+                                                {item.image ? (
+                                                    <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
+                                                ) : (
+                                                    <span style={{ fontSize: 16, opacity: 0.5 }}>🖼️</span>
+                                                )}
                                             </div>
                                         </td>
-                                        <td style={{ padding: 12 }}>
-                                            <div style={{ fontWeight: 700 }}>{item.sku}</div>
-                                            <div style={{ fontSize: 13, color: '#64748b' }}>{item.description}</div>
+                                        <td style={{ padding: '12px 20px' }}>
+                                            <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: 14 }}>{item.sku}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{item.description || item.design}</div>
                                         </td>
-                                        <td style={{ padding: 12 }}>
+                                        <td style={{ padding: '12px 20px', color: 'var(--text-main)', fontWeight: 600, fontSize: 13 }}>
                                             {item.widthFeet}'{item.widthInches}" x {item.lengthFeet}'{item.lengthInches}"
                                         </td>
-                                        <td style={{ padding: 12, fontWeight: 600 }}>
+                                        <td style={{ padding: '12px 20px', fontWeight: 800, color: 'var(--text-main)', fontSize: 15 }}>
                                             ${item.price.toLocaleString()}
                                         </td>
-                                        <td style={{ padding: 12 }}>
+                                        <td style={{ padding: '12px 20px' }}>
                                             <span style={{
-                                                fontSize: 11,
-                                                padding: '2px 6px',
-                                                borderRadius: 12,
-                                                background: item.status === 'AVAILABLE' ? '#dcfce7' : '#fee2e2',
-                                                color: item.status === 'AVAILABLE' ? '#166534' : '#991b1b'
+                                                fontSize: 10,
+                                                fontWeight: 800,
+                                                padding: '4px 8px',
+                                                borderRadius: 8,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.05em',
+                                                background: item.status === 'AVAILABLE' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+                                                color: item.status === 'AVAILABLE' ? 'var(--accent-emerald)' : 'var(--accent-rose)',
+                                                border: `1px solid ${item.status === 'AVAILABLE' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)'}`
                                             }}>
                                                 {item.status}
                                             </span>
                                         </td>
-                                        <td style={{ padding: 12, textAlign: 'right' }}>
+                                        <td style={{ padding: '12px 20px', textAlign: 'right' }}>
                                             <button
                                                 onClick={() => onSelect(item)}
                                                 disabled={item.status !== 'AVAILABLE'}
+                                                className="luxury-button"
                                                 style={{
-                                                    padding: '6px 12px',
-                                                    background: item.status === 'AVAILABLE' ? '#22c55e' : '#e2e8f0',
-                                                    color: item.status === 'AVAILABLE' ? 'white' : '#94a3b8',
+                                                    padding: '6px 14px',
+                                                    background: item.status === 'AVAILABLE' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                                                    color: item.status === 'AVAILABLE' ? 'white' : 'var(--text-muted)',
                                                     border: 'none',
-                                                    borderRadius: 6,
-                                                    cursor: item.status === 'AVAILABLE' ? 'pointer' : 'not-allowed',
-                                                    fontWeight: 600,
-                                                    fontSize: 13
+                                                    opacity: item.status === 'AVAILABLE' ? 1 : 0.5,
+                                                    fontSize: 12,
+                                                    fontWeight: 700
                                                 }}
                                             >
                                                 Add +
