@@ -11,112 +11,122 @@ import { formatDateMMDDYYYY } from '@/lib/date-utils';
 type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
 import { exportToDirectory } from '@/lib/bulk-export';
-import { HardDrive, AlertTriangle } from 'lucide-react'; // Import icons
-const BACKUP_KEY = 'last_backup_date';
-
+import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices } from '@/lib/invoice-storage';
+import { HardDrive, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react'; // Import icons
 function BackupReminder({ invoices }: { invoices: any[] }) {
-    const [needsBackup, setNeedsBackup] = useState(false);
+    const [status, setStatus] = useState<'checking' | 'uptodate' | 'needed'>('checking');
     const [backingUp, setBackingUp] = useState(false);
-    const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
 
     useEffect(() => {
-        const checkBackup = () => {
-            const now = new Date();
-            const hour = now.getHours();
-            // Start checking after 6 PM (18:00)
-            if (hour >= 18) {
-                const lastBackup = localStorage.getItem(BACKUP_KEY);
-                const today = now.toDateString(); // "Mon Jan 06 2026"
-
-                if (lastBackup !== today) {
-                    setNeedsBackup(true);
-                }
-            }
+        const check = async () => {
+            const needed = await hasUnbackedChanges();
+            setStatus(needed ? 'needed' : 'uptodate');
         };
-
-        checkBackup();
-        // Check every minute just in case user leaves dashboard open
-        const interval = setInterval(checkBackup, 60000);
+        check();
+        // Check every minute
+        const interval = setInterval(check, 60000);
         return () => clearInterval(interval);
-    }, []);
+    }, [invoices]);
 
-    const handleBackup = async () => {
-        if (backingUp) return;
+    const handleSmartSync = async () => {
+        if (typeof window === 'undefined' || !(window as any).electron) {
+            alert('Smart Sync is only available in the Desktop App.');
+            return;
+        }
+
         setBackingUp(true);
         try {
-            await exportToDirectory(invoices, (p) => {
-                setProgress({ current: p.current, total: p.total, status: p.status });
-            });
-            // Mark as done for today
-            localStorage.setItem(BACKUP_KEY, new Date().toDateString());
-            setNeedsBackup(false);
-            alert('Backup Complete! All files have been saved to your drive.');
-        } catch (error: any) {
-            console.error(error);
-            // Don't alert if user just cancelled the picker
-            if (error.name !== 'AbortError') {
-                alert('Backup failed. Please try again.');
+            let path = localStorage.getItem('backup_path');
+
+            // If no path, ask for one
+            if (!path) {
+                path = await (window as any).electron.selectBackupFolder();
+                if (path) localStorage.setItem('backup_path', path);
+                else {
+                    setBackingUp(false);
+                    return; // User cancelled
+                }
             }
+
+            // Perform Smart Sync (Overwrite Master File)
+            const data = exportInvoices();
+            // We assume Windows path separator for now as user is on Windows
+            const fullPath = `${path}\\Invoices_Master.json`;
+            const result = await (window as any).electron.saveBackup(fullPath, data);
+
+            if (result.success) {
+                confirmSmartBackupComplete();
+                setStatus('uptodate');
+                // alert('Sync Complete: Master file updated!'); // Optional: Notification? 
+                // Let's just show visual feedback
+            } else {
+                alert('Sync Failed: ' + result.error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Sync Error');
         } finally {
             setBackingUp(false);
         }
     };
 
-    if (backingUp) {
+    if (status === 'checking') return null;
+
+    if (status === 'uptodate') {
         return (
-            <div className="luxury-card animate-pulse" style={{
-                position: 'fixed', bottom: 20, right: 20, zIndex: 9999,
-                background: 'var(--bg-nebula)', padding: 20, borderRadius: 20,
-                boxShadow: '0 10px 40px rgba(0,0,0,0.6)', maxWidth: 320, border: '1px solid var(--glass-border)'
+            <div className="luxury-card animate-slide-up" style={{
+                marginTop: 20, padding: '16px 24px',
+                background: 'linear-gradient(to right, rgba(16, 185, 129, 0.1), transparent)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                borderRadius: 12,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24
             }}>
-                <h4 style={{ margin: '0 0 10px 0', fontSize: 16, fontWeight: 800, color: 'var(--text-main)' }}>Backing Up...</h4>
-                <div style={{ marginBottom: 8, fontSize: 13, color: 'var(--text-dim)' }}>{progress.status}</div>
-                <div style={{ height: 6, width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(progress.current / Math.max(progress.total, 1)) * 100}%`, background: 'var(--primary)', transition: 'width 0.2s', boxShadow: '0 0 10px var(--primary-glow)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ color: '#059669' }}><CheckCircle size={24} /></div>
+                    <div>
+                        <h4 style={{ margin: 0, color: '#059669', fontSize: 16 }}>System Up to Date</h4>
+                        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>No new changes found. Backup is current.</p>
+                    </div>
                 </div>
-                <div style={{ marginTop: 8, fontSize: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{progress.current} / {progress.total}</div>
             </div>
         );
     }
 
-    if (!needsBackup) return null;
-
+    // Status is 'needed'
     return (
         <div className="luxury-card animate-slide-up" style={{
             marginTop: 20, padding: '24px 32px',
             background: 'var(--bg-nebula)',
-            border: '2px solid rgba(197, 160, 89, 0.3)',
+            border: '2px solid rgba(234, 88, 12, 0.3)',
             borderRadius: 12,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24,
             boxShadow: '0 8px 30px rgba(0, 0, 0, 0.05)'
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                 <div style={{ color: 'var(--accent-gold)' }}>
-                    <AlertTriangle size={32} />
+                    {backingUp ? <RefreshCw size={32} className="animate-spin" /> : <AlertTriangle size={32} />}
                 </div>
                 <div>
-                    <h4 style={{ margin: 0, color: 'var(--text-main)', fontSize: 18, fontWeight: 700, letterSpacing: '-0.01em' }}>Data Integrity Protocol</h4>
-                    <p style={{ margin: '4px 0 0 0', fontSize: 14, color: 'var(--text-muted)' }}>Daily synchronization required. Please verify your data snapshot.</p>
+                    <h4 style={{ margin: 0, color: 'var(--text-main)', fontSize: 18, fontWeight: 700, letterSpacing: '-0.01em' }}>
+                        {backingUp ? 'Syncing...' : 'Backup Required'}
+                    </h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: 14, color: 'var(--text-muted)' }}>
+                        {backingUp ? 'Updating Master File...' : 'New changes detected. Please sync to secure your data.'}
+                    </p>
                 </div>
             </div>
             <button
-                onClick={handleBackup}
+                onClick={handleSmartSync}
+                disabled={backingUp}
                 className="luxury-button"
                 style={{
-                    background: '#ea580c', color: 'white',
-                    padding: '12px 24px', fontSize: 13
+                    background: backingUp ? '#94a3b8' : '#ea580c', color: 'white',
+                    padding: '12px 24px', fontSize: 13, opacity: backingUp ? 0.8 : 1
                 }}
             >
                 <HardDrive size={18} />
-                Backup Now
+                {backingUp ? 'Syncing...' : 'Sync Now'}
             </button>
-            <style>{`
-                @keyframes pulse {
-                    0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.4); }
-                    70% { box-shadow: 0 0 0 10px rgba(234, 88, 12, 0); }
-                    100% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
-                }
-            `}</style>
         </div>
     );
 }

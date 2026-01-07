@@ -109,6 +109,38 @@ import { updateInventoryStatusFromInvoice } from './inventory-storage';
 import { updateCustomerFromInvoice } from './customer-storage';
 
 const STORAGE_KEY = 'saved_invoices';
+const SMART_BACKUP_KEY = 'last_smart_backup_ts';
+
+/**
+ * Check if there are any changes since the last smart backup
+ */
+export async function hasUnbackedChanges(): Promise<boolean> {
+  const invoices = getAllInvoicesSync();
+  if (invoices.length === 0) return false;
+
+  const lastBackup = localStorage.getItem(SMART_BACKUP_KEY);
+  if (!lastBackup) return true; // Never backed up
+
+  // Find the most recent update
+  const latestUpdate = invoices.reduce((max, inv) => {
+    return inv.updatedAt > max ? inv.updatedAt : max;
+  }, '');
+
+  return latestUpdate > lastBackup;
+}
+
+/**
+ * Mark smart backup as complete
+ */
+export function confirmSmartBackupComplete(): void {
+  const invoices = getAllInvoicesSync();
+  const latestUpdate = invoices.reduce((max, inv) => {
+    return inv.updatedAt > max ? inv.updatedAt : max;
+  }, '');
+  if (latestUpdate) {
+    localStorage.setItem(SMART_BACKUP_KEY, latestUpdate);
+  }
+}
 
 export interface SavedInvoice {
   id: string;
