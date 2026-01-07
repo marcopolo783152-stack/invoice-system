@@ -566,13 +566,58 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             className={styles.input}
           />
         </div>
+      </div>
+
+      {/* Payment Status & Terms */}
+      <div className={styles.row}>
         <div className={styles.formGroup}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            Payment Status:
+            {terms?.toLowerCase().includes('paid') && <span style={{ fontSize: 12, background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: 4 }}>PAID</span>}
+          </label>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+            <button
+              type="button"
+              onClick={() => setTerms('Paid')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                border: terms === 'Paid' ? '2px solid #16a34a' : '1px solid #d1d5db',
+                background: terms === 'Paid' ? '#f0fdf4' : 'white',
+                color: terms === 'Paid' ? '#16a34a' : '#374151',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontWeight: 500
+              }}
+            >
+              ✅ Paid
+            </button>
+            <button
+              type="button"
+              onClick={() => setTerms('Due on Receipt')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                border: terms !== 'Paid' ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                background: terms !== 'Paid' ? '#eff6ff' : 'white',
+                color: terms !== 'Paid' ? '#2563eb' : '#374151',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontWeight: 500
+              }}
+            >
+              ⏳ Unpaid
+            </button>
+          </div>
+        </div>
+        <div className={styles.formGroup} style={{ flex: 2 }}>
           <label>Terms:</label>
           <input
             type="text"
             value={terms}
             onChange={(e) => setTerms(e.target.value)}
             className={styles.input}
+            placeholder="e.g. Due on Receipt, Paid, Net 30"
           />
         </div>
       </div>
