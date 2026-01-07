@@ -191,8 +191,14 @@ export default function InvoiceTemplate({
                     </tr>
                     <tr>
                       <td className={styles.label}>Terms:</td>
-                      <td className={styles.value}>{data.terms}</td>
+                      <td className={styles.value} style={data.terms.toLowerCase().includes('paid') ? { color: '#059669', fontWeight: 'bold' } : {}}>{data.terms}</td>
                     </tr>
+                    {data.pickupDate && (
+                      <tr>
+                        <td className={styles.label}>Pick up Date:</td>
+                        <td className={styles.value} style={{ color: '#0284c7', fontWeight: 'bold' }}>{formatDateMMDDYYYY(data.pickupDate)}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
