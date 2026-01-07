@@ -322,6 +322,10 @@ export function validateInvoiceData(data: InvoiceData): string[] {
     errors.push('Invoice date is required');
   }
 
+  if ((data.documentType || 'INVOICE') === 'WASH' && !data.pickupDate) {
+    errors.push('Pick up Date is required for Wash/Repair');
+  }
+
   if (!data.soldTo.name.trim()) {
     errors.push('Customer name is required');
   }

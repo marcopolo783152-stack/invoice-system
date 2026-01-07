@@ -147,6 +147,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   // Wash/Repair specific (local state logic)
   const [pickupDate, setPickupDate] = useState(initialData?.pickupDate || '');
   const [status, setStatus] = useState<InvoiceData['status']>(initialData?.status || 'washing');
+  const isWash = documentType === 'WASH';
 
   function createEmptyItem(): InvoiceItem {
     return {
@@ -473,12 +474,12 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           <h3 style={{ marginTop: 0, color: '#0284c7' }}>Wash/Repair Tracking</h3>
           <div className={styles.row}>
             <div className={styles.formGroup}>
-              <label>Pickup Date:</label>
+              <label>Pick up Date <span style={{ color: '#ef4444' }}>*</span></label>
               <input
                 type="date"
                 value={pickupDate}
                 onChange={(e) => setPickupDate(e.target.value)}
-                className={styles.input}
+                required
               />
             </div>
             {/* Status is automatically managed based on service type or pickup action */}

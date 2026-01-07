@@ -3,10 +3,11 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart, Mail, Trash2 } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart, Mail, Trash2, RotateCcw } from 'lucide-react';
 import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
+import { logActivity } from '@/lib/audit-logger';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { ReturnedReceipt } from '@/components/ReturnedReceipt';
 import { businessConfig } from '@/config/business';
@@ -356,10 +357,16 @@ function InvoiceViewContent() {
     };
 
     const handleProcessPickup = async (signatureData: string) => {
-        if (!invoice) return;
+        if (!invoice || !calculations) return;
 
-        // Ask for payment confirmation
-        const isPaid = window.confirm('Has the payment been received for this Wash/Repair?');
+        // Ask for payment confirmation - MANDATORY
+        const totalAmount = calculations.totalDue;
+        const isPaid = window.confirm(`Payment received for $${totalAmount.toLocaleString()}? \n\nConfirm to finish pickup. \n(Note: Pickup cannot be completed without payment)`);
+
+        if (!isPaid) {
+            alert('Pickup cancelled. Payment must be received to complete pickup.');
+            return;
+        }
 
         try {
             const updatedInvoice = {
@@ -368,16 +375,42 @@ function InvoiceViewContent() {
                     ...invoice.data,
                     status: 'picked_up' as const,
                     pickupSignature: signatureData,
-                    terms: isPaid ? 'Paid' : invoice.data.terms // Auto-mark as Paid if confirmed
+                    terms: 'Paid' // Automatically set to Paid
                 },
                 updatedAt: new Date().toISOString()
             };
             await saveInvoice(updatedInvoice.data, invoice.id);
             await loadInvoice(invoice.id);
             setShowPickupModal(false);
+            logActivity('Wash Pickup', `Completed pickup for Invoice #${invoice.data.invoiceNumber}. Status updated to Paid.`);
         } catch (error) {
             console.error('Failed to process pickup:', error);
             alert('Failed to save pickup information.');
+        }
+    };
+
+    const handleUndoPickup = async () => {
+        if (!invoice) return;
+        if (!confirm('Are you sure you want to UNDO this pickup? \n\nThe status will be reset to "Ready for Pickup" and the "Paid" status will be removed.')) return;
+
+        try {
+            const updatedInvoice = {
+                ...invoice,
+                data: {
+                    ...invoice.data,
+                    status: 'ready' as const,
+                    pickupSignature: '',
+                    terms: 'Due on Receipt' // Revert to unpaid
+                },
+                updatedAt: new Date().toISOString()
+            };
+            await saveInvoice(updatedInvoice.data, invoice.id);
+            await loadInvoice(invoice.id);
+            alert('Pickup undone successfully.');
+            logActivity('Undo Pickup', `Undid pickup for Invoice #${invoice.data.invoiceNumber}.`);
+        } catch (error) {
+            console.error('Failed to undo pickup:', error);
+            alert('Failed to undo pickup.');
         }
     };
 
