@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import styles from './Modal.module.css'; // Reusing modal styles
+import styles from './BackupModal.module.css';
 import { Folder, Save, CheckCircle, AlertCircle, X } from 'lucide-react';
 
 interface BackupModalProps {
