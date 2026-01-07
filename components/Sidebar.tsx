@@ -129,7 +129,7 @@ export default function Sidebar({
                                 style={{ border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', width: '100%', fontSize: 15, fontFamily: 'inherit' }}
                                 title={isCollapsed ? item.label : undefined}
                             >
-                                <item.icon size={22} />
+                                <item.icon size={isCollapsed ? 28 : 22} />
                                 <span className={styles.label}>{item.label}</span>
                                 {(item as any).badge && (
                                     <span style={{
@@ -182,7 +182,7 @@ export default function Sidebar({
                         style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', marginTop: 8 }}
                         title="Help & Support"
                     >
-                        <HelpCircle size={22} />
+                        <HelpCircle size={isCollapsed ? 28 : 22} />
                         <span className={styles.label}>Help & Support</span>
                     </button>
                 )}
@@ -192,7 +192,7 @@ export default function Sidebar({
                     className={styles.logoutBtn}
                     title="Logout"
                 >
-                    <LogOut size={22} />
+                    <LogOut size={isCollapsed ? 28 : 22} />
                     <span className={styles.label}>Logout</span>
                 </button>
             </div>

@@ -27,7 +27,7 @@
 }
 
 .collapsed {
-    width: 88px;
+    width: 96px;
 }
 
 .logo {
@@ -130,7 +130,9 @@
 
 .collapsed .navItem {
     justify-content: center;
-    padding: 14px;
+    padding: 16px 0;
+    width: 64px;
+    margin: 0 auto;
 }
 
 .navItem:hover {
