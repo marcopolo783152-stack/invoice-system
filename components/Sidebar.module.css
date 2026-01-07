@@ -1,17 +1,20 @@
 .sidebar {
     width: 280px;
     height: 100vh;
-    background: linear-gradient(180deg, #1a1f3c 0%, #2d1b4e 100%);
-    color: white;
+    background: var(--bg-midnight);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid var(--glass-border);
+    color: var(--text-main);
     display: flex;
     flex-direction: column;
-    padding: 24px;
+    padding: 32px 16px;
     position: fixed;
     left: 0;
     top: 0;
     z-index: 100;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
-    transition: width 0.3s ease-in-out, padding 0.3s ease-in-out;
+    box-shadow: 10px 0 50px rgba(0, 0, 0, 0.5);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -20,108 +23,93 @@
     width: 4px;
 }
 
-.sidebar::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-}
-
 .sidebar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--glass-border);
     border-radius: 4px;
 }
 
 .collapsed {
-    width: 80px;
-    padding: 24px 12px;
+    width: 88px;
 }
 
 .logo {
-    font-size: 24px;
-    font-weight: 800;
-    margin-bottom: 48px;
-    color: #fff;
+    margin-bottom: 40px;
+    padding: 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
 }
 
 .collapsed .logo {
-    padding: 12px 0;
+    padding: 12px;
     justify-content: center;
 }
 
 .collapseToggle {
-    background: none;
+    background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-dim);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px;
-    border-radius: 6px;
-    transition: all 0.2s;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.3s;
 }
 
 .collapseToggle:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--glass-bg);
+    color: var(--text-main);
+    transform: scale(1.1);
 }
 
 .mobileClose {
     display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
 }
 
 .label {
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 1;
-    visibility: visible;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
 }
 
 .collapsed .label {
     opacity: 0;
-    visibility: hidden;
     width: 0;
-    height: 0;
-    overflow: hidden;
+    pointer-events: none;
 }
 
 @media (max-width: 1024px) {
     .sidebar {
         width: 300px;
-        box-shadow: 10px 0 50px rgba(0, 0, 0, 0.5);
     }
 
     .collapsed {
         width: 300px;
-        /* Reset on mobile */
     }
 
     .collapsed .label {
         opacity: 1;
-        visibility: visible;
         width: auto;
-        height: auto;
+        pointer-events: auto;
     }
 
     .mobileClose {
         display: flex;
-        align-items: center;
-        justify-content: center;
     }
 
     .collapseToggle {
         display: none;
-        /* Hide toggle on mobile */
     }
-}
-
-.logoIcon {
-    color: #ffd700;
 }
 
 .nav {
@@ -135,42 +123,46 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 16px;
-    color: rgba(255, 255, 255, 0.7);
+    padding: 14px 16px;
+    color: var(--text-muted);
     text-decoration: none;
     border-radius: 12px;
-    transition: all 0.3s ease, border-radius 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 500;
-    font-size: 16px;
-    white-space: nowrap;
-    overflow: hidden;
+    font-size: 15px;
+    border: 1px solid transparent;
 }
 
 .collapsed .navItem {
     justify-content: center;
-    padding: 16px 0;
-    gap: 0;
+    padding: 14px;
 }
 
 .navItem:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--glass-bg);
+    color: var(--text-main);
+    border-color: var(--glass-border);
     transform: translateX(4px);
 }
 
 .collapsed .navItem:hover {
-    transform: scale(1.05);
+    transform: scale(1.1);
 }
 
 .active {
-    background: linear-gradient(90deg, #764ba2 0%, #667eea 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: var(--primary);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+    font-weight: 600;
 }
 
 .footer {
     padding-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .user {
@@ -178,26 +170,27 @@
     align-items: center;
     gap: 12px;
     padding: 12px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
 }
 
 .collapsed .user {
-    padding: 12px 0;
+    padding: 8px;
     justify-content: center;
 }
 
 .avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    color: #1a1f3c;
-    flex-shrink: 0;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .userInfo {
@@ -208,10 +201,33 @@
 .userName {
     font-weight: 600;
     font-size: 14px;
+    color: var(--text-main);
 }
 
 .userRole {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    text-transform: capitalize;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.logoutBtn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: var(--accent-rose);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.logoutBtn:hover {
+    background: rgba(244, 63, 94, 0.05);
+    border-color: rgba(244, 63, 94, 0.2);
+    transform: scale(0.98);
 }

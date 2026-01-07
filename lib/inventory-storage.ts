@@ -104,18 +104,28 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
                 const data = doc.data();
                 items.push({
                     id: doc.id,
-                    sku: data.sku,
-                    description: data.description,
-                    shape: data.shape,
-                    widthFeet: data.widthFeet,
-                    widthInches: data.widthInches,
-                    lengthFeet: data.lengthFeet,
-                    lengthInches: data.lengthInches,
-                    price: data.price,
-                    status: data.status,
-                    image: data.image,
-                    createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-                    updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString()
+                    sku: data.sku || '',
+                    description: data.description || '',
+                    shape: data.shape || 'rectangle',
+                    widthFeet: Number(data.widthFeet) || 0,
+                    widthInches: Number(data.widthInches) || 0,
+                    lengthFeet: Number(data.lengthFeet) || 0,
+                    lengthInches: Number(data.lengthInches) || 0,
+                    price: Number(data.price) || 0,
+                    status: data.status || 'AVAILABLE',
+                    image: data.image || '',
+                    category: data.category || '',
+                    origin: data.origin || '',
+                    material: data.material || '',
+                    quality: data.quality || '',
+                    design: data.design || '',
+                    colorBorder: data.colorBorder || '',
+                    colorBg: data.colorBg || '',
+                    importCost: Number(data.importCost) || 0,
+                    totalCost: Number(data.totalCost) || 0,
+                    zone: data.zone || '',
+                    createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date(data.createdAt).toISOString() || new Date().toISOString(),
+                    updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date(data.updatedAt).toISOString() || new Date().toISOString()
                 });
             });
 
@@ -294,29 +304,21 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
     // 1. Cloud Save
     if (isFirebaseConfigured() && db) {
         try {
+            const finalData = {
+                ...itemData,
+                updatedAt: Timestamp.now()
+            };
+
             if (item.id && !item.id.startsWith('inv_')) {
                 // Update existing
                 const docRef = doc(db, COLLECTION_NAME, item.id);
-                await updateDoc(docRef, {
-                    ...itemData,
-                    updatedAt: Timestamp.now()
-                });
-                return { ...itemData, id: item.id, createdAt: item.createdAt! } as InventoryItem;
+                await updateDoc(docRef, finalData);
+                return { ...itemData, id: item.id, createdAt: item.createdAt || now.toISOString() } as InventoryItem;
             } else {
                 // Create new
                 const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-                    ...itemData,
-                    createdAt: Timestamp.now(),
-                    updatedAt: Timestamp.now(),
-                    category: itemData.category || deriveCategory(itemData.widthFeet, itemData.widthInches, itemData.lengthFeet, itemData.lengthInches, itemData.shape as RugShape),
-                    zone: item.zone || '',
-                    origin: item.origin || '',
-                    design: item.design || '',
-                    quality: item.quality || '',
-                    colorBg: item.colorBg || '',
-                    colorBorder: item.colorBorder || '',
-                    importCost: item.importCost || 0,
-                    totalCost: item.totalCost || 0
+                    ...finalData,
+                    createdAt: Timestamp.now()
                 });
                 return { ...itemData, id: docRef.id, createdAt: now.toISOString() } as InventoryItem;
             }

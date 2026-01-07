@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { DollarSign, FileText, TrendingUp, Users } from 'lucide-react';
+import { DollarSign, FileText, TrendingUp, Users, Printer } from 'lucide-react';
 import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import Link from 'next/link';
@@ -249,128 +249,76 @@ export default function Dashboard() {
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     return (
-        <div style={{ padding: 'var(--dashboard-padding, 40px)', maxWidth: 1200, margin: '0 auto' }}>
-            <header style={{ marginBottom: 40 }}>
-                <h1 style={{ fontSize: 'var(--h1-size, 32px)', fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>Dashboard</h1>
-                <div className="flex-stack-mobile" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap' }}>
-                    <p style={{ color: '#666', fontSize: 'var(--p-size, 16px)' }}>Performance analysis and financial reports.</p>
+        <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
+            <header style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 40,
+                flexWrap: 'wrap',
+                gap: 24
+            }}>
+                <div className="animate-fade-in">
+                    <h1 style={{
+                        fontSize: 'var(--h1-size)',
+                        fontWeight: 800,
+                        color: 'var(--text-main)',
+                        letterSpacing: '-0.02em',
+                        fontFamily: 'Outfit, sans-serif',
+                        marginBottom: 4
+                    }}>
+                        Analytics Overview
+                    </h1>
+                    <p style={{ color: 'var(--text-dim)', fontSize: 'var(--p-size)', margin: 0 }}>
+                        Welcome back to Marco Polo Dashboard
+                    </p>
+                </div>
 
-                    <div className="no-print w-full-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12, overflowX: 'auto', maxWidth: '100vw' }}>
-                            {(['today', 'this-week', 'last-week', 'this-month', 'this-year', 'all-time'] as Period[]).map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => setPeriod(p)}
-                                    style={{
-                                        padding: '8px 16px',
-                                        borderRadius: 8,
-                                        border: 'none',
-                                        background: period === p ? 'white' : 'transparent',
-                                        color: period === p ? '#1e293b' : '#64748b',
-                                        fontWeight: period === p ? 600 : 500,
-                                        fontSize: 13,
-                                        cursor: 'pointer',
-                                        boxShadow: period === p ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                        textTransform: 'capitalize'
-                                    }}
-                                >
-                                    {p.replace('-', ' ')}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f1f5f9', padding: '4px 12px', borderRadius: 12 }}>
-                            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>From:</span>
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => {
-                                    setStartDate(e.target.value);
-                                    setPeriod('custom');
-                                }}
+                <div className="no-print" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{
+                        display: 'flex',
+                        gap: 4,
+                        background: 'var(--glass-bg)',
+                        padding: 6,
+                        borderRadius: 14,
+                        border: '1px solid var(--glass-border)',
+                        backdropFilter: 'blur(10px)'
+                    }}>
+                        {(['today', 'this-week', 'this-month', 'this-year', 'all-time'] as Period[]).map((p) => (
+                            <button
+                                key={p}
+                                onClick={() => setPeriod(p)}
                                 style={{
+                                    padding: '8px 16px',
+                                    borderRadius: 10,
                                     border: 'none',
-                                    background: 'transparent',
-                                    fontSize: 13,
-                                    color: period === 'custom' ? '#1e293b' : '#64748b',
-                                    fontWeight: period === 'custom' ? 600 : 500,
-                                    outline: 'none',
-                                    fontFamily: 'inherit'
+                                    background: period === p ? 'var(--primary)' : 'transparent',
+                                    color: period === p ? 'white' : 'var(--text-muted)',
+                                    fontWeight: 700,
+                                    fontSize: 12,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em'
                                 }}
-                            />
-                            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>To:</span>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => {
-                                    setEndDate(e.target.value);
-                                    setPeriod('custom');
-                                }}
-                                style={{
-                                    border: 'none',
-                                    background: 'transparent',
-                                    fontSize: 13,
-                                    color: period === 'custom' ? '#1e293b' : '#64748b',
-                                    fontWeight: period === 'custom' ? 600 : 500,
-                                    outline: 'none',
-                                    fontFamily: 'inherit'
-                                }}
-                            />
-                        </div>
+                            >
+                                {p.replace('-', ' ')}
+                            </button>
+                        ))}
                     </div>
 
                     <button
-                        className="no-print"
-                        onClick={handleManualBackup}
-                        style={{
-                            padding: '10px 20px',
-                            background: '#ea580c',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 10,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8
-                        }}
-                    >
-                        <HardDrive size={18} /> Backup
-                    </button>
-
-                    <button
-                        className="no-print"
                         onClick={() => window.print()}
-                        style={{
-                            padding: '10px 20px',
-                            background: '#1e293b',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 10,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8
-                        }}
+                        className="luxury-button"
+                        style={{ background: 'var(--bg-midnight)', border: '1px solid var(--glass-border)', padding: '10px 20px' }}
                     >
-                        <FileText size={18} /> Print Report
+                        <Printer size={18} /> Print
                     </button>
 
                     <Link
                         href="/inventory"
-                        className="no-print"
-                        style={{
-                            padding: '10px 20px',
-                            background: '#3b82f6',
-                            color: 'white',
-                            textDecoration: 'none',
-                            borderRadius: 10,
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8
-                        }}
+                        className="luxury-button"
+                        style={{ padding: '10px 20px' }}
                     >
                         📦 Inventory
                     </Link>
@@ -460,56 +408,56 @@ export default function Dashboard() {
             </div>
 
             {/* Recent Activity */}
-            <div style={{ background: 'white', borderRadius: 24, padding: 'var(--dashboard-padding, 32px)', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                    <h2 style={{ fontSize: 'var(--h2-size, 20px)', fontWeight: 700, color: '#1a1f3c' }}>{period === 'all-time' ? 'Recent Invoices' : `Invoices - ${period.replace('-', ' ')}`}</h2>
-                    <Link href="/invoices" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }} className="no-print">View All</Link>
+            <div className="luxury-card animate-slide-up" style={{ padding: 0, overflow: 'hidden', marginTop: 40 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 32px', borderBottom: '1px solid var(--glass-border)' }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>{period === 'all-time' ? 'Recent Activity' : `Activity - ${period.replace('-', ' ')}`}</h2>
+                    <Link href="/invoices" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 13, textDecoration: 'none', border: '1px solid var(--glass-border)', padding: '6px 14px', borderRadius: 10, background: 'var(--glass-bg)' }} className="no-print">VIEW ALL</Link>
                 </div>
 
                 <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }} className="mobile-hidden">
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                         <thead>
-                            <tr style={{ borderBottom: '1px solid #eee', textAlign: 'left' }}>
-                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Invoice #</th>
-                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Customer</th>
-                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Date</th>
-                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Total Amount</th>
-                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Served By</th>
-                                <th style={{ padding: '16px 0', color: '#888', fontWeight: 500, fontSize: 14 }}>Status</th>
+                            <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                <th style={{ padding: '16px 32px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Invoice #</th>
+                                <th style={{ padding: '16px 32px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Customer</th>
+                                <th style={{ padding: '16px 32px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Date</th>
+                                <th style={{ padding: '16px 32px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Amount</th>
+                                <th style={{ padding: '16px 32px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', borderBottom: '1px solid var(--glass-border)' }}>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredInvoices.slice(0, 10).map((inv) => {
                                 const calcs = calculateInvoice(inv.data);
                                 return (
-                                    <tr key={inv.id} style={{ borderBottom: '1px solid #f8f8f8' }}>
-                                        <td style={{ padding: '16px 0', fontWeight: 600, color: '#1a1f3c' }}>{inv.data.invoiceNumber}</td>
-                                        <td style={{ padding: '16px 0', color: '#4b5563' }}>{inv.data.soldTo.name}</td>
-                                        <td style={{ padding: '16px 0', color: '#6b7280' }}>{inv.data.date}</td>
-                                        <td style={{ padding: '16px 0', fontWeight: 600, color: '#1a1f3c' }}>
+                                    <tr key={inv.id} style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.3s' }}>
+                                        <td style={{ padding: '20px 32px', fontWeight: 700, color: 'var(--text-main)' }}>{inv.data.invoiceNumber}</td>
+                                        <td style={{ padding: '20px 32px', color: 'var(--text-muted)' }}>{inv.data.soldTo.name}</td>
+                                        <td style={{ padding: '20px 32px', color: 'var(--text-dim)', fontSize: 14 }}>{inv.data.date}</td>
+                                        <td style={{ padding: '20px 32px', textAlign: 'right', fontWeight: 700, color: 'var(--text-main)', fontSize: 16 }}>
                                             ${calcs.totalDue.toLocaleString()}
                                         </td>
-                                        <td style={{ padding: '16px 0', color: '#4b5563', fontSize: 13 }}>
-                                            {inv.data.servedBy || '—'}
-                                        </td>
-                                        <td style={{ padding: '16px 0' }}>
+                                        <td style={{ padding: '20px 32px', textAlign: 'center' }}>
                                             {(() => {
-                                                let style = { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669', label: 'Sale' };
-                                                if (inv.data.documentType === 'CONSIGNMENT') style = { bg: '#fff7ed', text: '#c2410c', label: 'Consignment' };
+                                                let style = { bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--primary)', label: 'Sale' };
+                                                if (inv.data.documentType === 'CONSIGNMENT') style = { bg: 'rgba(251, 191, 36, 0.1)', text: 'var(--accent-gold)', label: 'Consignment' };
                                                 else if (inv.data.documentType === 'WASH') {
-                                                    if (inv.data.status === 'ready') style = { bg: '#dcfce7', text: '#166534', label: 'Ready' };
-                                                    else if (inv.data.status === 'picked_up') style = { bg: '#f1f5f9', text: '#475569', label: 'Picked Up' };
-                                                    else style = { bg: '#e0f2fe', text: '#0284c7', label: inv.data.status || 'Wash/Repair' };
+                                                    if (inv.data.status === 'ready') style = { bg: 'rgba(16, 185, 129, 0.1)', text: 'var(--accent-emerald)', label: 'Ready' };
+                                                    else if (inv.data.status === 'picked_up') style = { bg: 'rgba(255, 255, 255, 0.05)', text: 'var(--text-dim)', label: 'Picked Up' };
+                                                    else style = { bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--primary)', label: inv.data.status || 'Process' };
                                                 }
 
                                                 return (
                                                     <span style={{
-                                                        padding: '4px 12px',
-                                                        borderRadius: 20,
+                                                        padding: '6px 14px',
+                                                        borderRadius: 10,
                                                         background: style.bg,
                                                         color: style.text,
-                                                        fontSize: 12,
-                                                        fontWeight: 600
+                                                        fontSize: 11,
+                                                        fontWeight: 800,
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '0.05em',
+                                                        display: 'inline-block',
+                                                        border: `1px solid ${style.text}20`
                                                     }}>{style.label}</span>
                                                 );
                                             })()}
@@ -561,16 +509,35 @@ export default function Dashboard() {
 
 function KpiCard({ title, value, icon, trend, color, trendColor }: any) {
     return (
-        <div style={{ background: 'white', borderRadius: 24, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ width: 48, height: 48, borderRadius: 16, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {icon}
+        <div className="luxury-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: 14,
+                    background: color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    boxShadow: `0 8px 16px ${color.replace('0.1', '0.05')}`
+                }}>
+                    {React.cloneElement(icon as React.ReactElement, { size: 26 })}
                 </div>
-                <span style={{ fontSize: 12, color: trendColor || '#10b981', fontWeight: 600, background: `${trendColor || '#10b981'}15`, padding: '4px 8px', borderRadius: 12 }}>{trend}</span>
+                <span style={{
+                    fontSize: 12,
+                    color: trendColor || 'var(--accent-emerald)',
+                    fontWeight: 700,
+                    background: `${trendColor || '#10b981'}15`,
+                    padding: '6px 12px',
+                    borderRadius: 10,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                }}>{trend}</span>
             </div>
             <div>
-                <div style={{ color: '#6b7280', fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{title}</div>
-                <div style={{ color: '#1a1f3c', fontSize: 28, fontWeight: 800 }}>{value}</div>
+                <div style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{title}</div>
+                <div style={{ color: 'var(--text-main)', fontSize: 32, fontWeight: 800, letterSpacing: '-0.03em' }}>{value}</div>
             </div>
         </div>
     );

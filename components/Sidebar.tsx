@@ -142,21 +142,20 @@ export default function Sidebar({
                     <button
                         onClick={onShowHelp}
                         className={styles.navItem}
-                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', marginTop: 8, color: '#2563eb' }}
+                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', marginTop: 8 }}
                         title="Help & Support"
                     >
-                        <HelpCircle size={20} />
+                        <HelpCircle size={22} />
                         <span className={styles.label}>Help & Support</span>
                     </button>
                 )}
 
                 <button
                     onClick={onLogout}
-                    className={styles.navItem}
-                    style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', marginTop: 8 }}
+                    className={styles.logoutBtn}
                     title="Logout"
                 >
-                    <LogOut size={20} />
+                    <LogOut size={22} />
                     <span className={styles.label}>Logout</span>
                 </button>
             </div>

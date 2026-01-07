@@ -408,217 +408,195 @@ function InvoicesListContent() {
     };
 
     return (
-        <div style={{ padding: 'var(--dashboard-padding, 40px)', maxWidth: 1200, margin: '0 auto' }}>
-            <header className="flex-stack-mobile" style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto', animation: 'fadeIn 0.5s ease-out' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, flexWrap: 'wrap', gap: 20 }} className="animate-slide-up">
                 <div>
-                    <h1 style={{ fontSize: 32, fontWeight: 800, color: '#1a1f3c', marginBottom: 8 }}>
-                        {viewMode === 'active' ? 'Invoices' : viewMode === 'drafts' ? 'Draft Box' : 'Recycle Bin'}
+                    <h1 style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.03em', marginBottom: 4 }}>
+                        {viewMode === 'bin' ? 'Recycle Bin' : viewMode === 'drafts' ? 'Draft Documents' : 'Invoice Management'}
                     </h1>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <p style={{ color: '#64748b', fontSize: 16 }}>
-                            {viewMode === 'active' ? 'Manage and view all your invoices' : viewMode === 'drafts' ? 'Resume unfinished invoices' : 'View and restore deleted invoices'}
-                        </p>
-                        {/* Sync button hidden - system is now autonomous */}
-                    </div>
+                    <p style={{ color: 'var(--text-dim)', fontSize: 16 }}>Manage your high-end transaction records</p>
                 </div>
-                <div className="w-full-mobile" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    {/* Simplified Status */}
 
-                    {viewMode === 'active' ? (
-                        <>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ display: 'flex', background: 'var(--glass-bg)', padding: 4, borderRadius: 14, border: '1px solid var(--glass-border)' }}>
+                        {(['active', 'drafts', 'bin'] as const).map((mode) => (
                             <button
-                                onClick={() => {
-                                    setLoading(true);
-                                    window.location.reload(); // Hard refresh to ensure full sync
-                                }}
+                                key={mode}
+                                onClick={() => handleSetViewMode(mode)}
                                 style={{
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
-                                    height: 48
+                                    padding: '8px 20px',
+                                    borderRadius: 10,
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    background: viewMode === mode ? 'var(--primary)' : 'transparent',
+                                    color: viewMode === mode ? 'white' : 'var(--text-dim)',
+                                    boxShadow: viewMode === mode ? '0 4px 12px rgba(99, 102, 241, 0.3)' : 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    textTransform: 'capitalize'
                                 }}
-                                title="Force Refresh / Sync"
                             >
-                                <RotateCcw size={20} />
+                                {mode}
                             </button>
-                            <Link
-                                href="/invoices/new"
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                    color: 'white', padding: '12px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 600,
-                                    boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)',
-                                    height: 48
-                                }}
-                            >
-                                <Plus size={20} /> New Invoice
-                            </Link>
-                        </>
-                    ) : (
-                        <button
-                            onClick={() => handleSetViewMode('active')}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 8,
-                                padding: '12px 24px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
-                                height: 48
-                            }}
-                        >
-                            <FileText size={20} /> Back to Invoices
-                        </button>
-                    )}
-                    {/* Drafts Button Toggle */}
-                    {viewMode !== 'drafts' && (
-                        <button
-                            onClick={() => handleSetViewMode(viewMode === 'active' ? 'drafts' : 'active')}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 8,
-                                padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer',
-                                height: 48
-                            }}
-                        >
-                            {viewMode === 'active' ? '📂 Drafts' : '📄 Active Invoices'}
-                        </button>
-                    )}
-                </div>
-            </header>
-
-            {isExporting && exportProgress && (
-                <div style={{ marginBottom: 20, padding: 16, background: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd', color: '#0369a1' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span>{exportProgress.status}</span>
-                        <span>{Math.round(exportProgress.percentage)}%</span>
-                    </div>
-                    <div style={{ height: 6, background: '#e0f2fe', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${exportProgress.percentage}%`, background: '#0284c7', transition: 'width 0.3s' }} />
+                        ))}
                     </div>
                 </div>
-            )}
-
-            {/* Controls Bar */}
-            <div className="flex-stack-mobile" style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-                {selectedIds.length > 0 && (
-                    <div style={{ display: 'flex', gap: 12 }}>
-                        {(viewMode === 'active' || viewMode === 'drafts') ? (
-                            <button
-                                onClick={handleDeleteSelected}
-                                style={{
-                                    padding: '12px 16px', borderRadius: 12, background: '#fee2e2', color: '#ef4444', border: 'none', fontWeight: 600, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 8
-                                }}
-                            >
-                                <Trash2 size={18} /> Delete ({selectedIds.length})
-                            </button>
-                        ) : (
-                            <>
-                                <button
-                                    onClick={handleRestoreSelected}
-                                    style={{
-                                        padding: '12px 16px', borderRadius: 12, background: '#dcfce7', color: '#166534', border: 'none', fontWeight: 600, cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', gap: 8
-                                    }}
-                                >
-                                    <RotateCcw size={18} /> Restore ({selectedIds.length})
-                                </button>
-                                <button
-                                    onClick={handlePermanentlyDelete}
-                                    style={{
-                                        padding: '12px 16px', borderRadius: 12, background: '#fee2e2', color: '#ef4444', border: 'none', fontWeight: 600, cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', gap: 8
-                                    }}
-                                >
-                                    <AlertTriangle size={18} /> Delete Forever ({selectedIds.length})
-                                </button>
-                            </>
-                        )}
-                    </div>
-                )}
-
-                {/* Search */}
-                <div style={{ position: 'relative', flex: 1, minWidth: 300 }}>
-                    <Search size={20} color="#9ca3af" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
-                    <input
-                        type="text"
-                        placeholder="Search by invoice # or customer..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '12px 12px 12px 48px',
-                            borderRadius: 12,
-                            border: '1px solid #e5e7eb',
-                            fontSize: 16,
-                            outline: 'none',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                        }}
-                    />
-                </div>
-
-                {/* Filters */}
-                <select
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value as any)}
-                    style={{
-                        padding: '12px 16px', borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 14, outline: 'none', cursor: 'pointer', background: 'white'
-                    }}
-                >
-                    <option value="ALL">All Types</option>
-                    <option value="INVOICE">Invoices</option>
-                    <option value="CONSIGNMENT">Consignments</option>
-                    <option value="WASH">Wash/Repair</option>
-                </select>
-
-                <select
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value as any)}
-                    style={{
-                        padding: '12px 16px', borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 14, outline: 'none', cursor: 'pointer', background: 'white'
-                    }}
-                >
-                    <option value="desc">Newest First</option>
-                    <option value="asc">Oldest First</option>
-                </select>
             </div>
 
-            <div className="mobile-hidden" style={{ background: 'white', borderRadius: 24, padding: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 24,
+                marginBottom: 32,
+                background: 'var(--glass-bg)',
+                padding: 24,
+                borderRadius: 24,
+                border: '1px solid var(--glass-border)',
+                backdropFilter: 'blur(10px)'
+            }} className="animate-slide-up">
+
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: 1, minWidth: 300 }}>
+                        <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                        <input
+                            type="text"
+                            placeholder="Search by number, customer, or SKU..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '14px 14px 14px 48px',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                border: '1px solid var(--glass-border)',
+                                borderRadius: 16,
+                                color: 'white',
+                                fontSize: 15,
+                                outline: 'none',
+                                transition: 'all 0.3s'
+                            }}
+                            className="focus-glow"
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        <select
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value as any)}
+                            style={{
+                                padding: '12px 16px',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                border: '1px solid var(--glass-border)',
+                                borderRadius: 12,
+                                color: 'var(--text-main)',
+                                cursor: 'pointer',
+                                outline: 'none'
+                            }}
+                        >
+                            <option value="ALL">All Types</option>
+                            <option value="INVOICE">Sale Invoices</option>
+                            <option value="CONSIGNMENT">Consignments</option>
+                            <option value="WASH">Wash / Repairs</option>
+                        </select>
+
+                        <button
+                            onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                            className="luxury-button"
+                            style={{ padding: '12px 20px' }}
+                        >
+                            Sort: {sortOrder === 'desc' ? 'Newest' : 'Oldest'}
+                        </button>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between', borderTop: '1px solid var(--glass-border)', paddingTop: 24 }}>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                        {selectedIds.length > 0 && (
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                {viewMode === 'bin' ? (
+                                    <>
+                                        <button onClick={handleRestoreSelected} className="luxury-button" style={{ background: 'var(--primary)', color: 'white' }}>
+                                            <RotateCcw size={18} style={{ marginRight: 8 }} /> Restore ({selectedIds.length})
+                                        </button>
+                                        <button onClick={handlePermanentlyDelete} className="luxury-button" style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.2)' }}>
+                                            <Trash2 size={18} style={{ marginRight: 8 }} /> Delete Forever
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button onClick={handleDeleteSelected} className="luxury-button" style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.2)' }}>
+                                        <Trash2 size={18} style={{ marginRight: 8 }} /> Archive ({selectedIds.length})
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 12 }}>
+                        <button onClick={handleSync} disabled={isSyncing} className="luxury-button">
+                            <RotateCcw size={18} style={{ marginRight: 8, animation: isSyncing ? 'spin 1s linear infinite' : 'none' }} />
+                            {isSyncing ? 'Syncing...' : 'Sync Cloud'}
+                        </button>
+                        <button onClick={handleExportAddressBook} className="luxury-button">
+                            <Users size={18} style={{ marginRight: 8 }} /> Address Book
+                        </button>
+                        <button onClick={handleExportAllPDFs} disabled={isExporting} className="luxury-button">
+                            <FileDown size={18} style={{ marginRight: 8 }} />
+                            {isExporting ? `Exporting...` : 'Export PDFs'}
+                        </button>
+                        <Link href="/invoices/new" className="luxury-button" style={{ background: 'var(--primary)', color: 'white', border: 'none' }}>
+                            <Plus size={20} style={{ marginRight: 8 }} /> New Document
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop Table */}
+            <div className="mobile-hidden luxury-card" style={{ padding: 0, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr style={{ borderBottom: '1px solid #eee', textAlign: 'left', background: '#f9fafb' }}>
-                            <th style={{ padding: '16px 24px', width: 40 }}>
+                        <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                            <th style={{ padding: '20px 24px', width: 40, borderBottom: '1px solid var(--glass-border)' }}>
                                 <input
                                     type="checkbox"
                                     onChange={handleSelectAll}
                                     checked={visibleInvoices.length > 0 && selectedIds.length === visibleInvoices.length}
-                                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                    style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--primary)' }}
                                 />
                             </th>
-                            <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice #</th>
-                            <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                            <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Customer</th>
-                            <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
-                            <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items</th>
-                            <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount</th>
-                            <th style={{ padding: '16px 24px', color: '#6b7280', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Invoice</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Status</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Customer</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>Date</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Items</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Amount</th>
+                            <th style={{ padding: '20px 24px', color: 'var(--text-dim)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'right', borderBottom: '1px solid var(--glass-border)' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {visibleInvoices.map((inv) => {
                             const isSelected = selectedIds.includes(inv.id);
+                            const calcs = calculateInvoice(inv.data || {} as any);
                             return (
-                                <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s', background: isSelected ? '#f0f9ff' : 'transparent' }} className="hover:bg-gray-50">
+                                <tr key={inv.id} style={{
+                                    borderBottom: '1px solid var(--glass-border)',
+                                    transition: 'all 0.3s',
+                                    background: isSelected ? 'rgba(99, 102, 241, 0.05)' : 'transparent'
+                                }} className="hover-row">
                                     <td style={{ padding: '20px 24px' }}>
                                         <input
                                             type="checkbox"
                                             checked={isSelected}
                                             onChange={() => handleToggleSelect(inv.id)}
-                                            style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                            style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--primary)' }}
                                         />
                                     </td>
-                                    <td style={{ padding: '20px 24px', fontWeight: 600, color: '#1a1f3c' }}>
-                                        <Link href={`/invoices/view?id=${inv.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                                                <div style={{ padding: 8, background: '#eff6ff', borderRadius: 8, color: '#3b82f6' }}>
+                                    <td style={{ padding: '20px 24px' }}>
+                                        <Link href={`/invoices/view?id=${inv.id}`} style={{ textDecoration: 'none' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                <div style={{ padding: 8, background: 'var(--glass-bg)', borderRadius: 10, color: 'var(--primary)', border: '1px solid var(--glass-border)' }}>
                                                     <FileText size={16} />
                                                 </div>
-                                                <span style={{ borderBottom: '1px dotted #3b82f6' }}>{inv.data.invoiceNumber}</span>
+                                                <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 15 }}>{inv.data.invoiceNumber}</span>
                                             </div>
                                         </Link>
                                     </td>
@@ -627,24 +605,28 @@ function InvoicesListContent() {
                                             {getInvoiceStatuses(inv).map((status, idx) => (
                                                 <span key={idx} style={{
                                                     padding: '4px 10px',
-                                                    borderRadius: 20,
-                                                    fontSize: 12,
-                                                    fontWeight: 700,
-                                                    background: status.bg,
+                                                    borderRadius: 8,
+                                                    fontSize: 10,
+                                                    fontWeight: 800,
+                                                    background: `${status.bg}20`,
                                                     color: status.text,
-                                                    whiteSpace: 'nowrap'
+                                                    border: `1px solid ${status.text}30`,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em'
                                                 }}>
                                                     {status.label}
                                                 </span>
                                             ))}
                                         </div>
                                     </td>
-                                    <td style={{ padding: '20px 24px', color: '#4b5563', fontWeight: 500 }}>{inv.data?.soldTo?.name || 'Unknown'}</td>
-                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{formatDateMMDDYYYY(inv.data?.date)}</td>
-                                    <td style={{ padding: '20px 24px', color: '#6b7280' }}>{(inv.data?.items || []).length} items</td>
-                                    <td style={{ padding: '20px 24px', fontWeight: 700, color: '#1a1f3c' }}>${calculateInvoice(inv.data || {} as any).totalDue.toLocaleString()}</td>
-                                    <td style={{ padding: '20px 24px' }}>
-                                        <div style={{ display: 'flex', gap: 8 }}>
+                                    <td style={{ padding: '20px 24px', color: 'var(--text-muted)', fontWeight: 500 }}>{inv.data?.soldTo?.name || 'Anonymous Customer'}</td>
+                                    <td style={{ padding: '20px 24px', color: 'var(--text-dim)', fontSize: 14 }}>{formatDateMMDDYYYY(inv.data?.date)}</td>
+                                    <td style={{ padding: '20px 24px', textAlign: 'right', color: 'var(--text-dim)' }}>{(inv.data?.items || []).length} items</td>
+                                    <td style={{ padding: '20px 24px', textAlign: 'right', fontWeight: 800, color: 'var(--text-main)', fontSize: 16 }}>
+                                        ${calcs.totalDue.toLocaleString()}
+                                    </td>
+                                    <td style={{ padding: '20px 24px', textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                                             <button
                                                 onClick={() => {
                                                     const width = 1000;
@@ -657,21 +639,23 @@ function InvoicesListContent() {
                                                         `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
                                                     );
                                                 }}
-                                                style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }}
-                                                title="Print Invoice"
+                                                className="luxury-button"
+                                                style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center' }}
+                                                title="Print Professional Invoice"
                                             >
-                                                <Printer size={16} />
+                                                <Printer size={18} />
                                             </button>
-                                            <Link href={`/invoices/view?id=${inv.id}`} style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }} title="View Invoice">
-                                                <FileText size={16} />
+                                            <Link href={`/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center' }} title="View Details">
+                                                <FileText size={18} />
                                             </Link>
                                             {(viewMode === 'active' || viewMode === 'drafts') && (
                                                 <button
                                                     onClick={(e) => handleDeleteSingle(inv.id, e)}
-                                                    style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center' }}
-                                                    title="Delete Invoice"
+                                                    className="luxury-button"
+                                                    style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.2)' }}
+                                                    title="Archive Record"
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <Trash2 size={18} />
                                                 </button>
                                             )}
                                         </div>
@@ -681,12 +665,12 @@ function InvoicesListContent() {
                         })}
                         {visibleInvoices.length === 0 && (
                             <tr>
-                                <td colSpan={8} style={{ padding: 60, textAlign: 'center', color: '#9ca3af' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-                                        <div style={{ padding: 20, background: '#f3f4f6', borderRadius: '50%' }}>
-                                            <Search size={32} color="#9ca3af" />
+                                <td colSpan={8} style={{ padding: 80, textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+                                        <div style={{ padding: 24, background: 'var(--glass-bg)', borderRadius: '50%', color: 'var(--text-dim)', border: '1px solid var(--glass-border)' }}>
+                                            <Search size={40} />
                                         </div>
-                                        <div>No invoices found matching your criteria</div>
+                                        <div style={{ color: 'var(--text-dim)', fontSize: 18, fontWeight: 600 }}>No documents match the filter criteria</div>
                                     </div>
                                 </td>
                             </tr>
@@ -695,24 +679,25 @@ function InvoicesListContent() {
                 </table>
             </div>
 
-            {/* Mobile Card List */}
+            {/* Mobile View */}
             <div className="mobile-visible" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {visibleInvoices.map((inv) => {
                     const calcs = calculateInvoice(inv.data || {} as any);
                     return (
                         <div key={inv.id}
                             onClick={() => router.push(`/invoices/view?id=${inv.id}`)}
-                            style={{ background: 'white', borderRadius: 16, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', cursor: 'pointer' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                            className="luxury-card"
+                            style={{ padding: 20, cursor: 'pointer' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                                 <div>
-                                    <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1f3c', display: 'block' }}>{inv.data.invoiceNumber}</span>
-                                    <span style={{ fontSize: 13, color: '#64748b' }}>{inv.data.date}</span>
+                                    <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-main)', display: 'block', letterSpacing: '-0.02em' }}>{inv.data.invoiceNumber}</span>
+                                    <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>{inv.data.date}</span>
                                 </div>
-                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                     {getInvoiceStatuses(inv).map((status, idx) => (
                                         <span key={idx} style={{
-                                            padding: '4px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700,
-                                            background: status.bg, color: status.text
+                                            padding: '4px 10px', borderRadius: 8, fontSize: 10, fontWeight: 800,
+                                            background: `${status.bg}20`, color: status.text, border: `1px solid ${status.text}30`, textTransform: 'uppercase'
                                         }}>
                                             {status.label}
                                         </span>
@@ -720,33 +705,34 @@ function InvoicesListContent() {
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: 16 }}>
-                                <div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>{inv.data?.soldTo?.name || 'Unknown'}</div>
-                                <div style={{ fontSize: 13, color: '#64748b' }}>{(inv.data?.items || []).length} items</div>
+                            <div style={{ marginBottom: 20 }}>
+                                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)' }}>{inv.data?.soldTo?.name || 'Anonymous Customer'}</div>
+                                <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 4 }}>{(inv.data?.items || []).length} items listed</div>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
-                                <div style={{ fontSize: 18, fontWeight: 800, color: '#1a1f3c' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: 16 }}>
+                                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.03em' }}>
                                     ${calcs.totalDue.toLocaleString()}
                                 </div>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <div style={{ padding: 8, background: '#eff6ff', borderRadius: '50%', color: '#3b82f6' }}>
-                                        <FileText size={18} />
+                                <div style={{ display: 'flex', gap: 10 }}>
+                                    <div style={{ padding: 10, background: 'var(--glass-bg)', borderRadius: 12, color: 'var(--primary)', border: '1px solid var(--glass-border)' }}>
+                                        <FileText size={20} />
                                     </div>
                                     <button
                                         onClick={(e) => handleDeleteSingle(inv.id, e)}
-                                        style={{ padding: 8, background: '#fee2e2', borderRadius: '50%', color: '#ef4444', border: 'none', cursor: 'pointer' }}
+                                        className="luxury-button"
+                                        style={{ padding: 10, background: 'rgba(244, 63, 94, 0.1)', borderRadius: 12, color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.1)', cursor: 'pointer' }}
                                     >
-                                        <Trash2 size={18} />
+                                        <Trash2 size={20} />
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    )
+                    );
                 })}
                 {visibleInvoices.length === 0 && (
-                    <div style={{ padding: 40, textAlign: 'center', color: '#9ca3af', background: 'white', borderRadius: 16 }}>
-                        <div style={{ marginBottom: 8 }}>No invoices found</div>
+                    <div className="luxury-card" style={{ padding: 60, textAlign: 'center' }}>
+                        <div style={{ color: 'var(--text-dim)', fontSize: 16, fontWeight: 600 }}>No results found</div>
                     </div>
                 )}
             </div>
