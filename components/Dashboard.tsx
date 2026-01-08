@@ -164,9 +164,14 @@ export default function Dashboard() {
             try { setCurrentUser(JSON.parse(user)); } catch { }
 
             async function loadData() {
-                const data = await getAllInvoices();
-                setInvoices(data);
-                setLoading(false);
+                try {
+                    const data = await getAllInvoices();
+                    setInvoices(data);
+                } catch (err) {
+                    console.error("Failed to load invoices", err);
+                } finally {
+                    setLoading(false);
+                }
             }
             loadData();
         } else {

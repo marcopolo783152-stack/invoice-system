@@ -8,6 +8,7 @@ import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
+import BackupModal from './BackupModal';
 import ExportPreviewModal from './ExportPreviewModal';
 
 export default function Sidebar({
@@ -73,6 +74,7 @@ export default function Sidebar({
         { label: 'New Invoice', href: '/invoices/new', icon: PlusCircle },
         { label: 'Inventory DB', href: '/inventory', icon: Package },
         { label: 'Address Book', icon: Users, type: 'button' as const, onClick: onShowAddressBook },
+        { label: 'Backup', icon: DatabaseBackup, type: 'button' as const, onClick: () => setShowBackupModal(true) },
         { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
         { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
         { label: 'Reports', href: '/reports', icon: BarChart },
@@ -200,8 +202,14 @@ export default function Sidebar({
                 </button>
             </div>
 
-
-
+            {showBackupModal && (
+                <BackupModal
+                    onClose={() => setShowBackupModal(false)}
+                    isWeb={typeof window !== 'undefined' && !(window as any).electron}
+                />
+            )}
         </div>
     );
 }
+
+
