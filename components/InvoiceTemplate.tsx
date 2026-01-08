@@ -178,7 +178,7 @@ export default function InvoiceTemplate({
                   <p style={{ fontSize: 11, color: '#475569' }}><b>Served by:</b> {data.servedBy}</p>
                 )}
               </div>
-              <div className={`${styles.invoiceInfo} email-invoice-info`}>
+              <div className={`${styles.invoiceInfo} email-invoice-info`} style={{ width: '50%', maxWidth: 'none' }}>
                 <table>
                   <tbody>
                     <tr>
@@ -404,7 +404,7 @@ export default function InvoiceTemplate({
                       {data.payments && data.payments.map((p, idx) => (
                         <tr key={`${p.id}-${idx}`}>
                           <td className={styles.totalLabel}>Less Payment ({p.method}{p.reference ? ` #${p.reference}` : ''}):</td>
-                          <td className={styles.totalValue}>-{formatCurrency(p.amount)}</td>
+                          <td className={styles.totalValue} style={{ color: '#059669' }}>-{formatCurrency(p.amount)}</td>
                         </tr>
                       ))}
 
