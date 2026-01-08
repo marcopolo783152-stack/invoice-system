@@ -243,12 +243,50 @@ export default function SettingsPage() {
                             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>Restore from Backup</h3>
                             <p style={{ fontSize: 14, color: '#666', margin: 0 }}>Import a Master Backup file (.json) to restore lost data.</p>
                         </div>
-                        <button
-                            onClick={async () => {
-                                if (typeof window === 'undefined' || !(window as any).electron) {
-                                    alert('Restore is only available in the Desktop App.');
+                        <input
+                            type="file"
+                            accept=".json"
+                            style={{ display: 'none' }}
+                            id="web-restore-input"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+
+                                if (!confirm('Are you sure you want to restore data from backup? This will merge/update existing invoices.')) {
+                                    e.target.value = ''; // Reset
                                     return;
                                 }
+
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    try {
+                                        const json = event.target?.result as string;
+                                        const success = importInvoices(json);
+                                        if (success) {
+                                            alert('Restore Complete! Database updated.');
+                                            window.location.reload();
+                                        } else {
+                                            alert('Failed to parse backup file.');
+                                        }
+                                    } catch (err) {
+                                        console.error(err);
+                                        alert('Error reading file');
+                                    }
+                                };
+                                reader.readAsText(file);
+                            }}
+                        />
+                        <button
+                            onClick={async () => {
+                                const isElectron = typeof window !== 'undefined' && (window as any).electron;
+
+                                if (!isElectron) {
+                                    // Web Fallback
+                                    document.getElementById('web-restore-input')?.click();
+                                    return;
+                                }
+
+                                // Desktop Logic
                                 if (!confirm('Are you sure you want to restore data from backup? This will merge/update existing invoices.')) return;
 
                                 try {

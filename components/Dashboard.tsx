@@ -28,8 +28,22 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
     }, [invoices]);
 
     const handleSmartSync = async () => {
-        if (typeof window === 'undefined' || !(window as any).electron) {
-            alert('Smart Sync is only available in the Desktop App.');
+        const isElectron = typeof window !== 'undefined' && (window as any).electron;
+
+        if (!isElectron) {
+            // Web Fallback: Download the Master JSON
+            const data = exportInvoices();
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Invoices_Master_Backup.json';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            confirmSmartBackupComplete();
+            setStatus('uptodate');
+            alert('Backup Downloaded! Please save this file safely.');
             return;
         }
 
