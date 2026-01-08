@@ -232,7 +232,7 @@ export default function SettingsPage() {
             )}
 
 
-            )}
+
 
             {/* Data Management Section */}
             {user?.role === 'admin' && (
