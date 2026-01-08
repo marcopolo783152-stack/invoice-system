@@ -89,7 +89,7 @@
 }
 
 .invoiceInfo {
-  flex: 0 0 220px;
+  flex: 1;
   border: 2px solid #000;
   padding: 10px;
 }
