@@ -51,7 +51,7 @@ function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isO
                             <label key={item.id} style={{ display: 'flex', gap: 12, padding: 12, borderBottom: '1px solid #f1f5f9', cursor: item.returned ? 'default' : 'pointer', background: item.returned ? '#f8fafc' : 'white' }}>
                                 <input
                                     type="checkbox"
-                                    disabled={item.returned}
+                                    disabled={item.returned || item.sold}
                                     checked={selectedIds.includes(item.id)}
                                     onChange={(e) => {
                                         if (e.target.checked) setSelectedIds([...selectedIds, item.id]);
@@ -62,6 +62,7 @@ function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isO
                                     <div style={{ fontWeight: 600 }}>{item.sku}</div>
                                     <div style={{ fontSize: 13, color: '#64748b' }}>{item.description}</div>
                                     {item.returned && <div style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Already Returned</div>}
+                                    {item.sold && <div style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Already Sold</div>}
                                 </div>
                             </label>
                         ))
@@ -86,23 +87,30 @@ function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isO
     );
 }
 
-function MarkSoldModal({ isOpen, items, onClose, onConfirm }: { isOpen: boolean, items: any[], onClose: () => void, onConfirm: (selectedIds: string[]) => void }) {
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+function ReturnItemsModal({ isOpen, items, onClose, onConfirm, initialSelectedIds, initialNote }: { isOpen: boolean, items: any[], onClose: () => void, onConfirm: (selectedIds: string[], note: string) => void, initialSelectedIds?: string[], initialNote?: string }) {
+    const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds || []);
     const [searchTerm, setSearchTerm] = useState('');
+    const [note, setNote] = useState(initialNote || '');
+    const [processing, setProcessing] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedIds(initialSelectedIds || []);
+            setNote(initialNote || '');
+        }
+    }, [isOpen, initialSelectedIds, initialNote]);
 
     if (!isOpen) return null;
 
     const filteredItems = items.filter(item =>
-        !item.sold && // Only show items NOT yet sold
-        ((item.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-            (item.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()))
+        (item.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (item.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <div style={{ background: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 500, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Confirm Payment (Mark as Sold)</h3>
-                <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>Select items that have been paid for. This will mark them as SOLD.</p>
+                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Manage Returns</h3>
 
                 <input
                     type="text"
@@ -115,48 +123,57 @@ function MarkSoldModal({ isOpen, items, onClose, onConfirm }: { isOpen: boolean,
 
                 <div style={{ maxHeight: 300, overflowY: 'auto', marginBottom: 16, border: '1px solid #e2e8f0', borderRadius: 8 }}>
                     {filteredItems.length === 0 ? (
-                        <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>No unsold items found</div>
+                        <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>No items found</div>
                     ) : (
                         filteredItems.map(item => (
-                            <label key={item.id} style={{ display: 'flex', gap: 12, padding: 12, borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
+                            <label key={item.id} style={{ display: 'flex', gap: 12, padding: 12, borderBottom: '1px solid #f1f5f9', cursor: item.sold ? 'default' : 'pointer', background: item.sold ? '#f8fafc' : 'white' }}>
                                 <input
                                     type="checkbox"
+                                    disabled={item.sold}
                                     checked={selectedIds.includes(item.id)}
                                     onChange={(e) => {
                                         if (e.target.checked) setSelectedIds([...selectedIds, item.id]);
                                         else setSelectedIds(selectedIds.filter(id => id !== item.id));
                                     }}
                                 />
-                                <div>
+                                <div style={{ opacity: item.sold ? 0.6 : 1 }}>
                                     <div style={{ fontWeight: 600 }}>{item.sku}</div>
                                     <div style={{ fontSize: 13, color: '#64748b' }}>{item.description}</div>
+                                    {item.sold && <div style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Already Sold</div>}
+                                    {item.returned && !item.sold && <div style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Currently Returned</div>}
                                 </div>
                             </label>
                         ))
                     )}
                 </div>
 
+                <textarea
+                    placeholder="Return Note / Reason"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #cbd5e1', marginBottom: 16, fontFamily: 'inherit' }}
+                    rows={3}
+                />
+
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', alignItems: 'center' }}>
                     <span style={{ fontSize: 13, color: '#64748b', marginRight: 'auto' }}>
-                        {selectedIds.length} selected
+                        {selectedIds.length} returned
                     </span>
                     <button onClick={onClose} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
                     <button
-                        onClick={() => {
-                            if (confirm(`Are you sure these ${selectedIds.length} items sold? Confirm payment.`)) {
-                                onConfirm(selectedIds);
-                            }
-                        }}
-                        disabled={selectedIds.length === 0}
-                        style={{ padding: '8px 16px', background: '#059669', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: selectedIds.length === 0 ? 0.7 : 1 }}
+                        onClick={() => { setProcessing(true); onConfirm(selectedIds, note); }}
+                        disabled={processing}
+                        style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: processing ? 0.7 : 1 }}
                     >
-                        Confirm Payment
+                        {processing ? 'Processing...' : 'Save Changes'}
                     </button>
                 </div>
             </div>
         </div>
     );
 }
+
+
 
 function InvoiceViewContent() {
     const searchParams = useSearchParams();
@@ -184,7 +201,7 @@ function InvoiceViewContent() {
     const [showReturnReceipt, setShowReturnReceipt] = useState(false);
     const [returnedReceiptData, setReturnedReceiptData] = useState<any>(null);
     const [isConverting, setIsConverting] = useState(false);
-    const [showMarkSoldModal, setShowMarkSoldModal] = useState(false);
+
 
     const [isPrinting, setIsPrinting] = useState(false);
 
@@ -248,9 +265,15 @@ function InvoiceViewContent() {
     // Return Handlers
     const handleReturnClick = () => {
         setIsConverting(false);
+        // Pre-populate with currently returned items
+        if (invoice) {
+            const returnedIds = invoice.data.items.filter(i => i.returned).map(i => i.id);
+            setReturnItems(returnedIds);
+            // Try to find a common return note if any
+            const commonNote = invoice.data.items.find(i => i.returned && i.returnNote)?.returnNote || '';
+            setReturnNote(commonNote);
+        }
         setShowReturnModal(true);
-        setReturnItems([]);
-        setReturnNote('');
     };
 
     const handleConvertClick = () => {
@@ -260,54 +283,42 @@ function InvoiceViewContent() {
         setReturnNote('Converted to Sale');
     };
 
-    const handleMarkSold = async (selectedIds: string[]) => {
+
+
+    const handleProcessReturnWithArgs = async (itemsIds: string[], note: string) => {
         if (!invoice) return;
-        setLoading(true);
-        try {
-            const updatedItems = invoice.data.items.map(item =>
-                selectedIds.includes(item.id) ? { ...item, sold: true } : item
-            );
 
-            const updatedInvoice = {
-                ...invoice,
-                data: {
-                    ...invoice.data,
-                    items: updatedItems
-                },
-                updatedAt: new Date().toISOString()
-            };
-
-            await saveInvoice(updatedInvoice.data, invoice.id);
-            await loadInvoice(invoice.id);
-            setShowMarkSoldModal(false);
-        } catch (error) {
-            console.error('Failed to mark items as sold:', error);
-            alert('Failed to update items.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleProcessReturn = async () => {
-        handleProcessReturnWithArgs(returnItems, returnNote);
-    };
-
-    const handleProcessReturnWithArgs = async (items: string[], note: string) => {
-        if (!invoice) return;
-        if (items.length === 0) {
+        // If converting, we need at least one item
+        if (isConverting && itemsIds.length === 0) {
             alert('Please select at least one item.');
             return;
         }
 
-        if (!isConverting && !confirm('Process return for selected items?')) return;
+        if (!isConverting && !confirm('Save return changes?')) return;
 
         setReturnProcessing(true);
         try {
-            const updatedItems = invoice.data.items.map(item =>
-                items.includes(item.id)
-                    ? { ...item, returned: true, returnNote: note || (isConverting ? 'Converted to Sale' : 'Returned by customer') }
-                    : item
-            );
+            const updatedItems = invoice.data.items.map(item => {
+                if (isConverting) {
+                    // Logic for converting to sale: ONLY touch selected items
+                    if (itemsIds.includes(item.id)) {
+                        return { ...item, sold: true, soldDate: new Date().toISOString(), returnNote: note };
+                    }
+                    return item;
+                } else {
+                    // Logic for Returns: Check/Uncheck determined by presence in itemsIds
+                    if (itemsIds.includes(item.id)) {
+                        // It IS selected, so ensure it IS returned
+                        return { ...item, returned: true, returnNote: note || 'Returned by customer' };
+                    } else {
+                        // It is NOT selected. If it WAS returned, we UNDO it (unless it's sold)
+                        if (item.returned && !item.sold) {
+                            return { ...item, returned: false, returnNote: undefined };
+                        }
+                        return item;
+                    }
+                }
+            });
 
             const updatedInvoice = {
                 ...invoice,
@@ -322,32 +333,6 @@ function InvoiceViewContent() {
 
             await saveInvoice(updatedInvoice.data, invoice.id);
 
-            if (isConverting) {
-                // Get the items to sell
-                const itemsToSell = invoice.data.items.filter(i => items.includes(i.id));
-                // Save to session for new invoice
-                const itemsForNewInvoice = itemsToSell.map(item => ({
-                    ...item,
-                    id: Math.random().toString(36).substr(2, 9), // New ID for new invoice
-                    returned: false, // Reset returned status for new sale
-                    returnNote: undefined
-                }));
-                sessionStorage.setItem('convert_items', JSON.stringify(itemsForNewInvoice));
-                // Redirect
-                router.push('/invoices/new');
-                return;
-            }
-
-            await loadInvoice(invoice.id); // Reload to reflect changes
-
-            // Show Receipt
-            setReturnedReceiptData({
-                ...updatedInvoice,
-                returnedItems: updatedItems.filter(i => items.includes(i.id)), // Only show currently returned items
-                returnNote: note
-            });
-            setShowReturnReceipt(true);
-            setShowReturnModal(false);
         } catch (error) {
             console.error(error);
             alert('Failed to process return');
@@ -473,29 +458,16 @@ function InvoiceViewContent() {
 
                             <div style={{ display: 'flex', gap: 12 }}>
                                 {invoice.data.documentType === 'CONSIGNMENT' && (
-                                    <>
-                                        <button
-                                            onClick={() => setShowMarkSoldModal(true)}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: 8,
-                                                padding: '10px 20px', background: '#059669', color: 'white',
-                                                border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                                                boxShadow: '0 2px 4px rgba(5, 150, 105, 0.3)'
-                                            }}
-                                        >
-                                            <ShoppingCart size={18} /> Confirm Payment
-                                        </button>
-                                        <button
-                                            onClick={handleConvertClick}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: 8,
-                                                padding: '10px 20px', background: '#e2e8f0', color: '#475569',
-                                                border: 'none', borderRadius: 8, fontWeight: 500, cursor: 'pointer',
-                                            }}
-                                        >
-                                            <Undo size={18} /> Convert to Sale
-                                        </button>
-                                    </>
+                                    <button
+                                        onClick={handleConvertClick}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8,
+                                            padding: '10px 20px', background: '#e2e8f0', color: '#475569',
+                                            border: 'none', borderRadius: 8, fontWeight: 500, cursor: 'pointer',
+                                        }}
+                                    >
+                                        <Undo size={18} /> Convert to Sale
+                                    </button>
                                 )}
                                 {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && (
                                     <button
@@ -609,46 +581,20 @@ function InvoiceViewContent() {
                         }}
                     />
 
-                    {/* Return Modal Overlay - REPLACED WITH Searchable Consignment Modal logic if needed */}
+                    {/* Return Modal (Searchable) */}
                     {showReturnModal && !isConverting && (
-                        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <div style={{ background: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 500, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-                                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Return Items</h3>
-                                <div style={{ maxHeight: 300, overflowY: 'auto', marginBottom: 16, border: '1px solid #e2e8f0', borderRadius: 8 }}>
-                                    {invoice.data.items.map(item => (
-                                        <label key={item.id} style={{ display: 'flex', gap: 12, padding: 12, borderBottom: '1px solid #f1f5f9', cursor: item.returned ? 'default' : 'pointer', background: item.returned ? '#f8fafc' : 'white' }}>
-                                            <input
-                                                type="checkbox"
-                                                disabled={item.returned}
-                                                checked={returnItems.includes(item.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) setReturnItems([...returnItems, item.id]);
-                                                    else setReturnItems(returnItems.filter(id => id !== item.id));
-                                                }}
-                                            />
-                                            <div style={{ opacity: item.returned ? 0.6 : 1 }}>
-                                                <div style={{ fontWeight: 600 }}>{item.sku}</div>
-                                                <div style={{ fontSize: 13, color: '#64748b' }}>{item.description}</div>
-                                                {item.returned && <div style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Already Returned</div>}
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-                                <textarea
-                                    placeholder="Return Note / Reason"
-                                    value={returnNote}
-                                    onChange={(e) => setReturnNote(e.target.value)}
-                                    style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #cbd5e1', marginBottom: 16, fontFamily: 'inherit' }}
-                                    rows={3}
-                                />
-                                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                                    <button onClick={() => setShowReturnModal(false)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
-                                    <button onClick={handleProcessReturn} disabled={returnProcessing} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: returnProcessing ? 0.7 : 1 }}>
-                                        {returnProcessing ? 'Processing...' : 'Confirm Return'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <ReturnItemsModal
+                            isOpen={true}
+                            items={invoice.data.items}
+                            initialSelectedIds={returnItems}
+                            initialNote={returnNote}
+                            onClose={() => setShowReturnModal(false)}
+                            onConfirm={(ids: string[], note: string) => {
+                                setReturnItems(ids);
+                                setReturnNote(note);
+                                handleProcessReturnWithArgs(ids, note);
+                            }}
+                        />
                     )}
 
                     {/* Consignment Conversion Modal (Searchable) */}
@@ -665,13 +611,7 @@ function InvoiceViewContent() {
                         />
                     )}
 
-                    {/* Mark Sold Modal */}
-                    <MarkSoldModal
-                        isOpen={showMarkSoldModal}
-                        items={invoice.data.items}
-                        onClose={() => setShowMarkSoldModal(false)}
-                        onConfirm={handleMarkSold}
-                    />
+
 
                     {/* Pickup Signature Modal */}
                     {showPickupModal && (
