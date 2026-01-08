@@ -321,10 +321,13 @@ export default function InvoiceTemplate({
                         <td className={styles.totalLabel}>Total Items:</td>
                         <td className={styles.totalValue}>{calculations.items.length}</td>
                       </tr>
-                      <tr>
-                        <td className={styles.totalLabel}>Subtotal:</td>
-                        <td className={styles.totalValue}>{formatCurrency(calculations.subtotal)}</td>
-                      </tr>
+                      {/* Hide Subtotal for Consignment, show for others */}
+                      {data.documentType !== 'CONSIGNMENT' && (
+                        <tr>
+                          <td className={styles.totalLabel}>Subtotal:</td>
+                          <td className={styles.totalValue}>{formatCurrency(calculations.subtotal)}</td>
+                        </tr>
+                      )}
                       {isRetail && calculations.discount > 0 && (
                         <tr>
                           <td className={styles.totalLabel}>
@@ -354,16 +357,31 @@ export default function InvoiceTemplate({
                             <td className={styles.totalLabel}>TOTAL CONSIGNMENT VALUE:</td>
                             <td className={styles.totalValue}>{formatCurrency(calculations.totalDue)}</td>
                           </tr>
+
+                          {/* Always subtract Sold Items if any */}
+                          {calculations.soldAmount > 0 && (
+                            <tr style={{ color: '#059669' }}>
+                              <td className={styles.totalLabel}>Less Sold Items:</td>
+                              <td className={styles.totalValue}>-{formatCurrency(calculations.soldAmount)}</td>
+                            </tr>
+                          )}
+
+                          {/* Always subtract Returned Items if any */}
+                          {calculations.returnedAmount > 0 && (
+                            <tr style={{ color: '#dc2626' }}>
+                              <td className={styles.totalLabel}>Less Returned Items:</td>
+                              <td className={styles.totalValue}>-{formatCurrency(calculations.returnedAmount)}</td>
+                            </tr>
+                          )}
+
+                          {/* Remaining Inventory = Total - Sold - Returned */}
+                          <tr style={{ fontWeight: 'bold', borderTop: '1px solid #334155' }}>
+                            <td className={styles.totalLabel}>REMAINING INVENTORY:</td>
+                            <td className={styles.totalValue}>{formatCurrency(calculations.totalDue - calculations.soldAmount - calculations.returnedAmount)}</td>
+                          </tr>
+
                           {calculations.soldAmount > 0 && (
                             <>
-                              <tr style={{ color: '#059669' }}>
-                                <td className={styles.totalLabel}>Less Sold Items:</td>
-                                <td className={styles.totalValue}>-{formatCurrency(calculations.soldAmount)}</td>
-                              </tr>
-                              <tr style={{ fontWeight: 'bold', borderTop: '1px solid #334155' }}>
-                                <td className={styles.totalLabel}>REMAINING INVENTORY:</td>
-                                <td className={styles.totalValue}>{formatCurrency(calculations.totalDue - calculations.soldAmount)}</td>
-                              </tr>
                               {/* Spacer for Settlement Section */}
                               <tr style={{ height: 10 }}><td colSpan={2}></td></tr>
                               <tr>

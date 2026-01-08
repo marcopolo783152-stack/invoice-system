@@ -100,6 +100,7 @@ export default function PaymentModal({ isOpen, onClose, onSave, totalDue, balanc
                             <option value="Check">Check</option>
                             <option value="Cash">Cash</option>
                             <option value="Card">Card</option>
+                            <option value="Trade">Trade</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
