@@ -4,11 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup, RefreshCw } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
-import BackupModal from './BackupModal';
+import { BackupModal } from './BackupModal';
 import ExportPreviewModal from './ExportPreviewModal';
 
 export default function Sidebar({
@@ -68,13 +68,45 @@ export default function Sidebar({
         return () => clearInterval(interval);
     }, []);
 
+    const [isBackingUp, setIsBackingUp] = useState(false);
+
+    const handleBackupClick = async () => {
+        const isWeb = typeof window !== 'undefined' && !(window as any).electron;
+        if (isWeb) {
+            try {
+                // Check if API available
+                if (!(window as any).showDirectoryPicker) {
+                    alert('Your browser does not support direct folder access. Please use Chrome, Edge, or Opera.');
+                    return;
+                }
+
+                if (confirm("Start full backup (PDFs + JSON) to a local folder?")) {
+                    setIsBackingUp(true);
+                    const invoices = await getAllInvoices();
+                    const { exportToDirectory } = await import('@/lib/bulk-export');
+                    await exportToDirectory(invoices);
+                    alert("Backup Completed Successfully!");
+                }
+            } catch (error: any) {
+                console.error(error);
+                if (error.name !== 'AbortError') {
+                    alert("Backup Failed: " + error.message);
+                }
+            } finally {
+                setIsBackingUp(false);
+            }
+        } else {
+            setShowBackupModal(true);
+        }
+    };
+
     const navItems = [
         { label: 'Dashboard', href: '/', icon: LayoutDashboard, exact: true },
         { label: 'Invoices', href: '/invoices', icon: FileText, activeCondition: pathname === '/invoices' && !isRecycleBin },
         { label: 'New Invoice', href: '/invoices/new', icon: PlusCircle },
         { label: 'Inventory DB', href: '/inventory', icon: Package },
         { label: 'Address Book', icon: Users, type: 'button' as const, onClick: onShowAddressBook },
-        { label: 'Backup', icon: DatabaseBackup, type: 'button' as const, onClick: () => setShowBackupModal(true) },
+        { label: 'Backup', icon: isBackingUp ? RefreshCw : DatabaseBackup, type: 'button' as const, onClick: handleBackupClick, className: isBackingUp ? styles.spin : '' },
         { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
         { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
         { label: 'Reports', href: '/reports', icon: BarChart },

@@ -10,7 +10,7 @@ interface BackupModalProps {
     isWeb?: boolean;
 }
 
-export default function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
+export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
     const [backupPath, setBackupPath] = useState('');
     const [lastBackup, setLastBackup] = useState<string | null>(null);
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');

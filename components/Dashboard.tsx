@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search } from 'lucide-react';
-import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices } from '@/lib/invoice-storage';
+import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import Link from 'next/link';
 import Login from './Login';
@@ -150,6 +150,7 @@ export default function Dashboard() {
     const [period, setPeriod] = useState<Period>('today');
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    // Start loading only if we have NO local data to show immediately
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
@@ -163,6 +164,18 @@ export default function Dashboard() {
             setIsAuthenticated(true);
             try { setCurrentUser(JSON.parse(user)); } catch { }
 
+            // Initial Load (Instant)
+            try {
+                const localData = getAllInvoicesSync();
+                if (localData && localData.length > 0) {
+                    setInvoices(localData);
+                    setLoading(false); // Show UI immediately if we have data
+                }
+            } catch (e) {
+                console.error("Local load error", e);
+            }
+
+            // Background / Full Load (Cloud Sync - Graceful)
             async function loadData() {
                 try {
                     const data = await getAllInvoices();
@@ -185,9 +198,10 @@ export default function Dashboard() {
         setLoading(true);
         // Reload data after login
         async function loadData() {
-            const data = await getAllInvoices();
-            setInvoices(data);
-            setLoading(false);
+            try {
+                const data = await getAllInvoices();
+                setInvoices(data);
+            } catch (e) { console.error(e) } finally { setLoading(false); }
         }
         loadData();
     };
