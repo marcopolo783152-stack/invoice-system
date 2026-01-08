@@ -333,6 +333,22 @@ function InvoiceViewContent() {
 
             await saveInvoice(updatedInvoice.data, invoice.id);
 
+            if (isConverting) {
+                // Get the items to sell
+                const itemsToSell = invoice.data.items.filter(i => itemsIds.includes(i.id));
+                // Save to session for new invoice
+                const itemsForNewInvoice = itemsToSell.map(item => ({
+                    ...item,
+                    id: Math.random().toString(36).substr(2, 9), // New ID for new invoice
+                    sold: false, // Reset sold status for new sale (it's the new sale itself)
+                    returned: false, // Reset returned status for new sale
+                    returnNote: undefined
+                }));
+                sessionStorage.setItem('convert_items', JSON.stringify(itemsForNewInvoice));
+                // Redirect
+                router.push('/invoices/new');
+                return;
+            }
         } catch (error) {
             console.error(error);
             alert('Failed to process return');

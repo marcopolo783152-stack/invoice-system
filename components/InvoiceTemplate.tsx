@@ -345,6 +345,19 @@ export default function InvoiceTemplate({
                         </td>
                         <td className={styles.totalValue}>{formatCurrency(calculations.totalDue)}</td>
                       </tr>
+                      {(calculations.downpayment || 0) > 0 && (
+                        <tr>
+                          <td className={styles.totalLabel}>Less Deposit/Holding:</td>
+                          <td className={styles.totalValue}>-{formatCurrency(calculations.downpayment || 0)}</td>
+                        </tr>
+                      )}
+                      {(calculations.downpayment || 0) > 0 && (
+                        <tr style={{ fontWeight: 'bold', borderTop: '2px solid #334155' }}>
+                          <td className={styles.totalLabel}>BALANCE DUE:</td>
+                          <td className={styles.totalValue}>{formatCurrency(calculations.balanceDue || (calculations.totalDue - (calculations.downpayment || 0)))}</td>
+                        </tr>
+                      )}
+
                       {data.documentType === 'CONSIGNMENT' && calculations.soldAmount > 0 && (
                         <>
                           <tr style={{ color: '#059669' }}>
