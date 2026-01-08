@@ -30,6 +30,7 @@ interface InvoiceTemplateProps {
     website?: string;
     email?: string;
   };
+  onDeletePayment?: (paymentId: string) => void;
 }
 
 export default function InvoiceTemplate({
@@ -46,6 +47,7 @@ export default function InvoiceTemplate({
     website: 'www.marcopolorugs.com',
     email: 'marcopolorugs@aol.com',
   },
+  onDeletePayment,
 }: InvoiceTemplateProps) {
   // Format date as mm/dd/yyyy
   function formatDateMMDDYYYY(dateString: string) {
@@ -178,7 +180,7 @@ export default function InvoiceTemplate({
                   <p style={{ fontSize: 11, color: '#475569' }}><b>Served by:</b> {data.servedBy}</p>
                 )}
               </div>
-              <div className={`${styles.invoiceInfo} email-invoice-info`} style={{ width: '50%', minWidth: '350px', maxWidth: 'none' }}>
+              <div className={`${styles.invoiceInfo} email-invoice-info`} style={{ width: '40%', minWidth: '300px', maxWidth: 'none' }}>
                 <table>
                   <tbody>
                     <tr>
@@ -403,8 +405,31 @@ export default function InvoiceTemplate({
 
                       {data.payments && data.payments.map((p, idx) => (
                         <tr key={`${p.id}-${idx}`}>
-                          <td className={styles.totalLabel}>Less Payment ({p.method}{p.reference ? ` #${p.reference}` : ''}):</td>
-                          <td className={styles.totalValue} style={{ color: '#059669' }}>-{formatCurrency(p.amount)}</td>
+                          <td className={styles.totalLabel}>
+                            Less Payment ({p.method}{p.reference ? ` #${p.reference}` : ''}):
+                          </td>
+                          <td className={styles.totalValue} style={{ color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                            -{formatCurrency(p.amount)}
+                            {onDeletePayment && (
+                              <button
+                                onClick={() => onDeletePayment(p.id)}
+                                className="no-print"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#dc2626',
+                                  cursor: 'pointer',
+                                  padding: '0 4px',
+                                  fontSize: '14px',
+                                  fontWeight: 'bold',
+                                  lineHeight: 1
+                                }}
+                                title="Delete payment"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))}
 

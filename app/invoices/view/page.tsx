@@ -408,6 +408,37 @@ function InvoiceViewContent() {
             console.error(e);
             alert('Failed to save payment');
         }
+    }
+
+
+
+    const handleDeletePayment = async (paymentId: string) => {
+        if (!invoice) return;
+
+        if (!confirm('Are you sure you want to delete this payment?')) {
+            return;
+        }
+
+        try {
+            const currentPayments = invoice.data.payments || [];
+            const updatedPayments = currentPayments.filter(p => p.id !== paymentId);
+
+            const updatedInvoice = {
+                ...invoice,
+                data: {
+                    ...invoice.data,
+                    payments: updatedPayments
+                },
+                updatedAt: new Date().toISOString()
+            };
+
+            await saveInvoice(updatedInvoice.data, invoice.id);
+            await loadInvoice(invoice.id);
+            alert('Payment deleted successfully');
+        } catch (error) {
+            console.error('Failed to delete payment:', error);
+            alert('Failed to delete payment');
+        }
     };
 
     const handleProcessPickup = async (signatureData: string) => {
@@ -769,6 +800,7 @@ function InvoiceViewContent() {
                             data={invoice.data}
                             calculations={calculations}
                             businessInfo={businessConfig}
+                            onDeletePayment={handleDeletePayment}
                         />
                     </div>
                 </div>
