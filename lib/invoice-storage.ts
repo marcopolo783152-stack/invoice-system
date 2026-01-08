@@ -181,26 +181,41 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
 
       fetchedFromCloud = true;
 
-      // UPDATE LOCAL STORAGE TO MATCH CLOUD (Source of Truth Sync)
-      // BUT: We MUST preserve invoices that only exist locally (e.g. just saved or offline)
+      // UPDATE LOCAL STORAGE TO MATCH CLOUD (Source of Truth Sync, with Conflict Resolution)
       const localInvoices = getAllInvoicesSync();
-      const cloudIds = new Set(cloudInvoices.map(inv => inv.id));
+      const localMap = new Map(localInvoices.map(inv => [inv.id, inv]));
 
+      // Merge Cloud with Local: If Local is newer, keep Local. Otherwise use Cloud.
+      const mergedInvoices = cloudInvoices.map(cloudInv => {
+        const localInv = localMap.get(cloudInv.id);
+        if (localInv) {
+          const localDate = new Date(localInv.updatedAt).getTime();
+          const cloudDate = new Date(cloudInv.updatedAt).getTime();
+          // If local is strictly newer (by at least 2 seconds to avoid clock drift), keep local
+          // Otherwise trust cloud (server authority)
+          if (localDate > cloudDate + 2000) {
+            console.log(`Keeping local version of invoice ${cloudInv.data.invoiceNumber} (Newer than cloud)`);
+            return localInv;
+          }
+        }
+        return cloudInv;
+      });
+
+      const cloudIds = new Set(mergedInvoices.map(inv => inv.id));
       const nowTs = new Date().getTime();
       const thirtySecondsInMs = 30 * 1000;
 
-      // Preserve local-only invoices if:
-      // 1. They haven't been uploaded yet (short IDs)
-      // 2. They were JUST saved on this device (less than 30s ago) to avoid race conditions
+      // Preserve strictly local-only invoices (not in cloud-merged set)
       const localOnly = localInvoices.filter(l => {
         if (cloudIds.has(l.id)) return false;
+        // Keep if short ID (not uploaded) or very recent
         const isShortId = l.id.length < 20;
         const updatedAt = new Date(l.updatedAt || 0).getTime();
         const isVeryRecent = (nowTs - updatedAt) < thirtySecondsInMs;
         return isShortId || isVeryRecent;
       });
 
-      let finalInvoices = [...cloudInvoices, ...localOnly];
+      let finalInvoices = [...mergedInvoices, ...localOnly];
 
       // CRITICAL FIX: Filter out invoices that appear in the Cloud but are deleted locally (Zombies)
       try {
@@ -213,7 +228,7 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
       } catch (e) { }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(finalInvoices));
-      console.log('CLOUD-SYNC: Local storage updated (preserved local entries).');
+      console.log('CLOUD-SYNC: Local storage updated (Merged with Conflict Resolution).');
 
       return finalInvoices;
     } catch (error) {
