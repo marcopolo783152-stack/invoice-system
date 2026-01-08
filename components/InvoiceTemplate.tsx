@@ -368,7 +368,7 @@ export default function InvoiceTemplate({
 
                           {/* Always subtract Returned Items if any */}
                           {calculations.returnedAmount > 0 && (
-                            <tr style={{ color: '#dc2626' }}>
+                            <tr style={{ color: '#64748b' }}>
                               <td className={styles.totalLabel}>Less Returned Items:</td>
                               <td className={styles.totalValue}>-{formatCurrency(calculations.returnedAmount)}</td>
                             </tr>
@@ -384,7 +384,7 @@ export default function InvoiceTemplate({
                             <>
                               {/* Spacer for Settlement Section */}
                               <tr style={{ height: 10 }}><td colSpan={2}></td></tr>
-                              <tr>
+                              <tr style={{ color: '#059669' }}>
                                 <td className={styles.totalLabel} style={{ fontWeight: 600 }}>Amount Due (Sold Items):</td>
                                 <td className={styles.totalValue} style={{ fontWeight: 600 }}>{formatCurrency(calculations.soldAmount)}</td>
                               </tr>
@@ -411,12 +411,19 @@ export default function InvoiceTemplate({
                       {/* Final Balance Due */}
                       {/* Show Balance Due if Retail OR if Consignment has activity */}
                       {(data.documentType !== 'CONSIGNMENT' || calculations.soldAmount > 0 || (calculations.totalPaid || 0) > 0) && (
-                        <tr style={{ fontWeight: 'bold', borderTop: '2px solid #334155', fontSize: '14px' }}>
-                          <td className={styles.totalLabel}>BALANCE DUE:</td>
+                        <tr style={{
+                          fontWeight: 'bold',
+                          borderTop: '2px solid #334155',
+                          fontSize: '14px',
+                          color: calculations.balanceDue <= 0 ? '#059669' : 'inherit'
+                        }}>
+                          <td className={styles.totalLabel}>
+                            {calculations.balanceDue <= 0 ? 'INVOICE PAID:' : 'BALANCE DUE:'}
+                          </td>
                           <td className={styles.totalValue}>{formatCurrency(calculations.balanceDue)}</td>
                         </tr>
                       )}
-                      {calculations.returnedAmount > 0 && (
+                      {data.documentType !== 'CONSIGNMENT' && calculations.returnedAmount > 0 && (
                         <>
                           <tr style={{ color: '#dc2626' }}>
                             <td className={styles.totalLabel}>Less Returns:</td>
