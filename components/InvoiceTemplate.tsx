@@ -415,7 +415,7 @@ export default function InvoiceTemplate({
                           fontWeight: 'bold',
                           borderTop: '2px solid #334155',
                           fontSize: '14px',
-                          color: calculations.balanceDue <= 0 ? '#059669' : 'inherit'
+                          color: calculations.balanceDue <= 0 ? '#059669' : '#dc2626'
                         }}>
                           <td className={styles.totalLabel}>
                             {calculations.balanceDue <= 0 ? 'INVOICE PAID:' : 'BALANCE DUE:'}
