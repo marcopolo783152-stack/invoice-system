@@ -178,7 +178,7 @@ export default function InvoiceTemplate({
                   <p style={{ fontSize: 11, color: '#475569' }}><b>Served by:</b> {data.servedBy}</p>
                 )}
               </div>
-              <div className={`${styles.invoiceInfo} email-invoice-info`} style={{ width: '60%', minWidth: '350px', maxWidth: 'none' }}>
+              <div className={`${styles.invoiceInfo} email-invoice-info`} style={{ width: '50%', minWidth: '350px', maxWidth: 'none' }}>
                 <table>
                   <tbody>
                     <tr>
