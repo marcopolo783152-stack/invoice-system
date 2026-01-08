@@ -306,18 +306,17 @@ export default function InventoryManager() {
                             onClick={() => setActiveTab(cat)}
                             style={{
                                 padding: '10px 24px',
-                                borderRadius: 6,
-                                border: '1px solid var(--surface-border)',
-                                background: activeTab === cat ? 'var(--accent-gold)' : '#ffffff',
-                                color: activeTab === cat ? '#ffffff' : 'var(--text-muted)',
-                                fontWeight: 600,
-                                fontSize: 11,
+                                borderRadius: 50,
+                                border: activeTab === cat ? 'none' : '1px solid #e2e8f0',
+                                background: activeTab === cat ? '#3b82f6' : '#f8fafc',
+                                color: activeTab === cat ? '#ffffff' : '#475569',
+                                fontWeight: 700,
+                                fontSize: 13,
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap',
-                                transition: 'all 0.2s ease',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                boxShadow: activeTab === cat ? '0 2px 8px rgba(197, 160, 89, 0.2)' : 'none'
+                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                boxShadow: activeTab === cat ? '0 4px 6px -1px rgba(59, 130, 246, 0.5)' : 'none',
+                                transform: activeTab === cat ? 'scale(1.05)' : 'scale(1)'
                             }}
                         >
                             {cat}
@@ -332,17 +331,16 @@ export default function InventoryManager() {
                                 key={mat}
                                 onClick={() => setActiveMaterial(mat)}
                                 style={{
-                                    padding: '8px 16px',
-                                    borderRadius: 4,
+                                    padding: '8px 20px',
+                                    borderRadius: 30,
                                     border: 'none',
-                                    background: activeMaterial === mat ? 'var(--accent-gold)' : 'transparent',
-                                    color: activeMaterial === mat ? '#ffffff' : 'var(--text-muted)',
-                                    fontWeight: 600,
+                                    background: activeMaterial === mat ? '#8b5cf6' : 'transparent',
+                                    color: activeMaterial === mat ? '#ffffff' : '#64748b',
+                                    fontWeight: 700,
                                     cursor: 'pointer',
-                                    fontSize: 11,
+                                    fontSize: 12,
                                     transition: 'all 0.2s',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em'
+                                    boxShadow: activeMaterial === mat ? '0 4px 12px rgba(139, 92, 246, 0.3)' : 'none'
                                 }}
                             >
                                 {mat}
