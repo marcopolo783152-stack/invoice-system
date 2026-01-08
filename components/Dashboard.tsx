@@ -31,19 +31,21 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
         const isElectron = typeof window !== 'undefined' && (window as any).electron;
 
         if (!isElectron) {
-            // Web Fallback: Download the Master JSON
-            const data = exportInvoices();
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'Invoices_Master_Backup.json';
-            a.click();
-            URL.revokeObjectURL(url);
-
-            confirmSmartBackupComplete();
-            setStatus('uptodate');
-            alert('Backup Downloaded! Please save this file safely.');
+            // Web Fallback: Use exportToDirectory to save PDFs
+            try {
+                await exportToDirectory(invoices, (p) => {
+                    // Optional: You could update a local state to show detailed progress here
+                    console.log(p.status);
+                });
+                confirmSmartBackupComplete();
+                setStatus('uptodate');
+                alert('Backup Complete! All invoices saved as PDFs.');
+            } catch (error: any) {
+                if (error.name !== 'AbortError') {
+                    console.error('Backup failed:', error);
+                    alert('Backup failed. Please try again.');
+                }
+            }
             return;
         }
 
