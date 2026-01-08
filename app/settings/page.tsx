@@ -5,6 +5,8 @@ import UserManagement from '@/components/UserManagement';
 import Login from '@/components/Login';
 import { getEmailConfig, saveEmailConfig, EmailConfig } from '@/lib/email-service';
 import { saveSettingsToCloud, getSettingsFromCloud } from '@/lib/settings-storage';
+import { importInvoices } from '@/lib/invoice-storage';
+import { Database, UploadCloud } from 'lucide-react';
 
 function EmailSettingsForm() {
     const [config, setConfig] = useState<EmailConfig>({
@@ -226,6 +228,58 @@ export default function SettingsPage() {
                 <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', marginBottom: 32 }}>
                     <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1f3c', marginBottom: 24 }}>Email Configuration (Syncs to Cloud)</h2>
                     <EmailSettingsForm />
+                </div>
+            )}
+
+
+            )}
+
+            {/* Data Management Section */}
+            {user?.role === 'admin' && (
+                <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', marginBottom: 32 }}>
+                    <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1f3c', marginBottom: 24 }}>Data Management</h2>
+                    <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+                        <div style={{ flex: 1 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>Restore from Backup</h3>
+                            <p style={{ fontSize: 14, color: '#666', margin: 0 }}>Import a Master Backup file (.json) to restore lost data.</p>
+                        </div>
+                        <button
+                            onClick={async () => {
+                                if (typeof window === 'undefined' || !(window as any).electron) {
+                                    alert('Restore is only available in the Desktop App.');
+                                    return;
+                                }
+                                if (!confirm('Are you sure you want to restore data from backup? This will merge/update existing invoices.')) return;
+
+                                try {
+                                    const result = await (window as any).electron.importBackup();
+                                    if (result && result.success) {
+                                        const success = importInvoices(result.data);
+                                        if (success) {
+                                            alert('Restore Complete! Database updated.');
+                                            window.location.reload();
+                                        } else {
+                                            alert('Failed to parse backup file.');
+                                        }
+                                    } else if (result && result.error) {
+                                        alert('Import failed: ' + result.error);
+                                    }
+                                } catch (e) {
+                                    console.error(e);
+                                    alert('Error during import.');
+                                }
+                            }}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                background: '#f59e0b', color: 'white',
+                                padding: '10px 20px', borderRadius: 8,
+                                fontWeight: 600, border: 'none', cursor: 'pointer'
+                            }}
+                        >
+                            <Database size={16} />
+                            Restore Data
+                        </button>
+                    </div>
                 </div>
             )}
 

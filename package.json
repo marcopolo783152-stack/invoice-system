@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Professional Invoice System for Rug Business - Web, Android, Windows",
   "private": true,
+  "main": "electron.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -12,4 +12,5 @@ contextBridge.exposeInMainWorld('electron', {
   // Backup API
   selectBackupFolder: () => ipcRenderer.invoke('select-backup-folder'),
   saveBackup: (filePath, data) => ipcRenderer.invoke('save-backup', filePath, data),
+  importBackup: () => ipcRenderer.invoke('import-backup'),
 });

@@ -85,3 +85,20 @@ ipcMain.handle('save-backup', async (event, filePath, data) => {
     return { success: false, error: error.message };
   }
 });
+
+ipcMain.handle('import-backup', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [{ name: 'JSON Backup', extensions: ['json'] }],
+    title: 'Select Backup File to Restore'
+  });
+
+  if (result.canceled || result.filePaths.length === 0) return null;
+
+  try {
+    const data = fs.readFileSync(result.filePaths[0], 'utf8');
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
