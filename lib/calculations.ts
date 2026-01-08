@@ -68,6 +68,15 @@ export interface InvoiceItem {
 
 export type DocumentType = 'INVOICE' | 'CONSIGNMENT' | 'WASH';
 
+export interface Payment {
+  id: string;
+  date: string;
+  amount: number;
+  method: 'Check' | 'Cash' | 'Card' | 'Other';
+  reference?: string;
+  note?: string;
+}
+
 export interface InvoiceData {
   documentType?: DocumentType; // 'INVOICE' (default) or 'CONSIGNMENT'
   invoiceNumber: string;
@@ -97,6 +106,7 @@ export interface InvoiceData {
   pickupSignature?: string; // Signature collected at pickup
   isDraft?: boolean; // True if invoice is in draft mode
   downpayment?: number; // Optional downpayment for consignment
+  payments?: Payment[]; // New: Track multiple payments
 }
 
 export interface CalculatedItem extends InvoiceItem {
@@ -117,7 +127,8 @@ export interface InvoiceCalculations {
   returnedAmount: number;
   soldAmount: number; // New: total value of items marked as sold
   downpayment?: number;
-  balanceDue?: number;
+  totalPaid: number; // New: Total paid (downpayment + payments)
+  balanceDue: number; // Changed from optional to mandatory number (derived)
 }
 
 /**
@@ -196,6 +207,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
       returnedAmount: 0,
       soldAmount: 0,
       downpayment: 0,
+      totalPaid: 0,
       balanceDue: 0
     };
   }
@@ -273,6 +285,26 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   // For standard Sales, it's the netTotalDue
   const netTotalDueFinal = isConsignment ? soldAmount : netTotalDue;
 
+  // Calculate Total Paid
+  const payments = data.payments || [];
+  const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalPaid = (data.downpayment || 0) + totalPayments;
+
+  // Calculate Balance Due
+  // If Consignment: Balance is (Sold Amount - Paid)
+  // If Invoice/Wash: Balance is (Total Due - Paid)
+  let balanceDue: number;
+  if (isConsignment) {
+    // For Consignment:
+    // Total Value of Sold items is what they owe us.
+    // If they paid us (payments + downpayment), we subtract that.
+    balanceDue = soldAmount - totalPaid;
+  } else {
+    // For Retail/Wash:
+    // Total Due is what they owe.
+    balanceDue = totalDue - totalPaid;
+  }
+
   return {
     items: calculatedItems,
     subtotal,
@@ -285,7 +317,8 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     returnedAmount: totalDue - netTotalDue, // Total value of returned items including tax and discount
     soldAmount,
     downpayment: data.downpayment || 0,
-    balanceDue: totalDue - (data.downpayment || 0)
+    totalPaid,
+    balanceDue
   };
 }
 

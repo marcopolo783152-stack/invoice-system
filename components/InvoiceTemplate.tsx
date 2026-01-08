@@ -339,36 +339,64 @@ export default function InvoiceTemplate({
                           <td className={styles.totalValue}>{formatCurrency(calculations.salesTax)}</td>
                         </tr>
                       )}
-                      <tr className={`${styles.totalDueRow} email-total-due-row`}>
-                        <td className={styles.totalLabel}>
-                          {data.documentType === 'CONSIGNMENT' ? 'TOTAL CONSIGNMENT VALUE:' : 'TOTAL DUE:'}
-                        </td>
-                        <td className={styles.totalValue}>{formatCurrency(calculations.totalDue)}</td>
-                      </tr>
+                      {/* Retail Total Due */}
+                      {data.documentType !== 'CONSIGNMENT' && (
+                        <tr className={`${styles.totalDueRow} email-total-due-row`}>
+                          <td className={styles.totalLabel}>TOTAL DUE:</td>
+                          <td className={styles.totalValue}>{formatCurrency(calculations.totalDue)}</td>
+                        </tr>
+                      )}
+
+                      {/* Consignment Inventory Tracking */}
+                      {data.documentType === 'CONSIGNMENT' && (
+                        <>
+                          <tr className={`${styles.totalDueRow} email-total-due-row`}>
+                            <td className={styles.totalLabel}>TOTAL CONSIGNMENT VALUE:</td>
+                            <td className={styles.totalValue}>{formatCurrency(calculations.totalDue)}</td>
+                          </tr>
+                          {calculations.soldAmount > 0 && (
+                            <>
+                              <tr style={{ color: '#059669' }}>
+                                <td className={styles.totalLabel}>Less Sold Items:</td>
+                                <td className={styles.totalValue}>-{formatCurrency(calculations.soldAmount)}</td>
+                              </tr>
+                              <tr style={{ fontWeight: 'bold', borderTop: '1px solid #334155' }}>
+                                <td className={styles.totalLabel}>REMAINING INVENTORY:</td>
+                                <td className={styles.totalValue}>{formatCurrency(calculations.totalDue - calculations.soldAmount)}</td>
+                              </tr>
+                              {/* Spacer for Settlement Section */}
+                              <tr style={{ height: 10 }}><td colSpan={2}></td></tr>
+                              <tr>
+                                <td className={styles.totalLabel} style={{ fontWeight: 600 }}>Amount Due (Sold Items):</td>
+                                <td className={styles.totalValue} style={{ fontWeight: 600 }}>{formatCurrency(calculations.soldAmount)}</td>
+                              </tr>
+                            </>
+                          )}
+                        </>
+                      )}
+
+                      {/* Payments Display */}
                       {(calculations.downpayment || 0) > 0 && (
                         <tr>
                           <td className={styles.totalLabel}>Less Deposit/Holding:</td>
                           <td className={styles.totalValue}>-{formatCurrency(calculations.downpayment || 0)}</td>
                         </tr>
                       )}
-                      {(calculations.downpayment || 0) > 0 && (
-                        <tr style={{ fontWeight: 'bold', borderTop: '2px solid #334155' }}>
-                          <td className={styles.totalLabel}>BALANCE DUE:</td>
-                          <td className={styles.totalValue}>{formatCurrency(calculations.balanceDue || (calculations.totalDue - (calculations.downpayment || 0)))}</td>
-                        </tr>
-                      )}
 
-                      {data.documentType === 'CONSIGNMENT' && calculations.soldAmount > 0 && (
-                        <>
-                          <tr style={{ color: '#059669' }}>
-                            <td className={styles.totalLabel}>Less Sold/Paid:</td>
-                            <td className={styles.totalValue}>-{formatCurrency(calculations.soldAmount)}</td>
-                          </tr>
-                          <tr style={{ fontWeight: 'bold', borderTop: '2px solid #334155' }}>
-                            <td className={styles.totalLabel}>REMAINING ON HOLD:</td>
-                            <td className={styles.totalValue}>{formatCurrency(calculations.totalDue - calculations.soldAmount)}</td>
-                          </tr>
-                        </>
+                      {data.payments && data.payments.map((p, idx) => (
+                        <tr key={`${p.id}-${idx}`}>
+                          <td className={styles.totalLabel}>Less Payment ({p.method}{p.reference ? ` #${p.reference}` : ''}):</td>
+                          <td className={styles.totalValue}>-{formatCurrency(p.amount)}</td>
+                        </tr>
+                      ))}
+
+                      {/* Final Balance Due */}
+                      {/* Show Balance Due if Retail OR if Consignment has activity */}
+                      {(data.documentType !== 'CONSIGNMENT' || calculations.soldAmount > 0 || (calculations.totalPaid || 0) > 0) && (
+                        <tr style={{ fontWeight: 'bold', borderTop: '2px solid #334155', fontSize: '14px' }}>
+                          <td className={styles.totalLabel}>BALANCE DUE:</td>
+                          <td className={styles.totalValue}>{formatCurrency(calculations.balanceDue)}</td>
+                        </tr>
                       )}
                       {calculations.returnedAmount > 0 && (
                         <>

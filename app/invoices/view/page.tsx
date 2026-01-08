@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart, Mail, Trash2, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Download, Undo, Edit, ShoppingCart, Mail, Trash2, RotateCcw, DollarSign } from 'lucide-react';
 import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
@@ -15,8 +15,9 @@ import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
 
 import { prepareInvoiceForEmail } from '@/lib/email-service';
 import EmailModal from '@/components/EmailModal';
+import PaymentModal from '@/components/PaymentModal';
 
-function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isOpen: boolean, items: any[], onClose: () => void, onConvert: (selectedIds: string[], note: string) => void }) {
+function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isOpen: boolean, items: any[], onClose: () => void, onConvert: (selectedIds: string[], note: string) => Promise<boolean> }) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [note, setNote] = useState('Converted to Sale');
@@ -75,7 +76,15 @@ function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isO
                     </span>
                     <button onClick={onClose} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
                     <button
-                        onClick={() => { setProcessing(true); onConvert(selectedIds, note); }}
+                        onClick={async () => {
+                            setProcessing(true);
+                            try {
+                                const success = await onConvert(selectedIds, note);
+                                if (!success) setProcessing(false);
+                            } catch (e) {
+                                setProcessing(false);
+                            }
+                        }}
                         disabled={processing || selectedIds.length === 0}
                         style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: (processing || selectedIds.length === 0) ? 0.7 : 1 }}
                     >
@@ -87,7 +96,7 @@ function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isO
     );
 }
 
-function ReturnItemsModal({ isOpen, items, onClose, onConfirm, initialSelectedIds, initialNote }: { isOpen: boolean, items: any[], onClose: () => void, onConfirm: (selectedIds: string[], note: string) => void, initialSelectedIds?: string[], initialNote?: string }) {
+function ReturnItemsModal({ isOpen, items, onClose, onConfirm, initialSelectedIds, initialNote }: { isOpen: boolean, items: any[], onClose: () => void, onConfirm: (selectedIds: string[], note: string) => Promise<boolean>, initialSelectedIds?: string[], initialNote?: string }) {
     const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds || []);
     const [searchTerm, setSearchTerm] = useState('');
     const [note, setNote] = useState(initialNote || '');
@@ -161,7 +170,15 @@ function ReturnItemsModal({ isOpen, items, onClose, onConfirm, initialSelectedId
                     </span>
                     <button onClick={onClose} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
                     <button
-                        onClick={() => { setProcessing(true); onConfirm(selectedIds, note); }}
+                        onClick={async () => {
+                            setProcessing(true);
+                            try {
+                                const success = await onConfirm(selectedIds, note);
+                                if (!success) setProcessing(false);
+                            } catch (e) {
+                                setProcessing(false);
+                            }
+                        }}
                         disabled={processing}
                         style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: processing ? 0.7 : 1 }}
                     >
@@ -198,6 +215,7 @@ function InvoiceViewContent() {
     const [returnItems, setReturnItems] = useState<string[]>([]);
     const [returnNote, setReturnNote] = useState('');
     const [returnProcessing, setReturnProcessing] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showReturnReceipt, setShowReturnReceipt] = useState(false);
     const [returnedReceiptData, setReturnedReceiptData] = useState<any>(null);
     const [isConverting, setIsConverting] = useState(false);
@@ -285,16 +303,16 @@ function InvoiceViewContent() {
 
 
 
-    const handleProcessReturnWithArgs = async (itemsIds: string[], note: string) => {
-        if (!invoice) return;
+    const handleProcessReturnWithArgs = async (itemsIds: string[], note: string): Promise<boolean> => {
+        if (!invoice) return false;
 
         // If converting, we need at least one item
         if (isConverting && itemsIds.length === 0) {
             alert('Please select at least one item.');
-            return;
+            return false;
         }
 
-        if (!isConverting && !confirm('Save return changes?')) return;
+        if (!isConverting && !confirm('Save return changes?')) return false;
 
         setReturnProcessing(true);
         try {
@@ -347,13 +365,48 @@ function InvoiceViewContent() {
                 sessionStorage.setItem('convert_items', JSON.stringify(itemsForNewInvoice));
                 // Redirect
                 router.push('/invoices/new');
-                return;
+                return true;
             }
+
+            // Reload to reflect changes if not converting
+            await loadInvoice(invoice.id);
+            // Close the modal upon success
+            setShowReturnModal(false);
+            return true;
+
         } catch (error) {
             console.error(error);
             alert('Failed to process return');
+            return false;
         } finally {
             setReturnProcessing(false);
+        }
+    };
+
+    const handleSavePayment = async (payment: any) => {
+        if (!invoice) return;
+
+        // Use type assertion to handle the new field until types propagate fully
+        const currentData = invoice.data as any;
+        const currentPayments = currentData.payments || [];
+
+        const updatedInvoice = {
+            ...invoice,
+            data: {
+                ...invoice.data,
+                payments: [...currentPayments, payment]
+            },
+            updatedAt: new Date().toISOString()
+        };
+
+        try {
+            await saveInvoice(updatedInvoice.data, invoice.id);
+            await loadInvoice(invoice.id);
+            setShowPaymentModal(false);
+            alert('Payment recorded successfully');
+        } catch (e) {
+            console.error(e);
+            alert('Failed to save payment');
         }
     };
 
@@ -473,6 +526,17 @@ function InvoiceViewContent() {
                             </div>
 
                             <div style={{ display: 'flex', gap: 12 }}>
+                                <button
+                                    onClick={() => setShowPaymentModal(true)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 8,
+                                        padding: '10px 20px', background: '#10b981', color: 'white',
+                                        border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                                        boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+                                    }}
+                                >
+                                    <DollarSign size={18} /> Record Payment
+                                </button>
                                 {invoice.data.documentType === 'CONSIGNMENT' && (
                                     <button
                                         onClick={handleConvertClick}
@@ -597,6 +661,15 @@ function InvoiceViewContent() {
                         }}
                     />
 
+                    {/* Payment Modal */}
+                    <PaymentModal
+                        isOpen={showPaymentModal}
+                        onClose={() => setShowPaymentModal(false)}
+                        onSave={handleSavePayment}
+                        totalDue={calculations?.totalDue || 0}
+                        balanceDue={calculations?.balanceDue || 0}
+                    />
+
                     {/* Return Modal (Searchable) */}
                     {showReturnModal && !isConverting && (
                         <ReturnItemsModal
@@ -605,10 +678,10 @@ function InvoiceViewContent() {
                             initialSelectedIds={returnItems}
                             initialNote={returnNote}
                             onClose={() => setShowReturnModal(false)}
-                            onConfirm={(ids: string[], note: string) => {
+                            onConfirm={async (ids: string[], note: string) => {
                                 setReturnItems(ids);
                                 setReturnNote(note);
-                                handleProcessReturnWithArgs(ids, note);
+                                return await handleProcessReturnWithArgs(ids, note);
                             }}
                         />
                     )}
@@ -619,10 +692,10 @@ function InvoiceViewContent() {
                             isOpen={true}
                             items={invoice.data.items}
                             onClose={() => setShowReturnModal(false)}
-                            onConvert={(ids: string[], note: string) => {
+                            onConvert={async (ids: string[], note: string) => {
                                 setReturnItems(ids);
                                 setReturnNote(note);
-                                handleProcessReturnWithArgs(ids, note);
+                                return await handleProcessReturnWithArgs(ids, note);
                             }}
                         />
                     )}

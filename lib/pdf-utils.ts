@@ -122,15 +122,15 @@ export async function getInvoicePDFBlob(
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i] as HTMLElement;
     const canvas = await html2canvas(page, {
-      scale: 0.6, // Drastic reduction to meet <50KB limit
+      scale: 2, // Increased for readability (was 0.6)
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
       windowWidth: 1200,
     });
 
-    // Use JPEG with 0.4 quality (Low) to ensure minimal file size (~10-20KB)
-    const imgData = canvas.toDataURL('image/jpeg', 0.4);
+    // Use JPEG with 0.8 quality (High) to ensure readability while keeping size reasonable
+    const imgData = canvas.toDataURL('image/jpeg', 0.8);
     const imgProps = pdf.getImageProperties(imgData);
     const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
