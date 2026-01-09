@@ -204,6 +204,13 @@ function InvoicePageContent() {
       setInvoiceCount(invoices.length);
       // Clear the saved invoice number so a new one is generated for next invoice
       localStorage.removeItem('currentInvoiceNumber');
+
+      // Auto-open Payment Modal for Sales Invoices (if unpaid)
+      const isUnpaid = data.terms !== 'Paid';
+      if (data.documentType === 'INVOICE' && isUnpaid) {
+        setShowPaymentModal(true);
+      }
+
     }).catch((error) => {
       console.error('Error saving invoice:', error);
       // If error (like overwrite protection), show it to user
