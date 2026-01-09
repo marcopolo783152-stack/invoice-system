@@ -13,6 +13,7 @@ import dynamic from 'next/dynamic';
 import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import PrintPortal from '@/components/PrintPortal';
+import PaymentModal from '@/components/PaymentModal';
 
 
 import InvoiceSearch from '@/components/InvoiceSearch';
@@ -256,6 +257,41 @@ function InvoicePageContent() {
   // Capture the saved ID to use for links
   const [savedInvoiceId, setSavedInvoiceId] = useState<string | null>(null);
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  const handleSavePayment = async (payment: any) => {
+    if (!invoiceData) return;
+
+    // Use specific ID or editId
+    const targetId = editId || savedInvoiceId;
+
+    if (!targetId) {
+      alert('Error: Invoice not saved yet.');
+      return;
+    }
+
+    const currentPayments = invoiceData.payments || [];
+
+    // Create updated data object
+    const updatedData: InvoiceData = {
+      ...invoiceData,
+      payments: [...currentPayments, payment]
+    };
+
+    try {
+      // Save to DB
+      await saveInvoice(updatedData, targetId);
+
+      // Update local state to reflect changes instantly
+      setInvoiceData(updatedData);
+      setShowPaymentModal(false);
+      alert('Payment recorded successfully!');
+    } catch (e) {
+      console.error(e);
+      alert('Failed to save payment');
+    }
+  };
+
   const handleSendEmail = async () => {
     // Determine the ID: Pre-existing editId, or newly saved ID
     const activeId = editId || savedInvoiceId;
@@ -454,6 +490,16 @@ function InvoicePageContent() {
                 <button onClick={handleSendEmail} className={styles.emailBtn}>
                   📧 Email Invoice
                 </button>
+                {/* Only show Record Payment for Sales Invoices (not Consignment/Wash) */}
+                {invoiceData?.documentType === 'INVOICE' && (
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    className={styles.emailBtn} // Reuse email button style for now or add new class
+                    style={{ background: '#059669' }} // Override color to green
+                  >
+                    💲 Record Payment
+                  </button>
+                )}
                 <button onClick={handleNewInvoice} className={styles.newBtn}>
                   ➕ New Invoice
                 </button>
@@ -489,6 +535,16 @@ function InvoicePageContent() {
                 📄 Download PDF
               </button>
             </div>
+
+            {showPaymentModal && calculations && (
+              <PaymentModal
+                isOpen={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                onSave={handleSavePayment}
+                totalDue={calculations.totalDue}
+                balanceDue={calculations.balanceDue}
+              />
+            )}
           </div>
         )}
       </div>
