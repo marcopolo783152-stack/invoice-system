@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search } from 'lucide-react';
 import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync } from '@/lib/invoice-storage';
-import { calculateInvoice } from '@/lib/calculations';
+import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import Link from 'next/link';
 import Login from './Login';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
@@ -541,6 +541,75 @@ export default function Dashboard() {
                     color="#f43f5e"
                     bg="rgba(244, 63, 94, 0.08)"
                 />
+            </div>
+
+            {/* UNPAID INVOICES - SALES ONLY (where balance > 0) */}
+            <div className="no-print" style={{ marginBottom: 40 }}>
+                {invoices.filter(inv => {
+                    // 1. Must be a Sales Invoice (not consignment/wash)
+                    if (inv.data.documentType !== 'INVOICE') return false;
+                    // 2. Must not be explicitly marked 'Paid'
+                    if (inv.data.terms === 'Paid') return false;
+                    // 3. Must have balance due > 0
+                    const calcs = calculateInvoice(inv.data);
+                    return calcs.balanceDue > 0;
+                }).length > 0 && (
+                        <div className="luxury-card" style={{ padding: 24, background: '#fff', border: '1px solid var(--surface-border)', borderRadius: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                <h3 style={{ margin: 0, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 10, fontSize: 18, fontWeight: 800 }}>
+                                    <span style={{ color: '#ef4444' }}>⏳</span> Unpaid Invoices
+                                </h3>
+                            </div>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '2px solid #f1f5f9', color: 'var(--text-muted)' }}>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Invoice #</th>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Customer</th>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Date</th>
+                                            <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Balance Due</th>
+                                            <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {invoices
+                                            .filter(inv => {
+                                                if (inv.data.documentType !== 'INVOICE') return false;
+                                                if (inv.data.terms === 'Paid') return false;
+                                                const calcs = calculateInvoice(inv.data);
+                                                return calcs.balanceDue > 0;
+                                            })
+                                            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                            .map((inv) => {
+                                                const calcs = calculateInvoice(inv.data);
+                                                return (
+                                                    <tr key={inv.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                                                        <td style={{ padding: '12px 16px', color: 'var(--text-main)' }}>{inv.data.invoiceNumber}</td>
+                                                        <td style={{ padding: '12px 16px', color: 'var(--text-main)', fontWeight: 500 }}>{inv.data.soldTo.name}</td>
+                                                        <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{formatDateMMDDYYYY(inv.data.date)}</td>
+                                                        <td style={{ padding: '12px 16px', textAlign: 'right', color: '#dc2626', fontWeight: 700 }}>{formatCurrency(calcs.balanceDue)}</td>
+                                                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                                                            <Link href={`/invoices/view?id=${inv.id}`} style={{
+                                                                display: 'inline-block',
+                                                                padding: '6px 12px',
+                                                                background: 'var(--primary)',
+                                                                color: 'white',
+                                                                borderRadius: 6,
+                                                                fontSize: 12,
+                                                                fontWeight: 600,
+                                                                textDecoration: 'none'
+                                                            }}>
+                                                                View / Pay
+                                                            </Link>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32 }}>
