@@ -127,8 +127,25 @@ function InvoicePageContent() {
           setFormInitialData(found.data);
         }
       });
+    } else {
+      // QUICK TRANSACTION SUPPORT
+      // Check for 'customer' param to pre-fill
+      const customerName = searchParams.get('customer');
+      if (customerName) {
+        setFormInitialData({
+          soldTo: {
+            name: decodeURIComponent(customerName),
+            address: '',
+            email: '',
+            phone: '',
+          },
+          items: [],
+          date: new Date().toISOString().split('T')[0],
+          dueDate: new Date().toISOString().split('T')[0],
+        } as any);
+      }
     }
-  }, [editId]);
+  }, [editId, searchParams]);
 
   useEffect(() => {
     // Save users to localStorage

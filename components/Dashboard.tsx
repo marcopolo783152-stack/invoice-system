@@ -678,19 +678,40 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Quick Transactions / Contacts */}
+                    {/* Quick Transactions / Recent Customers */}
                     <div className="luxury-card" style={{ padding: 32 }}>
                         <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', margin: 0, marginBottom: 20 }}>Quick Transactions</h2>
                         <div style={{ display: 'flex', gap: 12, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
-                            {[1, 2, 3, 4, 5].map(i => (
-                                <div key={i} style={{ width: 44, height: 44, borderRadius: '50%', background: `hsl(${i * 60}, 70%, 50%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-                                    {String.fromCharCode(64 + i)}
-                                </div>
+                            {Array.from(new Set(
+                                invoices
+                                    .filter(inv => inv.data.documentType === 'INVOICE' && inv.data.soldTo?.name)
+                                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                    .map(inv => inv.data.soldTo.name)
+                            )).slice(0, 5).map((name, i) => (
+                                <Link
+                                    href={`/invoices/new?customer=${encodeURIComponent(name)}`}
+                                    key={i}
+                                    title={`New invoice for ${name}`}
+                                    style={{
+                                        width: 44, height: 44, borderRadius: '50%',
+                                        background: `hsl(${i * 60 + 200}, 70%, 50%)`,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: '#fff', fontSize: 14, fontWeight: 700, flexShrink: 0,
+                                        textDecoration: 'none',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                                        transition: 'transform 0.2s'
+                                    }}
+                                    onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                    onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                    {name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                </Link>
                             ))}
                         </div>
-                        <button className="luxury-button" style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
-                            View all beneficiary
-                        </button>
+                        <Link href="/invoices/new" className="luxury-button" style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
+                            Start New Invoice
+                        </Link>
                     </div>
                 </div>
             </div>

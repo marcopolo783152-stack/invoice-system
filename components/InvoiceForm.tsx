@@ -84,6 +84,13 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     }
   );
 
+  // React to initialData changes (e.g. when loaded via editId or Quick Transaction param)
+  useEffect(() => {
+    if (initialData?.soldTo) {
+      setSoldTo(prev => ({ ...prev, ...initialData.soldTo }));
+    }
+  }, [initialData]);
+
   // Customer Auto-complete logic
   const [customerSuggestions, setCustomerSuggestions] = useState<Customer[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
