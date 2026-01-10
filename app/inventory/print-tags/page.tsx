@@ -47,34 +47,32 @@ function PrintTagsContent() {
     if (!mounted) return null;
 
     return createPortal(
-        <div className="print-portal-root" style={{ background: 'white', minHeight: '100vh', width: '100%', position: 'absolute', top: 0, left: 0 }}>
+        <div id="print-root" style={{ background: 'white', minHeight: '100vh', width: '100%', position: 'absolute', top: 0, left: 0 }}>
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Text&family=Inter:wght@400;600;800&display=swap');
 
-                /* Print overrides are handled by print.css via .print-portal-root */
-                /* We just need to define the grid here */
-
                 .tag-grid {
                     display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    column-gap: 0.18in; /* Standard gap for Avery 5161 */
+                    /* Avery 5161: 2 columns */
+                    grid-template-columns: 4in 4in; 
+                    column-gap: 0.18in; 
                     row-gap: 0;
-                    width: 100%;
-                    max-width: 8.5in; /* Ensure it fits on letter */
-                    margin: 0 auto;
+                    width: 8.35in; /* 4 + 4 + 0.18 + slack */
+                    padding-left: 0.16in; /* Left Margin */
+                    padding-top: 0.5in;   /* Top Margin */
                 }
 
                 .tag {
-                    width: 4in;
+                    width: 100%;
                     height: 1in;
                     box-sizing: border-box;
-                    /* border: 1px dashed #ccc; */ /* Debug border, remove for final */
                     display: flex;
                     align-items: center;
-                    padding: 0.1in 0.2in;
-                    gap: 12px;
+                    padding: 0.05in 0.15in; /* Reduce padding to fit content */
+                    gap: 8px;
                     page-break-inside: avoid;
                     overflow: hidden;
+                    outline: 1px dotted rgba(0,0,0,0.1); /* Faint guide for cutting, optional */
                 }
                 
                 .tag-left {
@@ -82,6 +80,7 @@ function PrintTagsContent() {
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
+                    overflow: hidden;
                 }
 
                 .tag-right {
@@ -90,14 +89,57 @@ function PrintTagsContent() {
                     align-items: flex-end;
                     justify-content: center;
                     text-align: right;
-                    min-width: 100px;
+                    min-width: 90px;
+                    flex-shrink: 0;
                 }
 
                 .barcode {
                     font-family: 'Libre Barcode 39 Text', cursive;
-                    font-size: 28px;
+                    font-size: 24px; /* Reduced font size to prevent overlapping */
                     white-space: nowrap;
-                    margin: 2px 0;
+                    margin: 1px 0;
+                }
+
+                @media print {
+                    @page { 
+                        size: letter; 
+                        margin: 0; /* Clear browser margins, we control exact positioning via padding */
+                    }
+                    
+                    /* HIDE EVERYTHING GLOBALLY */
+                    body * {
+                        visibility: hidden;
+                    }
+
+                    /* SHOW ONLY OUR PRINT ROOT */
+                    #print-root, #print-root * {
+                        visibility: visible;
+                    }
+
+                    /* Important: Reset body layout to ensure absolute positioning works relative to page */
+                    html, body {
+                        background: white !important;
+                        height: 100% !important;
+                        width: 100% !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        overflow: visible !important;
+                    }
+
+                    #print-root {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    
+                    .tag {
+                        outline: none; /* Remove guide in print if desired, or keep for testing */
+                    }
+
+                    .no-print { display: none !important; }
                 }
             `}</style>
 
@@ -106,12 +148,12 @@ function PrintTagsContent() {
                     <div key={item.id} className="tag">
                         {/* Left Side: Brand, SKU, Details */}
                         <div className="tag-left">
-                            <div style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 13, textTransform: 'uppercase', marginBottom: 2 }}>Marco Polo Rugs</div>
-                            <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 11 }}>SKU: {item.sku}</div>
-                            <div style={{ fontFamily: 'Inter', fontSize: 10, marginTop: 1 }}>
-                                {item.widthFeet}'{item.widthInches}" × {item.lengthFeet}'{item.lengthInches}" {item.shape === 'round' ? '(Round)' : ''}
+                            <div style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 12, textTransform: 'uppercase', marginBottom: 1, lineHeight: 1 }}>Marco Polo Rugs</div>
+                            <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 11, marginBottom: 1 }}>SKU: {item.sku}</div>
+                            <div style={{ fontFamily: 'Inter', fontSize: 10, lineHeight: 1.1 }}>
+                                {item.widthFeet}'{item.widthInches}" × {item.lengthFeet}'{item.lengthInches}" {item.shape === 'round' ? '(R)' : ''}
                             </div>
-                            <div style={{ fontFamily: 'Inter', fontSize: 9, color: '#444', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                            <div style={{ fontFamily: 'Inter', fontSize: 9, color: '#000', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                                 {item.material || item.quality}
                             </div>
                         </div>
@@ -119,7 +161,7 @@ function PrintTagsContent() {
                         {/* Right Side: Logo, Barcode, Price */}
                         <div className="tag-right">
                             {/* Mini Logo */}
-                            <img src="/invoice-logo.png" alt="" style={{ height: 16, marginBottom: 2, objectFit: 'contain' }} />
+                            <img src="/invoice-logo.png" alt="" style={{ height: 14, marginBottom: 1, objectFit: 'contain' }} />
 
                             {/* Barcode (SKU) */}
                             <div className="barcode">*{item.sku}*</div>
