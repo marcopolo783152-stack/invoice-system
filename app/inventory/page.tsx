@@ -263,13 +263,49 @@ export default function InventoryManager() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <p style={{ color: 'var(--text-muted)', margin: 0 }}>Active registry of physical assets and acquisitions.</p>
                         {selectedItems.size > 0 && (
-                            <button
-                                onClick={handleBulkDelete}
-                                className="luxury-button"
-                                style={{ padding: '6px 14px', background: 'var(--accent-rose)', color: '#ffffff', fontSize: 12, border: 'none' }}
-                            >
-                                DELETE ENTRIES ({selectedItems.size})
-                            </button>
+                            <>
+                                <button
+                                    onClick={async () => {
+                                        const ids = Array.from(selectedItems);
+                                        const alreadyPrinted = items.filter(i => ids.includes(i.id) && i.tagsPrinted);
+
+                                        if (alreadyPrinted.length > 0) {
+                                            const confirmPrint = confirm(
+                                                `Warning: ${alreadyPrinted.length} of the selected items have already been printed.\n\n` +
+                                                `Are you sure you want to print them again?`
+                                            );
+                                            if (!confirmPrint) return;
+                                        }
+
+                                        // Open Print Page
+                                        const idsStr = ids.join(',');
+                                        window.open(`/inventory/print-tags?ids=${idsStr}`, '_blank');
+
+                                        // Mark as printed (optimistic)
+                                        // We import this dynamically or assume it's available via props/context, 
+                                        // but since we are in page.tsx we can use the imported function.
+                                        // Need to add import first.
+                                        import('@/lib/inventory-storage').then(mod => {
+                                            mod.markInventoryTagsPrinted(ids);
+                                            // Update local state to reflect change immediately without reload
+                                            setItems(prev => prev.map(item =>
+                                                ids.includes(item.id) ? { ...item, tagsPrinted: true } : item
+                                            ));
+                                        });
+                                    }}
+                                    className="luxury-button"
+                                    style={{ padding: '6px 14px', background: 'var(--primary)', color: '#ffffff', fontSize: 12, border: 'none' }}
+                                >
+                                    🖨️ PRINT TAGS ({selectedItems.size})
+                                </button>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="luxury-button"
+                                    style={{ padding: '6px 14px', background: 'var(--accent-rose)', color: '#ffffff', fontSize: 12, border: 'none' }}
+                                >
+                                    DELETE ENTRIES ({selectedItems.size})
+                                </button>
+                            </>
                         )}
                     </div>
                 </div>

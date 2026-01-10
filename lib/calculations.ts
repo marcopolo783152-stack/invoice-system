@@ -301,8 +301,8 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     balanceDue = soldAmount - totalPaid;
   } else {
     // For Retail/Wash:
-    // Total Due is what they owe.
-    balanceDue = totalDue - totalPaid;
+    // Total Due is what they owe (excluding returns)
+    balanceDue = netTotalDue - totalPaid;
   }
 
   return {

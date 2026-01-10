@@ -45,6 +45,50 @@ export interface InventoryItem {
     importCost?: number;
     totalCost?: number;
     zone?: string;
+    tagsPrinted?: boolean; // Track if tag has been printed
+}
+
+// ... existing code ...
+
+/**
+ * Mark inventory tags as printed
+ */
+export async function markInventoryTagsPrinted(ids: string[]): Promise<void> {
+    const items = await getInventoryItems();
+    const idSet = new Set(ids);
+    const updates: Promise<any>[] = [];
+
+    // Local update
+    const newItems = items.map(item => {
+        if (idSet.has(item.id)) {
+            return { ...item, tagsPrinted: true };
+        }
+        return item;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems));
+
+    // Cloud update
+    if (isFirebaseConfigured() && db) {
+        try {
+            const batchSize = 500;
+            const firestore = db;
+
+            for (let i = 0; i < ids.length; i += batchSize) {
+                const chunk = ids.slice(i, i + batchSize);
+                const batch = writeBatch(firestore);
+
+                chunk.forEach(id => {
+                    const ref = doc(firestore, COLLECTION_NAME, id);
+                    batch.update(ref, { tagsPrinted: true, updatedAt: Timestamp.now() });
+                });
+
+                updates.push(batch.commit());
+            }
+            await Promise.all(updates);
+        } catch (error) {
+            console.error('Error updating tagsPrinted status:', error);
+        }
+    }
 }
 
 const STORAGE_KEY = 'inventory_items';
