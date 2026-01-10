@@ -1223,7 +1223,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
 
       {/* Additional Options */}
       {
-        isRetail && (
+        (isRetail || mode === 'wash') && (
           <div className={styles.formGroup}>
             <label>Discount (%):</label>
             <input

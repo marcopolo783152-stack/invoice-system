@@ -244,22 +244,22 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
 
   const returnedAmount = subtotal - netSubtotal;
 
-  // Calculate discount (only for retail)
+  // Calculate discount (only for retail OR wash)
   let discount = 0;
-  if (isRetail && data.discountPercentage) {
+  const isWash = data.documentType === 'WASH' || data.mode === 'wash'; // Check mode too for safety
+
+  if ((isRetail || isWash) && data.discountPercentage) {
     discount = subtotal * (data.discountPercentage / 100);
   }
 
   // Net discount (proportional to net subtotal)
   let netDiscount = 0;
-  if (isRetail && data.discountPercentage) {
+  if ((isRetail || isWash) && data.discountPercentage) {
     netDiscount = netSubtotal * (data.discountPercentage / 100);
   }
 
   const subtotalAfterDiscount = subtotal - discount;
   const netSubtotalAfterDiscount = netSubtotal - netDiscount;
-
-  const isWash = data.documentType === 'WASH';
 
   // Calculate sales tax (only for retail, applied after discount, but not for consignments or wash)
   let salesTax = 0;
