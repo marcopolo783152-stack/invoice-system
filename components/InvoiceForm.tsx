@@ -1205,15 +1205,28 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                   </>
                 )}
                 {documentType !== 'CONSIGNMENT' && (
-                  <tr>
-                    <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Total Due:</td>
-                    <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
-                      {(() => {
-                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
-                        return formatCurrency(calc.totalDue);
-                      })()}
-                    </td>
-                  </tr>
+                  <>
+                    {(isRetail || mode === 'wash') && discountPercentage > 0 && (
+                      <tr>
+                        <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Discount ({discountPercentage}%):</td>
+                        <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
+                          {(() => {
+                            const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountPercentage });
+                            return `-${formatCurrency(calc.discount)}`;
+                          })()}
+                        </td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Total Due:</td>
+                      <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
+                        {(() => {
+                          const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountPercentage });
+                          return formatCurrency(calc.totalDue);
+                        })()}
+                      </td>
+                    </tr>
+                  </>
                 )}
               </tbody>
             </table>
