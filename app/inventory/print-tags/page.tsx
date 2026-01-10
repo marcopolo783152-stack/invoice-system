@@ -30,42 +30,40 @@ function PrintTagsContent() {
     if (loading) return <div style={{ padding: 20 }}>Loading tags...</div>;
 
     return (
-        <div style={{ background: 'white', minHeight: '100vh' }}>
+        <div id="print-root" style={{ background: 'white', minHeight: '100vh' }}>
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Text&family=Inter:wght@400;600;800&display=swap');
 
                 @media print {
                     @page { margin: 0.5in 0.15in; size: letter; }
                     
-                    /* Reset global layout containers */
-                    html, body, #__next {
-                        margin: 0 !important; 
-                        padding: 0 !important; 
-                        height: auto !important; 
-                        overflow: visible !important; 
+                    /* HIDE EVERYTHING GLOBALLY */
+                    body * {
+                        visibility: hidden;
+                    }
+
+                    /* SHOW ONLY OUR PRINT ROOT */
+                    #print-root, #print-root * {
+                        visibility: visible;
+                    }
+
+                    #print-root {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    
+                    /* Ensure background is white */
+                    html, body {
                         background: white !important;
-                        display: block !important;
-                    }
-
-                    /* Hide sidebar and other layout elements explicitly */
-                    .sidebar-container, .desktop-sidebar-space, header, .mobile-only-header {
-                        display: none !important;
-                    }
-
-                    /* Ensure main content is visible and resets flexbox constraints */
-                    .main-content {
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        width: 100% !important;
                         height: auto !important;
-                        display: block !important;
                         overflow: visible !important;
-                        flex: none !important;
                     }
-
-                    /* Visibility helpers */
+                    
                     .no-print { display: none !important; }
-                    .tag-grid { display: grid !important; }
                 }
 
                 .tag-grid {
