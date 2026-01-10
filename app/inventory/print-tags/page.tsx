@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { getInventoryItems, InventoryItem } from '@/lib/inventory-storage';
 
@@ -9,8 +10,10 @@ function PrintTagsContent() {
     const idsParam = searchParams.get('ids');
     const [items, setItems] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         const load = async () => {
             if (!idsParam) return;
             const allItems = await getInventoryItems();
@@ -19,7 +22,7 @@ function PrintTagsContent() {
             setItems(selected);
             setLoading(false);
 
-            // Auto print after a short delay to ensure fonts load
+            // Auto print after a short delay
             setTimeout(() => {
                 window.print();
             }, 1000);
@@ -27,44 +30,29 @@ function PrintTagsContent() {
         load();
     }, [idsParam]);
 
+    // Cleanup: Remove class when unmounting
+    useEffect(() => {
+        if (mounted) {
+            document.body.classList.add('has-print-portal');
+            return () => {
+                document.body.classList.remove('has-print-portal');
+            };
+        }
+    }, [mounted]);
+
     if (loading) return <div style={{ padding: 20 }}>Loading tags...</div>;
 
-    return (
-        <div id="print-root" style={{ background: 'white', minHeight: '100vh' }}>
+    // We render specifically into a portal to escape the layout constraints
+    // This matches the logic found in app/print.css
+    if (!mounted) return null;
+
+    return createPortal(
+        <div className="print-portal-root" style={{ background: 'white', minHeight: '100vh', width: '100%', position: 'absolute', top: 0, left: 0 }}>
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Text&family=Inter:wght@400;600;800&display=swap');
 
-                @media print {
-                    @page { margin: 0.5in 0.15in; size: letter; }
-                    
-                    /* HIDE EVERYTHING GLOBALLY */
-                    body * {
-                        visibility: hidden;
-                    }
-
-                    /* SHOW ONLY OUR PRINT ROOT */
-                    #print-root, #print-root * {
-                        visibility: visible;
-                    }
-
-                    #print-root {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                        margin: 0;
-                        padding: 0;
-                    }
-                    
-                    /* Ensure background is white */
-                    html, body {
-                        background: white !important;
-                        height: auto !important;
-                        overflow: visible !important;
-                    }
-                    
-                    .no-print { display: none !important; }
-                }
+                /* Print overrides are handled by print.css via .print-portal-root */
+                /* We just need to define the grid here */
 
                 .tag-grid {
                     display: grid;
@@ -72,6 +60,8 @@ function PrintTagsContent() {
                     column-gap: 0.18in; /* Standard gap for Avery 5161 */
                     row-gap: 0;
                     width: 100%;
+                    max-width: 8.5in; /* Ensure it fits on letter */
+                    margin: 0 auto;
                 }
 
                 .tag {
@@ -142,7 +132,8 @@ function PrintTagsContent() {
                     </div>
                 ))}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
