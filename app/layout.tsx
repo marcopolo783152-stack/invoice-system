@@ -86,8 +86,20 @@ export default function RootLayout({
     }
   };
 
-  const isPrintPage = pathname?.startsWith('/invoices/print');
+  // Check for ANY print page (Invoices or Inventory)
+  const isPrintPage = pathname?.includes('/print');
   const isPublicPage = pathname?.startsWith('/public');
+
+  // For print pages, we want a completely clean layout without sidebars, modals, or flex wrappers
+  if (isPrintPage) {
+    return (
+      <html lang="en">
+        <body className={inter.className} style={{ background: 'white' }}>
+          {children}
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html lang="en">

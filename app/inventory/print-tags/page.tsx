@@ -1,9 +1,7 @@
-'use client';
-
 import React, { useEffect, useState, Suspense } from 'react';
-import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { getInventoryItems, InventoryItem } from '@/lib/inventory-storage';
+
 
 function PrintTagsContent() {
     const searchParams = useSearchParams();
@@ -12,8 +10,8 @@ function PrintTagsContent() {
     const [loading, setLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
 
+
     useEffect(() => {
-        setMounted(true);
         const load = async () => {
             if (!idsParam) return;
             const allItems = await getInventoryItems();
@@ -30,24 +28,10 @@ function PrintTagsContent() {
         load();
     }, [idsParam]);
 
-    // Cleanup: Remove class when unmounting
-    useEffect(() => {
-        if (mounted) {
-            document.body.classList.add('has-print-portal');
-            return () => {
-                document.body.classList.remove('has-print-portal');
-            };
-        }
-    }, [mounted]);
-
     if (loading) return <div style={{ padding: 20 }}>Loading tags...</div>;
 
-    // We render specifically into a portal to escape the layout constraints
-    // This matches the logic found in app/print.css
-    if (!mounted) return null;
-
-    return createPortal(
-        <div id="print-root" style={{ background: 'white', minHeight: '100vh', width: '100%', position: 'absolute', top: 0, left: 0 }}>
+    return (
+        <div id="print-root" style={{ background: 'white', minHeight: '100vh', width: '100%' }}>
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Text&family=Inter:wght@400;600;800&display=swap');
 
@@ -106,16 +90,6 @@ function PrintTagsContent() {
                         margin: 0; /* Clear browser margins, we control exact positioning via padding */
                     }
                     
-                    /* HIDE EVERYTHING GLOBALLY */
-                    body * {
-                        visibility: hidden;
-                    }
-
-                    /* SHOW ONLY OUR PRINT ROOT */
-                    #print-root, #print-root * {
-                        visibility: visible;
-                    }
-
                     /* Important: Reset body layout to ensure absolute positioning works relative to page */
                     html, body {
                         background: white !important;
@@ -124,15 +98,6 @@ function PrintTagsContent() {
                         margin: 0 !important;
                         padding: 0 !important;
                         overflow: visible !important;
-                    }
-
-                    #print-root {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                        margin: 0;
-                        padding: 0;
                     }
                     
                     .tag {
@@ -174,8 +139,7 @@ function PrintTagsContent() {
                     </div>
                 ))}
             </div>
-        </div>,
-        document.body
+        </div>
     );
 }
 
