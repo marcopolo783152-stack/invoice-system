@@ -68,46 +68,44 @@ export const generateInventoryTagsPDF = (items: InventoryItem[]) => {
         doc.text(mat, leftX, y + 0.7);
 
         // RIGHT SIDE
-        // Price
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        const price = `$${(item.price || 0).toLocaleString()}`;
-        doc.text(price, rightX, y + 0.6, { align: 'right' });
 
-        // Barcode Generation
+        // 1. Barcode Image (Top)
         try {
             const canvas = document.createElement('canvas');
             JsBarcode(canvas, item.sku, {
                 format: "CODE39",
                 width: 2,
                 height: 40,
-                displayValue: false, // We'll render text manually if needed, or rely on the image
+                displayValue: false,
                 margin: 0
             });
             const barcodeData = canvas.toDataURL('image/png');
 
-            // Add barcode image (Adjust dimensions to fit)
-            // rightX is the right edge alignment. We want to place the image to the left (approx 1.5 inch wide)
-            doc.addImage(barcodeData, 'PNG', rightX - 1.5, y + 0.3, 1.5, 0.25);
-
-            // Text below barcode
-            doc.setFont('courier', 'bold');
-            doc.setFontSize(10);
-            doc.text(`*${item.sku}*`, rightX, y + 0.25, { align: 'right' });
+            // Place image near top
+            // Width 1.5, Height 0.3
+            // Adjusted y slightly up to fit everything nicely
+            doc.addImage(barcodeData, 'PNG', rightX - 1.5, y + 0.15, 1.5, 0.3);
 
         } catch (e) {
             console.error("Barcode generation failed", e);
-            // Fallback text
-            doc.setFont('courier', 'normal');
-            doc.setFontSize(14);
-            doc.text(`*${item.sku}*`, rightX, y + 0.4, { align: 'right' });
         }
 
-        // Small Brand helper
-        doc.setFontSize(6);
+        // 2. SKU Text (Middle - under barcode)
+        doc.setFont('courier', 'bold');
+        doc.setFontSize(11);
+        doc.text(`*${item.sku}*`, rightX, y + 0.55, { align: 'right' });
+
+        // 3. Price (Bottom - under SKU)
+        doc.setFontSize(14); // Slightly larger for visibility
+        doc.setFont('helvetica', 'bold');
+        const price = `$${(item.price || 0).toLocaleString()}`;
+        doc.text(price, rightX, y + 0.8, { align: 'right' });
+
+        // Small Brand helper (moved slightly)
+        doc.setFontSize(5); // Smaller to not interfere
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100);
-        doc.text('MarcoPolo', rightX, y + 0.2, { align: 'right' });
+        doc.setTextColor(150);
+        doc.text('MarcoPolo', rightX, y + 0.92, { align: 'right' });
         doc.setTextColor(0);
     });
 
