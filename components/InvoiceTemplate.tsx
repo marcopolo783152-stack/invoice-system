@@ -330,7 +330,9 @@ export default function InvoiceTemplate({
                           <td className={styles.totalValue}>{formatCurrency(calculations.subtotal)}</td>
                         </tr>
                       )}
-                      {isRetail && calculations.discount > 0 && (
+
+                      {/* Discount Row - Retail OR Wash */}
+                      {(isRetail || data.mode === 'wash') && calculations.discount > 0 && (
                         <tr>
                           <td className={styles.totalLabel}>
                             Discount ({data.discountPercentage}%):
@@ -338,7 +340,9 @@ export default function InvoiceTemplate({
                           <td className={styles.totalValue}>-{formatCurrency(calculations.discount)}</td>
                         </tr>
                       )}
-                      {isRetail && (
+
+                      {/* Sales Tax - Retail Only (Never for Wash) */}
+                      {isRetail && data.mode !== 'wash' && (
                         <tr>
                           <td className={styles.totalLabel}>Sales Tax (6%):</td>
                           <td className={styles.totalValue}>{formatCurrency(calculations.salesTax)}</td>
