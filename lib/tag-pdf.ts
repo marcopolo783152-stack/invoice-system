@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import JsBarcode from 'jsbarcode';
 import { InventoryItem } from './inventory-storage';
 
 export const generateInventoryTagsPDF = (items: InventoryItem[]) => {
@@ -21,9 +22,6 @@ export const generateInventoryTagsPDF = (items: InventoryItem[]) => {
 
     const marginLeft = 0.16;
     const marginTop = 0.5;
-    // const colGap = 0.18; 
-    // const labelWidth = 4.0;
-    // const labelHeight = 1.0;
 
     // Explicit positions for Column 1 and Column 2
     const col1X = marginLeft;
@@ -48,12 +46,8 @@ export const generateInventoryTagsPDF = (items: InventoryItem[]) => {
 
         // --- Draw Tag Content ---
 
-        // Debug box (optional, uncomment to verify alignment)
-        // doc.rect(x, y, 4.0, 1.0);
-
         const leftX = x + 0.2;
         const rightX = x + 3.8;
-        const contentY = y + 0.5; // Vertical center approx
 
         // LEFT SIDE
         doc.setFontSize(10);
@@ -80,10 +74,34 @@ export const generateInventoryTagsPDF = (items: InventoryItem[]) => {
         const price = `$${(item.price || 0).toLocaleString()}`;
         doc.text(price, rightX, y + 0.6, { align: 'right' });
 
-        // Barcode (Simulated with text for now as fonts are hard in pure jsPDF without custom fonts)
-        doc.setFont('courier', 'normal'); // Monospace looks a bit more "code-like"
-        doc.setFontSize(14);
-        doc.text(`*${item.sku}*`, rightX, y + 0.4, { align: 'right' });
+        // Barcode Generation
+        try {
+            const canvas = document.createElement('canvas');
+            JsBarcode(canvas, item.sku, {
+                format: "CODE39",
+                width: 2,
+                height: 40,
+                displayValue: false, // We'll render text manually if needed, or rely on the image
+                margin: 0
+            });
+            const barcodeData = canvas.toDataURL('image/png');
+
+            // Add barcode image (Adjust dimensions to fit)
+            // rightX is the right edge alignment. We want to place the image to the left (approx 1.5 inch wide)
+            doc.addImage(barcodeData, 'PNG', rightX - 1.5, y + 0.3, 1.5, 0.25);
+
+            // Text below barcode
+            doc.setFont('courier', 'bold');
+            doc.setFontSize(10);
+            doc.text(`*${item.sku}*`, rightX, y + 0.25, { align: 'right' });
+
+        } catch (e) {
+            console.error("Barcode generation failed", e);
+            // Fallback text
+            doc.setFont('courier', 'normal');
+            doc.setFontSize(14);
+            doc.text(`*${item.sku}*`, rightX, y + 0.4, { align: 'right' });
+        }
 
         // Small Brand helper
         doc.setFontSize(6);
