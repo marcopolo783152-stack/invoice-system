@@ -193,14 +193,14 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   useEffect(() => {
     if (!initialData) { // Only auto-save new invoices to avoid overwriting edits
       const currentData = {
-        documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, discountPercentage: 0, servedBy
+        documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, discountPercentage, servedBy
       };
       // basic validation to avoid saving empty
       if (items.length > 0 || soldTo.name) {
         localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(currentData));
       }
     }
-  }, [documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, servedBy, initialData]);
+  }, [documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, servedBy, discountPercentage, initialData]);
 
   // Resume Action
   const handleResumeAutoSave = () => {
@@ -429,7 +429,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       soldTo,
       items,
       mode,
-      discountPercentage: mode.startsWith('retail') ? discountPercentage : undefined,
+      discountPercentage: (mode.startsWith('retail') || mode === 'wash') ? discountPercentage : undefined,
       notes,
       signature,
       servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
