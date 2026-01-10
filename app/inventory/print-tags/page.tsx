@@ -36,8 +36,36 @@ function PrintTagsContent() {
 
                 @media print {
                     @page { margin: 0.5in 0.15in; size: letter; }
-                    body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+                    
+                    /* Reset global layout containers */
+                    html, body, #__next {
+                        margin: 0 !important; 
+                        padding: 0 !important; 
+                        height: auto !important; 
+                        overflow: visible !important; 
+                        background: white !important;
+                        display: block !important;
+                    }
+
+                    /* Hide sidebar and other layout elements explicitly */
+                    .sidebar-container, .desktop-sidebar-space, header, .mobile-only-header {
+                        display: none !important;
+                    }
+
+                    /* Ensure main content is visible and resets flexbox constraints */
+                    .main-content {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        display: block !important;
+                        overflow: visible !important;
+                        flex: none !important;
+                    }
+
+                    /* Visibility helpers */
                     .no-print { display: none !important; }
+                    .tag-grid { display: grid !important; }
                 }
 
                 .tag-grid {
@@ -45,6 +73,7 @@ function PrintTagsContent() {
                     grid-template-columns: 1fr 1fr;
                     column-gap: 0.18in; /* Standard gap for Avery 5161 */
                     row-gap: 0;
+                    width: 100%;
                 }
 
                 .tag {
