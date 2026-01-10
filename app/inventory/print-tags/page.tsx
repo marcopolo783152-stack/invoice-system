@@ -3,15 +3,13 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getInventoryItems, InventoryItem } from '@/lib/inventory-storage';
-
+import { generateInventoryTagsPDF } from '@/lib/tag-pdf';
 
 function PrintTagsContent() {
     const searchParams = useSearchParams();
     const idsParam = searchParams.get('ids');
-    const [items, setItems] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [mounted, setMounted] = useState(false);
-
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -19,128 +17,58 @@ function PrintTagsContent() {
             const allItems = await getInventoryItems();
             const ids = new Set(idsParam.split(','));
             const selected = allItems.filter(i => ids.has(i.id));
-            setItems(selected);
-            setLoading(false);
 
-            // Auto print after a short delay
-            setTimeout(() => {
-                window.print();
-            }, 1000);
+            // Generate PDF
+            const url = generateInventoryTagsPDF(selected);
+            setPdfUrl(url);
+            setLoading(false);
         };
         load();
     }, [idsParam]);
 
-    if (loading) return <div style={{ padding: 20 }}>Loading tags...</div>;
+    if (loading) return <div style={{ padding: 40, textAlign: 'center' }}>Generating PDF...</div>;
+
+    if (!pdfUrl) return <div style={{ padding: 40, color: 'red' }}>Error generating PDF</div>;
 
     return (
-        <div id="print-root" style={{ background: 'white', minHeight: '100vh', width: '100%' }}>
-            <style jsx global>{`
-                @import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Text&family=Inter:wght@400;600;800&display=swap');
-
-                .tag-grid {
-                    display: grid;
-                    /* Avery 5161: 2 columns */
-                    grid-template-columns: 4in 4in; 
-                    column-gap: 0.18in; 
-                    row-gap: 0;
-                    width: 8.35in; /* 4 + 4 + 0.18 + slack */
-                    padding-left: 0.16in; /* Left Margin */
-                    padding-top: 0.5in;   /* Top Margin */
-                }
-
-                .tag {
-                    width: 100%;
-                    height: 1in;
-                    box-sizing: border-box;
-                    display: flex;
-                    align-items: center;
-                    padding: 0.05in 0.15in; /* Reduce padding to fit content */
-                    gap: 8px;
-                    page-break-inside: avoid;
-                    overflow: hidden;
-                    outline: 1px dotted rgba(0,0,0,0.1); /* Faint guide for cutting, optional */
-                }
-                
-                .tag-left {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    overflow: hidden;
-                }
-
-                .tag-right {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-end;
-                    justify-content: center;
-                    text-align: right;
-                    min-width: 90px;
-                    flex-shrink: 0;
-                }
-
-                .barcode {
-                    font-family: 'Libre Barcode 39 Text', cursive;
-                    font-size: 24px; /* Reduced font size to prevent overlapping */
-                    white-space: nowrap;
-                    margin: 1px 0;
-                }
-
-                @media print {
-                    @page { 
-                        size: letter; 
-                        margin: 0; /* Clear browser margins, we control exact positioning via padding */
-                    }
-                    
-                    /* Important: Reset body layout to ensure absolute positioning works relative to page */
-                    html, body {
-                        background: white !important;
-                        height: 100% !important;
-                        width: 100% !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        overflow: visible !important;
-                    }
-                    
-                    .tag {
-                        outline: none; /* Remove guide in print if desired, or keep for testing */
-                    }
-
-                    .no-print { display: none !important; }
-                }
-            `}</style>
-
-            <div className="tag-grid">
-                {items.map((item) => (
-                    <div key={item.id} className="tag">
-                        {/* Left Side: Brand, SKU, Details */}
-                        <div className="tag-left">
-                            <div style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 12, textTransform: 'uppercase', marginBottom: 1, lineHeight: 1 }}>Marco Polo Rugs</div>
-                            <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 11, marginBottom: 1 }}>SKU: {item.sku}</div>
-                            <div style={{ fontFamily: 'Inter', fontSize: 10, lineHeight: 1.1 }}>
-                                {item.widthFeet}'{item.widthInches}" × {item.lengthFeet}'{item.lengthInches}" {item.shape === 'round' ? '(R)' : ''}
-                            </div>
-                            <div style={{ fontFamily: 'Inter', fontSize: 9, color: '#000', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                                {item.material || item.quality}
-                            </div>
-                        </div>
-
-                        {/* Right Side: Logo, Barcode, Price */}
-                        <div className="tag-right">
-                            {/* Mini Logo */}
-                            <img src="/invoice-logo.png" alt="" style={{ height: 14, marginBottom: 1, objectFit: 'contain' }} />
-
-                            {/* Barcode (SKU) */}
-                            <div className="barcode">*{item.sku}*</div>
-
-                            {/* Price */}
-                            <div style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14 }}>
-                                ${item.price?.toLocaleString()}
-                            </div>
-                        </div>
-                    </div>
-                ))}
+        <div style={{ height: '100vh', width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '10px 20px', background: '#f0f2f5', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ fontSize: 16, margin: 0 }}>Print Preview (PDF)</h2>
+                <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                        onClick={() => window.location.href = '/inventory'}
+                        style={{ padding: '8px 16px', background: 'white', border: '1px solid #ccc', borderRadius: 4, cursor: 'pointer' }}
+                    >
+                        Back
+                    </button>
+                    <button
+                        onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = pdfUrl!;
+                            link.download = 'inventory-tags.pdf';
+                            link.click();
+                        }}
+                        style={{ padding: '8px 16px', background: '#1e293b', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                    >
+                        Download PDF
+                    </button>
+                    <button
+                        onClick={() => {
+                            // Print the iframe
+                            const iframe = document.querySelector('iframe');
+                            iframe?.contentWindow?.print();
+                        }}
+                        style={{ padding: '8px 16px', background: '#1e50ff', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}
+                    >
+                        Print
+                    </button>
+                </div>
             </div>
+            <iframe
+                src={pdfUrl}
+                style={{ flex: 1, border: 'none', width: '100%' }}
+                title="Tags PDF"
+            />
         </div>
     );
 }
