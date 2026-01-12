@@ -165,22 +165,22 @@ export default function InvoiceTemplate({
               <div className="email-client-details">
                 <p style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Bill To:</p>
                 {data.soldTo.companyName && (
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 2 }}>{data.soldTo.companyName}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#000000', marginBottom: 2 }}>{data.soldTo.companyName}</p>
                 )}
-                <h3 style={{ fontSize: data.soldTo.companyName ? 12 : 14, fontWeight: data.soldTo.companyName ? 500 : 700, color: '#1e293b', marginBottom: 4 }}>
+                <h3 style={{ fontSize: data.soldTo.companyName ? 13 : 15, fontWeight: data.soldTo.companyName ? 400 : 500, color: '#000000', marginBottom: 4 }}>
                   {data.soldTo.name}
                 </h3>
-                <p style={{ fontSize: 11, color: '#475569', whiteSpace: 'pre-line' }}>{data.soldTo.address}</p>
-                <p style={{ fontSize: 11, color: '#475569' }}>
+                <p style={{ fontSize: 13, color: '#000000', whiteSpace: 'pre-line' }}>{data.soldTo.address}</p>
+                <p style={{ fontSize: 13, color: '#000000' }}>
                   {data.soldTo.city}, {data.soldTo.state} {data.soldTo.zip}
                 </p>
-                <p style={{ fontSize: 11, color: '#475569' }}>{data.soldTo.phone}</p>
-                {data.soldTo.email && <p style={{ fontSize: 11, color: '#475569' }}>{data.soldTo.email}</p>}
+                <p style={{ fontSize: 13, color: '#000000' }}>{data.soldTo.phone}</p>
+                {data.soldTo.email && <p style={{ fontSize: 13, color: '#000000' }}>{data.soldTo.email}</p>}
                 {data.servedBy && (
-                  <p style={{ fontSize: 11, color: '#475569' }}><b>Served by:</b> {data.servedBy}</p>
+                  <p style={{ fontSize: 12, color: '#444', marginTop: 4 }}><b>Served by:</b> {data.servedBy}</p>
                 )}
               </div>
-              <div className={`${styles.invoiceInfo} email-invoice-info`} style={{ width: '40%', minWidth: '300px', maxWidth: 'none' }}>
+              <div className={`${styles.invoiceInfo} email-invoice-info`} style={{ width: 'auto', minWidth: '300px', maxWidth: '50%' }}>
                 <table>
                   <tbody>
                     <tr>
@@ -348,6 +348,15 @@ export default function InvoiceTemplate({
                           <td className={styles.totalValue}>{formatCurrency(calculations.salesTax)}</td>
                         </tr>
                       )}
+
+                      {/* Shipping / Additional Charges */}
+                      {(calculations.shipping || 0) > 0 && (
+                        <tr>
+                          <td className={styles.totalLabel}>Shipping:</td>
+                          <td className={styles.totalValue}>{formatCurrency(calculations.shipping || 0)}</td>
+                        </tr>
+                      )}
+
                       {/* Retail Total Due */}
                       {data.documentType !== 'CONSIGNMENT' && (
                         <tr className={`${styles.totalDueRow} email-total-due-row`}>

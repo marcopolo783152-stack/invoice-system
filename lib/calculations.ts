@@ -95,6 +95,7 @@ export interface InvoiceData {
   items: InvoiceItem[];
   mode: InvoiceMode;
   discountPercentage?: number;  // Optional, only for retail modes
+  shipping?: number; // Optional, shipping or additional charges
   notes?: string;
   signature?: string;  // Base64 encoded signature image
   returned?: boolean; // True if invoice is a return
@@ -120,6 +121,7 @@ export interface InvoiceCalculations {
   discount: number;
   subtotalAfterDiscount: number;
   salesTax: number;
+  shipping?: number;
   totalDue: number;
   // Net values (excluding returned items)
   netSubtotal: number;
@@ -273,8 +275,8 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   }
 
   // Calculate total due
-  const totalDue = subtotalAfterDiscount + salesTax;
-  const netTotalDue = netSubtotalAfterDiscount + netSalesTax;
+  const totalDue = subtotalAfterDiscount + salesTax + (data.shipping || 0);
+  const netTotalDue = netSubtotalAfterDiscount + netSalesTax + (data.shipping || 0);
 
   // Calculate sold amount (specifically for consignments)
   const soldAmount = calculatedItems
@@ -311,6 +313,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     discount,
     subtotalAfterDiscount,
     salesTax,
+    shipping: data.shipping || 0,
     totalDue,
     netSubtotal,
     netTotalDue: netTotalDueFinal,
