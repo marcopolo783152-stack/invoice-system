@@ -349,13 +349,13 @@ export default function InvoiceTemplate({
                         </tr>
                       )}
 
-                      {/* Shipping / Additional Charges */}
-                      {(calculations.shipping || 0) > 0 && (
-                        <tr>
-                          <td className={styles.totalLabel}>Shipping:</td>
-                          <td className={styles.totalValue}>{formatCurrency(calculations.shipping || 0)}</td>
+                      {/* Additional Charges List */}
+                      {data.additionalCharges && data.additionalCharges.length > 0 && data.additionalCharges.map(charge => (
+                        <tr key={charge.id}>
+                          <td className={styles.totalLabel}>{charge.description || 'Additional Charge'}:</td>
+                          <td className={styles.totalValue}>{formatCurrency(charge.amount)}</td>
                         </tr>
-                      )}
+                      ))}
 
                       {/* Retail Total Due */}
                       {data.documentType !== 'CONSIGNMENT' && (

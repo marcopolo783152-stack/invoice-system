@@ -95,7 +95,7 @@ export interface InvoiceData {
   items: InvoiceItem[];
   mode: InvoiceMode;
   discountPercentage?: number;  // Optional, only for retail modes
-  shipping?: number; // Optional, shipping or additional charges
+  additionalCharges?: { id: string; amount: number; description: string }[];
   notes?: string;
   signature?: string;  // Base64 encoded signature image
   returned?: boolean; // True if invoice is a return
@@ -121,7 +121,7 @@ export interface InvoiceCalculations {
   discount: number;
   subtotalAfterDiscount: number;
   salesTax: number;
-  shipping?: number;
+  totalAdditionalCharges: number;
   totalDue: number;
   // Net values (excluding returned items)
   netSubtotal: number;
@@ -203,6 +203,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
       discount: 0,
       subtotalAfterDiscount: 0,
       salesTax: 0,
+      totalAdditionalCharges: 0,
       totalDue: 0,
       netSubtotal: 0,
       netTotalDue: 0,
@@ -274,9 +275,13 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     netSalesTax = netSubtotalAfterDiscount * SALES_TAX_RATE;
   }
 
+  // Calculate Additional Charges
+  const additionalCharges = data.additionalCharges || [];
+  const totalAdditionalCharges = additionalCharges.reduce((sum, c) => sum + (c.amount || 0), 0);
+
   // Calculate total due
-  const totalDue = subtotalAfterDiscount + salesTax + (data.shipping || 0);
-  const netTotalDue = netSubtotalAfterDiscount + netSalesTax + (data.shipping || 0);
+  const totalDue = subtotalAfterDiscount + salesTax + totalAdditionalCharges;
+  const netTotalDue = netSubtotalAfterDiscount + netSalesTax + totalAdditionalCharges;
 
   // Calculate sold amount (specifically for consignments)
   const soldAmount = calculatedItems
@@ -313,7 +318,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     discount,
     subtotalAfterDiscount,
     salesTax,
-    shipping: data.shipping || 0,
+    totalAdditionalCharges,
     totalDue,
     netSubtotal,
     netTotalDue: netTotalDueFinal,

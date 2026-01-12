@@ -137,8 +137,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [downpayment, setDownpayment] = useState(
     initialData?.downpayment || 0
   );
-  const [shipping, setShipping] = useState(
-    initialData?.shipping || 0
+  const [additionalCharges, setAdditionalCharges] = useState<{ id: string; amount: number; description: string }[]>(
+    initialData?.additionalCharges || []
   );
 
   // Auto-switch to Wholesale for Consignment
@@ -196,14 +196,14 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   useEffect(() => {
     if (!initialData) { // Only auto-save new invoices to avoid overwriting edits
       const currentData = {
-        documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, discountPercentage, shipping, servedBy
+        documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, discountPercentage, additionalCharges, servedBy
       };
       // basic validation to avoid saving empty
       if (items.length > 0 || soldTo.name) {
         localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(currentData));
       }
     }
-  }, [documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, servedBy, discountPercentage, shipping, initialData]);
+  }, [documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, servedBy, discountPercentage, additionalCharges, initialData]);
 
   // Resume Action
   const handleResumeAutoSave = () => {
@@ -433,7 +433,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       items,
       mode,
       discountPercentage: (mode.startsWith('retail') || mode === 'wash') ? discountPercentage : undefined,
-      shipping: shipping > 0 ? shipping : undefined,
+      additionalCharges,
       notes,
       signature,
       servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
@@ -1221,19 +1221,19 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                         </td>
                       </tr>
                     )}
-                    {shipping > 0 && (
-                      <tr>
-                        <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Shipping:</td>
+                    {additionalCharges.map(charge => (
+                      <tr key={charge.id}>
+                        <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>{charge.description}:</td>
                         <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
-                          +{formatCurrency(shipping)}
+                          +{formatCurrency(charge.amount)}
                         </td>
                       </tr>
-                    )}
+                    ))}
                     <tr>
                       <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Total Due:</td>
                       <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
                         {(() => {
-                          const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountPercentage, shipping });
+                          const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountPercentage, additionalCharges });
                           return formatCurrency(calc.totalDue);
                         })()}
                       </td>
@@ -1266,16 +1266,53 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       }
 
       <div className={styles.formGroup}>
-        <label>Shipping / Additional Charges ($):</label>
-        <input
-          type="number"
-          value={shipping}
-          onChange={(e) => setShipping(Number(e.target.value))}
-          onFocus={(e) => e.target.select()}
-          min="0"
-          step="0.01"
-          className={styles.input}
-        />
+        <label>Additional Charges:</label>
+        {additionalCharges.map((charge, index) => (
+          <div key={charge.id} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input
+              type="text"
+              placeholder="Description"
+              value={charge.description}
+              onChange={(e) => {
+                const newCharges = [...additionalCharges];
+                newCharges[index].description = e.target.value;
+                setAdditionalCharges(newCharges);
+              }}
+              style={{ flex: 2 }}
+              className={styles.input}
+            />
+            <input
+              type="number"
+              placeholder="Amount"
+              value={charge.amount}
+              onChange={(e) => {
+                const newCharges = [...additionalCharges];
+                newCharges[index].amount = Number(e.target.value);
+                setAdditionalCharges(newCharges);
+              }}
+              style={{ flex: 1 }}
+              className={styles.input}
+              step="0.01"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const newCharges = additionalCharges.filter((_, i) => i !== index);
+                setAdditionalCharges(newCharges);
+              }}
+              style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, padding: '0 8px', cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setAdditionalCharges([...additionalCharges, { id: Math.random().toString(36).substr(2, 9), description: '', amount: 0 }])}
+          style={{ background: '#e0f2fe', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: 4, padding: '8px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+        >
+          + Add Charge
+        </button>
       </div>
 
       <div className={styles.formGroup}>

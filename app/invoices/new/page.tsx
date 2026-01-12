@@ -14,6 +14,7 @@ import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import PrintPortal from '@/components/PrintPortal';
 import PaymentModal from '@/components/PaymentModal';
+import AdditionalChargeModal from '@/components/AdditionalChargeModal';
 
 
 import InvoiceSearch from '@/components/InvoiceSearch';
@@ -60,6 +61,9 @@ function InvoicePageContent() {
   const [formInitialData, setFormInitialData] = useState<Partial<InvoiceData> | undefined>(undefined);
   const [showPreview, setShowPreview] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showChargeModal, setShowChargeModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [invoiceCount, setInvoiceCount] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -251,7 +255,6 @@ function InvoicePageContent() {
     }, 100);
   };
 
-  const [isPrinting, setIsPrinting] = useState(false);
 
   const handlePrint = async () => {
     if (invoiceRef.current && invoiceData) {
@@ -281,7 +284,7 @@ function InvoicePageContent() {
   // Capture the saved ID to use for links
   const [savedInvoiceId, setSavedInvoiceId] = useState<string | null>(null);
 
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
 
   const handleSavePayment = async (payment: any) => {
     if (!invoiceData) return;
@@ -313,6 +316,37 @@ function InvoicePageContent() {
     } catch (e) {
       console.error(e);
       alert('Failed to save payment');
+    }
+  };
+
+  const handleSaveCharge = async (charge: { id: string; description: string; amount: number }) => {
+    if (!invoiceData || (!editId && !savedInvoiceId)) {
+      alert('Invoice must be saved first');
+      return;
+    }
+
+    const targetId = editId || savedInvoiceId;
+    if (!targetId) return;
+
+    const currentCharges = invoiceData.additionalCharges || [];
+
+    // Create updated data
+    const updatedData: InvoiceData = {
+      ...invoiceData,
+      additionalCharges: [...currentCharges, charge]
+    };
+
+    try {
+      // Save to DB
+      await saveInvoice(updatedData, targetId);
+
+      // Update local state to reflect changes instantly
+      setInvoiceData(updatedData);
+      setShowChargeModal(false);
+      alert('Charge added successfully!');
+    } catch (e) {
+      console.error(e);
+      alert('Failed to save charge');
     }
   };
 
@@ -524,6 +558,13 @@ function InvoicePageContent() {
                     💲 Record Payment
                   </button>
                 )}
+                <button
+                  onClick={() => setShowChargeModal(true)}
+                  className={styles.emailBtn}
+                  style={{ background: '#0ea5e9' }}
+                >
+                  ➕ Add Charge
+                </button>
                 <button onClick={handleNewInvoice} className={styles.newBtn}>
                   ➕ New Invoice
                 </button>
@@ -567,6 +608,14 @@ function InvoicePageContent() {
                 onSave={handleSavePayment}
                 totalDue={calculations.totalDue}
                 balanceDue={calculations.balanceDue}
+              />
+            )}
+
+            {showChargeModal && (
+              <AdditionalChargeModal
+                isOpen={showChargeModal}
+                onClose={() => setShowChargeModal(false)}
+                onSave={handleSaveCharge}
               />
             )}
           </div>
