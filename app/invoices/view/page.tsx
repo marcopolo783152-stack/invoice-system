@@ -16,6 +16,8 @@ import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
 import { prepareInvoiceForEmail } from '@/lib/email-service';
 import EmailModal from '@/components/EmailModal';
 import PaymentModal from '@/components/PaymentModal';
+import AdditionalChargeModal from '@/components/AdditionalChargeModal';
+import { InvoiceData } from '@/lib/calculations';
 
 function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isOpen: boolean, items: any[], onClose: () => void, onConvert: (selectedIds: string[], note: string) => Promise<boolean> }) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -222,6 +224,7 @@ function InvoiceViewContent() {
 
 
     const [isPrinting, setIsPrinting] = useState(false);
+    const [showChargeModal, setShowChargeModal] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -438,6 +441,32 @@ function InvoiceViewContent() {
         } catch (error) {
             console.error('Failed to delete payment:', error);
             alert('Failed to delete payment');
+        }
+    };
+
+    const handleSaveCharge = async (charge: { id: string; description: string; amount: number }) => {
+        if (!invoice) return;
+
+        const currentData = invoice.data;
+        const currentCharges = currentData.additionalCharges || [];
+
+        const updatedInvoice = {
+            ...invoice,
+            data: {
+                ...currentData,
+                additionalCharges: [...currentCharges, charge]
+            },
+            updatedAt: new Date().toISOString()
+        };
+
+        try {
+            await saveInvoice(updatedInvoice.data, invoice.id);
+            await loadInvoice(invoice.id);
+            setShowChargeModal(false);
+            alert('Charge added successfully!');
+        } catch (e) {
+            console.error(e);
+            alert('Failed to save charge');
         }
     };
 
@@ -662,6 +691,17 @@ function InvoiceViewContent() {
                                 >
                                     <Download size={18} /> Download
                                 </button>
+                                <button
+                                    onClick={() => setShowChargeModal(true)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 8,
+                                        padding: '10px 20px', background: '#0ea5e9', color: 'white',
+                                        border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                                        boxShadow: '0 2px 4px rgba(14, 165, 233, 0.3)'
+                                    }}
+                                >
+                                    <DollarSign size={18} /> Add Charge
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -700,6 +740,15 @@ function InvoiceViewContent() {
                         totalDue={calculations?.totalDue || 0}
                         balanceDue={calculations?.balanceDue || 0}
                     />
+
+                    {/* Additional Charge Modal */}
+                    {showChargeModal && (
+                        <AdditionalChargeModal
+                            isOpen={showChargeModal}
+                            onClose={() => setShowChargeModal(false)}
+                            onSave={handleSaveCharge}
+                        />
+                    )}
 
                     {/* Return Modal (Searchable) */}
                     {showReturnModal && !isConverting && (
