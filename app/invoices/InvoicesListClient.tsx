@@ -427,7 +427,7 @@ function InvoicesListContent() {
                                     fontSize: 12,
                                     fontWeight: 600,
                                     transition: 'all 0.2s ease',
-                                    background: viewMode === mode ? 'var(--accent-gold)' : 'transparent',
+                                    background: viewMode === mode ? 'var(--primary)' : 'transparent',
                                     color: viewMode === mode ? '#ffffff' : 'var(--text-muted)',
                                     border: 'none',
                                     cursor: 'pointer',
@@ -530,12 +530,12 @@ function InvoicesListContent() {
                                         <button onClick={handleRestoreSelected} className="luxury-button" style={{ background: 'var(--primary)', color: 'white' }}>
                                             <RotateCcw size={18} style={{ marginRight: 8 }} /> Restore ({selectedIds.length})
                                         </button>
-                                        <button onClick={handlePermanentlyDelete} className="luxury-button" style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.2)' }}>
+                                        <button onClick={handlePermanentlyDelete} className="luxury-button" style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.2)' }}>
                                             <Trash2 size={18} style={{ marginRight: 8 }} /> Delete Forever
                                         </button>
                                     </>
                                 ) : (
-                                    <button onClick={handleDeleteSelected} className="luxury-button" style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.2)' }}>
+                                    <button onClick={handleDeleteSelected} className="luxury-button" style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.2)' }}>
                                         <Trash2 size={18} style={{ marginRight: 8 }} /> Archive ({selectedIds.length})
                                     </button>
                                 )}

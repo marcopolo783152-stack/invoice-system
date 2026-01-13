@@ -301,7 +301,7 @@ export default function InventoryManager() {
                                 <button
                                     onClick={handleBulkDelete}
                                     className="luxury-button"
-                                    style={{ padding: '6px 14px', background: 'var(--accent-rose)', color: '#ffffff', fontSize: 12, border: 'none' }}
+                                    style={{ padding: '6px 14px', background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', fontSize: 12, border: 'none' }}
                                 >
                                     DELETE ENTRIES ({selectedItems.size})
                                 </button>
@@ -322,7 +322,7 @@ export default function InventoryManager() {
                     <button
                         onClick={downloadTemplate}
                         className="luxury-button"
-                        style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+                        style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
                     >
                         📝 Template
                     </button>
@@ -423,7 +423,7 @@ export default function InventoryManager() {
                                             type="checkbox"
                                             onChange={handleSelectAll}
                                             checked={filteredItems.length > 0 && selectedItems.size === filteredItems.length}
-                                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent-gold)' }}
+                                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--primary)' }}
                                         />
                                     </th>
                                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--surface-border)' }}>Registry ID</th>
@@ -449,7 +449,7 @@ export default function InventoryManager() {
                                                 type="checkbox"
                                                 checked={selectedItems.has(item.id)}
                                                 onChange={() => handleSelectOne(item.id)}
-                                                style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent-gold)' }}
+                                                style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--primary)' }}
                                             />
                                         </td>
                                         <td style={{ padding: '16px 20px', fontWeight: 800, color: 'var(--text-main)', fontSize: 15 }}>{item.sku}</td>
