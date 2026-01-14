@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { logActivity } from "@/lib/audit-logger";
 import styles from "./Login.module.css";
+import { getUsers } from "@/lib/user-storage";
+import { DEFAULT_USERS } from "./UserManagement";
 
 export interface LoginProps {
   onLogin: () => void;
@@ -13,20 +15,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState([
-    { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin" },
-    { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" }
-  ]);
+
+  const [users, setUsers] = useState(DEFAULT_USERS);
 
   useEffect(() => {
-    // Load users from localStorage if present
-    const stored = localStorage.getItem("mp-invoice-users");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) setUsers(parsed);
-      } catch { }
+    // Load users from Cloud/Local via Storage Service
+    async function loadUsers() {
+      const loadedUsers = await getUsers();
+      if (loadedUsers && loadedUsers.length > 0) {
+        setUsers(loadedUsers);
+      }
     }
+    loadUsers();
   }, []);
 
   function handleSubmit(e: React.FormEvent) {

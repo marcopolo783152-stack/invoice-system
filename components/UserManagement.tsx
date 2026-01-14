@@ -14,7 +14,10 @@ export const DEFAULT_USERS: User[] = [
   { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" },
 ];
 
-interface UserManagementProps {
+
+import { saveUser, deleteUser } from "@/lib/user-storage";
+
+export interface UserManagementProps {
   users: User[];
   setUsers: (u: User[]) => void;
   currentUser?: { username: string; role: string } | null;
@@ -36,8 +39,10 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+
+
   // Handler for form submission (Add or Update)
-  function handleSaveUser(e: React.FormEvent) {
+  async function handleSaveUser(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
@@ -61,9 +66,19 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
         return;
       }
 
+      const updatedUser: User = { username, fullName, password, role };
+
+      // If username changed, we should delete the old one from storage?
+      // saveUser uses username as key.
+      if (originalUsername !== username) {
+        await deleteUser(originalUsername);
+      }
+
+      await saveUser(updatedUser);
+
       setUsers(users.map(u => {
         if (u.username === originalUsername) {
-          return { ...u, username, fullName, password, role };
+          return updatedUser;
         }
         return u;
       }));
@@ -76,7 +91,10 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
         setError("User already exists");
         return;
       }
-      setUsers([...users, { username, fullName, password, role }]);
+      const newUser: User = { username, fullName, password, role };
+      await saveUser(newUser);
+
+      setUsers([...users, newUser]);
       logActivity('User Created', `User ${fullName} (${username}) created as ${role}.`);
       setSuccessMsg("User added successfully");
       resetForm();
@@ -103,12 +121,13 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
     setSuccessMsg("");
   }
 
-  function handleDeleteUser(u: User) {
+  async function handleDeleteUser(u: User) {
     if (u.role === "admin" && users.filter(user => user.role === 'admin').length <= 1) {
       setError("Cannot delete the only admin");
       return;
     }
     if (confirm(`Delete user ${u.fullName}?`)) {
+      await deleteUser(u.username);
       setUsers(users.filter(user => user.username !== u.username));
       logActivity('User Deleted', `User ${u.fullName} (${u.username}) removed.`);
       if (isEditing && originalUsername === u.username) {

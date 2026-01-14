@@ -6,6 +6,7 @@ import Login from '@/components/Login';
 import { getEmailConfig, saveEmailConfig, EmailConfig } from '@/lib/email-service';
 import { saveSettingsToCloud, getSettingsFromCloud } from '@/lib/settings-storage';
 import { importInvoices } from '@/lib/invoice-storage';
+import { getUsers, saveUser } from '@/lib/user-storage';
 import { Database, UploadCloud } from 'lucide-react';
 
 function EmailSettingsForm() {
@@ -87,46 +88,33 @@ export default function SettingsPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
 
+
+
     useEffect(() => {
         // Basic auth check
         const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
         const storedUser = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
-        const storedUsers = localStorage.getItem('mp-invoice-users');
 
-        if (auth === '1' && storedUser) {
-            setIsAuthenticated(true);
-            try {
-                const parsed = JSON.parse(storedUser);
-                if (parsed && typeof parsed === 'object') setUser(parsed);
-                else setIsAuthenticated(false);
-            } catch {
+        async function loadData() {
+            if (auth === '1' && storedUser) {
+                setIsAuthenticated(true);
+                try {
+                    const parsed = JSON.parse(storedUser);
+                    if (parsed && typeof parsed === 'object') setUser(parsed);
+                } catch { }
+
+                const loadedUsers = await getUsers();
+                if (loadedUsers.length > 0) setUsers(loadedUsers);
+            } else {
                 setIsAuthenticated(false);
             }
-
-            if (storedUsers) {
-                try {
-                    const parsed = JSON.parse(storedUsers);
-                    if (Array.isArray(parsed)) setUsers(parsed);
-                    else setUsers([{ username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }]);
-                } catch {
-                    setUsers([{ username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }]);
-                }
-            } else {
-                setUsers([{ username: "admin@marcopolo.com", fullName: "Admin", password: "Marcopolo$", role: "admin" }]);
-            }
-            setLoading(false);
-        } else {
-            setIsAuthenticated(false);
             setLoading(false);
         }
+        loadData();
     }, []);
 
-    // Persistence for users list
-    useEffect(() => {
-        if (users.length > 0 && isAuthenticated) {
-            localStorage.setItem('mp-invoice-users', JSON.stringify(users));
-        }
-    }, [users, isAuthenticated]);
+    // Removed persistence useEffect as UserManagement now handles it directly.
+
 
     // Persistence for current user session
     useEffect(() => {

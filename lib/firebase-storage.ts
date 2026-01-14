@@ -360,3 +360,50 @@ export async function permanentlyDeleteFromCloudBin(ids: string[]): Promise<void
     throw error;
   }
 }
+
+/**
+ * USER MANAGEMENT (Cloud Sync)
+ */
+
+const USERS_COLLECTION = 'users';
+
+export async function saveUserToCloud(user: any): Promise<void> {
+  if (!isFirebaseConfigured() || !db) return;
+
+  try {
+    // We use username (email) as the Doc ID for uniqueness and easy updates
+    const docRef = doc(db, USERS_COLLECTION, user.username);
+    await import('firebase/firestore').then(({ setDoc }) =>
+      setDoc(docRef, { ...user, updatedAt: Timestamp.now() })
+    );
+  } catch (error) {
+    console.error('Error saving user to cloud:', error);
+    throw error;
+  }
+}
+
+export async function getUsersFromCloud(): Promise<any[]> {
+  if (!isFirebaseConfigured() || !db) return [];
+
+  try {
+    const q = query(collection(db, USERS_COLLECTION));
+    const querySnapshot = await getDocs(q);
+    const users: any[] = [];
+    querySnapshot.forEach((doc) => users.push(doc.data()));
+    return users;
+  } catch (error) {
+    console.error('Error getting users from cloud:', error);
+    return [];
+  }
+}
+
+export async function deleteUserFromCloud(username: string): Promise<void> {
+  if (!isFirebaseConfigured() || !db) return;
+
+  try {
+    await deleteDoc(doc(db, USERS_COLLECTION, username));
+  } catch (error) {
+    console.error('Error deleting user from cloud:', error);
+    throw error;
+  }
+}
