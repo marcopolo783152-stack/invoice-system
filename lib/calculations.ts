@@ -304,9 +304,9 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   let balanceDue: number;
   if (isConsignment) {
     // For Consignment:
-    // Total Value of Sold items is what they owe us.
+    // Total Value of Sold items + Additional Charges is what they owe us.
     // If they paid us (payments + downpayment), we subtract that.
-    balanceDue = soldAmount - totalPaid;
+    balanceDue = (soldAmount + totalAdditionalCharges) - totalPaid;
   } else {
     // For Retail/Wash:
     // Total Due is what they owe (excluding returns)
