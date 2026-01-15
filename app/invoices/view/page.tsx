@@ -315,11 +315,13 @@ function InvoiceViewContent() {
     const handleProcessReturnWithArgs = async (itemsIds: string[], note: string): Promise<boolean> => {
         if (!invoice) return false;
 
-        // If converting, we need at least one item
+        /* 
+        // Validation removed to allow undoing ALL sales by selecting nothing
         if (isConverting && itemsIds.length === 0) {
             alert('Please select at least one item.');
             return false;
         }
+        */
 
         if (!isConverting && !confirm('Save return changes?')) return false;
 
