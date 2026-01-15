@@ -7,8 +7,8 @@ import { Customer } from '@/lib/customer-storage';
 import { formatCurrency, calculateInvoice } from '@/lib/calculations';
 import Link from 'next/link';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+// import html2canvas from 'html2canvas'; // Removed
+// import jsPDF from 'jspdf'; // Removed
 
 interface CustomerHistoryModalProps {
     isOpen: boolean;
@@ -133,32 +133,8 @@ export default function CustomerHistoryModal({ isOpen, onClose, customer }: Cust
         }
     };
 
-    const handlePrint = async () => {
-        if (!contentRef.current) return;
-
-        try {
-            const canvas = await html2canvas(contentRef.current, {
-                scale: 2,
-                backgroundColor: '#ffffff'
-            });
-
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'in',
-                format: 'letter'
-            });
-
-            const pdfWidth = 8.5;
-            const imgProps = pdf.getImageProperties(imgData);
-            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
-            pdf.save(`Statement_${customer.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
-        } catch (error) {
-            console.error('Print failed', error);
-            alert('Failed to generate PDF statement');
-        }
+    const handlePrint = () => {
+        window.print();
     };
 
     if (!isOpen) return null;
@@ -178,7 +154,7 @@ export default function CustomerHistoryModal({ isOpen, onClose, customer }: Cust
             backdropFilter: 'blur(4px)',
             fontFamily: 'Inter, sans-serif'
         }}>
-            <div style={{
+            <div id="print-content-root" style={{
                 background: 'white',
                 width: '90%',
                 maxWidth: 900,
@@ -342,13 +318,38 @@ export default function CustomerHistoryModal({ isOpen, onClose, customer }: Cust
 
             <style jsx>{`
                 @media print {
-                    .print-hide { display: none !important; }
+                    body > *:not(#customer-statement-modal) {
+                        display: none !important;
+                    }
+                    div[style*="position: fixed"] {
+                        position: static !important;
+                        background: white !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        display: block !important;
+                    }
+                     /* Crucial: Hide the scrollable wrapper specifics */
+                    div[style*="overflow-y: auto"] {
+                        overflow: visible !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        height: auto !important;
+                    }
+                     /* Hide UI Elements */
+                    .print-hide, button { 
+                        display: none !important; 
+                    }
+                    /* Ensure content fits */
+                    table { width: 100% !important; }
+                    /* Page setup */
+                    @page { margin: 0.5in; size: portrait; }
                 }
                 @keyframes modalEnter {
                     from { transform: scale(0.95); opacity: 0; }
                     to { transform: scale(1); opacity: 1; }
                 }
             `}</style>
+            <div id="customer-statement-modal" style={{ display: 'none' }}></div> {/* Marker for logic if needed, but CSS handles it */}
         </div>
     );
 }

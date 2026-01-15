@@ -658,52 +658,6 @@ function InvoiceViewContent() {
                                         <ShoppingCart size={18} /> Process Pickup
                                     </button>
                                 )}
-                                {invoice.data.status === 'picked_up' && (
-                                    <button
-                                        onClick={handleUndoPickup}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: 8,
-                                            padding: '10px 20px', background: '#fff1f2', color: '#e11d48',
-                                            border: '1px solid #fecdd3', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                                            boxShadow: '0 2px 4px rgba(225, 29, 72, 0.1)'
-                                        }}
-                                    >
-                                        <RotateCcw size={18} /> Undo Pickup
-                                    </button>
-                                )}
-                                <button
-                                    onClick={handleReturnClick}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 8,
-                                        padding: '10px 20px', background: '#f59e0b', color: 'white',
-                                        border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                                        boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)'
-                                    }}
-                                >
-                                    <Undo size={18} /> Return
-                                </button>
-                                <button
-                                    onClick={handleEdit}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 8,
-                                        padding: '10px 20px', background: '#6366f1', color: 'white',
-                                        border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                                        boxShadow: '0 2px 4px rgba(99, 102, 241, 0.3)'
-                                    }}
-                                >
-                                    <Edit size={18} /> Edit
-                                </button>
-                                <button
-                                    onClick={handleEmail}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 8,
-                                        padding: '10px 20px', background: '#e0f2fe', color: '#0369a1',
-                                        border: '1px solid #7dd3fc', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                                        boxShadow: '0 2px 4px rgba(3, 105, 161, 0.1)'
-                                    }}
-                                >
-                                    <Mail size={18} /> Email
-                                </button>
                                 <button
                                     onClick={handlePrint}
                                     disabled={isPrinting}
@@ -716,27 +670,6 @@ function InvoiceViewContent() {
                                     }}
                                 >
                                     <Printer size={18} /> {isPrinting ? 'Preparing...' : 'Print'}
-                                </button>
-                                <button
-                                    onClick={handleDownloadPDF}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 8,
-                                        padding: '10px 20px', background: 'white', color: '#334155',
-                                        border: '1px solid #cbd5e1', borderRadius: 8, fontWeight: 600, cursor: 'pointer'
-                                    }}
-                                >
-                                    <Download size={18} /> Download
-                                </button>
-                                <button
-                                    onClick={() => setShowChargeModal(true)}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 8,
-                                        padding: '10px 20px', background: '#0ea5e9', color: 'white',
-                                        border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                                        boxShadow: '0 2px 4px rgba(14, 165, 233, 0.3)'
-                                    }}
-                                >
-                                    <DollarSign size={18} /> Add Charge
                                 </button>
                             </div>
 
@@ -790,7 +723,89 @@ function InvoiceViewContent() {
                                         </button>
                                     </div>
                                 )}
+
+                                {showMoreMenu && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '120%',
+                                        right: 0,
+                                        background: 'white',
+                                        borderRadius: 12,
+                                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                                        border: '1px solid #f1f5f9',
+                                        minWidth: 220,
+                                        zIndex: 50,
+                                        overflow: 'hidden'
+                                    }}>
+                                        {/* Actions Group */}
+                                        <div style={{ padding: '8px 12px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            Invoice Actions
+                                        </div>
+
+                                        <button onClick={() => { handleEdit(); setShowMoreMenu(false); }} className="dropdown-item">
+                                            <Edit size={16} /> Edit Invoice
+                                        </button>
+
+                                        <button onClick={() => { handleEmail(); setShowMoreMenu(false); }} className="dropdown-item">
+                                            <Mail size={16} /> Email Invoice
+                                        </button>
+
+                                        <button onClick={() => { handleDownloadPDF(); setShowMoreMenu(false); }} className="dropdown-item">
+                                            <Download size={16} /> Download PDF
+                                        </button>
+
+                                        <button onClick={() => { setShowChargeModal(true); setShowMoreMenu(false); }} className="dropdown-item">
+                                            <DollarSign size={16} /> Add Charge
+                                        </button>
+
+                                        <button onClick={() => { handleReturnClick(); setShowMoreMenu(false); }} className="dropdown-item">
+                                            <Undo size={16} /> Process Return
+                                        </button>
+
+                                        {invoice?.data.status === 'picked_up' && (
+                                            <button onClick={() => { handleUndoPickup(); setShowMoreMenu(false); }} className="dropdown-item" style={{ color: '#e11d48' }}>
+                                                <RotateCcw size={16} /> Undo Pickup
+                                            </button>
+                                        )}
+
+                                        <hr style={{ margin: '4px 0', borderTop: '1px solid #f1f5f9' }} />
+
+                                        {/* Customer Group */}
+                                        <div style={{ padding: '8px 12px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            Customer Options
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setShowHistoryModal(true);
+                                                setShowMoreMenu(false);
+                                            }}
+                                            className="dropdown-item"
+                                        >
+                                            <History size={16} /> Customer History
+                                        </button>
+                                    </div>
+                                )}
                             </div>
+                            <style jsx>{`
+                                .dropdown-item {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 10px;
+                                    width: 100%;
+                                    padding: 10px 16px;
+                                    background: white;
+                                    border: none;
+                                    text-align: left;
+                                    cursor: pointer;
+                                    font-size: 14px;
+                                    color: #334155;
+                                    transition: background 0.2s;
+                                }
+                                .dropdown-item:hover {
+                                    background: #f8fafc;
+                                    color: #0f172a;
+                                }
+                            `}</style>
                         </div>
                     </div>
 
