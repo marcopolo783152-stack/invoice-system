@@ -16,6 +16,7 @@ import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
 import { prepareInvoiceForEmail } from '@/lib/email-service';
 import EmailModal from '@/components/EmailModal';
 import PaymentModal from '@/components/PaymentModal';
+import AdditionalChargeModal from '@/components/AdditionalChargeModal';
 import { InvoiceData } from '@/lib/calculations';
 import CustomerHistoryModal from '@/components/CustomerHistoryModal';
 import { MoreHorizontal, History } from 'lucide-react'; // Import icons
@@ -792,178 +793,177 @@ function InvoiceViewContent() {
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Email Modal */}
-                <EmailModal
-                    isOpen={showEmailModal}
-                    onClose={() => setShowEmailModal(false)}
-                    customerEmail={invoice.data.soldTo.email || ''}
-                    customerName={invoice.data.soldTo.name}
-                    invoiceNumber={invoice.data.invoiceNumber}
-                    invoiceHTML={invoiceHTML}
-                    onSend={async (email, config) => {
-                        if (!invoice) throw new Error('Invoice content missing');
+                    {/* Email Modal */}
+                    <EmailModal
+                        isOpen={showEmailModal}
+                        onClose={() => setShowEmailModal(false)}
+                        customerEmail={invoice.data.soldTo.email || ''}
+                        customerName={invoice.data.soldTo.name}
+                        invoiceNumber={invoice.data.invoiceNumber}
+                        invoiceHTML={invoiceHTML}
+                        onSend={async (email, config) => {
+                            if (!invoice) throw new Error('Invoice content missing');
 
-                        // Generate Link
-                        const link = `${window.location.origin}/public/invoice?id=${invoice.id}`;
+                            // Generate Link
+                            const link = `${window.location.origin}/public/invoice?id=${invoice.id}`;
 
-                        // Send Link (Client Side - Free Tier Compatible)
-                        const { sendInvoiceEmail } = await import('@/lib/email-service');
-                        await sendInvoiceEmail(
-                            email,
-                            invoice.data.soldTo.name,
-                            invoice.data.invoiceNumber,
-                            link,
-                            config
-                        );
-                    }}
-                />
-
-                {/* Payment Modal */}
-                <PaymentModal
-                    isOpen={showPaymentModal}
-                    onClose={() => setShowPaymentModal(false)}
-                    onSave={handleSavePayment}
-                    totalDue={calculations?.totalDue || 0}
-                    balanceDue={calculations?.balanceDue || 0}
-                />
-
-                {/* Additional Charge Modal */}
-                {showChargeModal && (
-                    <AdditionalChargeModal
-                        isOpen={showChargeModal}
-                        onClose={() => setShowChargeModal(false)}
-                        onSave={handleSaveCharge}
-                    />
-                )}
-
-                {/* Return Modal (Searchable) */}
-                {showReturnModal && !isConverting && (
-                    <ReturnItemsModal
-                        isOpen={true}
-                        items={invoice.data.items}
-                        initialSelectedIds={returnItems}
-                        initialNote={returnNote}
-                        onClose={() => setShowReturnModal(false)}
-                        onConfirm={async (ids: string[], note: string) => {
-                            setReturnItems(ids);
-                            setReturnNote(note);
-                            return await handleProcessReturnWithArgs(ids, note);
+                            // Send Link (Client Side - Free Tier Compatible)
+                            const { sendInvoiceEmail } = await import('@/lib/email-service');
+                            await sendInvoiceEmail(
+                                email,
+                                invoice.data.soldTo.name,
+                                invoice.data.invoiceNumber,
+                                link,
+                                config
+                            );
                         }}
                     />
-                )}
 
-                {/* Customer History Modal */}
-                {showHistoryModal && (
-                    <CustomerHistoryModal
-                        isOpen={showHistoryModal}
-                        customer={{
-                            ...invoice.data.soldTo, // Use invoice customer data
-                            id: 'temp_view_id', // ID might not be needed for view-only or we can try to fetch real ID later if strictly required. 
-                            // Actually, history modal matches by NAME primarily, so this is fine.
-                            // We need to mock the minimal required fields if they are missing
-                            address: invoice.data.soldTo.address || '',
-                            city: invoice.data.soldTo.city || '',
-                            state: invoice.data.soldTo.state || '',
-                            zip: invoice.data.soldTo.zip || '',
-                            phone: invoice.data.soldTo.phone || '',
-                            createdAt: '',
-                            updatedAt: ''
-                        }}
-                        onClose={() => setShowHistoryModal(false)}
+                    {/* Payment Modal */}
+                    <PaymentModal
+                        isOpen={showPaymentModal}
+                        onClose={() => setShowPaymentModal(false)}
+                        onSave={handleSavePayment}
+                        totalDue={calculations?.totalDue || 0}
+                        balanceDue={calculations?.balanceDue || 0}
                     />
-                )}
 
-                {/* Consignment Conversion Modal (Searchable) */}
-                {showReturnModal && isConverting && (
-                    <ConsignmentConversionModal
-                        isOpen={true}
-                        items={invoice.data.items}
-                        initialSelectedIds={returnItems}
-                        onClose={() => setShowReturnModal(false)}
-                        onConvert={async (ids: string[], note: string) => {
-                            setReturnItems(ids);
-                            setReturnNote(note);
-                            return await handleProcessReturnWithArgs(ids, note);
-                        }}
-                    />
-                )}
+                    {/* Additional Charge Modal */}
+                    {showChargeModal && (
+                        <AdditionalChargeModal
+                            isOpen={showChargeModal}
+                            onClose={() => setShowChargeModal(false)}
+                            onSave={handleSaveCharge}
+                        />
+                    )}
+
+                    {/* Return Modal (Searchable) */}
+                    {showReturnModal && !isConverting && (
+                        <ReturnItemsModal
+                            isOpen={true}
+                            items={invoice.data.items}
+                            initialSelectedIds={returnItems}
+                            initialNote={returnNote}
+                            onClose={() => setShowReturnModal(false)}
+                            onConfirm={async (ids: string[], note: string) => {
+                                setReturnItems(ids);
+                                setReturnNote(note);
+                                return await handleProcessReturnWithArgs(ids, note);
+                            }}
+                        />
+                    )}
+
+                    {/* Customer History Modal */}
+                    {showHistoryModal && (
+                        <CustomerHistoryModal
+                            isOpen={showHistoryModal}
+                            customer={{
+                                ...invoice.data.soldTo, // Use invoice customer data
+                                id: 'temp_view_id', // ID might not be needed for view-only or we can try to fetch real ID later if strictly required. 
+                                // Actually, history modal matches by NAME primarily, so this is fine.
+                                // We need to mock the minimal required fields if they are missing
+                                address: invoice.data.soldTo.address || '',
+                                city: invoice.data.soldTo.city || '',
+                                state: invoice.data.soldTo.state || '',
+                                zip: invoice.data.soldTo.zip || '',
+                                phone: invoice.data.soldTo.phone || '',
+                                createdAt: '',
+                                updatedAt: ''
+                            }}
+                            onClose={() => setShowHistoryModal(false)}
+                        />
+                    )}
+
+                    {/* Consignment Conversion Modal (Searchable) */}
+                    {showReturnModal && isConverting && (
+                        <ConsignmentConversionModal
+                            isOpen={true}
+                            items={invoice.data.items}
+                            initialSelectedIds={returnItems}
+                            onClose={() => setShowReturnModal(false)}
+                            onConvert={async (ids: string[], note: string) => {
+                                setReturnItems(ids);
+                                setReturnNote(note);
+                                return await handleProcessReturnWithArgs(ids, note);
+                            }}
+                        />
+                    )}
 
 
 
-                {/* Pickup Signature Modal */}
-                {showPickupModal && (
-                    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <div style={{ background: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 600, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-                            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Confirm Pickup</h3>
-                            <p style={{ color: '#64748b', marginBottom: 20 }}>Please satisfy the customer signature below to confirm receipt of items.</p>
-                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                                <Suspense fallback={<div>Loading signature pad...</div>}>
-                                    <SignaturePad
-                                        onSave={handleProcessPickup}
-                                        onCancel={() => setShowPickupModal(false)}
-                                    />
-                                </Suspense>
+                    {/* Pickup Signature Modal */}
+                    {showPickupModal && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <div style={{ background: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 600, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Confirm Pickup</h3>
+                                <p style={{ color: '#64748b', marginBottom: 20 }}>Please satisfy the customer signature below to confirm receipt of items.</p>
+                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                                    <Suspense fallback={<div>Loading signature pad...</div>}>
+                                        <SignaturePad
+                                            onSave={handleProcessPickup}
+                                            onCancel={() => setShowPickupModal(false)}
+                                        />
+                                    </Suspense>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Return Receipt Modal */}
-                {showReturnReceipt && returnedReceiptData && (
-                    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <div style={{ background: 'white', padding: 0, borderRadius: 12, width: '100%', maxWidth: 600, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                            <div style={{ padding: 16, borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3 style={{ margin: 0 }}>Return Receipt</h3>
-                                <button onClick={() => setShowReturnReceipt(false)} style={{ border: 'none', background: 'transparent', fontSize: 24, cursor: 'pointer' }}>&times;</button>
-                            </div>
-                            <div style={{ padding: 24, overflowY: 'auto', background: '#f8fafc', flex: 1 }}>
-                                <ReturnedReceipt receiptData={returnedReceiptData} />
-                            </div>
-                            <div style={{ padding: 16, borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                                <button onClick={() => setShowReturnReceipt(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}>Close</button>
-                                <button
-                                    onClick={() => {
-                                        const printData = JSON.stringify(returnedReceiptData);
-                                        // Open standard print window for receipt
-                                        const w = window.open('', '_blank');
-                                        if (w) {
-                                            w.document.write(`<html><head><title>Print Receipt</title></head><body><div id="root"></div></body></html>`);
-                                            w.location.href = `/returned-receipt-print?data=${encodeURIComponent(printData)}`;
-                                        }
-                                    }}
-                                    style={{ padding: '8px 16px', borderRadius: 8, background: '#3b82f6', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                                >
-                                    <Printer size={16} /> Print Receipt
-                                </button>
+                    {/* Return Receipt Modal */}
+                    {showReturnReceipt && returnedReceiptData && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <div style={{ background: 'white', padding: 0, borderRadius: 12, width: '100%', maxWidth: 600, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                <div style={{ padding: 16, borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h3 style={{ margin: 0 }}>Return Receipt</h3>
+                                    <button onClick={() => setShowReturnReceipt(false)} style={{ border: 'none', background: 'transparent', fontSize: 24, cursor: 'pointer' }}>&times;</button>
+                                </div>
+                                <div style={{ padding: 24, overflowY: 'auto', background: '#f8fafc', flex: 1 }}>
+                                    <ReturnedReceipt receiptData={returnedReceiptData} />
+                                </div>
+                                <div style={{ padding: 16, borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                                    <button onClick={() => setShowReturnReceipt(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}>Close</button>
+                                    <button
+                                        onClick={() => {
+                                            const printData = JSON.stringify(returnedReceiptData);
+                                            // Open standard print window for receipt
+                                            const w = window.open('', '_blank');
+                                            if (w) {
+                                                w.document.write(`<html><head><title>Print Receipt</title></head><body><div id="root"></div></body></html>`);
+                                                w.location.href = `/returned-receipt-print?data=${encodeURIComponent(printData)}`;
+                                            }
+                                        }}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#3b82f6', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                                    >
+                                        <Printer size={16} /> Print Receipt
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Screen Preview */}
-                <div
-                    id="invoice-view"
-                    className="invoice-paper"
-                    style={{
-                        background: 'white',
-                        padding: 40,
-                        borderRadius: 8,
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                        border: '1px solid #e2e8f0'
-                    }}
-                    ref={invoiceRef}
-                >
-                    <InvoiceTemplate
-                        data={invoice.data}
-                        calculations={calculations}
-                        businessInfo={businessConfig}
-                        onDeletePayment={handleDeletePayment}
-                    />
+                    {/* Screen Preview */}
+                    <div
+                        id="invoice-view"
+                        className="invoice-paper"
+                        style={{
+                            background: 'white',
+                            padding: 40,
+                            borderRadius: 8,
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                            border: '1px solid #e2e8f0'
+                        }}
+                        ref={invoiceRef}
+                    >
+                        <InvoiceTemplate
+                            data={invoice.data}
+                            calculations={calculations}
+                            businessInfo={businessConfig}
+                            onDeletePayment={handleDeletePayment}
+                        />
+                    </div>
                 </div>
             </div>
-        </div>
         </div >
     );
 }
