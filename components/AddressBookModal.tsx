@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Download, User, Phone, Mail, MapPin } from 'lucide-react';
 import { getCustomers, exportCustomersCSV } from '@/lib/invoice-storage';
+import CustomerHistoryModal from './CustomerHistoryModal';
+import { Customer } from '@/lib/customer-storage';
 
 interface AddressBookModalProps {
     isOpen: boolean;
@@ -13,6 +15,7 @@ export default function AddressBookModal({ isOpen, onClose }: AddressBookModalPr
     const [customers, setCustomers] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [selectedCustomerForHistory, setSelectedCustomerForHistory] = useState<Customer | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -185,6 +188,7 @@ export default function AddressBookModal({ isOpen, onClose }: AddressBookModalPr
                                     <th style={{ padding: '20px 0', color: '#64748b', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9' }}>Customer</th>
                                     <th style={{ padding: '20px 0', color: '#64748b', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9' }}>Contact Info</th>
                                     <th style={{ padding: '20px 0', color: '#64748b', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9' }}>Address</th>
+                                    <th style={{ padding: '20px 0', color: '#64748b', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -218,6 +222,26 @@ export default function AddressBookModal({ isOpen, onClose }: AddressBookModalPr
                                                 <MapPin size={14} color="#94a3b8" style={{ marginTop: 2, flexShrink: 0 }} />
                                                 <span>{cust.address}, {cust.city}, {cust.state} {cust.zip}</span>
                                             </div>
+                                        </td>
+                                        <td style={{ padding: '20px 0', textAlign: 'right' }}>
+                                            <button
+                                                onClick={() => setSelectedCustomerForHistory(cust)}
+                                                style={{
+                                                    background: 'white',
+                                                    border: '1px solid #e2e8f0',
+                                                    color: '#475569',
+                                                    padding: '6px 12px',
+                                                    borderRadius: 8,
+                                                    cursor: 'pointer',
+                                                    fontSize: 12,
+                                                    fontWeight: 500,
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 6
+                                                }}
+                                            >
+                                                History
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
