@@ -19,8 +19,8 @@ import PaymentModal from '@/components/PaymentModal';
 import AdditionalChargeModal from '@/components/AdditionalChargeModal';
 import { InvoiceData } from '@/lib/calculations';
 
-function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isOpen: boolean, items: any[], onClose: () => void, onConvert: (selectedIds: string[], note: string) => Promise<boolean> }) {
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+function ConsignmentConversionModal({ isOpen, items, onClose, onConvert, initialSelectedIds }: { isOpen: boolean, items: any[], onClose: () => void, onConvert: (selectedIds: string[], note: string) => Promise<boolean>, initialSelectedIds?: string[] }) {
+    const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds || []);
     const [searchTerm, setSearchTerm] = useState('');
     const [note, setNote] = useState('Converted to Sale');
     const [processing, setProcessing] = useState(false);
@@ -87,8 +87,8 @@ function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isO
                                 setProcessing(false);
                             }
                         }}
-                        disabled={processing || selectedIds.length === 0}
-                        style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: (processing || selectedIds.length === 0) ? 0.7 : 1 }}
+                        disabled={processing}
+                        style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: processing ? 0.7 : 1 }}
                     >
                         {processing ? 'Processing...' : 'Convert to Sale'}
                     </button>
@@ -801,6 +801,7 @@ function InvoiceViewContent() {
                         <ConsignmentConversionModal
                             isOpen={true}
                             items={invoice.data.items}
+                            initialSelectedIds={returnItems}
                             onClose={() => setShowReturnModal(false)}
                             onConvert={async (ids: string[], note: string) => {
                                 setReturnItems(ids);
