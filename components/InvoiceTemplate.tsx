@@ -392,7 +392,7 @@ export default function InvoiceTemplate({
                           {/* Remaining Inventory = Total - Sold - Returned */}
                           <tr style={{ fontWeight: 'bold', borderTop: '1px solid #334155' }}>
                             <td className={styles.totalLabel}>REMAINING INVENTORY:</td>
-                            <td className={styles.totalValue}>{formatCurrency(calculations.totalDue - calculations.soldAmount - calculations.returnedAmount - (calculations.totalPaid || 0))}</td>
+                            <td className={styles.totalValue}>{formatCurrency(calculations.totalDue - calculations.returnedAmount - (calculations.totalPaid || 0))}</td>
                           </tr>
 
                           {calculations.soldAmount > 0 && (
