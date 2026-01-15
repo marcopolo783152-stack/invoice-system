@@ -30,6 +30,7 @@ export interface InvoiceItem {
   image?: string; // Base64 encoded image
   // Item visibility/status
   sold?: boolean; // New: track if item in consignment is sold
+  soldDate?: string; // Date when item was sold
   // Wash/Repair specific
   serviceType?: {
     wash: boolean;

@@ -54,18 +54,18 @@ function ConsignmentConversionModal({ isOpen, items, onClose, onConvert }: { isO
                             <label key={item.id} style={{ display: 'flex', gap: 12, padding: 12, borderBottom: '1px solid #f1f5f9', cursor: item.returned ? 'default' : 'pointer', background: item.returned ? '#f8fafc' : 'white' }}>
                                 <input
                                     type="checkbox"
-                                    disabled={item.returned || item.sold}
+                                    disabled={item.returned && !item.sold} // Only disable if returned (but not sold) - we want to allow un-selling
                                     checked={selectedIds.includes(item.id)}
                                     onChange={(e) => {
                                         if (e.target.checked) setSelectedIds([...selectedIds, item.id]);
                                         else setSelectedIds(selectedIds.filter(id => id !== item.id));
                                     }}
                                 />
-                                <div style={{ opacity: item.returned ? 0.6 : 1 }}>
+                                <div style={{ opacity: item.returned && !item.sold ? 0.6 : 1 }}>
                                     <div style={{ fontWeight: 600 }}>{item.sku}</div>
                                     <div style={{ fontSize: 13, color: '#64748b' }}>{item.description}</div>
-                                    {item.returned && <div style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Already Returned</div>}
-                                    {item.sold && <div style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Already Sold</div>}
+                                    {item.returned && !item.sold && <div style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Already Returned</div>}
+                                    {item.sold && <div style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Sold (Uncheck to Undo)</div>}
                                 </div>
                             </label>
                         ))
@@ -300,7 +300,13 @@ function InvoiceViewContent() {
     const handleConvertClick = () => {
         setIsConverting(true);
         setShowReturnModal(true);
-        setReturnItems([]);
+        if (invoice) {
+            // Pre-select items that are already sold so they can be deselected
+            const soldIds = invoice.data.items.filter(i => i.sold).map(i => i.id);
+            setReturnItems(soldIds);
+        } else {
+            setReturnItems([]);
+        }
         setReturnNote('Converted to Sale');
     };
 
@@ -321,9 +327,22 @@ function InvoiceViewContent() {
         try {
             const updatedItems = invoice.data.items.map(item => {
                 if (isConverting) {
-                    // Logic for converting to sale: ONLY touch selected items
+                    // Logic for converting to sale: 
+                    // 1. If ID is in list, MARK AS SOLD
+                    // 2. If ID is NOT in list, but WAS sold, MARK AS UNSOLD (Undo)
+
                     if (itemsIds.includes(item.id)) {
-                        return { ...item, sold: true, soldDate: new Date().toISOString(), returnNote: note };
+                        // Mark as sold (or update note)
+                        return { ...item, sold: true, soldDate: item.soldDate || new Date().toISOString(), returnNote: note };
+                    } else if (item.sold) {
+                        // Was sold, but now deselected -> UNSOLD
+                        const isConvertNote = item.returnNote === 'Converted to Sale';
+                        return {
+                            ...item,
+                            sold: false,
+                            soldDate: undefined,
+                            returnNote: isConvertNote ? undefined : item.returnNote
+                        };
                     }
                     return item;
                 } else {
@@ -536,44 +555,8 @@ function InvoiceViewContent() {
         }
     };
 
-    const handleUndoConversion = async () => {
-        if (!invoice) return;
-        const soldItems = invoice.data.items.filter(i => i.sold);
-        if (soldItems.length === 0) return;
+    // deleted handleUndoConversion
 
-        if (!confirm(`Undo "Sold" status for ${soldItems.length} items? \n\nThis will revert them to Consignment status.`)) return;
-
-        try {
-            const updatedItems = invoice.data.items.map(item => {
-                if (item.sold) {
-                    const isConvertNote = item.returnNote === 'Converted to Sale';
-                    return {
-                        ...item,
-                        sold: false,
-                        soldDate: undefined,
-                        returnNote: isConvertNote ? undefined : item.returnNote // Only clear note if it was the auto-generated one
-                    };
-                }
-                return item;
-            });
-
-            const updatedInvoice = {
-                ...invoice,
-                data: {
-                    ...invoice.data,
-                    items: updatedItems,
-                },
-                updatedAt: new Date().toISOString()
-            };
-
-            await saveInvoice(updatedInvoice.data, invoice.id);
-            await loadInvoice(invoice.id);
-            alert('Undid sale conversion successfully.');
-        } catch (error) {
-            console.error('Failed to undo conversion:', error);
-            alert('Failed to undo conversion.');
-        }
-    };
 
     if (loading) return <div style={{ padding: 40 }}>Loading...</div>;
 
@@ -654,18 +637,6 @@ function InvoiceViewContent() {
                                         }}
                                     >
                                         <Undo size={18} /> Convert to Sale
-                                    </button>
-                                )}
-                                {invoice.data.documentType === 'CONSIGNMENT' && invoice.data.items.some(i => i.sold) && (
-                                    <button
-                                        onClick={handleUndoConversion}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: 8,
-                                            padding: '10px 20px', background: '#fff1f2', color: '#be123c',
-                                            border: '1px solid #fda4af', borderRadius: 8, fontWeight: 500, cursor: 'pointer',
-                                        }}
-                                    >
-                                        <RotateCcw size={18} /> Undo Sale
                                     </button>
                                 )}
                                 {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && (
