@@ -356,8 +356,9 @@ function InvoiceViewContent() {
 
             if (isConverting) {
                 // Get the items to sell
-                const itemsToSell = invoice.data.items.filter(i => itemsIds.includes(i.id));
+                // const itemsToSell = invoice.data.items.filter(i => itemsIds.includes(i.id));
                 // Save to session for new invoice
+                /*
                 const itemsForNewInvoice = itemsToSell.map(item => ({
                     ...item,
                     id: Math.random().toString(36).substr(2, 9), // New ID for new invoice
@@ -365,9 +366,16 @@ function InvoiceViewContent() {
                     returned: false, // Reset returned status for new sale
                     returnNote: undefined
                 }));
+
                 sessionStorage.setItem('convert_items', JSON.stringify(itemsForNewInvoice));
                 // Redirect
                 router.push('/invoices/new');
+                return true;
+                */
+
+                // RELOAD to display changes instead of redirecting
+                await loadInvoice(invoice.id);
+                setShowReturnModal(false);
                 return true;
             }
 
@@ -528,6 +536,45 @@ function InvoiceViewContent() {
         }
     };
 
+    const handleUndoConversion = async () => {
+        if (!invoice) return;
+        const soldItems = invoice.data.items.filter(i => i.sold);
+        if (soldItems.length === 0) return;
+
+        if (!confirm(`Undo "Sold" status for ${soldItems.length} items? \n\nThis will revert them to Consignment status.`)) return;
+
+        try {
+            const updatedItems = invoice.data.items.map(item => {
+                if (item.sold) {
+                    const isConvertNote = item.returnNote === 'Converted to Sale';
+                    return {
+                        ...item,
+                        sold: false,
+                        soldDate: undefined,
+                        returnNote: isConvertNote ? undefined : item.returnNote // Only clear note if it was the auto-generated one
+                    };
+                }
+                return item;
+            });
+
+            const updatedInvoice = {
+                ...invoice,
+                data: {
+                    ...invoice.data,
+                    items: updatedItems,
+                },
+                updatedAt: new Date().toISOString()
+            };
+
+            await saveInvoice(updatedInvoice.data, invoice.id);
+            await loadInvoice(invoice.id);
+            alert('Undid sale conversion successfully.');
+        } catch (error) {
+            console.error('Failed to undo conversion:', error);
+            alert('Failed to undo conversion.');
+        }
+    };
+
     if (loading) return <div style={{ padding: 40 }}>Loading...</div>;
 
     if (!invoice || !calculations) {
@@ -607,6 +654,18 @@ function InvoiceViewContent() {
                                         }}
                                     >
                                         <Undo size={18} /> Convert to Sale
+                                    </button>
+                                )}
+                                {invoice.data.documentType === 'CONSIGNMENT' && invoice.data.items.some(i => i.sold) && (
+                                    <button
+                                        onClick={handleUndoConversion}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8,
+                                            padding: '10px 20px', background: '#fff1f2', color: '#be123c',
+                                            border: '1px solid #fda4af', borderRadius: 8, fontWeight: 500, cursor: 'pointer',
+                                        }}
+                                    >
+                                        <RotateCcw size={18} /> Undo Sale
                                     </button>
                                 )}
                                 {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && (
