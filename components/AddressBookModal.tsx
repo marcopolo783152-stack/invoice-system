@@ -264,6 +264,14 @@ export default function AddressBookModal({ isOpen, onClose }: AddressBookModalPr
                 </div>
             </div>
 
+            {selectedCustomerForHistory && (
+                <CustomerHistoryModal
+                    isOpen={!!selectedCustomerForHistory}
+                    customer={selectedCustomerForHistory}
+                    onClose={() => setSelectedCustomerForHistory(null)}
+                />
+            )}
+
             <style jsx>{`
                 @keyframes modalEnter {
                     from { transform: scale(0.95); opacity: 0; }

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, FileText, Calendar, DollarSign, ExternalLink, ArrowRight } from 'lucide-react';
 import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { Customer } from '@/lib/customer-storage';
-import { formatCurrency } from '@/lib/calculations';
+import { formatCurrency, calculateInvoice } from '@/lib/calculations';
 import Link from 'next/link';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
 
@@ -150,7 +150,7 @@ export default function CustomerHistoryModal({ isOpen, onClose, customer }: Cust
                                             </span>
                                         </td>
                                         <td style={{ padding: '16px 24px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
-                                            {formatCurrency(inv.data.totalDue)}
+                                            {formatCurrency(calculateInvoice(inv.data).totalDue)}
                                         </td>
                                         <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                                             <Link
