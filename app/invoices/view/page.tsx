@@ -16,8 +16,6 @@ import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
 import { prepareInvoiceForEmail } from '@/lib/email-service';
 import EmailModal from '@/components/EmailModal';
 import PaymentModal from '@/components/PaymentModal';
-import AdditionalChargeModal from '@/components/AdditionalChargeModal';
-import AdditionalChargeModal from '@/components/AdditionalChargeModal';
 import { InvoiceData } from '@/lib/calculations';
 import CustomerHistoryModal from '@/components/CustomerHistoryModal';
 import { MoreHorizontal, History } from 'lucide-react'; // Import icons
