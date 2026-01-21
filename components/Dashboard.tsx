@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { DollarSign, FileText, TrendingUp, Users, Printer, Search } from 'lucide-react';
+import { DollarSign, FileText, TrendingUp, Users, Printer, Search, Calculator } from 'lucide-react';
 import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import Link from 'next/link';
 import Login from './Login';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
+import RugCalculatorModal from './RugCalculatorModal';
 
 type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
@@ -156,6 +157,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [isRugCalcOpen, setIsRugCalcOpen] = useState(false);
 
     useEffect(() => {
         // Authenticate
@@ -306,6 +308,7 @@ export default function Dashboard() {
 
     return (
         <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
+            <RugCalculatorModal isOpen={isRugCalcOpen} onClose={() => setIsRugCalcOpen(false)} />
             <header style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -712,6 +715,19 @@ export default function Dashboard() {
                         <Link href="/invoices/new" className="luxury-button" style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
                             Start New Invoice
                         </Link>
+                    </div>
+
+                    {/* Tools Widget */}
+                    <div className="luxury-card" style={{ padding: 32 }}>
+                        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', margin: 0, marginBottom: 20 }}>Tools</h2>
+                        <button
+                            onClick={() => setIsRugCalcOpen(true)}
+                            className="luxury-button"
+                            style={{ width: '100%', justifyContent: 'center', padding: '12px', background: 'var(--bg-slate)', color: 'var(--text-main)', border: '1px solid var(--surface-border)' }}
+                        >
+                            <Calculator size={18} style={{ marginRight: 8 }} />
+                            Rug Size Calculator
+                        </button>
                     </div>
                 </div>
             </div>
