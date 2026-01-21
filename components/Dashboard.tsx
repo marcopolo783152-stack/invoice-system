@@ -401,6 +401,15 @@ export default function Dashboard() {
                         ))}
                     </div>
 
+                    <button
+                        onClick={() => setIsRugCalcOpen(true)}
+                        className="luxury-button"
+                        style={{ padding: '10px 20px', background: 'var(--bg-nebula)', color: 'var(--text-main)', border: '1px solid var(--surface-border)' }}
+                    >
+                        <Calculator size={18} style={{ marginRight: 8 }} />
+                        Rug Calc
+                    </button>
+
                     <Link
                         href="/inventory"
                         className="luxury-button"
@@ -718,21 +727,11 @@ export default function Dashboard() {
                     </div>
 
                     {/* Tools Widget */}
-                    <div className="luxury-card" style={{ padding: 32 }}>
-                        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', margin: 0, marginBottom: 20 }}>Tools</h2>
-                        <button
-                            onClick={() => setIsRugCalcOpen(true)}
-                            className="luxury-button"
-                            style={{ width: '100%', justifyContent: 'center', padding: '12px', background: 'var(--bg-slate)', color: 'var(--text-main)', border: '1px solid var(--surface-border)' }}
-                        >
-                            <Calculator size={18} style={{ marginRight: 8 }} />
-                            Rug Size Calculator
-                        </button>
-                    </div>
                 </div>
             </div>
-
         </div>
+
+
     );
 }
 
