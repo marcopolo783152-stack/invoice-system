@@ -160,7 +160,25 @@ export default function OutstandingPageClient() {
                                                                 <td style={{ padding: '14px 16px', color: '#0284c7', fontWeight: 700 }}>{inv.invoiceNumber}</td>
                                                                 <td style={{ padding: '14px 16px', color: '#334155' }}>{inv.date}</td>
                                                                 <td style={{ padding: '14px 16px', color: '#dc2626', fontWeight: 700, textAlign: 'right' }}>{formatCurrency(inv.balanceDue)}</td>
-                                                                <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                                                                <td style={{ padding: '14px 16px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                                    <Link
+                                                                        href={`/invoices/view?id=${inv.id}`}
+                                                                        style={{
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '6px',
+                                                                            padding: '6px 12px',
+                                                                            backgroundColor: '#f8fafc',
+                                                                            color: '#475569',
+                                                                            borderRadius: '6px',
+                                                                            textDecoration: 'none',
+                                                                            fontWeight: 600,
+                                                                            fontSize: '13px',
+                                                                            border: '1px solid #e2e8f0'
+                                                                        }}
+                                                                    >
+                                                                        View <Search size={14} />
+                                                                    </Link>
                                                                     <Link
                                                                         href={`/invoices/new?edit=${inv.id}`}
                                                                         style={{
