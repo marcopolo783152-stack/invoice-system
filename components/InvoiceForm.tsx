@@ -425,6 +425,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     }
 
     const invoiceData: InvoiceData & { servedBy?: string } = {
+      ...initialData, // Preserve existing fields like payments, returned, etc.
       documentType,
       invoiceNumber,
       date,
@@ -433,6 +434,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       items,
       mode,
       discountPercentage: (mode.startsWith('retail') || mode === 'wash') ? discountPercentage : undefined,
+      downpayment, // Ensure downpayment is included
       additionalCharges,
       notes,
       signature,
@@ -1372,6 +1374,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           onClick={() => {
             if (confirm('Save this invoice as a Draft?')) {
               const data: InvoiceData = {
+                ...initialData, // Preserve existing fields like payments
                 invoiceNumber, date, terms, soldTo, items, mode, documentType, notes,
                 discountPercentage: discountPercentage,
                 signature, servedBy,
