@@ -10,7 +10,6 @@ import { exportAddressBook, getAllInvoices, getOutstandingBalances } from '@/lib
 import AddressBookModal from './AddressBookModal';
 import { BackupModal } from './BackupModal';
 import ExportPreviewModal from './ExportPreviewModal';
-import OutstandingBalancesModal from './OutstandingBalancesModal';
 import { formatCurrency } from '@/lib/calculations';
 
 export default function Sidebar({
@@ -49,7 +48,6 @@ export default function Sidebar({
 
 
     const [showBackupModal, setShowBackupModal] = useState(false);
-    const [showOutstandingModal, setShowOutstandingModal] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
     const [outstandingBalances, setOutstandingBalances] = useState<{ name: string; balance: number; phone: string }[]>([]);
 
@@ -117,7 +115,7 @@ export default function Sidebar({
         { label: 'Backup', icon: isBackingUp ? RefreshCw : DatabaseBackup, type: 'button' as const, onClick: handleBackupClick, className: isBackingUp ? styles.spin : '' },
         { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
         { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
-        { label: 'Outstanding', icon: Users, type: 'button' as const, onClick: () => setShowOutstandingModal(true), badge: outstandingBalances.length > 0 ? outstandingBalances.length : undefined },
+        { label: 'Outstanding', href: '/outstanding', icon: Users, badge: outstandingBalances.length > 0 ? outstandingBalances.length : undefined },
         { label: 'Reports', href: '/reports', icon: BarChart },
         { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
         { label: 'Settings', href: '/settings', icon: Settings },
@@ -249,12 +247,6 @@ export default function Sidebar({
                     isWeb={typeof window !== 'undefined' && !(window as any).electron}
                 />
             )}
-
-            <OutstandingBalancesModal
-                isOpen={showOutstandingModal}
-                onClose={() => setShowOutstandingModal(false)}
-                balances={outstandingBalances as any}
-            />
         </div>
     );
 }
