@@ -6,10 +6,11 @@ import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup, RefreshCw } from 'lucide-react';
 import styles from './Sidebar.module.css';
-import { exportAddressBook, getAllInvoices } from '@/lib/invoice-storage';
+import { exportAddressBook, getAllInvoices, getOutstandingBalances } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
 import { BackupModal } from './BackupModal';
 import ExportPreviewModal from './ExportPreviewModal';
+import { formatCurrency } from '@/lib/calculations';
 
 export default function Sidebar({
     user,
@@ -48,6 +49,7 @@ export default function Sidebar({
 
     const [showBackupModal, setShowBackupModal] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
+    const [outstandingBalances, setOutstandingBalances] = useState<{ name: string; balance: number; phone: string }[]>([]);
 
     React.useEffect(() => {
         const loadCounts = async () => {
@@ -62,6 +64,10 @@ export default function Sidebar({
                 return diffDays <= 2;
             }).length;
             setNotificationCount(count);
+
+            // Load outstanding balances
+            const balances = await getOutstandingBalances();
+            setOutstandingBalances(balances);
         };
         loadCounts();
         const interval = setInterval(loadCounts, 60000); // Check every minute
@@ -198,6 +204,53 @@ export default function Sidebar({
                     );
                 })}
             </nav>
+
+            {/* Outstanding Balances Section */}
+            {!isCollapsed && outstandingBalances.length > 0 && (
+                <div style={{
+                    marginTop: '20px',
+                    padding: '0 16px',
+                    borderTop: '1px solid rgba(0,0,0,0.05)',
+                    paddingTop: '16px'
+                }}>
+                    <h3 style={{
+                        fontSize: '11px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: '#64748b',
+                        marginBottom: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}>
+                        <AlertTriangle size={14} color="#ef4444" />
+                        Outstanding Balances
+                    </h3>
+                    <div style={{
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                    }}>
+                        {outstandingBalances.map((item, idx) => (
+                            <div key={idx} style={{
+                                background: 'white',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid #f1f5f9',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                            }}>
+                                <div style={{ fontWeight: 600, fontSize: '13px', color: '#1e293b' }}>{item.name}</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                                    <span style={{ fontSize: '11px', color: '#64748b' }}>{item.phone}</span>
+                                    <span style={{ fontWeight: 700, fontSize: '13px', color: '#dc2626' }}>{formatCurrency(item.balance)}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className={styles.footer}>
                 {user && (

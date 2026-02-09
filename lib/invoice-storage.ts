@@ -1033,3 +1033,36 @@ export async function diagnoseAndSync(): Promise<string> {
     return `Sync failed: ${error.message}`;
   }
 }
+
+/**
+ * Get all customers with outstanding balances
+ */
+export async function getOutstandingBalances(): Promise<{ name: string; balance: number; phone: string }[]> {
+  const invoices = await getAllInvoices();
+  const balances: Record<string, { name: string; balance: number; phone: string }> = {};
+
+  invoices.forEach(inv => {
+    const d = inv.data;
+    const calc = calculateInvoice(d);
+
+    // Check if there is a meaningful balance
+    if (calc.balanceDue > 0.01) {
+      const name = d.soldTo.name;
+      const phone = d.soldTo.phone;
+      const key = `${name.trim().toLowerCase()}|${phone.trim()}`;
+
+      if (!balances[key]) {
+        balances[key] = {
+          name,
+          phone,
+          balance: 0
+        };
+      }
+      balances[key].balance += calc.balanceDue;
+    }
+  });
+
+  return Object.values(balances)
+    .filter(b => b.balance > 0.01)
+    .sort((a, b) => b.balance - a.balance);
+}

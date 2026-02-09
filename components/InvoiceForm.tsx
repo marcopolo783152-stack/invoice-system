@@ -205,6 +205,36 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     }
   }, [documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, servedBy, discountPercentage, additionalCharges, initialData]);
 
+  // AUTOMATIC TERMS UPDATE BASED ON BALANCE
+  useEffect(() => {
+    // We only want to auto-update if terms is 'Paid' or 'Outstanding' (or empty)
+    // to avoid overwriting specific user terms like 'Net 30' unless it's just a status change
+    const isStandardStatus = !terms || terms === 'Paid' || terms === 'Outstanding' || terms === 'Due on Receipt';
+
+    if (isStandardStatus) {
+      const calc = calculateInvoice({
+        items,
+        mode: mode as InvoiceMode,
+        documentType,
+        invoiceNumber: '',
+        date: '',
+        terms: '',
+        soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' },
+        discountPercentage,
+        additionalCharges,
+        downpayment,
+        payments: initialData?.payments || [] // Use existing payments from editing
+      });
+
+      const hasBalance = calc.balanceDue > 0.01; // Small threshold for floating point
+      const newTerms = hasBalance ? 'Outstanding' : 'Paid';
+
+      if (terms !== newTerms) {
+        setTerms(newTerms);
+      }
+    }
+  }, [items, mode, documentType, discountPercentage, additionalCharges, downpayment, initialData?.payments]);
+
   // Resume Action
   const handleResumeAutoSave = () => {
     try {
