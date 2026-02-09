@@ -1037,9 +1037,19 @@ export async function diagnoseAndSync(): Promise<string> {
 /**
  * Get all customers with outstanding balances
  */
-export async function getOutstandingBalances(): Promise<{ name: string; balance: number; phone: string }[]> {
+export async function getOutstandingBalances(): Promise<{
+  name: string;
+  balance: number;
+  phone: string;
+  invoices: { id: string; invoiceNumber: string; balanceDue: number; date: string }[]
+}[]> {
   const invoices = await getAllInvoices();
-  const balances: Record<string, { name: string; balance: number; phone: string }> = {};
+  const balances: Record<string, {
+    name: string;
+    balance: number;
+    phone: string;
+    invoices: { id: string; invoiceNumber: string; balanceDue: number; date: string }[]
+  }> = {};
 
   invoices.forEach(inv => {
     const d = inv.data;
@@ -1055,10 +1065,17 @@ export async function getOutstandingBalances(): Promise<{ name: string; balance:
         balances[key] = {
           name,
           phone,
-          balance: 0
+          balance: 0,
+          invoices: []
         };
       }
       balances[key].balance += calc.balanceDue;
+      balances[key].invoices.push({
+        id: inv.id,
+        invoiceNumber: d.invoiceNumber,
+        balanceDue: calc.balanceDue,
+        date: d.date
+      });
     }
   });
 

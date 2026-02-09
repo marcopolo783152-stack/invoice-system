@@ -10,6 +10,7 @@ import { exportAddressBook, getAllInvoices, getOutstandingBalances } from '@/lib
 import AddressBookModal from './AddressBookModal';
 import { BackupModal } from './BackupModal';
 import ExportPreviewModal from './ExportPreviewModal';
+import OutstandingBalancesModal from './OutstandingBalancesModal';
 import { formatCurrency } from '@/lib/calculations';
 
 export default function Sidebar({
@@ -48,6 +49,7 @@ export default function Sidebar({
 
 
     const [showBackupModal, setShowBackupModal] = useState(false);
+    const [showOutstandingModal, setShowOutstandingModal] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
     const [outstandingBalances, setOutstandingBalances] = useState<{ name: string; balance: number; phone: string }[]>([]);
 
@@ -115,6 +117,7 @@ export default function Sidebar({
         { label: 'Backup', icon: isBackingUp ? RefreshCw : DatabaseBackup, type: 'button' as const, onClick: handleBackupClick, className: isBackingUp ? styles.spin : '' },
         { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
         { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
+        { label: 'Outstanding', icon: Users, type: 'button' as const, onClick: () => setShowOutstandingModal(true), badge: outstandingBalances.length > 0 ? outstandingBalances.length : undefined },
         { label: 'Reports', href: '/reports', icon: BarChart },
         { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
         { label: 'Settings', href: '/settings', icon: Settings },
@@ -205,53 +208,6 @@ export default function Sidebar({
                 })}
             </nav>
 
-            {/* Outstanding Balances Section */}
-            {!isCollapsed && outstandingBalances.length > 0 && (
-                <div style={{
-                    marginTop: '20px',
-                    padding: '0 16px',
-                    borderTop: '1px solid rgba(0,0,0,0.05)',
-                    paddingTop: '16px'
-                }}>
-                    <h3 style={{
-                        fontSize: '11px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        color: '#64748b',
-                        marginBottom: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                    }}>
-                        <AlertTriangle size={14} color="#ef4444" />
-                        Outstanding Balances
-                    </h3>
-                    <div style={{
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px'
-                    }}>
-                        {outstandingBalances.map((item, idx) => (
-                            <div key={idx} style={{
-                                background: 'white',
-                                padding: '8px 12px',
-                                borderRadius: '8px',
-                                border: '1px solid #f1f5f9',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
-                            }}>
-                                <div style={{ fontWeight: 600, fontSize: '13px', color: '#1e293b' }}>{item.name}</div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
-                                    <span style={{ fontSize: '11px', color: '#64748b' }}>{item.phone}</span>
-                                    <span style={{ fontWeight: 700, fontSize: '13px', color: '#dc2626' }}>{formatCurrency(item.balance)}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
             <div className={styles.footer}>
                 {user && (
                     <div className={styles.user}>
@@ -293,6 +249,12 @@ export default function Sidebar({
                     isWeb={typeof window !== 'undefined' && !(window as any).electron}
                 />
             )}
+
+            <OutstandingBalancesModal
+                isOpen={showOutstandingModal}
+                onClose={() => setShowOutstandingModal(false)}
+                balances={outstandingBalances as any}
+            />
         </div>
     );
 }
