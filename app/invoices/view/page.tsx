@@ -615,7 +615,10 @@ function InvoiceViewContent() {
                                         fontWeight: 600,
                                         letterSpacing: '0.02em'
                                     }}>
-                                        {invoice.data.documentType || 'INVOICE'}
+                                        {invoice.data.documentType === 'CONSIGNMENT' ? 'CONSIGNMENT OUT' :
+                                            (invoice.data.documentType === 'WASH' || invoice.data.mode === 'wash') ? 'WASH/REPAIR SERVICE' :
+                                                invoice.data.mode.startsWith('retail') ? 'RETAIL' :
+                                                    invoice.data.mode.startsWith('wholesale') ? 'WHOLESALE' : 'INVOICE'}
                                     </span>
                                 </h1>
                                 <p style={{ color: '#64748b', marginTop: 4 }}>Created on {formatDateMMDDYYYY(invoice.createdAt)}</p>

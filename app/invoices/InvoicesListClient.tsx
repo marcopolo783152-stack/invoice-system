@@ -221,12 +221,12 @@ function InvoicesListContent() {
         if (isReturned) {
             statuses.push({ bg: 'rgba(244, 63, 94, 0.1)', text: 'var(--accent-rose)', label: 'Returned' });
         } else if (inv.data?.documentType === 'CONSIGNMENT') {
-            statuses.push({ bg: 'rgba(168, 85, 247, 0.1)', text: 'var(--accent-neon)', label: 'Consignment' });
-        } else if (inv.data?.documentType === 'WASH') {
+            statuses.push({ bg: 'rgba(168, 85, 247, 0.1)', text: 'var(--accent-neon)', label: 'Consignment Out' });
+        } else if (inv.data?.documentType === 'WASH' || inv.data?.mode === 'wash') {
             const washStatus = inv.data?.status || 'washing';
             if (washStatus === 'ready') statuses.push({ bg: 'rgba(16, 185, 129, 0.1)', text: 'var(--accent-emerald)', label: 'Ready' });
             else if (washStatus === 'picked_up') statuses.push({ bg: 'rgba(148, 163, 184, 0.1)', text: 'var(--text-muted)', label: 'Picked Up' });
-            else statuses.push({ bg: 'rgba(34, 211, 238, 0.1)', text: 'var(--accent-cyber)', label: 'Washing/Repair' });
+            else statuses.push({ bg: 'rgba(34, 211, 238, 0.1)', text: 'var(--accent-cyber)', label: 'Wash/Repair Service' });
 
             // 1b. Pickup Date Status
             if (inv.data?.pickupDate) {
@@ -252,8 +252,10 @@ function InvoicesListContent() {
                     label: `Due: ${formatDateMMDDYYYY(inv.data.pickupDate)}`
                 });
             }
+        } else if (inv.data?.mode?.startsWith('wholesale')) {
+            statuses.push({ bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--accent-royal)', label: 'Wholesale' });
         } else {
-            statuses.push({ bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--accent-royal)', label: 'Sale' });
+            statuses.push({ bg: 'rgba(99, 102, 241, 0.1)', text: 'var(--accent-royal)', label: 'Retail' });
         }
 
         // 2. Payment Status (Add "Paid" label if applicable)
