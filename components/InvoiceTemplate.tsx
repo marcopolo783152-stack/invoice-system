@@ -67,55 +67,58 @@ export default function InvoiceTemplate({
   // We no longer rely on a global isPerSqFt flag for the whole invoice
 
   // PAGINATION LOGIC
-  const ITEMS_PER_PAGE = 20; // Default items per page
+  // PAGINATION LOGIC (Weight-based to handle images)
+  const MAX_WEIGHT_PER_PAGE = 22; // Total "height" units allowed per page
   const items = calculations.items;
 
-  // Calculate total pages
-  let totalPages = Math.ceil(items.length / ITEMS_PER_PAGE) || 1;
+  // Define item weights: images take much more vertical space
+  const getItemWeight = (item: any) => (item.image ? 4.5 : 1);
 
-  // Check if the last page is "full" (more than 12 items).
-  // If so, the footer (notes + totals + signature) might get cut off or overflow.
-  // In that case, we add an EXTRA page just for the footer.
-  // 12 items leave enough room for a moderate footer. >12 risks cutoff on strict Letter size.
-  const itemsOnLastPage = items.length % ITEMS_PER_PAGE;
-
-  // Calculate footer "height" factor
+  // Footer weight factor
   const hasSubstantialNotes = (data.notes || '').length > 200;
   const hasManyPayments = (data.payments || []).length > 3;
   const hasAdditionalCharges = (data.additionalCharges || []).length > 2;
   const hasSignature = !!(data.signature || data.pickupSignature);
+  const footerWeight = (hasSubstantialNotes || hasManyPayments || hasAdditionalCharges || hasSignature) ? 10 : 6;
 
-  // Base threshold for items on the last page before forcing a new page for the footer.
-  // Default was 12, which is risky for Letter size with notes.
-  // We reduce this to 10 normally, and 7 if there are many footer elements.
-  const footerThreshold = (hasSubstantialNotes || hasManyPayments || hasAdditionalCharges || hasSignature) ? 7 : 10;
+  // Group items into pages
+  const pagesData: any[][] = [];
+  let currentPageItems: any[] = [];
+  let currentWeight = 0;
 
-  // Force a new page if the last page is exactly full (0) or exceeds our safe threshold.
-  const needsFooterPage = itemsOnLastPage === 0 || itemsOnLastPage > footerThreshold;
+  items.forEach((item) => {
+    const weight = getItemWeight(item);
+    if (currentWeight + weight > MAX_WEIGHT_PER_PAGE) {
+      pagesData.push(currentPageItems);
+      currentPageItems = [item];
+      currentWeight = weight;
+    } else {
+      currentPageItems.push(item);
+      currentWeight += weight;
+    }
+  });
 
-  if (needsFooterPage) {
-    totalPages += 1;
+  // Add the last set of items
+  if (currentPageItems.length > 0 || pagesData.length === 0) {
+    pagesData.push(currentPageItems);
+    // Track weight of the very last page to see if footer fits
+  } else {
+    currentWeight = 0;
   }
 
-  // Create array of page indices [0, 1, 2...]
-  const pages = Array.from({ length: totalPages }, (_, i) => i);
+  // Check if we need a dedicated page for the footer
+  const lastPageWeight = currentWeight;
+  const needsDedicatedFooterPage = lastPageWeight + footerWeight > MAX_WEIGHT_PER_PAGE;
+
+  if (needsDedicatedFooterPage) {
+    pagesData.push([]); // Empty page just for the footer
+  }
+
+  const totalPages = pagesData.length;
 
   return (
     <>
-      {pages.map((pageIndex) => {
-        // Determine if this is the footer page
-        // If needsFooterPage is true, the last page (totalPages-1) is the footer page (no items).
-        // The items for pageIndex (if pageIndex < totalPages - 1) are normal.
-
-        let startIdx = 0;
-        let pageItems: any[] = [];
-        const isFooterPage = needsFooterPage && pageIndex === totalPages - 1;
-
-        if (!isFooterPage) {
-          startIdx = pageIndex * ITEMS_PER_PAGE;
-          pageItems = items.slice(startIdx, startIdx + ITEMS_PER_PAGE);
-        }
-
+      {pagesData.map((pageItems, pageIndex) => {
         const isLastPage = pageIndex === totalPages - 1;
 
         return (
