@@ -78,9 +78,20 @@ export default function InvoiceTemplate({
   // In that case, we add an EXTRA page just for the footer.
   // 12 items leave enough room for a moderate footer. >12 risks cutoff on strict Letter size.
   const itemsOnLastPage = items.length % ITEMS_PER_PAGE;
-  // If itemsOnLastPage is 0, it means it's exactly 20 (full page), so we definitely need a new page.
-  // If itemsOnLastPage > 12, we also force a new page.
-  const needsFooterPage = itemsOnLastPage === 0 || itemsOnLastPage > 12;
+
+  // Calculate footer "height" factor
+  const hasSubstantialNotes = (data.notes || '').length > 200;
+  const hasManyPayments = (data.payments || []).length > 3;
+  const hasAdditionalCharges = (data.additionalCharges || []).length > 2;
+  const hasSignature = !!(data.signature || data.pickupSignature);
+
+  // Base threshold for items on the last page before forcing a new page for the footer.
+  // Default was 12, which is risky for Letter size with notes.
+  // We reduce this to 10 normally, and 7 if there are many footer elements.
+  const footerThreshold = (hasSubstantialNotes || hasManyPayments || hasAdditionalCharges || hasSignature) ? 7 : 10;
+
+  // Force a new page if the last page is exactly full (0) or exceeds our safe threshold.
+  const needsFooterPage = itemsOnLastPage === 0 || itemsOnLastPage > footerThreshold;
 
   if (needsFooterPage) {
     totalPages += 1;
