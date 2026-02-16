@@ -21,10 +21,11 @@ interface AddressAutocompleteProps {
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 /**
- * Bulletproof Address Autocomplete
+ * STATE-ISOLATED ADDRESS AUTOCOMPLETE
  * 
- * Synchronizes with parent state ONLY when not focused to prevent typing "locks".
- * Uses a native input for best compatibility with the Google Maps library.
+ * This version uses local state for typing and only informs the parent
+ * on blur or selection. This completely prevents the "locking" sensation
+ * caused by heavy parent re-renders.
  */
 export default function AddressAutocomplete({
     value,
@@ -34,41 +35,42 @@ export default function AddressAutocomplete({
     className = "",
     required = false
 }: AddressAutocompleteProps) {
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [status, setStatus] = useState<string>('initializing');
-    const autocompleteRef = useRef<any>(null);
-    const isFocusedRef = useRef(false);
+    // 1. Local state for what the user sees while they type
+    const [localValue, setLocalValue] = useState(value);
 
-    // Sync from parent to input - ONLY when not focused
+    // 2. Refs to handle Google Maps and avoid re-render cycles
+    const inputRef = useRef<HTMLInputElement>(null);
+    const autocompleteRef = useRef<any>(null);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Sync local state when parent value changes externally (but NOT while typing)
     useEffect(() => {
-        if (inputRef.current && !isFocusedRef.current && value !== inputRef.current.value) {
-            inputRef.current.value = value;
+        if (!document.activeElement || document.activeElement !== inputRef.current) {
+            setLocalValue(value || '');
         }
     }, [value]);
 
     useEffect(() => {
         if (!GOOGLE_MAPS_API_KEY) {
-            setStatus('error-config');
+            setError('API Key is missing');
             return;
         }
 
         let isMounted = true;
-        setStatus('loading-script');
 
         loadGoogleMapsScript(GOOGLE_MAPS_API_KEY).then(() => {
             if (!isMounted || !inputRef.current) return;
 
             setIsLoaded(true);
-            setStatus('ready');
 
             if (autocompleteRef.current) return;
 
             try {
                 // @ts-ignore
                 const google = window.google;
-                if (!google?.maps?.places) {
-                    setStatus('error-places');
+                if (!google || !google.maps || !google.maps.places) {
+                    setError('Places API not enabled');
                     return;
                 }
 
@@ -101,9 +103,7 @@ export default function AddressAutocomplete({
                         const street = `${streetNumber} ${route}`.trim();
                         const finalAddress = street || place.formatted_address || '';
 
-                        if (inputRef.current) {
-                            inputRef.current.value = finalAddress;
-                        }
+                        setLocalValue(finalAddress);
 
                         onAddressSelect({
                             street: finalAddress,
@@ -111,39 +111,22 @@ export default function AddressAutocomplete({
                             state,
                             zip
                         });
+
+                        // Tell parent about the change
                         onChange(finalAddress);
                     }
                 });
-            } catch (err: any) {
-                console.error('Google Autocomplete initialization error:', err);
-                setStatus('error-init');
+            } catch (err) {
+                console.error('Google Maps Init Error:', err);
+                setError('Initialization error');
             }
-        }).catch(() => {
-            if (isMounted) setStatus('error-load');
+        }).catch(err => {
+            console.error('Script load error:', err);
+            setError('Failed to load Google Maps');
         });
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Enter' && document.querySelector('.pac-container')) {
-                e.preventDefault();
-            }
-        };
-
-        const onFocus = () => { isFocusedRef.current = true; };
-        const onBlur = (e: any) => {
-            isFocusedRef.current = false;
-            onChange(e.target.value);
-        };
-
-        const inputEl = inputRef.current;
-        inputEl?.addEventListener('keydown', handleKeyDown);
-        inputEl?.addEventListener('focus', onFocus);
-        inputEl?.addEventListener('blur', onBlur);
 
         return () => {
             isMounted = false;
-            inputEl?.removeEventListener('keydown', handleKeyDown);
-            inputEl?.removeEventListener('focus', onFocus);
-            inputEl?.removeEventListener('blur', onBlur);
             if (autocompleteRef.current) {
                 try {
                     // @ts-ignore
@@ -153,14 +136,26 @@ export default function AddressAutocomplete({
         };
     }, []);
 
-    const getStatusText = () => {
-        switch (status) {
-            case 'loading-script': return '⏳ Connecting to Google...';
-            case 'error-config': return '❌ Configuration missing (API Key)';
-            case 'error-places': return '❌ Google Places API not enabled';
-            case 'error-load': return '❌ Failed to connect to Google (Check network)';
-            case 'ready': return '';
-            default: return '';
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setLocalValue(val);
+        // We DO NOT call onChange(val) here to prevent parent from re-rendering
+        // until the user is done or selects an address.
+    };
+
+    const handleBlur = () => {
+        // Sync to parent when user finishes typing
+        onChange(localValue);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            // Prevent Enter from submitting the form if a suggestion box is open
+            if (document.querySelector('.pac-container')) {
+                e.preventDefault();
+            }
+            // Force sync on Enter
+            onChange(localValue);
         }
     };
 
@@ -169,35 +164,26 @@ export default function AddressAutocomplete({
             <input
                 ref={inputRef}
                 type="text"
-                defaultValue={value}
-                placeholder={isLoaded ? placeholder : "Finding address search..."}
-                className={`${className} ${styles.addressInput}`}
+                value={localValue}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                placeholder={isLoaded ? placeholder : "Finding addresses..."}
+                className={className}
                 required={required}
                 autoComplete="off"
-                id="google-address-input"
                 style={{
-                    background: '#ffffff',
-                    backgroundImage: 'none',
-                    paddingRight: '35px'
+                    backgroundImage: 'none !important',
+                    background: '#ffffff'
                 }}
             />
-            {status !== 'ready' && status !== '' && (
-                <div style={{
-                    fontSize: '11px',
-                    color: status.startsWith('error') ? '#ef4444' : '#3b82f6',
-                    marginTop: '4px',
-                    fontWeight: 500
-                }}>
-                    {getStatusText()}
+            {error && (
+                <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                    {error}
                 </div>
             )}
-            {!isLoaded && status === 'loading-script' && (
-                <div style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '12px',
-                    fontSize: '14px'
-                }}>
+            {!isLoaded && !error && (
+                <div style={{ position: 'absolute', right: '10px', top: '10px', fontSize: '12px', color: '#667eea' }}>
                     ⌛
                 </div>
             )}
