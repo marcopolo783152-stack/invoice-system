@@ -21,6 +21,7 @@ const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false })
 
 import SignaturePad from './SignaturePad';
 import InventorySearch from './InventorySearch';
+import AddressAutocomplete from './AddressAutocomplete';
 import styles from './InvoiceForm.module.css';
 
 interface InvoiceFormProps {
@@ -745,14 +746,21 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       </div>
       <div className={styles.formGroup}>
         <label>Address:*</label>
-        <input
-          type="text"
+        <AddressAutocomplete
           value={soldTo.address}
-          onChange={(e) =>
-            setSoldTo({ ...soldTo, address: e.target.value })
-          }
+          onChange={(val) => setSoldTo({ ...soldTo, address: val })}
+          onAddressSelect={(details) => {
+            setSoldTo({
+              ...soldTo,
+              address: details.street,
+              city: details.city,
+              state: details.state,
+              zip: details.zip
+            });
+          }}
           required
           className={styles.input}
+          placeholder="Enter Street Address"
         />
       </div>
       <div className={styles.row}>
