@@ -70,10 +70,11 @@ export default function AddressAutocomplete({
                 }
 
                 autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
-                    types: ['address'],
-                    // REMOVED country restriction for global support
+                    // REMOVED types restriction to broaden results
                     fields: ['address_components', 'formatted_address']
                 });
+
+                console.log('✅ Google Autocomplete Initialized Successfully');
 
                 autocompleteRef.current.addListener('place_changed', () => {
                     const place = autocompleteRef.current?.getPlace();
