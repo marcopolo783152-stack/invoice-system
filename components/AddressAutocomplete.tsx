@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { loadGoogleMapsScript } from '@/lib/google-maps-loader';
+import styles from './InvoiceForm.module.css';
 
 interface AddressAutocompleteProps {
     value: string;
@@ -108,13 +109,9 @@ export default function AddressAutocomplete({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={isLoaded ? placeholder : "Loading address search..."}
-            className={className}
+            className={`${className} ${styles.addressInput}`}
             required={required}
             autoComplete="off"
-            style={{
-                backgroundImage: 'none',
-                backgroundRepeat: 'no-repeat'
-            }}
         />
     );
 }
