@@ -291,3 +291,38 @@ h6 {
     transform: rotate(360deg);
   }
 }
+
+/* Google Autocomplete UI Global Overrides */
+.pac-container {
+  z-index: 9999 !important;
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 12px !important;
+  margin-top: 4px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.pac-item {
+  padding: 10px 15px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+.pac-item:first-child {
+  border-top: none !important;
+}
+
+.pac-item-query {
+  font-size: 15px !important;
+  color: #1a1f3c !important;
+  font-weight: 600 !important;
+}
+
+.pac-matched {
+  color: #3b82f6 !important;
+}
+
+.pac-icon {
+  display: none !important;
+}
