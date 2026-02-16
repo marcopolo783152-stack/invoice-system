@@ -292,11 +292,16 @@ h6 {
   }
 }
 
-/* Google Autocomplete UI Global Overrides */
+/* Google Autocomplete UI Global Overrides - FINAL AGGRESSIVE FIX */
+input#google-address-input,
+#google-address-input,
+.pac-target-input,
+input.pac-target-input,
 .pac-container,
-.pac-container *,
-#google-address-input {
+.pac-item,
+.pac-item * {
   background-image: none !important;
+  background: none !important;
 }
 
 .pac-container {
@@ -306,6 +311,7 @@ h6 {
   margin-top: 4px !important;
   border: 1px solid #e2e8f0 !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  background-color: #ffffff !important;
 }
 
 .pac-item {
@@ -315,10 +321,11 @@ h6 {
   border-top: 1px solid #f1f5f9 !important;
   display: flex !important;
   align-items: center !important;
+  background-color: #ffffff !important;
 }
 
-.pac-item:first-child {
-  border-top: none !important;
+.pac-item:hover {
+  background-color: #f8fafc !important;
 }
 
 .pac-item-query {
@@ -336,5 +343,10 @@ h6 {
 .pac-logo,
 .hdpi .pac-logo {
   display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
   background-image: none !important;
+  background: none !important;
 }
