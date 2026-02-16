@@ -21,9 +21,11 @@ interface AddressAutocompleteProps {
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 /**
- * FINAL BULLETPROOF ADDRESS AUTOCOMPLETE
+ * UNCONTROLLED ADDRESS AUTOCOMPLETE
  * 
- * Uses total state isolation and a "Busy" ref to prevent any locking.
+ * This version uses a raw <input> that is NOT controlled by React state.
+ * This GUARANTEES that React cannot steal focus or "lock" the field while typing.
+ * Suggestions are also global (country restriction removed).
  */
 export default function AddressAutocomplete({
     value,
@@ -33,20 +35,15 @@ export default function AddressAutocomplete({
     className = "",
     required = false
 }: AddressAutocompleteProps) {
-    // 1. Fully isolated local state
-    const [localValue, setLocalValue] = useState(value);
-    const isTypingRef = useRef(false);
-
-    // 2. Refs for Google Maps
     const inputRef = useRef<HTMLInputElement>(null);
     const autocompleteRef = useRef<any>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Sync from parent ONLY if user is NOT busy with the field
+    // Sync initial value from parent on mount
     useEffect(() => {
-        if (!isTypingRef.current && value !== localValue) {
-            setLocalValue(value || '');
+        if (inputRef.current && value && !inputRef.current.value) {
+            inputRef.current.value = value;
         }
     }, [value]);
 
@@ -74,7 +71,7 @@ export default function AddressAutocomplete({
 
                 autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
                     types: ['address'],
-                    componentRestrictions: { country: 'us' },
+                    // REMOVED country restriction for global support
                     fields: ['address_components', 'formatted_address']
                 });
 
@@ -101,8 +98,9 @@ export default function AddressAutocomplete({
                         const street = `${streetNumber} ${route}`.trim();
                         const finalAddress = street || place.formatted_address || '';
 
-                        isTypingRef.current = false;
-                        setLocalValue(finalAddress);
+                        if (inputRef.current) {
+                            inputRef.current.value = finalAddress;
+                        }
 
                         onAddressSelect({
                             street: finalAddress,
@@ -125,18 +123,22 @@ export default function AddressAutocomplete({
         return () => { isMounted = false; };
     }, []);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        isTypingRef.current = true;
-        setLocalValue(e.target.value);
-    };
-
     const handleBlur = () => {
-        isTypingRef.current = false;
-        onChange(localValue);
+        if (inputRef.current) {
+            onChange(inputRef.current.value);
+        }
     };
 
-    const handleFocus = () => {
-        isTypingRef.current = true;
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            // Prevent Enter from submitting the form if a suggestion box is open
+            if (document.querySelector('.pac-container')) {
+                e.preventDefault();
+            }
+            if (inputRef.current) {
+                onChange(inputRef.current.value);
+            }
+        }
     };
 
     return (
@@ -144,18 +146,18 @@ export default function AddressAutocomplete({
             <input
                 ref={inputRef}
                 type="text"
-                value={localValue}
-                onChange={handleChange}
+                defaultValue={value}
                 onBlur={handleBlur}
-                onFocus={handleFocus}
-                placeholder={isLoaded ? placeholder : "Loading address search..."}
+                onKeyDown={handleKeyDown}
+                placeholder={isLoaded ? placeholder : "Finding addresses..."}
                 className={className}
                 required={required}
                 autoComplete="off"
                 id="google-address-input"
                 style={{
                     backgroundImage: 'none !important',
-                    background: '#ffffff'
+                    background: '#ffffff',
+                    width: '100%'
                 }}
             />
             {error && (
