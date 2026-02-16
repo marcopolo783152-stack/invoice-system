@@ -20,31 +20,33 @@ interface AddressAutocompleteProps {
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
+/**
+ * Bulletproof Address Autocomplete
+ * 
+ * Uses an uncontrolled input approach for typing to prevent 
+ * browser "locking" caused by heavy parent re-renders.
+ */
 export default function AddressAutocomplete({
     value,
     onChange,
     onAddressSelect,
-    placeholder = "Start typing address...",
+    placeholder = "Enter street address",
     className = "",
     required = false
 }: AddressAutocompleteProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [localValue, setLocalValue] = useState(value);
     const autocompleteRef = useRef<any>(null);
 
-    // Sync local value with parent value (prop) only when prop changes externally
+    // Initial value sync - only once on mount or if value changes significantly from outside
     useEffect(() => {
-        if (value !== localValue) {
-            setLocalValue(value);
+        if (inputRef.current && value !== inputRef.current.value) {
+            inputRef.current.value = value;
         }
     }, [value]);
 
     useEffect(() => {
-        if (!GOOGLE_MAPS_API_KEY) {
-            console.warn('Google Maps API Key is missing.');
-            return;
-        }
+        if (!GOOGLE_MAPS_API_KEY) return;
 
         let isMounted = true;
 
@@ -52,13 +54,12 @@ export default function AddressAutocomplete({
             if (!isMounted || !inputRef.current) return;
 
             setIsLoaded(true);
-
             if (autocompleteRef.current) return;
 
             try {
                 // @ts-ignore
                 const google = window.google;
-                if (!google || !google.maps || !google.maps.places) return;
+                if (!google?.maps?.places) return;
 
                 autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
                     types: ['address'],
@@ -68,7 +69,7 @@ export default function AddressAutocomplete({
 
                 autocompleteRef.current.addListener('place_changed', () => {
                     const place = autocompleteRef.current?.getPlace();
-                    if (place && place.address_components) {
+                    if (place?.address_components) {
                         const components = place.address_components;
 
                         let streetNumber = '';
@@ -89,32 +90,45 @@ export default function AddressAutocomplete({
                         const street = `${streetNumber} ${route}`.trim();
                         const finalAddress = street || place.formatted_address || '';
 
-                        setLocalValue(finalAddress);
+                        if (inputRef.current) {
+                            inputRef.current.value = finalAddress;
+                        }
+
                         onAddressSelect({
                             street: finalAddress,
                             city,
                             state,
                             zip
                         });
+
+                        onChange(finalAddress);
                     }
                 });
             } catch (err) {
-                console.error('Error initializing Autocomplete:', err);
+                console.error('Autocomplete initialization failed:', err);
             }
         });
 
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Prevent Enter from submitting form when selecting from autocomplete
             if (e.key === 'Enter' && document.querySelector('.pac-container')) {
-                // Prevent form submission if the user presses enter to select a suggestion
                 e.preventDefault();
             }
         };
 
-        inputRef.current?.addEventListener('keydown', handleKeyDown);
+        const handleInput = (e: any) => {
+            // Sync current typing to parent (debounced if necessary, but here we just pass it)
+            onChange(e.target.value);
+        };
+
+        const inputEl = inputRef.current;
+        inputEl?.addEventListener('keydown', handleKeyDown);
+        inputEl?.addEventListener('input', handleInput);
 
         return () => {
             isMounted = false;
-            inputRef.current?.removeEventListener('keydown', handleKeyDown);
+            inputEl?.removeEventListener('keydown', handleKeyDown);
+            inputEl?.removeEventListener('input', handleInput);
             if (autocompleteRef.current) {
                 try {
                     // @ts-ignore
@@ -124,22 +138,16 @@ export default function AddressAutocomplete({
         };
     }, []);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        setLocalValue(val);
-        onChange(val);
-    };
-
     return (
         <input
             ref={inputRef}
             type="text"
-            value={localValue}
-            onChange={handleChange}
-            placeholder={isLoaded ? placeholder : "Finding addresses..."}
+            defaultValue={value}
+            placeholder={isLoaded ? placeholder : "Loading address search..."}
             className={`${className} ${styles.addressInput}`}
             required={required}
             autoComplete="off"
+            id="google-address-input"
             style={{
                 background: '#ffffff',
                 backgroundImage: 'none'
