@@ -21,11 +21,9 @@ interface AddressAutocompleteProps {
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 /**
- * STATE-ISOLATED ADDRESS AUTOCOMPLETE
+ * FINAL BULLETPROOF ADDRESS AUTOCOMPLETE
  * 
- * This version uses local state for typing and only informs the parent
- * on blur or selection. This completely prevents the "locking" sensation
- * caused by heavy parent re-renders.
+ * Uses total state isolation and a "Busy" ref to prevent any locking.
  */
 export default function AddressAutocomplete({
     value,
@@ -35,18 +33,19 @@ export default function AddressAutocomplete({
     className = "",
     required = false
 }: AddressAutocompleteProps) {
-    // 1. Local state for what the user sees while they type
+    // 1. Fully isolated local state
     const [localValue, setLocalValue] = useState(value);
+    const isTypingRef = useRef(false);
 
-    // 2. Refs to handle Google Maps and avoid re-render cycles
+    // 2. Refs for Google Maps
     const inputRef = useRef<HTMLInputElement>(null);
     const autocompleteRef = useRef<any>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Sync local state when parent value changes externally (but NOT while typing)
+    // Sync from parent ONLY if user is NOT busy with the field
     useEffect(() => {
-        if (!document.activeElement || document.activeElement !== inputRef.current) {
+        if (!isTypingRef.current && value !== localValue) {
             setLocalValue(value || '');
         }
     }, [value]);
@@ -61,7 +60,6 @@ export default function AddressAutocomplete({
 
         loadGoogleMapsScript(GOOGLE_MAPS_API_KEY).then(() => {
             if (!isMounted || !inputRef.current) return;
-
             setIsLoaded(true);
 
             if (autocompleteRef.current) return;
@@ -69,8 +67,8 @@ export default function AddressAutocomplete({
             try {
                 // @ts-ignore
                 const google = window.google;
-                if (!google || !google.maps || !google.maps.places) {
-                    setError('Places API not enabled');
+                if (!google?.maps?.places) {
+                    setError('Places API not found');
                     return;
                 }
 
@@ -103,6 +101,7 @@ export default function AddressAutocomplete({
                         const street = `${streetNumber} ${route}`.trim();
                         const finalAddress = street || place.formatted_address || '';
 
+                        isTypingRef.current = false;
                         setLocalValue(finalAddress);
 
                         onAddressSelect({
@@ -112,51 +111,32 @@ export default function AddressAutocomplete({
                             zip
                         });
 
-                        // Tell parent about the change
                         onChange(finalAddress);
                     }
                 });
             } catch (err) {
-                console.error('Google Maps Init Error:', err);
-                setError('Initialization error');
+                console.error('Autocomplete Init Error:', err);
+                setError('Init Error');
             }
-        }).catch(err => {
-            console.error('Script load error:', err);
-            setError('Failed to load Google Maps');
+        }).catch(() => {
+            setError('Load Error');
         });
 
-        return () => {
-            isMounted = false;
-            if (autocompleteRef.current) {
-                try {
-                    // @ts-ignore
-                    window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-                } catch (e) { }
-            }
-        };
+        return () => { isMounted = false; };
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        setLocalValue(val);
-        // We DO NOT call onChange(val) here to prevent parent from re-rendering
-        // until the user is done or selects an address.
+        isTypingRef.current = true;
+        setLocalValue(e.target.value);
     };
 
     const handleBlur = () => {
-        // Sync to parent when user finishes typing
+        isTypingRef.current = false;
         onChange(localValue);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            // Prevent Enter from submitting the form if a suggestion box is open
-            if (document.querySelector('.pac-container')) {
-                e.preventDefault();
-            }
-            // Force sync on Enter
-            onChange(localValue);
-        }
+    const handleFocus = () => {
+        isTypingRef.current = true;
     };
 
     return (
@@ -167,23 +147,24 @@ export default function AddressAutocomplete({
                 value={localValue}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                onKeyDown={handleKeyDown}
-                placeholder={isLoaded ? placeholder : "Finding addresses..."}
+                onFocus={handleFocus}
+                placeholder={isLoaded ? placeholder : "Loading address search..."}
                 className={className}
                 required={required}
                 autoComplete="off"
+                id="google-address-input"
                 style={{
                     backgroundImage: 'none !important',
                     background: '#ffffff'
                 }}
             />
             {error && (
-                <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                <div style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px' }}>
                     {error}
                 </div>
             )}
             {!isLoaded && !error && (
-                <div style={{ position: 'absolute', right: '10px', top: '10px', fontSize: '12px', color: '#667eea' }}>
+                <div style={{ position: 'absolute', right: '10px', top: '12px', fontSize: '12px' }}>
                     ⌛
                 </div>
             )}
