@@ -20,6 +20,12 @@ interface AddressAutocompleteProps {
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
+/**
+ * Bulletproof Address Autocomplete
+ * 
+ * Synchronizes with parent state ONLY when not focused to prevent typing "locks".
+ * Uses a native input for best compatibility with the Google Maps library.
+ */
 export default function AddressAutocomplete({
     value,
     onChange,
@@ -30,31 +36,31 @@ export default function AddressAutocomplete({
 }: AddressAutocompleteProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [debugInfo, setDebugInfo] = useState<string>('');
+    const [status, setStatus] = useState<string>('initializing');
     const autocompleteRef = useRef<any>(null);
-    const isTypingRef = useRef(false);
+    const isFocusedRef = useRef(false);
 
-    // Initial value sync and external updates
+    // Sync from parent to input - ONLY when not focused
     useEffect(() => {
-        if (inputRef.current && !isTypingRef.current && value !== inputRef.current.value) {
+        if (inputRef.current && !isFocusedRef.current && value !== inputRef.current.value) {
             inputRef.current.value = value;
         }
     }, [value]);
 
     useEffect(() => {
         if (!GOOGLE_MAPS_API_KEY) {
-            setDebugInfo('Error: API Key missing in environment.');
+            setStatus('error-config');
             return;
         }
 
         let isMounted = true;
-        setDebugInfo('Attempting to load Google Maps...');
+        setStatus('loading-script');
 
         loadGoogleMapsScript(GOOGLE_MAPS_API_KEY).then(() => {
             if (!isMounted || !inputRef.current) return;
 
             setIsLoaded(true);
-            setDebugInfo('Google Maps loaded. Initializing search...');
+            setStatus('ready');
 
             if (autocompleteRef.current) return;
 
@@ -62,7 +68,7 @@ export default function AddressAutocomplete({
                 // @ts-ignore
                 const google = window.google;
                 if (!google?.maps?.places) {
-                    setDebugInfo('Error: Places library not found in Google script.');
+                    setStatus('error-places');
                     return;
                 }
 
@@ -74,7 +80,7 @@ export default function AddressAutocomplete({
 
                 autocompleteRef.current.addListener('place_changed', () => {
                     const place = autocompleteRef.current?.getPlace();
-                    if (place?.address_components) {
+                    if (place && place.address_components) {
                         const components = place.address_components;
 
                         let streetNumber = '';
@@ -99,7 +105,6 @@ export default function AddressAutocomplete({
                             inputRef.current.value = finalAddress;
                         }
 
-                        isTypingRef.current = false;
                         onAddressSelect({
                             street: finalAddress,
                             city,
@@ -109,14 +114,12 @@ export default function AddressAutocomplete({
                         onChange(finalAddress);
                     }
                 });
-
-                setDebugInfo('Search ready.');
             } catch (err: any) {
-                console.error('Autocomplete Error:', err);
-                setDebugInfo(`Error: ${err.message || 'Initialization failed'}`);
+                console.error('Google Autocomplete initialization error:', err);
+                setStatus('error-init');
             }
-        }).catch(err => {
-            setDebugInfo('Failed to load Google script.');
+        }).catch(() => {
+            if (isMounted) setStatus('error-load');
         });
 
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -125,29 +128,20 @@ export default function AddressAutocomplete({
             }
         };
 
-        const handleInput = (e: any) => {
-            isTypingRef.current = true;
+        const onFocus = () => { isFocusedRef.current = true; };
+        const onBlur = (e: any) => {
+            isFocusedRef.current = false;
             onChange(e.target.value);
-            // After 2 seconds of no typing, allow external sync again
-            const timeout = setTimeout(() => {
-                isTypingRef.current = false;
-            }, 2000);
-            return () => clearTimeout(timeout);
         };
-
-        const onFocus = () => { isTypingRef.current = true; };
-        const onBlur = () => { isTypingRef.current = false; };
 
         const inputEl = inputRef.current;
         inputEl?.addEventListener('keydown', handleKeyDown);
-        inputEl?.addEventListener('input', handleInput);
         inputEl?.addEventListener('focus', onFocus);
         inputEl?.addEventListener('blur', onBlur);
 
         return () => {
             isMounted = false;
             inputEl?.removeEventListener('keydown', handleKeyDown);
-            inputEl?.removeEventListener('input', handleInput);
             inputEl?.removeEventListener('focus', onFocus);
             inputEl?.removeEventListener('blur', onBlur);
             if (autocompleteRef.current) {
@@ -159,13 +153,24 @@ export default function AddressAutocomplete({
         };
     }, []);
 
+    const getStatusText = () => {
+        switch (status) {
+            case 'loading-script': return '⏳ Connecting to Google...';
+            case 'error-config': return '❌ Configuration missing (API Key)';
+            case 'error-places': return '❌ Google Places API not enabled';
+            case 'error-load': return '❌ Failed to connect to Google (Check network)';
+            case 'ready': return '';
+            default: return '';
+        }
+    };
+
     return (
-        <div style={{ position: 'relative', width: '100%' }}>
+        <div style={{ width: '100%', position: 'relative' }}>
             <input
                 ref={inputRef}
                 type="text"
                 defaultValue={value}
-                placeholder={isLoaded ? placeholder : "Loading address search..."}
+                placeholder={isLoaded ? placeholder : "Finding address search..."}
                 className={`${className} ${styles.addressInput}`}
                 required={required}
                 autoComplete="off"
@@ -173,25 +178,27 @@ export default function AddressAutocomplete({
                 style={{
                     background: '#ffffff',
                     backgroundImage: 'none',
-                    paddingRight: '30px'
+                    paddingRight: '35px'
                 }}
             />
-            {!isLoaded && (
+            {status !== 'ready' && status !== '' && (
                 <div style={{
-                    fontSize: '10px',
-                    color: '#667eea',
+                    fontSize: '11px',
+                    color: status.startsWith('error') ? '#ef4444' : '#3b82f6',
                     marginTop: '4px',
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)'
+                    fontWeight: 500
                 }}>
-                    ⌛
+                    {getStatusText()}
                 </div>
             )}
-            {debugInfo && !isLoaded && (
-                <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px' }}>
-                    {debugInfo}
+            {!isLoaded && status === 'loading-script' && (
+                <div style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '12px',
+                    fontSize: '14px'
+                }}>
+                    ⌛
                 </div>
             )}
         </div>
