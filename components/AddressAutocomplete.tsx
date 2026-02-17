@@ -172,6 +172,8 @@ export default function AddressAutocomplete({
                     const street = `${streetNumber} ${route}`.trim();
                     const finalAddress = street || place.formatted_address || '';
 
+                    console.log('📍 Selected Address Details:', { street: finalAddress, city, state, zip });
+
                     setInputValue(finalAddress);
 
                     onAddressSelect({

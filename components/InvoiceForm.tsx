@@ -98,7 +98,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [debtStats, setDebtStats] = useState<{ totalDebt: number; overdueCount: number } | null>(null);
 
   const handleCustomerNameChange = async (value: string) => {
-    setSoldTo({ ...soldTo, name: value });
+    setSoldTo(prev => ({ ...prev, name: value }));
     setDebtStats(null); // Clear debt warning when name changes
     if (value.length > 1) {
       const matches = await searchCustomers(value);
@@ -725,7 +725,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             type="email"
             value={soldTo.email || ''}
             onChange={(e) =>
-              setSoldTo({ ...soldTo, email: e.target.value })
+              setSoldTo(prev => ({ ...prev, email: e.target.value }))
             }
             placeholder="customer@example.com"
             className={styles.input}
@@ -738,7 +738,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           type="text"
           value={soldTo.companyName || ''}
           onChange={(e) =>
-            setSoldTo({ ...soldTo, companyName: e.target.value })
+            setSoldTo(prev => ({ ...prev, companyName: e.target.value }))
           }
           placeholder="Business Name"
           className={styles.input}
@@ -748,15 +748,15 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         <label>Address:*</label>
         <AddressAutocomplete
           value={soldTo.address}
-          onChange={(val) => setSoldTo({ ...soldTo, address: val })}
+          onChange={(val) => setSoldTo(prev => ({ ...prev, address: val }))}
           onAddressSelect={(details) => {
-            setSoldTo({
-              ...soldTo,
+            setSoldTo(prev => ({
+              ...prev,
               address: details.street,
               city: details.city,
               state: details.state,
               zip: details.zip
-            });
+            }));
           }}
           required
           className={styles.input}
@@ -770,7 +770,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             type="text"
             value={soldTo.city}
             onChange={(e) =>
-              setSoldTo({ ...soldTo, city: e.target.value })
+              setSoldTo(prev => ({ ...prev, city: e.target.value }))
             }
             className={styles.input}
           />
@@ -781,7 +781,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             type="text"
             value={soldTo.state}
             onChange={(e) =>
-              setSoldTo({ ...soldTo, state: e.target.value })
+              setSoldTo(prev => ({ ...prev, state: e.target.value }))
             }
             maxLength={2}
             className={styles.input}
@@ -793,7 +793,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             type="text"
             value={soldTo.zip}
             onChange={(e) =>
-              setSoldTo({ ...soldTo, zip: e.target.value })
+              setSoldTo(prev => ({ ...prev, zip: e.target.value }))
             }
             className={styles.input}
           />
