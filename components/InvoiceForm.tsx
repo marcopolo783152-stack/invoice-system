@@ -181,30 +181,6 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [skuSuggestions, setSkuSuggestions] = useState<{ [itemId: string]: InventoryItem[] }>({});
   const [showSkuSuggestions, setShowSkuSuggestions] = useState<{ [itemId: string]: boolean }>({});
 
-  // AUTO-SAVE LOGIC
-  const AUTO_SAVE_KEY = 'unsaved_invoice_data';
-  const [showAutoSavePrompt, setShowAutoSavePrompt] = useState(false);
-
-  // 1. Check for unsaved data on mount
-  useEffect(() => {
-    const savedCallback = localStorage.getItem(AUTO_SAVE_KEY);
-    if (savedCallback && !initialData) { // Only suggest resume for new invoices
-      setShowAutoSavePrompt(true);
-    }
-  }, [initialData]);
-
-  // 2. Save to localStorage on change
-  useEffect(() => {
-    if (!initialData) { // Only auto-save new invoices to avoid overwriting edits
-      const currentData = {
-        documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, discountPercentage, additionalCharges, servedBy
-      };
-      // basic validation to avoid saving empty
-      if (items.length > 0 || soldTo.name) {
-        localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(currentData));
-      }
-    }
-  }, [documentType, mode, invoiceNumber, date, terms, soldTo, items, notes, servedBy, discountPercentage, additionalCharges, initialData]);
 
   // AUTOMATIC TERMS UPDATE BASED ON BALANCE
   useEffect(() => {
@@ -236,27 +212,6 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     }
   }, [items, mode, documentType, discountPercentage, additionalCharges, downpayment, initialData?.payments]);
 
-  // Resume Action
-  const handleResumeAutoSave = () => {
-    try {
-      const raw = localStorage.getItem(AUTO_SAVE_KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        if (data.soldTo) setSoldTo(data.soldTo);
-        if (data.items) setItems(data.items);
-        if (data.notes) setNotes(data.notes);
-        // if (data.date) setDate(data.date); // Keep current date maybe?
-      }
-    } catch (e) {
-      console.error('Failed to resume auto-save', e);
-    }
-    setShowAutoSavePrompt(false);
-  };
-
-  const clearAutoSave = () => {
-    localStorage.removeItem(AUTO_SAVE_KEY);
-    setShowAutoSavePrompt(false);
-  };
 
   const handleSkuChange = async (itemId: string, value: string) => {
     handleItemChange(itemId, 'sku', value);
@@ -1407,74 +1362,12 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 32 }}>
-        <button
-          type="button"
-          onClick={() => {
-            if (confirm('Save this invoice as a Draft?')) {
-              const data: InvoiceData = {
-                ...initialData, // Preserve existing fields like payments
-                invoiceNumber, date, terms, soldTo, items, mode, documentType, notes,
-                discountPercentage: discountPercentage,
-                signature, servedBy,
-                downpayment: downpayment, // Save downpayment
-                isDraft: true // MARK AS DRAFT
-              };
-              // Clear auto-save on manual save
-              localStorage.removeItem(AUTO_SAVE_KEY);
-              onSubmit(data);
-            }
-          }}
-          style={{
-            padding: '12px 24px',
-            background: '#64748b',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 16,
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}
-        >
-          📝 Save as Draft
-        </button>
 
         <button type="submit" className={styles.submitBtn}>
           Generate Invoice
         </button>
       </div>
 
-      {/* Auto Save Resume Prompt */}
-      {
-        showAutoSavePrompt && (
-          <div style={{
-            position: 'fixed', bottom: 20, right: 20, background: '#1e293b', color: 'white',
-            padding: 16, borderRadius: 8, boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 9999,
-            display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300
-          }}>
-            <div style={{ fontWeight: 600 }}>Unsaved Invoice Found</div>
-            <div style={{ fontSize: 13, color: '#cbd5e1' }}>You have an unfinished invoice from a previous session. Do you want to resume it?</div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={handleResumeAutoSave}
-                style={{ padding: '6px 16px', background: '#3b82f6', border: 'none', borderRadius: 4, color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
-              >
-                Resume
-              </button>
-              <button
-                type="button"
-                onClick={clearAutoSave}
-                style={{ padding: '6px 16px', background: 'transparent', border: '1px solid #64748b', borderRadius: 4, color: '#e2e8f0', cursor: 'pointer', fontSize: 12 }}
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        )
-      }
 
       {/* Signature Pad Modal */}
       {/* Signature Pad Modal - REMOVED (Now Inline) */}
