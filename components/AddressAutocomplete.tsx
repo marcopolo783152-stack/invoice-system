@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { loadGoogleMapsScript } from '@/lib/google-maps-loader';
 import styles from './InvoiceForm.module.css';
 
 interface AddressAutocompleteProps {
@@ -21,11 +20,9 @@ interface AddressAutocompleteProps {
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 /**
- * UNCONTROLLED ADDRESS AUTOCOMPLETE
+ * MODERN DYNAMIC ADDRESS AUTOCOMPLETE
  * 
- * This version uses a raw <input> that is NOT controlled by React state.
- * This GUARANTEES that React cannot steal focus or "lock" the field while typing.
- * Suggestions are also global (country restriction removed).
+ * Uses the latest google.maps.importLibrary pattern for better reliability.
  */
 export default function AddressAutocomplete({
     value,
@@ -37,7 +34,7 @@ export default function AddressAutocomplete({
 }: AddressAutocompleteProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const autocompleteRef = useRef<any>(null);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [status, setStatus] = useState<string>('idle');
     const [error, setError] = useState<string | null>(null);
 
     // Sync initial value from parent on mount
@@ -49,32 +46,46 @@ export default function AddressAutocomplete({
 
     useEffect(() => {
         if (!GOOGLE_MAPS_API_KEY) {
-            setError('API Key is missing');
+            setError('API Key is missing in Environment Variables');
             return;
         }
 
         let isMounted = true;
+        setStatus('loading');
 
-        loadGoogleMapsScript(GOOGLE_MAPS_API_KEY).then(() => {
-            if (!isMounted || !inputRef.current) return;
-            setIsLoaded(true);
-
-            if (autocompleteRef.current) return;
-
+        // Modern Dynamic Loader
+        const loadAutocomplete = async () => {
             try {
                 // @ts-ignore
-                const google = window.google;
-                if (!google?.maps?.places) {
-                    setError('Places API not found');
-                    return;
+                if (!window.google) {
+                    const script = document.createElement('script');
+                    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly`;
+                    script.async = true;
+                    script.defer = true;
+
+                    const scriptPromise = new Promise((resolve, reject) => {
+                        script.onload = resolve;
+                        script.onerror = () => reject(new Error('Script load failed'));
+                    });
+
+                    document.head.appendChild(script);
+                    await scriptPromise;
                 }
 
-                autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
-                    // REMOVED types restriction to broaden results
-                    fields: ['address_components', 'formatted_address']
+                if (!isMounted) return;
+
+                // @ts-ignore
+                const { Autocomplete } = await google.maps.importLibrary("places") as any;
+
+                if (!inputRef.current) return;
+
+                autocompleteRef.current = new Autocomplete(inputRef.current, {
+                    fields: ['address_components', 'formatted_address'],
+                    // No country restriction for maximum flexibility
                 });
 
-                console.log('✅ Google Autocomplete Initialized Successfully');
+                console.log('✅ Google Autocomplete Initialized Successfully (Modern)');
+                setStatus('ready');
 
                 autocompleteRef.current.addListener('place_changed', () => {
                     const place = autocompleteRef.current?.getPlace();
@@ -113,13 +124,14 @@ export default function AddressAutocomplete({
                         onChange(finalAddress);
                     }
                 });
-            } catch (err) {
-                console.error('Autocomplete Init Error:', err);
-                setError('Init Error');
+            } catch (err: any) {
+                console.error('Autocomplete Error:', err);
+                setError(`Google Error: ${err.message || 'Check Console'}`);
+                setStatus('error');
             }
-        }).catch(() => {
-            setError('Load Error');
-        });
+        };
+
+        loadAutocomplete();
 
         return () => { isMounted = false; };
     }, []);
@@ -132,7 +144,6 @@ export default function AddressAutocomplete({
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
-            // Prevent Enter from submitting the form if a suggestion box is open
             if (document.querySelector('.pac-container')) {
                 e.preventDefault();
             }
@@ -140,6 +151,11 @@ export default function AddressAutocomplete({
                 onChange(inputRef.current.value);
             }
         }
+    };
+
+    // Helper to manually trigger focus if it feels "locked" (even though it shouldn't be now)
+    const handleClick = () => {
+        inputRef.current?.focus();
     };
 
     return (
@@ -150,7 +166,8 @@ export default function AddressAutocomplete({
                 defaultValue={value}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
-                placeholder={isLoaded ? placeholder : "Finding addresses..."}
+                onClick={handleClick}
+                placeholder={status === 'ready' ? placeholder : "Initializing Google Maps..."}
                 className={className}
                 required={required}
                 autoComplete="off"
@@ -158,19 +175,60 @@ export default function AddressAutocomplete({
                 style={{
                     backgroundImage: 'none !important',
                     background: '#ffffff',
-                    width: '100%'
+                    width: '100%',
+                    borderColor: error ? '#ef4444' : undefined
                 }}
             />
+
+            {/* Status Indicators */}
+            <div style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'center',
+                pointerEvents: 'none'
+            }}>
+                {status === 'loading' && <span style={{ animation: 'spin 1s linear infinite' }}>⌛</span>}
+                {status === 'ready' && <span style={{ color: '#10b981', fontSize: '12px' }}>●</span>}
+                {status === 'error' && <span style={{ color: '#ef4444', fontSize: '12px' }}>✖</span>}
+            </div>
+
             {error && (
-                <div style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px' }}>
-                    {error}
+                <div style={{
+                    color: '#ef4444',
+                    fontSize: '11px',
+                    marginTop: '4px',
+                    fontWeight: 500,
+                    padding: '2px 4px',
+                    background: '#fef2f2',
+                    borderRadius: '4px',
+                    border: '1px solid #fee2e2'
+                }}>
+                    ⚠️ {error}
                 </div>
             )}
-            {!isLoaded && !error && (
-                <div style={{ position: 'absolute', right: '10px', top: '12px', fontSize: '12px' }}>
-                    ⌛
+
+            {status === 'ready' && (
+                <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>
+                    Powered by Google Cloud
                 </div>
             )}
         </div>
     );
+}
+
+// Add keyframe for spin if not in globals
+if (typeof document !== 'undefined' && !document.getElementById('spin-animation')) {
+    const style = document.createElement('style');
+    style.id = 'spin-animation';
+    style.innerHTML = `
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
 }
