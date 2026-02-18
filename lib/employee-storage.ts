@@ -141,11 +141,13 @@ export async function clockInOut(
     location?: TimeLog['location']
 ): Promise<{ employee: Employee, log: TimeLog }> {
     const employees = await getEmployees();
-    const employee = employees.find(e =>
-        e.empId === identifier ||
-        e.phone === identifier ||
-        e.email === identifier
-    );
+    const employee = employees.find(e => {
+        const cleanId = identifier.trim();
+        return e.empId === cleanId ||
+            e.empId === `EMP${cleanId}` ||
+            e.phone === cleanId ||
+            e.email === cleanId;
+    });
 
     if (!employee) throw new Error('Employee not found');
 

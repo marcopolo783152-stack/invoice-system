@@ -150,7 +150,7 @@ export default function ClockPage() {
 
                         <h1 style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 6 }}>Identity Verification</h1>
                         <p style={{ fontSize: 14, color: '#94a3b8', marginBottom: 30 }}>
-                            Scan QR / Enter ID within 700ft of Shop
+                            Scan QR / Enter your 4-digit ID number
                         </p>
 
                         <form onSubmit={handleClock} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -159,7 +159,7 @@ export default function ClockPage() {
                                     type="text"
                                     value={identifier}
                                     onChange={e => setIdentifier(e.target.value)}
-                                    placeholder="Employee ID / Phone / Email"
+                                    placeholder="Enter ID Number (e.g. 1001)"
                                     autoFocus
                                     style={{
                                         width: '100%', padding: '16px 20px', borderRadius: 12,
