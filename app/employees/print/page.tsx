@@ -70,14 +70,14 @@ function EmployeePrintContent() {
         <div ref={printRef} style={{ background: 'white', minHeight: '100vh' }}>
             {type === 'poster' && (
                 <div className="pdf-page" style={{
-                    width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'white', padding: '1in'
+                    width: '8.5in', height: '11in', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'white', margin: '0 auto'
                 }}>
                     <div style={{
-                        width: '7.5in', height: '10in', border: '15px double #1e293b',
-                        borderRadius: 4, padding: 60, textAlign: 'center', display: 'flex',
+                        width: '8.5in', height: '11in', border: '15px double #1e293b',
+                        padding: 60, textAlign: 'center', display: 'flex',
                         flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        background: '#fff'
+                        background: '#fff', boxSizing: 'border-box'
                     }}>
                         <div style={{ marginBottom: 40 }}>
                             <div style={{ fontSize: 24, fontWeight: 900, color: '#1e293b', letterSpacing: 8, marginBottom: 10 }}>MARCO POLO</div>
@@ -119,44 +119,57 @@ function EmployeePrintContent() {
 
             {type === 'badge' && employee && (
                 <div className="pdf-page" style={{
-                    width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'white'
+                    width: '8.5in', height: '11in', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'white', margin: '0 auto'
                 }}>
                     <div style={{
-                        width: '3.5in', height: '5in', border: '2px solid #1e293b',
-                        borderRadius: 20, padding: 30, textAlign: 'center', display: 'flex',
-                        flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
+                        width: '3.5in', height: '2in', border: '1px solid #1e293b',
+                        borderRadius: 8, padding: 12, textAlign: 'left', display: 'flex',
+                        gap: 12, alignItems: 'center', background: '#fff', boxSizing: 'border-box',
+                        position: 'relative', overflow: 'hidden'
                     }}>
-                        <div>
-                            <div style={{ fontSize: 16, fontWeight: 900, color: '#1e293b', marginBottom: 4 }}>MARCO POLO</div>
-                            <div style={{ fontSize: 10, color: '#64748b', letterSpacing: 2 }}>EMPLOYEE ID</div>
+                        {/* Left Side: Photo & Info */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <div style={{
+                                    width: 45, height: 45, borderRadius: '50%', background: '#f1f5f9',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                                    border: '1px solid #e2e8f0'
+                                }}>
+                                    {employee.photo ? (
+                                        <img src={employee.photo} alt={employee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <span style={{ fontSize: 18 }}>👤</span>
+                                    )}
+                                </div>
+                                <div style={{ lineHeight: 1.1 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 900, color: '#1e293b' }}>MARCO POLO</div>
+                                    <div style={{ fontSize: 8, color: '#64748b', letterSpacing: 1 }}>STAFF ID</div>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 2 }}>
+                                <h2 style={{ fontSize: 14, fontWeight: 900, color: '#0f172a', margin: 0 }}>{employee.name}</h2>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#4f46e5' }}>ID: {employee.empId}</div>
+                            </div>
+
+                            <div style={{
+                                fontSize: 6, color: '#cbd5e1', marginTop: 'auto',
+                                borderTop: '0.5px solid #f1f5f9', paddingTop: 4
+                            }}>
+                                Alexandria, VA • (703) 461-0207
+                            </div>
                         </div>
 
-                        <div style={{
-                            width: 120, height: 120, borderRadius: '50%', background: '#f1f5f9',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 50,
-                            margin: '20px 0', border: '4px solid #f1f5f9'
-                        }}>
-                            👤
-                        </div>
-
-                        <div>
-                            <h2 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', marginBottom: 4 }}>{employee.name}</h2>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#4f46e5' }}>ID: {employee.empId}</div>
-                        </div>
-
-                        <div style={{ marginTop: 20 }}>
+                        {/* Right Side: QR */}
+                        <div style={{ textAlign: 'center', width: 80 }}>
                             <img
                                 src={qrUrl}
                                 alt="QR Code"
-                                style={{ width: 160, height: 160 }}
+                                style={{ width: 70, height: 70 }}
                                 onLoad={() => setImageLoaded(true)}
                             />
-                            <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 8 }}>SCAN TO CLOCK IN / OUT</div>
-                        </div>
-
-                        <div style={{ fontSize: 8, color: '#cbd5e1', marginTop: 10 }}>
-                            AUTHORIZED ACCESS ONLY • (703) 461-0207
+                            <div style={{ fontSize: 7, color: '#94a3b8', marginTop: 4, fontWeight: 700 }}>SCAN TO CLOCK</div>
                         </div>
                     </div>
                 </div>
