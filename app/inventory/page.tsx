@@ -203,8 +203,14 @@ export default function InventoryManager() {
 
     const handleDelete = async (id: string) => {
         if (confirm('Are you sure you want to delete this item?')) {
-            await deleteInventoryItem(id);
-            loadInventory();
+            // Optimistic UI update
+            setItems(prev => prev.filter(i => i.id !== id));
+            try {
+                await deleteInventoryItem(id);
+            } catch (error) {
+                alert('Delete failed on server. Refreshing to original state.');
+                loadInventory();
+            }
         }
     };
 
@@ -230,11 +236,17 @@ export default function InventoryManager() {
     const handleBulkDelete = async () => {
         if (selectedItems.size === 0) return;
         if (confirm(`Are you sure you want to delete ${selectedItems.size} items?`)) {
-            setIsLoading(true);
-            await deleteInventoryBatch(Array.from(selectedItems));
+            const idsToDelete = Array.from(selectedItems);
+            // Optimistic UI update
+            setItems(prev => prev.filter(i => !selectedItems.has(i.id)));
             setSelectedItems(new Set());
-            await loadInventory();
-            setIsLoading(false);
+
+            try {
+                await deleteInventoryBatch(idsToDelete);
+            } catch (error) {
+                alert('Bulk delete failed on server. Refreshing.');
+                loadInventory();
+            }
         }
     };
 
