@@ -117,16 +117,28 @@ export default function EmployeeModal({ isOpen, onClose, onSave, initialData }: 
                         />
                     </div>
 
-                    <div>
-                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>Security PIN (Optional)</label>
-                        <input
-                            type="password"
-                            maxLength={4}
-                            value={formData.pin}
-                            onChange={e => setFormData({ ...formData, pin: e.target.value })}
-                            placeholder="4 digits"
-                            style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
-                        />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>Daily Salary ($)</label>
+                            <input
+                                type="number"
+                                value={formData.dailyRate}
+                                onChange={e => setFormData({ ...formData, dailyRate: parseFloat(e.target.value) })}
+                                placeholder="e.g. 100"
+                                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>Security PIN</label>
+                            <input
+                                type="password"
+                                maxLength={4}
+                                value={formData.pin}
+                                onChange={e => setFormData({ ...formData, pin: e.target.value })}
+                                placeholder="4 digits"
+                                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                            />
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>

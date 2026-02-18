@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee } from '@/lib/employee-storage';
+import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee, EmployeePayment, recordPayment, getEmployeePayments } from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
 
@@ -13,28 +13,84 @@ interface BadgeData {
     isPoster?: boolean;
 }
 
+interface PayrollSummary {
+    employeeId: string;
+    daysWorked: number;
+    totalEarned: number;
+    totalPaid: number;
+    balance: number;
+}
+
 export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [logs, setLogs] = useState<TimeLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
-    const [activeView, setActiveView] = useState<'STAFF' | 'LOGS'>('STAFF');
+    const [activeView, setActiveView] = useState<'STAFF' | 'LOGS' | 'PAYROLL'>('STAFF');
     const [printBadge, setPrintBadge] = useState<BadgeData | null>(null);
+    const [payrollData, setPayrollData] = useState<Record<string, PayrollSummary>>({});
+    const [isPaying, setIsPaying] = useState<string | null>(null);
 
     const loadData = async () => {
         setIsLoading(true);
         try {
             const [empList, logList] = await Promise.all([
                 getEmployees(),
-                getTimeLogs(100)
+                getTimeLogs(500) // Fetch more for day counting
             ]);
             setEmployees(empList);
             setLogs(logList);
+
+            // Calculate Payroll Summaries
+            const summaryMap: Record<string, PayrollSummary> = {};
+
+            for (const emp of empList) {
+                // 1. Count unique work days from logs
+                const empLogs = logList.filter(l => l.employeeId === emp.id && l.type === 'IN');
+                const uniqueDays = new Set(empLogs.map(l => {
+                    const date = new Date(l.timestamp);
+                    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+                })).size;
+
+                // 2. Fetch payments
+                const payments = await getEmployeePayments(emp.id);
+                const totalPaid = payments.reduce((acc, p) => acc + p.amount, 0);
+
+                const totalEarned = uniqueDays * (emp.dailyRate || 0);
+
+                summaryMap[emp.id] = {
+                    employeeId: emp.id,
+                    daysWorked: uniqueDays,
+                    totalEarned,
+                    totalPaid,
+                    balance: totalEarned - totalPaid
+                };
+            }
+            setPayrollData(summaryMap);
         } catch (error) {
             console.error(error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handlePayment = async (empId: string, amount: number) => {
+        if (!amount || amount <= 0) return;
+        if (!confirm(`Confirm payment of $${amount} to employee?`)) return;
+
+        setIsPaying(empId);
+        try {
+            await recordPayment({
+                employeeId: empId,
+                amount: amount,
+                notes: 'Manual payment from dashboard'
+            });
+            await loadData();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsPaying(null);
         }
     };
 
@@ -151,6 +207,16 @@ export default function EmployeesPage() {
                     >
                         📜 Activity Logs
                     </button>
+                    <button
+                        onClick={() => setActiveView('PAYROLL')}
+                        style={{
+                            padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                            background: activeView === 'PAYROLL' ? '#e2e8f0' : 'transparent',
+                            border: 'none', fontWeight: 700, color: activeView === 'PAYROLL' ? '#1e293b' : '#64748b'
+                        }}
+                    >
+                        💰 Payroll & Payments
+                    </button>
                 </div>
 
                 {activeView === 'STAFF' ? (
@@ -226,7 +292,7 @@ export default function EmployeesPage() {
                             </div>
                         )}
                     </div>
-                ) : (
+                ) : activeView === 'LOGS' ? (
                     <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -287,6 +353,62 @@ export default function EmployeesPage() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                ) : (
+                    /* Payroll View */
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 20 }}>
+                        {employees.map(emp => {
+                            const stats = payrollData[emp.id];
+                            return (
+                                <div key={emp.id} className="luxury-card" style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid #e2e8f0' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+                                        <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{emp.name}</h3>
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: '#6366f1' }}>Rate: ${emp.dailyRate || 0}/day</span>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                                        <div style={{ padding: 12, background: '#f8fafc', borderRadius: 12 }}>
+                                            <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Working Days</div>
+                                            <div style={{ fontSize: 20, fontWeight: 900, color: '#1e293b' }}>{stats?.daysWorked || 0}</div>
+                                        </div>
+                                        <div style={{ padding: 12, background: '#f8fafc', borderRadius: 12 }}>
+                                            <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Total Earned</div>
+                                            <div style={{ fontSize: 20, fontWeight: 900, color: '#10b981' }}>${stats?.totalEarned || 0}</div>
+                                        </div>
+                                        <div style={{ padding: 12, background: '#f8fafc', borderRadius: 12 }}>
+                                            <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Total Paid</div>
+                                            <div style={{ fontSize: 20, fontWeight: 900, color: '#3b82f6' }}>${stats?.totalPaid || 0}</div>
+                                        </div>
+                                        <div style={{ padding: 12, background: stats?.balance && stats.balance > 0 ? '#fef2f2' : '#f8fafc', borderRadius: 12 }}>
+                                            <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Due Balance</div>
+                                            <div style={{ fontSize: 20, fontWeight: 900, color: stats?.balance && stats.balance > 0 ? '#ef4444' : '#1e293b' }}>${stats?.balance || 0}</div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
+                                        <div style={{ display: 'flex', gap: 10 }}>
+                                            <input
+                                                type="number"
+                                                placeholder="Amount to pay..."
+                                                id={`pay-${emp.id}`}
+                                                style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                                            />
+                                            <button
+                                                disabled={isPaying === emp.id}
+                                                onClick={() => {
+                                                    const input = document.getElementById(`pay-${emp.id}`) as HTMLInputElement;
+                                                    handlePayment(emp.id, parseFloat(input.value));
+                                                    input.value = '';
+                                                }}
+                                                style={{ padding: '10px 20px', borderRadius: 10, background: '#1e293b', color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                                            >
+                                                {isPaying === emp.id ? '...' : 'Pay Staff'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>

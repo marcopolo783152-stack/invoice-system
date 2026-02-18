@@ -21,14 +21,15 @@ import { db, isFirebaseConfigured } from './firebase';
 
 export interface Employee {
     id: string;
-    empId: string;      // Display ID/Scan ID
     name: string;
     phone: string;
-    email: string;
-    pin?: string;       // Optional security PIN
+    email?: string;
+    empId: string;
+    pin?: string;
     status: 'IN' | 'OUT';
     joinedDate: string;
-    lastAction?: string; // ISO timestamp
+    lastAction?: string;
+    dailyRate?: number; // Salary per day
 }
 
 export interface TimeLog {
@@ -47,10 +48,20 @@ export interface TimeLog {
     };
 }
 
+export interface EmployeePayment {
+    id: string;
+    employeeId: string;
+    amount: number;
+    date: string;
+    notes?: string;
+}
+
 const EMP_COLLECTION = 'employees';
 const LOG_COLLECTION = 'timelogs';
+const PAY_COLLECTION = 'employeepayments';
 const LOCAL_EMP_KEY = 'mns_employees_local';
 const LOCAL_LOG_KEY = 'mns_timelogs_local';
+const LOCAL_PAY_KEY = 'mns_payments_local';
 
 /**
  * Generate unique IDs for local use
@@ -223,4 +234,76 @@ export async function deleteEmployee(id: string): Promise<void> {
     const employees = await getEmployees();
     const filtered = employees.filter(e => e.id !== id);
     localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(filtered));
+}
+
+/**
+ * Record a salary payment
+ */
+export async function recordPayment(payment: Partial<EmployeePayment>): Promise<EmployeePayment> {
+    const data: EmployeePayment = {
+        id: generateId(),
+        employeeId: payment.employeeId!,
+        amount: payment.amount || 0,
+        date: payment.date || new Date().toISOString(),
+        notes: payment.notes || ''
+    };
+
+    if (isFirebaseConfigured() && db) {
+        try {
+            const docRef = await addDoc(collection(db, PAY_COLLECTION), data);
+            data.id = docRef.id;
+        } catch (e) {
+            console.error('Error saving payment to Firebase:', e);
+        }
+    }
+
+    // Local cache
+    const localPayments = JSON.parse(localStorage.getItem(LOCAL_PAY_KEY) || '[]');
+    localPayments.unshift(data);
+    localStorage.setItem(LOCAL_PAY_KEY, JSON.stringify(localPayments.slice(0, 1000)));
+
+    return data;
+}
+
+/**
+ * Get payments for an employee
+ */
+export async function getEmployeePayments(employeeId: string): Promise<EmployeePayment[]> {
+    if (isFirebaseConfigured() && db) {
+        try {
+            const q = query(collection(db, PAY_COLLECTION), where('employeeId', '==', employeeId), orderBy('date', 'desc'));
+            const snapshot = await getDocs(q);
+            const payments: EmployeePayment[] = [];
+            snapshot.forEach(doc => {
+                payments.push({ id: doc.id, ...doc.data() } as EmployeePayment);
+            });
+            return payments;
+        } catch (e) {
+            console.error('Error fetching payments:', e);
+        }
+    }
+
+    const localData = localStorage.getItem(LOCAL_PAY_KEY);
+    const allPayments: EmployeePayment[] = localData ? JSON.parse(localData) : [];
+    return allPayments.filter(p => p.employeeId === employeeId);
+}
+
+/**
+ * Count unique work days for an employee
+ */
+export async function getWorkDays(employeeId: string): Promise<number> {
+    // We need all logs for this employee to count unique dates
+    // For now, let's fetch a large batch or all from local
+    const localData = localStorage.getItem(LOCAL_LOG_KEY);
+    const allLogs: TimeLog[] = localData ? JSON.parse(localData) : [];
+
+    // In production with Firebase, you might want a more specific query
+    const employeeLogs = allLogs.filter(l => l.employeeId === employeeId && l.type === 'IN');
+
+    const uniqueDays = new Set(employeeLogs.map(l => {
+        const date = new Date(l.timestamp);
+        return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    }));
+
+    return uniqueDays.size;
 }
