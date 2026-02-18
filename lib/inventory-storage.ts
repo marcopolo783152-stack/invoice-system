@@ -333,9 +333,16 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
                 const docRef = await addDoc(collection(db, COLLECTION_NAME), { ...finalData, createdAt: Timestamp.now() });
                 return { ...itemData, id: docRef.id, createdAt: now.toISOString() } as InventoryItem;
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving to cloud:', error);
-            throw error;
+            if (error.code === 'permission-denied') {
+                alert('Firebase Sync Failed: Permission Denied. Please check login.');
+            } else if (error.message?.includes('too large') || error.message?.includes('1048576 bytes')) {
+                alert('Cloud Sync Failed: Item too large (likely too many high-quality images). Please try removing one image or reducing quality.');
+            } else {
+                alert('Cloud Sync Failed: Check internet connection. Item saved locally.');
+            }
+            // Fall back to local storage update below
         }
     }
 
@@ -362,16 +369,25 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
  * Delete inventory item
  */
 export async function deleteInventoryItem(id: string): Promise<void> {
+    // 1. Local update first (Optimistic)
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+        try {
+            const items: InventoryItem[] = JSON.parse(stored);
+            const filtered = items.filter(i => i.id !== id);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        } catch (e) { console.error(e); }
+    }
+
+    // 2. Cloud update
     if (isFirebaseConfigured() && db) {
         try {
             await deleteDoc(doc(db, COLLECTION_NAME, id));
         } catch (e) {
             console.error('Error deleting from cloud:', e);
+            throw e; // Reraise to let UI know
         }
     }
-    const items = await getInventoryItems();
-    const filtered = items.filter(i => i.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
 /**
@@ -379,6 +395,19 @@ export async function deleteInventoryItem(id: string): Promise<void> {
  */
 export async function deleteInventoryBatch(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
+
+    // 1. Local update first
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+        try {
+            const items: InventoryItem[] = JSON.parse(stored);
+            const idSet = new Set(ids);
+            const filtered = items.filter(i => !idSet.has(i.id));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        } catch (e) { console.error(e); }
+    }
+
+    // 2. Cloud update
     if (isFirebaseConfigured() && db) {
         const firestore = db;
         try {
@@ -391,12 +420,9 @@ export async function deleteInventoryBatch(ids: string[]): Promise<void> {
             }
         } catch (error) {
             console.error('Error batch deleting from Firebase:', error);
+            throw error;
         }
     }
-    const items = await getInventoryItems();
-    const idSet = new Set(ids);
-    const filtered = items.filter(i => !idSet.has(i.id));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
 /**

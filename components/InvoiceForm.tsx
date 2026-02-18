@@ -328,8 +328,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800; // Increased quality for full-page view
-          const MAX_HEIGHT = 800;
+          const MAX_WIDTH = 600; // Optimized for 5-image total size
+          const MAX_HEIGHT = 600;
           let width = img.width;
           let height = img.height;
 
@@ -349,7 +349,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Reduced quality for safety
 
           setItems(prev => prev.map(invItem => {
             if (invItem.id === id) {
