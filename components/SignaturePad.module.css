@@ -97,27 +97,7 @@
 }
 
 /* Mobile responsiveness */
-@media (max-width: 768px) {
-  .modal {
-    padding: 20px;
-  }
-
-  .modal h2 {
-    font-size: 20px;
-  }
-
-  .canvas {
-    height: 150px;
-  }
-
-  .actions {
-    flex-direction: column;
-  }
-
-  .actions button {
-    width: 100%;
-  }
-}
+/* Removed mobile media queries to enforce PC View */
 
 .inlineContainer {
   background: white;

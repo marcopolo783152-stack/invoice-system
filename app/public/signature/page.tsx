@@ -130,7 +130,7 @@ function SignatureContent() {
     const calculations = calculateInvoice(invoice.data);
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '40px 20px', minWidth: 1280 }}>
+        <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '40px 0', width: 1280, margin: '0 auto' }}>
             <div style={{ maxWidth: 1000, margin: '0 auto' }}>
                 {/* One-time use alert */}
                 <div style={{
