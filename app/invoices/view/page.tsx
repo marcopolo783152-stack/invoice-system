@@ -755,7 +755,7 @@ function InvoiceViewContent() {
                                                         const { sendSignatureRequestEmail } = await import('@/lib/email-service');
 
                                                         const token = await createSignatureToken(invoice.id);
-                                                        const link = `${window.location.origin}/public/signature/${token}`;
+                                                        const link = `${window.location.origin}/public/signature/?token=${token}`;
 
                                                         const sent = await sendSignatureRequestEmail(
                                                             invoice.data.soldTo.email,

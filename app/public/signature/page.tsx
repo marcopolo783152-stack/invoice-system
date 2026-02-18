@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { validateSignatureToken, useSignatureToken, getInvoiceByIdAsync, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
@@ -9,8 +9,16 @@ import SignaturePad from '@/components/SignaturePad';
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 export default function PublicSignaturePage() {
-    const params = useParams();
-    const token = params.token as string;
+    return (
+        <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading...</div>}>
+            <SignatureContent />
+        </Suspense>
+    );
+}
+
+function SignatureContent() {
+    const searchParams = useSearchParams();
+    const token = searchParams.get('token');
     const [invoice, setInvoice] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -20,6 +28,11 @@ export default function PublicSignaturePage() {
 
     useEffect(() => {
         async function loadToken() {
+            if (!token) {
+                setError('Invalid or missing signature link.');
+                setLoading(false);
+                return;
+            }
             try {
                 const tokenData = await validateSignatureToken(token);
                 if (!tokenData) {
@@ -42,13 +55,13 @@ export default function PublicSignaturePage() {
             }
         }
 
-        if (token) loadToken();
+        loadToken();
     }, [token]);
 
     const handleSaveSignature = async (signatureData: string) => {
+        if (!token) return;
         setIsSaving(true);
         try {
-            // 1. Update invoice with signature
             const updatedInvoiceData = {
                 ...invoice.data,
                 signature: signatureData,
@@ -56,8 +69,6 @@ export default function PublicSignaturePage() {
             };
 
             await saveInvoice(updatedInvoiceData, invoice.id);
-
-            // 2. Mark token as used
             await useSignatureToken(token);
 
             setSuccess(true);
