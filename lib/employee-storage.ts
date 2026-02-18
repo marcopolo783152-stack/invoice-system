@@ -226,6 +226,64 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
     return localData ? JSON.parse(localData) : [];
 }
 
+/**
+ * Add a manual time log (Admin override)
+ */
+export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLog> {
+    const data: TimeLog = {
+        ...log,
+        id: generateId()
+    };
+
+    if (isFirebaseConfigured() && db) {
+        try {
+            const logRef = await addDoc(collection(db, LOG_COLLECTION), {
+                ...data,
+                timestamp: Timestamp.fromDate(new Date(data.timestamp))
+            });
+            data.id = logRef.id;
+
+            // If this is the most recent action, we should update employee status
+            const logs = await getTimeLogs(10);
+            const empLogs = logs.filter(l => l.employeeId === data.employeeId).sort((a, b) =>
+                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            );
+
+            if (empLogs.length > 0 && empLogs[0].timestamp === data.timestamp) {
+                await updateDoc(doc(db, EMP_COLLECTION, data.employeeId), {
+                    status: data.type,
+                    lastAction: data.timestamp
+                });
+            }
+        } catch (e) {
+            console.error('Error adding manual log:', e);
+        }
+    }
+
+    // Update local logs
+    const localLogs = JSON.parse(localStorage.getItem(LOCAL_LOG_KEY) || '[]');
+    localLogs.unshift(data);
+    localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(localLogs.slice(0, 1000)));
+
+    return data;
+}
+
+/**
+ * Delete a time log
+ */
+export async function deleteTimeLog(logId: string): Promise<void> {
+    if (isFirebaseConfigured() && db) {
+        try {
+            const { deleteDoc } = await import('firebase/firestore');
+            await deleteDoc(doc(db, LOG_COLLECTION, logId));
+        } catch (e) { console.error(e); }
+    }
+
+    const localLogs = JSON.parse(localStorage.getItem(LOCAL_LOG_KEY) || '[]');
+    const filtered = localLogs.filter((l: any) => l.id !== logId);
+    localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(filtered));
+}
+
 export async function deleteEmployee(id: string): Promise<void> {
     if (isFirebaseConfigured() && db) {
         try {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee, EmployeePayment, recordPayment, getEmployeePayments } from '@/lib/employee-storage';
+import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee, EmployeePayment, recordPayment, getEmployeePayments, addManualTimeLog, deleteTimeLog } from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
 
@@ -23,6 +23,52 @@ export default function EmployeesPage() {
     const [activeView, setActiveView] = useState<'STAFF' | 'LOGS' | 'PAYROLL'>('STAFF');
     const [payrollData, setPayrollData] = useState<Record<string, PayrollSummary>>({});
     const [isPaying, setIsPaying] = useState<string | null>(null);
+
+    // Manual Log State
+    const [showManualLog, setShowManualLog] = useState<{ empId: string, name: string } | null>(null);
+    const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
+    const [manualTime, setManualTime] = useState('10:00');
+    const [manualType, setManualType] = useState<'IN' | 'OUT'>('IN');
+
+    const handleManualLog = async () => {
+        if (!showManualLog) return;
+        const timestamp = `${manualDate}T${manualTime}:00`;
+        await addManualTimeLog({
+            employeeId: showManualLog.empId,
+            employeeName: showManualLog.name,
+            type: manualType,
+            timestamp,
+            notes: 'Added by Administrator'
+        });
+        setShowManualLog(null);
+        loadData();
+    };
+
+    const handleDeleteLog = async (logId: string) => {
+        if (!confirm('Remove this time log? This will affect payroll calculations.')) return;
+        await deleteTimeLog(logId);
+        loadData();
+    };
+
+    const checkShiftCompliance = (log: TimeLog) => {
+        const date = new Date(log.timestamp);
+        const hours = date.getHours();
+        const mins = date.getMinutes();
+
+        if (log.type === 'IN') {
+            // Clock in between 10:00 AM and 10:15 AM
+            const isLate = hours > 10 || (hours === 10 && mins > 15);
+            const isEarly = hours < 10;
+            if (isLate) return { label: 'LATE', color: '#f43f5e' };
+            if (isEarly) return { label: 'EARLY', color: '#3b82f6' };
+            return { label: 'ON TIME', color: '#10b981' };
+        } else {
+            // Clock out from 06:00 PM (18:00)
+            const isEarly = hours < 18;
+            if (isEarly) return { label: 'EARLY EXIT', color: '#f43f5e' };
+            return { label: 'SHIFT DONE', color: '#10b981' };
+        }
+    };
 
     const loadData = async () => {
         setIsLoading(true);
@@ -259,59 +305,140 @@ export default function EmployeesPage() {
                     </div>
                 ) : activeView === 'LOGS' ? (
                     <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>Activity Logs</h2>
+                            <button
+                                onClick={() => setShowManualLog({ empId: employees[0]?.id || '', name: employees[0]?.name || '' })}
+                                style={{ padding: '8px 16px', borderRadius: 8, background: '#4f46e5', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                                ➕ Add Manual Log
+                            </button>
+                        </div>
+
+                        {showManualLog && (
+                            <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 15, color: '#1e293b' }}>Add Manual Log for {showManualLog.name}</h3>
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                    <select
+                                        value={showManualLog.empId}
+                                        onChange={(e) => {
+                                            const selectedEmp = employees.find(emp => emp.id === e.target.value);
+                                            if (selectedEmp) setShowManualLog({ empId: selectedEmp.id, name: selectedEmp.name });
+                                        }}
+                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                    >
+                                        {employees.map(emp => (
+                                            <option key={emp.id} value={emp.id}>{emp.name}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="date"
+                                        value={manualDate}
+                                        onChange={(e) => setManualDate(e.target.value)}
+                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                    />
+                                    <input
+                                        type="time"
+                                        value={manualTime}
+                                        onChange={(e) => setManualTime(e.target.value)}
+                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                    />
+                                    <select
+                                        value={manualType}
+                                        onChange={(e) => setManualType(e.target.value as 'IN' | 'OUT')}
+                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                    >
+                                        <option value="IN">Clock In</option>
+                                        <option value="OUT">Clock Out</option>
+                                    </select>
+                                    <button
+                                        onClick={handleManualLog}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        Add Log
+                                    </button>
+                                    <button
+                                        onClick={() => setShowManualLog(null)}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>PHOTO</th>
                                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>STAFF</th>
                                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>ACTION</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>STATUS</th>
                                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>TIME</th>
                                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>LOCATION</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'right', fontSize: 12, color: '#64748b' }}>MANAGE</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {logs.map(log => (
-                                    <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: '12px 20px' }}>
-                                            {log.facePhoto ? (
-                                                <img
-                                                    src={log.facePhoto}
-                                                    alt="Face verify"
-                                                    style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                                                />
-                                            ) : (
-                                                <div style={{ width: 40, height: 40, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>👤</div>
-                                            )}
-                                        </td>
-                                        <td style={{ padding: '16px 20px' }}>
-                                            <div style={{ fontWeight: 700, color: '#1e293b' }}>{log.employeeName}</div>
-                                        </td>
-                                        <td style={{ padding: '16px 20px' }}>
-                                            <span style={{
-                                                fontSize: 11, fontWeight: 800, padding: '4px 8px', borderRadius: 6,
-                                                background: log.type === 'IN' ? '#ecfdf5' : '#fef2f2',
-                                                color: log.type === 'IN' ? '#059669' : '#dc2626'
-                                            }}>
-                                                CLOCKED {log.type === 'IN' ? 'IN' : 'OUT'}
-                                            </span>
-                                        </td>
-                                        <td style={{ padding: '16px 20px', fontSize: 13, color: '#475569' }}>
-                                            {formatDate(log.timestamp)}
-                                        </td>
-                                        <td style={{ padding: '16px 20px' }}>
-                                            {log.location ? (
-                                                <div style={{ fontSize: 11, color: '#64748b' }}>
-                                                    📍 {log.location.lat.toFixed(4)}, {log.location.lng.toFixed(4)}
-                                                </div>
-                                            ) : (
-                                                <span style={{ fontSize: 10, color: '#94a3b8' }}>✅ Synced</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
+                                {logs.map(log => {
+                                    const compliance = checkShiftCompliance(log);
+                                    return (
+                                        <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                            <td style={{ padding: '12px 20px' }}>
+                                                {log.facePhoto ? (
+                                                    <img
+                                                        src={log.facePhoto}
+                                                        alt="Face verify"
+                                                        style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                                    />
+                                                ) : (
+                                                    <div style={{ width: 40, height: 40, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>👤</div>
+                                                )}
+                                            </td>
+                                            <td style={{ padding: '16px 20px' }}>
+                                                <div style={{ fontWeight: 700, color: '#1e293b' }}>{log.employeeName}</div>
+                                            </td>
+                                            <td style={{ padding: '16px 20px' }}>
+                                                <span style={{
+                                                    fontSize: 11, fontWeight: 800, padding: '4px 8px', borderRadius: 6,
+                                                    background: log.type === 'IN' ? '#ecfdf5' : '#fef2f2',
+                                                    color: log.type === 'IN' ? '#059669' : '#dc2626'
+                                                }}>
+                                                    CLOCKED {log.type === 'IN' ? 'IN' : 'OUT'}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '16px 20px' }}>
+                                                <span style={{ fontSize: 10, fontWeight: 900, color: compliance.color }}>
+                                                    ● {compliance.label}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '16px 20px', fontSize: 13, color: '#475569' }}>
+                                                {formatDate(log.timestamp)}
+                                            </td>
+                                            <td style={{ padding: '16px 20px' }}>
+                                                {log.location ? (
+                                                    <div style={{ fontSize: 11, color: '#64748b' }}>
+                                                        📍 {log.location.lat.toFixed(4)}, {log.location.lng.toFixed(4)}
+                                                    </div>
+                                                ) : (
+                                                    <span style={{ fontSize: 10, color: '#94a3b8' }}>{log.notes || '✅ Authenticated'}</span>
+                                                )}
+                                            </td>
+                                            <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                                <button
+                                                    onClick={() => handleDeleteLog(log.id)}
+                                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#cbd5e1', fontSize: 14 }}
+                                                    title="Delete Log"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                                 {logs.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} style={{ padding: '50px 20px', textAlign: 'center', color: '#64748b' }}>
+                                        <td colSpan={7} style={{ padding: '50px 20px', textAlign: 'center', color: '#64748b' }}>
                                             No activity logs found.
                                         </td>
                                     </tr>
