@@ -27,7 +27,8 @@ export interface InvoiceItem {
   returned?: boolean;
   returnNote?: string;
   // Image support
-  image?: string; // Base64 encoded image
+  image?: string; // Legacy: Base64 encoded single image
+  images?: string[]; // New: Array of up to 5 base64 encoded images
   // Item visibility/status
   sold?: boolean; // New: track if item in consignment is sold
   soldDate?: string; // Date when item was sold
@@ -109,6 +110,7 @@ export interface InvoiceData {
   isDraft?: boolean; // True if invoice is in draft mode
   downpayment?: number; // Optional downpayment for consignment
   payments?: Payment[]; // New: Track multiple payments
+  images?: string[]; // Global invoice images if needed
 }
 
 export interface CalculatedItem extends InvoiceItem {

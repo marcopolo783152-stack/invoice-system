@@ -5,7 +5,7 @@
  * Syncs between localStorage and Firebase.
  */
 
-import { RugShape, InvoiceData } from './calculations';
+import { RugShape, InvoiceData, InvoiceItem } from './calculations';
 import { db, isFirebaseConfigured } from './firebase';
 import {
     collection,
@@ -30,8 +30,9 @@ export interface InventoryItem {
     lengthFeet: number;
     lengthInches: number;
     price: number;
-    status: 'AVAILABLE' | 'SOLD' | 'ON_APPROVAL';
-    image?: string; // Base64
+    status: 'AVAILABLE' | 'SOLD' | 'ON_APPROVAL' | 'WHOLESALE';
+    image?: string; // Legacy: Base64
+    images?: string[]; // New: Array of base64 images
     createdAt: string;
     updatedAt: string;
     // New Fields
@@ -48,7 +49,8 @@ export interface InventoryItem {
     tagsPrinted?: boolean; // Track if tag has been printed
 }
 
-// ... existing code ...
+const STORAGE_KEY = 'inventory_items';
+const COLLECTION_NAME = 'inventory';
 
 /**
  * Mark inventory tags as printed
@@ -90,9 +92,6 @@ export async function markInventoryTagsPrinted(ids: string[]): Promise<void> {
         }
     }
 }
-
-const STORAGE_KEY = 'inventory_items';
-const COLLECTION_NAME = 'inventory';
 
 /**
  * Generate a local ID if not using Firebase (or for temp local storage)
@@ -158,6 +157,7 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
                     price: Number(data.price) || 0,
                     status: data.status || 'AVAILABLE',
                     image: data.image || '',
+                    images: data.images || [],
                     category: data.category || '',
                     origin: data.origin || '',
                     material: data.material || '',
@@ -168,8 +168,8 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
                     importCost: Number(data.importCost) || 0,
                     totalCost: Number(data.totalCost) || 0,
                     zone: data.zone || '',
-                    createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date(data.createdAt).toISOString() || new Date().toISOString(),
-                    updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date(data.updatedAt).toISOString() || new Date().toISOString()
+                    createdAt: data.createdAt?.toDate?.()?.toISOString() || (data.createdAt ? new Date(data.createdAt).toISOString() : new Date().toISOString()),
+                    updatedAt: data.updatedAt?.toDate?.()?.toISOString() || (data.updatedAt ? new Date(data.updatedAt).toISOString() : new Date().toISOString())
                 });
             });
 
@@ -178,7 +178,6 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
             return items;
         } catch (error) {
             console.error('Error fetching inventory from cloud:', error);
-            // Fallback to local
         }
     }
 
@@ -204,19 +203,15 @@ export async function getItemBySku(sku: string): Promise<InventoryItem | null> {
 /**
  * Search Inventory (Advanced)
  */
-export async function searchInventory(query: string, category?: string): Promise<InventoryItem[]> {
+export async function searchInventory(queryStr: string, category?: string): Promise<InventoryItem[]> {
     const items = await getInventoryItems();
-    const term = query.toLowerCase().trim();
+    const term = queryStr.toLowerCase().trim();
 
     return items.filter(item => {
-        // Filter by category if provided
         if (category && category !== 'All' && item.category !== category) {
             return false;
         }
-
         if (!term) return true;
-
-        // Search text fields
         return (
             item.sku.toLowerCase().includes(term) ||
             item.description.toLowerCase().includes(term) ||
@@ -235,14 +230,7 @@ export async function searchInventory(query: string, category?: string): Promise
 export async function importInventoryBatch(newItems: Partial<InventoryItem>[]): Promise<number> {
     const currentItems = await getInventoryItems();
     const now = new Date().toISOString();
-    let count = 0;
 
-    // We process locally first to avoid 500 Firebase writes at once if not needed, 
-    // but ideally we should batch write to Firebase.
-    // For now, let's just append to local and background sync or let the standard save logic handle it.
-    // To be safe and fast:
-
-    // 1. Map to full objects
     const processed: InventoryItem[] = newItems.map(item => ({
         id: item.id || generateId(),
         sku: item.sku || '',
@@ -255,9 +243,9 @@ export async function importInventoryBatch(newItems: Partial<InventoryItem>[]): 
         price: Number(item.price) || 0,
         status: item.status || 'AVAILABLE',
         image: item.image || '',
-        createdAt: now,
-        updatedAt: now,
-        // New Fields
+        images: item.images || [],
+        createdAt: item.createdAt || now,
+        updatedAt: item.updatedAt || now,
         category: item.category || deriveCategory(
             Number(item.widthFeet) || 0, Number(item.widthInches) || 0,
             Number(item.lengthFeet) || 0, Number(item.lengthInches) || 0,
@@ -274,39 +262,30 @@ export async function importInventoryBatch(newItems: Partial<InventoryItem>[]): 
         zone: item.zone || ''
     }));
 
-    // 2. Merge (Deduplicate by SKU preferred, but for now just add)
-    // Actually, let's remove existing SKUs if they exist in the import (Update/Overwrite)
     const newSkus = new Set(processed.map(i => i.sku.toLowerCase()));
-
     const preserved = currentItems.filter(i => !newSkus.has(i.sku.toLowerCase()));
-
     const final = [...preserved, ...processed];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(final));
 
-    // Cloud Sync (Firebase Batch Write)
     if (isFirebaseConfigured() && db) {
-        const firestore = db;
         try {
             const batchSize = 500;
             for (let i = 0; i < processed.length; i += batchSize) {
                 const chunk = processed.slice(i, i + batchSize);
+                const firestore = db;
                 const batch = writeBatch(firestore);
-
                 chunk.forEach(item => {
                     const ref = doc(firestore, COLLECTION_NAME, item.id);
-                    // Use set to overwrite or create
                     batch.set(ref, {
                         ...item,
                         createdAt: Timestamp.fromDate(new Date(item.createdAt)),
                         updatedAt: Timestamp.fromDate(new Date(item.updatedAt))
                     });
                 });
-
                 await batch.commit();
             }
         } catch (error) {
             console.error('Error batch writing to Firebase:', error);
-            // We don't throw, so local fallback still works essentially
         }
     }
 
@@ -318,8 +297,6 @@ export async function importInventoryBatch(newItems: Partial<InventoryItem>[]): 
  */
 export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<InventoryItem> {
     const now = new Date();
-
-    // Prepare data object
     const itemData = {
         sku: item.sku || '',
         description: item.description || '',
@@ -331,8 +308,8 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
         price: Number(item.price) || 0,
         status: item.status || 'AVAILABLE',
         image: item.image || '',
+        images: item.images || [],
         updatedAt: now.toISOString(),
-        // New Fields
         category: item.category || deriveCategory(Number(item.widthFeet) || 0, Number(item.widthInches) || 0, Number(item.lengthFeet) || 0, Number(item.lengthInches) || 0, item.shape as RugShape),
         origin: item.origin || '',
         material: item.material || '',
@@ -345,25 +322,15 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
         zone: item.zone || ''
     };
 
-    // 1. Cloud Save
     if (isFirebaseConfigured() && db) {
         try {
-            const finalData = {
-                ...itemData,
-                updatedAt: Timestamp.now()
-            };
-
+            const finalData = { ...itemData, updatedAt: Timestamp.now() };
             if (item.id && !item.id.startsWith('inv_')) {
-                // Update existing
                 const docRef = doc(db, COLLECTION_NAME, item.id);
                 await updateDoc(docRef, finalData);
                 return { ...itemData, id: item.id, createdAt: item.createdAt || now.toISOString() } as InventoryItem;
             } else {
-                // Create new
-                const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-                    ...finalData,
-                    createdAt: Timestamp.now()
-                });
+                const docRef = await addDoc(collection(db, COLLECTION_NAME), { ...finalData, createdAt: Timestamp.now() });
                 return { ...itemData, id: docRef.id, createdAt: now.toISOString() } as InventoryItem;
             }
         } catch (error) {
@@ -372,10 +339,8 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
         }
     }
 
-    // 2. Local Storage (Fallback / Offline)
     const items = await getInventoryItems();
     let newItem: InventoryItem;
-
     if (item.id) {
         const idx = items.findIndex(i => i.id === item.id);
         if (idx >= 0) {
@@ -389,7 +354,6 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
         newItem = { ...itemData, id: generateId(), createdAt: now.toISOString() } as InventoryItem;
         items.push(newItem);
     }
-
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     return newItem;
 }
@@ -398,8 +362,6 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
  * Delete inventory item
  */
 export async function deleteInventoryItem(id: string): Promise<void> {
-    // Cloud
-    // Cloud
     if (isFirebaseConfigured() && db) {
         try {
             await deleteDoc(doc(db, COLLECTION_NAME, id));
@@ -407,8 +369,6 @@ export async function deleteInventoryItem(id: string): Promise<void> {
             console.error('Error deleting from cloud:', e);
         }
     }
-
-    // Local
     const items = await getInventoryItems();
     const filtered = items.filter(i => i.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
@@ -419,28 +379,20 @@ export async function deleteInventoryItem(id: string): Promise<void> {
  */
 export async function deleteInventoryBatch(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
-
-    // Cloud (Batch Delete)
     if (isFirebaseConfigured() && db) {
         const firestore = db;
         try {
             const batchSize = 500;
-
             for (let i = 0; i < ids.length; i += batchSize) {
                 const chunk = ids.slice(i, i + batchSize);
                 const batch = writeBatch(firestore);
-                chunk.forEach(id => {
-                    const ref = doc(firestore, COLLECTION_NAME, id);
-                    batch.delete(ref);
-                });
+                chunk.forEach(id => batch.delete(doc(firestore, COLLECTION_NAME, id)));
                 await batch.commit();
             }
         } catch (error) {
             console.error('Error batch deleting from Firebase:', error);
         }
     }
-
-    // Local
     const items = await getInventoryItems();
     const idSet = new Set(ids);
     const filtered = items.filter(i => !idSet.has(i.id));
@@ -456,34 +408,72 @@ export async function updateInventoryStatusFromInvoice(invoiceData: InvoiceData)
 
     for (const invoiceItem of invoiceData.items) {
         if (!invoiceItem.sku) continue;
-
-        // Find matching inventory item
         const inventoryItem = items.find(i => i.sku.toLowerCase() === invoiceItem.sku.toLowerCase());
-        if (!inventoryItem) continue;
 
-        let newStatus: 'AVAILABLE' | 'SOLD' | 'ON_APPROVAL' = inventoryItem.status;
-
-        // Logic:
-        // 1. If Returned -> AVAILABLE
-        // 2. If Consignment -> ON_APPROVAL
-        // 3. If Invoice (Sold) -> SOLD
-
-        if (invoiceItem.returned || invoiceData.returned) {
+        let newStatus: InventoryItem['status'];
+        if (invoiceItem.returned || (invoiceData as any).returned) {
             newStatus = 'AVAILABLE';
         } else if (invoiceData.documentType === 'CONSIGNMENT') {
             newStatus = 'ON_APPROVAL';
+        } else if (invoiceData.mode.toLowerCase().includes('wholesale')) {
+            newStatus = 'WHOLESALE';
         } else {
             newStatus = 'SOLD';
         }
 
-        // Only update if status changed
-        if (newStatus !== inventoryItem.status) {
-            await saveInventoryItem({ ...inventoryItem, status: newStatus });
+        if (inventoryItem) {
+            if (newStatus !== inventoryItem.status) {
+                await saveInventoryItem({ ...inventoryItem, status: newStatus });
+                updates++;
+            }
+        } else {
+            // New rug found in invoice - add to inventory as SOLD/ON_APPROVAL
+            await saveInventoryItem({
+                sku: invoiceItem.sku,
+                description: invoiceItem.description,
+                shape: invoiceItem.shape,
+                widthFeet: invoiceItem.widthFeet,
+                widthInches: invoiceItem.widthInches,
+                lengthFeet: invoiceItem.lengthFeet,
+                lengthInches: invoiceItem.lengthInches,
+                price: invoiceItem.fixedPrice || 0,
+                status: newStatus,
+                image: invoiceItem.image,
+                images: invoiceItem.images || [],
+                origin: invoiceItem.origin,
+                material: invoiceItem.material,
+                quality: invoiceItem.quality,
+                design: invoiceItem.design,
+                colorBg: invoiceItem.colorBg,
+                colorBorder: invoiceItem.colorBorder,
+                importCost: invoiceItem.importCost,
+                totalCost: invoiceItem.totalCost,
+                zone: invoiceItem.zone,
+                createdAt: invoiceData.date
+            });
             updates++;
         }
     }
+}
 
-    if (updates > 0) {
-        console.log(`Updated status for ${updates} inventory items.`);
+/**
+ * History Synchronization: Scan all invoices and update inventory
+ */
+export async function syncAllInvoicesToInventory(): Promise<{ updated: number, total: number }> {
+    // We need to import getAllInvoices dynamically to avoid circular dependency
+    const { getAllInvoices } = await import('./invoice-storage');
+    const invoices = await getAllInvoices();
+    let updatedCount = 0;
+
+    // Sort by date ascending to ensure historical order (oldest first)
+    const sorted = [...invoices].sort((a, b) => new Date(a.data.date).getTime() - new Date(b.data.date).getTime());
+
+    for (const inv of sorted) {
+        // Skip Wash/Repair invoices as requested
+        if (inv.data.documentType === 'WASH') continue;
+        await updateInventoryStatusFromInvoice(inv.data);
+        updatedCount++;
     }
+
+    return { updated: updatedCount, total: invoices.length };
 }

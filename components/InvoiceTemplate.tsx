@@ -72,7 +72,12 @@ export default function InvoiceTemplate({
   const items = calculations.items;
 
   // Define item weights: images take much more vertical space
-  const getItemWeight = (item: any) => (item.image ? 4.5 : 1);
+  const getItemWeight = (item: any) => {
+    const images = item.images || (item.image ? [item.image] : []);
+    if (images.length === 0) return 1;
+    if (images.length <= 1) return 4.5;
+    return 6; // Extra space for multi-image gallery
+  };
 
   // Footer weight factor
   const hasSubstantialNotes = (data.notes || '').length > 200;
@@ -258,11 +263,17 @@ export default function InvoiceTemplate({
                         {item.returned && <span style={{ fontWeight: 'bold', marginRight: 4 }}>[RETURNED]</span>}
                         {item.sold && <span style={{ fontWeight: 'bold', marginRight: 4, color: '#059669' }}>[SOLD/PAID]</span>}
                         {item.description}
-                        {item.image && (
-                          <div style={{ marginTop: 4 }}>
-                            <img src={item.image} alt="Item" style={{ maxHeight: 60, maxWidth: 100, objectFit: 'contain', border: '1px solid #eee' }} />
-                          </div>
-                        )}
+                        {(() => {
+                          const images = item.images || (item.image ? [item.image] : []);
+                          if (images.length === 0) return null;
+                          return (
+                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                              {images.map((img: string, idx: number) => (
+                                <img key={idx} src={img} alt="" style={{ maxHeight: 60, maxWidth: 80, objectFit: 'contain', border: '1px solid #eee', borderRadius: 2 }} />
+                              ))}
+                            </div>
+                          );
+                        })()}
                         {item.serviceType && (item.serviceType.wash || item.serviceType.repair) && (
                           <div style={{ marginTop: 4, fontSize: '0.85em', color: '#0369a1', fontStyle: 'italic' }}>
                             Service: {[item.serviceType.wash && 'Wash', item.serviceType.repair && 'Repair'].filter(Boolean).join(' & ')}

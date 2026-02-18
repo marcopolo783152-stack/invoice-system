@@ -5,6 +5,8 @@ import { getInventoryItems, InventoryItem, importInventoryBatch, deleteInventory
 import * as XLSX from 'xlsx';
 import Link from 'next/link';
 import InventoryModal from './InventoryModal';
+import { syncAllInvoicesToInventory } from '@/lib/inventory-storage';
+import ImageViewerModal from '@/components/ImageViewerModal';
 
 export default function InventoryManager() {
     const [items, setItems] = useState<InventoryItem[]>([]);
@@ -15,6 +17,13 @@ export default function InventoryManager() {
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+    const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'SOLD' | 'ON_APPROVAL' | 'WHOLESALE'>('ALL');
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    // Image Viewer state
+    const [viewerOpen, setViewerOpen] = useState(false);
+    const [viewerImages, setViewerImages] = useState<string[]>([]);
+    const [viewerIndex, setViewerIndex] = useState(0);
 
     const categories = ['All', 'Small / 2x3', '3x5 / 4x6', '5x7 / 6x9', '8x10', '9x12', '10x14', 'Oversize / Palace', 'Runner', 'Round', 'Other'];
     const materials = ['All', 'Silk', 'Wool', 'Silk/Wool', 'Wool/Silk'];
@@ -119,6 +128,22 @@ export default function InventoryManager() {
             e.target.value = ''; // Reset
         };
         reader.readAsBinaryString(file);
+    };
+
+    const handleSyncFromInvoices = async () => {
+        if (!confirm('This will scan all historical invoices and update your inventory statuses accordingly. Proceed?')) return;
+
+        setIsSyncing(true);
+        try {
+            const result = await syncAllInvoicesToInventory();
+            alert(`Sync Complete! Processed ${result.total} invoices. Updated statuses/added items where needed.`);
+            loadInventory();
+        } catch (error) {
+            console.error(error);
+            alert('Failed to sync from invoices');
+        } finally {
+            setIsSyncing(false);
+        }
     };
 
     const handleSaveItem = async (item: Partial<InventoryItem>) => {
@@ -242,7 +267,10 @@ export default function InventoryManager() {
             }
         }
 
-        // 3. Search Filter
+        // 4. Status Filter
+        if (statusFilter !== 'ALL' && item.status !== statusFilter) return false;
+
+        // 5. Search Filter
         if (!searchTerm) return true;
         const term = searchTerm.toLowerCase();
         const mat = (item.material || '').toLowerCase(); // Include material in search
@@ -311,6 +339,14 @@ export default function InventoryManager() {
                 </div>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }} className="no-print">
                     <button
+                        onClick={handleSyncFromInvoices}
+                        disabled={isSyncing}
+                        className="luxury-button"
+                        style={{ background: 'rgba(79, 70, 229, 0.1)', color: '#4f46e5', border: '1px solid rgba(79, 70, 229, 0.2)' }}
+                    >
+                        {isSyncing ? '⌛ Syncing...' : '🔄 Sync Invoices'}
+                    </button>
+                    <button
                         onClick={() => {
                             setEditingItem(null);
                             setIsModalOpen(true);
@@ -341,21 +377,49 @@ export default function InventoryManager() {
                             key={cat}
                             onClick={() => setActiveTab(cat)}
                             style={{
-                                padding: '10px 24px',
+                                padding: '10px 20px',
                                 borderRadius: 50,
                                 border: activeTab === cat ? 'none' : '1px solid #e2e8f0',
                                 background: activeTab === cat ? '#3b82f6' : '#f8fafc',
                                 color: activeTab === cat ? '#ffffff' : '#475569',
                                 fontWeight: 700,
-                                fontSize: 13,
+                                fontSize: 12,
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap',
-                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                boxShadow: activeTab === cat ? '0 4px 6px -1px rgba(59, 130, 246, 0.5)' : 'none',
-                                transform: activeTab === cat ? 'scale(1.05)' : 'scale(1)'
+                                transition: 'all 0.2s',
                             }}
                         >
                             {cat}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Status Bar Filter */}
+                <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: '#64748b', alignSelf: 'center', marginRight: 8 }}>Registry View:</span>
+                    {[
+                        { label: 'All Items', value: 'ALL', color: '#6366f1' },
+                        { label: 'Available', value: 'AVAILABLE', color: '#10b981' },
+                        { label: 'Sold', value: 'SOLD', color: '#ef4444' },
+                        { label: 'Consignment', value: 'ON_APPROVAL', color: '#f59e0b' },
+                        { label: 'Wholesale', value: 'WHOLESALE', color: '#8b5cf6' }
+                    ].map(btn => (
+                        <button
+                            key={btn.value}
+                            onClick={() => setStatusFilter(btn.value as any)}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: 8,
+                                border: statusFilter === btn.value ? 'none' : `1px solid ${btn.color}33`,
+                                background: statusFilter === btn.value ? btn.color : `${btn.color}0a`,
+                                color: statusFilter === btn.value ? '#fff' : btn.color,
+                                fontWeight: 700,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                            }}
+                        >
+                            {btn.label}
                         </button>
                     ))}
                 </div>
@@ -454,18 +518,37 @@ export default function InventoryManager() {
                                         </td>
                                         <td style={{ padding: '16px 20px', fontWeight: 800, color: 'var(--text-main)', fontSize: 15 }}>{item.sku}</td>
                                         <td style={{ padding: '16px 20px' }}>
-                                            <div style={{
-                                                width: 54, height: 54,
-                                                background: 'var(--glass-bg)',
-                                                borderRadius: 10,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                padding: 4,
-                                                border: '1px solid var(--glass-border)'
-                                            }}>
+                                            <div
+                                                onClick={() => {
+                                                    const imgs = item.images || (item.image ? [item.image] : []);
+                                                    if (imgs.length > 0) {
+                                                        setViewerImages(imgs);
+                                                        setViewerIndex(0);
+                                                        setViewerOpen(true);
+                                                    }
+                                                }}
+                                                style={{
+                                                    width: 54, height: 54,
+                                                    background: 'var(--glass-bg)',
+                                                    borderRadius: 10,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    padding: 4,
+                                                    border: '1px solid var(--glass-border)',
+                                                    cursor: (item.images?.length || item.image) ? 'zoom-in' : 'default',
+                                                    position: 'relative'
+                                                }}
+                                            >
                                                 {item.image ? (
-                                                    <img src={item.image} alt="" style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 4 }} />
+                                                    <>
+                                                        <img src={item.image} alt="" style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 4 }} />
+                                                        {(item.images?.length || 0) > 1 && (
+                                                            <div style={{ position: 'absolute', bottom: -2, right: -2, background: '#4f46e5', color: 'white', fontSize: 9, padding: '2px 4px', borderRadius: 4, fontWeight: 700 }}>
+                                                                {item.images?.length}
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 ) : (
                                                     <span style={{ fontSize: 20, opacity: 0.5 }}>🖼️</span>
                                                 )}
@@ -500,11 +583,20 @@ export default function InventoryManager() {
                                                 fontWeight: 800,
                                                 textTransform: 'uppercase',
                                                 letterSpacing: '0.05em',
-                                                background: item.status === 'SOLD' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                                                color: item.status === 'SOLD' ? 'var(--accent-rose)' : 'var(--accent-emerald)',
-                                                border: `1px solid ${item.status === 'SOLD' ? 'rgba(244, 63, 94, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`
+                                                background: item.status === 'SOLD' ? 'rgba(239, 68, 68, 0.1)' :
+                                                    item.status === 'WHOLESALE' ? 'rgba(139, 92, 246, 0.1)' :
+                                                        item.status === 'ON_APPROVAL' ? 'rgba(245, 158, 11, 0.1)' :
+                                                            'rgba(16, 185, 129, 0.1)',
+                                                color: item.status === 'SOLD' ? '#ef4444' :
+                                                    item.status === 'WHOLESALE' ? '#8b5cf6' :
+                                                        item.status === 'ON_APPROVAL' ? '#f59e0b' :
+                                                            '#10b981',
+                                                border: `1px solid ${item.status === 'SOLD' ? 'rgba(239, 68, 68, 0.2)' :
+                                                    item.status === 'WHOLESALE' ? 'rgba(139, 92, 246, 0.2)' :
+                                                        item.status === 'ON_APPROVAL' ? 'rgba(245, 158, 11, 0.2)' :
+                                                            'rgba(16, 185, 129, 0.2)'}`
                                             }}>
-                                                {item.status}
+                                                {item.status.replace('ON_APPROVAL', 'CONSIGNMENT')}
                                             </span>
                                         </td>
                                         <td style={{ padding: '16px 20px', textAlign: 'right' }}>
@@ -548,6 +640,14 @@ export default function InventoryManager() {
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveItem}
                 initialData={editingItem}
+            />
+
+            {/* Full Screen Image Viewer */}
+            <ImageViewerModal
+                images={viewerImages}
+                isOpen={viewerOpen}
+                initialIndex={viewerIndex}
+                onClose={() => setViewerOpen(false)}
             />
         </div>
     );

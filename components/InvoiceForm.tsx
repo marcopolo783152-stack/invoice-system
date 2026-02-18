@@ -307,43 +307,73 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     }
   };
 
-  const handleImageUpload = (id: string, file: File) => {
-    if (!file) return;
+  const handleMultiImageUpload = (id: string, files: FileList) => {
+    if (!files || files.length === 0) return;
 
-    // Resize image to max 300x300 for thumbnail
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 300;
-        const MAX_HEIGHT = 300;
-        let width = img.width;
-        let height = img.height;
+    const item = items.find(i => i.id === id);
+    const existingImages = item?.images || (item?.image ? [item.image] : []);
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
+    // Only allow up to 5 images total
+    const slotsAvailable = 5 - existingImages.length;
+    if (slotsAvailable <= 0) {
+      alert('Maximum 5 images per item allowed.');
+      return;
+    }
+
+    const filesToProcess = Array.from(files).slice(0, slotsAvailable);
+
+    filesToProcess.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800; // Increased quality for full-page view
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
           }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Compress
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
 
-        handleItemChange(id, 'image', dataUrl);
+          setItems(prev => prev.map(invItem => {
+            if (invItem.id === id) {
+              const currentImgs = invItem.images || (invItem.image ? [invItem.image] : []);
+              if (currentImgs.length >= 5) return invItem;
+              return { ...invItem, images: [...currentImgs, dataUrl], image: dataUrl }; // Keep legacy 'image' as first preview
+            }
+            return invItem;
+          }));
+        };
+        img.src = e.target?.result as string;
       };
-      img.src = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (itemId: string, index: number) => {
+    setItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        const newImages = (item.images || []).filter((_, i) => i !== index);
+        return { ...item, images: newImages, image: newImages[0] || '' };
+      }
+      return item;
+    }));
   };
 
   // Barcode Scanning
@@ -938,47 +968,64 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
               </div>
             </div>
 
-            {/* Image Upload for Item */}
+            {/* Image Gallery for Item */}
             <div className={styles.formGroup}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#4f46e5', marginTop: 8 }}>
-                <span>📷 {item.image ? 'Change Image' : 'Add Item Image'}</span>
+                <span>📷 Add Pictures (Max 5)</span>
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   capture="environment"
-                  onChange={(e) => e.target.files?.[0] && handleImageUpload(item.id, e.target.files[0])}
+                  onChange={(e) => handleMultiImageUpload(item.id, e.target.files!)}
                   style={{ display: 'none' }}
                 />
               </label>
-              {item.image && (
-                <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
-                  <img src={item.image} alt="Preview" style={{ height: 60, borderRadius: 4, border: '1px solid #ccc' }} />
-                  <button
-                    type="button"
-                    onClick={() => handleItemChange(item.id, 'image', '')}
-                    style={{
-                      position: 'absolute',
-                      top: -8,
-                      right: -8,
-                      background: '#ef4444',
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: 20,
-                      height: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: 12,
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                    }}
-                    title="Remove image"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
+
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                {(item.images || (item.image ? [item.image] : [])).map((img, idx) => (
+                  <div key={idx} style={{ position: 'relative', display: 'inline-block' }}>
+                    <img
+                      src={img}
+                      alt={`Rug ${idx + 1}`}
+                      style={{ height: 60, width: 60, objectFit: 'cover', borderRadius: 4, border: '1px solid #e2e8f0', cursor: 'pointer' }}
+                      title="Click to view full size"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(item.id, idx)}
+                      style={{
+                        position: 'absolute',
+                        top: -6,
+                        right: -6,
+                        background: '#ef4444',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: 18,
+                        height: 18,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid white',
+                        cursor: 'pointer',
+                        fontSize: 10,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                    <div style={{ position: 'absolute', bottom: 2, right: 2, background: 'rgba(0,0,0,0.5)', color: 'white', fontSize: 8, padding: '1px 3px', borderRadius: 2 }}>
+                      {idx + 1}
+                    </div>
+                  </div>
+                ))}
+                {(!item.images || item.images.length < 5) && !item.image && (
+                  <div style={{ height: 60, width: 60, background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 20 }}>
+                    🖼️
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className={styles.row}>

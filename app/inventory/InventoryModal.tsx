@@ -73,6 +73,66 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
         }
     };
 
+    const handleMultiImageUpload = (files: FileList) => {
+        if (!files || files.length === 0) return;
+
+        const currentImages = formData.images || (formData.image ? [formData.image] : []);
+        const slotsAvailable = 5 - currentImages.length;
+        if (slotsAvailable <= 0) {
+            alert('Maximum 5 images allowed.');
+            return;
+        }
+
+        const filesToProcess = Array.from(files).slice(0, slotsAvailable);
+
+        filesToProcess.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    const MAX_HEIGHT = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+                    setFormData(prev => {
+                        const imgs = prev.images || (prev.image ? [prev.image] : []);
+                        if (imgs.length >= 5) return prev;
+                        return { ...prev, images: [...imgs, dataUrl], image: dataUrl };
+                    });
+                };
+                img.src = e.target?.result as string;
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const removeImage = (index: number) => {
+        setFormData(prev => {
+            const newImages = (prev.images || []).filter((_, i) => i !== index);
+            return { ...prev, images: newImages, image: newImages[0] || '' };
+        });
+    };
+
     const handleChange = (field: keyof InventoryItem, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
@@ -348,11 +408,10 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Quality</label>
-                        <input
-                            type="text"
-                            value={formData.quality || ''}
-                            onChange={e => handleChange('quality', e.target.value)}
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-dim)' }}>Status</label>
+                        <select
+                            value={formData.status}
+                            onChange={e => handleChange('status', e.target.value)}
                             style={{
                                 width: '100%',
                                 padding: '10px 14px',
@@ -362,7 +421,64 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                                 color: 'var(--text-main)',
                                 outline: 'none'
                             }}
-                        />
+                        >
+                            <option value="AVAILABLE">AVAILABLE</option>
+                            <option value="SOLD">SOLD</option>
+                            <option value="ON_APPROVAL">ON_APPROVAL</option>
+                            <option value="WHOLESALE">WHOLESALE</option>
+                        </select>
+                    </div>
+
+                    {/* Images Section */}
+                    <div style={{ gridColumn: 'span 2', marginTop: 8 }}>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--text-dim)' }}>
+                            Rug Pictures (Max 5)
+                        </label>
+
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+                            {(formData.images || (formData.image ? [formData.image] : [])).map((img, idx) => (
+                                <div key={idx} style={{ position: 'relative' }}>
+                                    <img
+                                        src={img}
+                                        alt=""
+                                        style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 12, border: '2px solid var(--glass-border)' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeImage(idx)}
+                                        style={{
+                                            position: 'absolute', top: -8, right: -8,
+                                            background: '#ef4444', color: 'white', border: '2px solid white',
+                                            borderRadius: '50%', width: 24, height: 24, cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12
+                                        }}
+                                    >
+                                        ✕
+                                    </button>
+                                    <div style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 6px', borderRadius: 6, fontSize: 10 }}>
+                                        {idx + 1}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {(formData.images?.length || (formData.image ? 1 : 0)) < 5 && (
+                                <label style={{
+                                    width: 80, height: 80, borderRadius: 12, border: '2px dashed var(--glass-border)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                    flexDirection: 'column', gap: 4, background: 'var(--glass-bg)'
+                                }}>
+                                    <span style={{ fontSize: 24 }}>📷</span>
+                                    <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>Add</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={e => handleMultiImageUpload(e.target.files!)}
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
+                            )}
+                        </div>
                     </div>
 
                     <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
