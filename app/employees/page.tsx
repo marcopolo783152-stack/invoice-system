@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee, EmployeePayment, recordPayment, getEmployeePayments, addManualTimeLog, deleteTimeLog, checkAutoClockOut } from '@/lib/employee-storage';
+import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee, EmployeePayment, recordPayment, getEmployeePayments, addManualTimeLog, deleteTimeLog, checkAutoClockOut, updateTimeLog } from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
 
@@ -28,8 +28,13 @@ export default function EmployeesPage() {
     const [showManualLog, setShowManualLog] = useState<{ empId: string, name: string } | null>(null);
     const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
     const [manualTime, setManualTime] = useState('10:00');
-    const [manualType, setManualType] = useState<'IN' | 'OUT'>('IN');
+    const [manualType, setManualType] = useState<'IN' | 'OUT' | 'LEAVE'>('IN');
     const [isOvertime, setIsOvertime] = useState(false);
+
+    // Edit Log State
+    const [editingLog, setEditingLog] = useState<TimeLog | null>(null);
+    const [editDate, setEditDate] = useState('');
+    const [editTime, setEditTime] = useState('');
 
     const handleManualLog = async () => {
         if (!showManualLog) return;
@@ -43,6 +48,17 @@ export default function EmployeesPage() {
         });
         setShowManualLog(null);
         setIsOvertime(false);
+        loadData();
+    };
+
+    const handleUpdateLog = async () => {
+        if (!editingLog) return;
+        const newTimestamp = `${editDate}T${editTime}:00`;
+        await updateTimeLog(editingLog.id, {
+            timestamp: newTimestamp,
+            notes: (editingLog.notes || '') + ' (Edited by Admin)'
+        });
+        setEditingLog(null);
         loadData();
     };
 
@@ -64,6 +80,8 @@ export default function EmployeesPage() {
             if (isLate) return { label: 'LATE', color: '#f43f5e' };
             if (isEarly) return { label: 'EARLY', color: '#3b82f6' };
             return { label: 'ON TIME', color: '#10b981' };
+        } else if (log.type === 'LEAVE') {
+            return { label: 'DAY OFF', color: '#8b5cf6' };
         } else {
             // Clock out from 06:00 PM (18:00)
             const isEarly = hours < 18;
@@ -312,6 +330,12 @@ export default function EmployeesPage() {
                                             🗑️
                                         </button>
                                     </div>
+                                    <button
+                                        onClick={() => window.open(`/employees/history?id=${emp.id}`, '_blank')}
+                                        style={{ width: '100%', marginTop: 10, padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#64748b' }}
+                                    >
+                                        📄 Print Work History
+                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -365,11 +389,12 @@ export default function EmployeesPage() {
                                     />
                                     <select
                                         value={manualType}
-                                        onChange={(e) => setManualType(e.target.value as 'IN' | 'OUT')}
+                                        onChange={(e) => setManualType(e.target.value as any)}
                                         style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
                                     >
                                         <option value="IN">Clock In</option>
                                         <option value="OUT">Clock Out</option>
+                                        <option value="LEAVE">Day Off / Leave</option>
                                     </select>
                                     <button
                                         onClick={handleManualLog}
@@ -390,6 +415,39 @@ export default function EmployeesPage() {
                                     <button
                                         onClick={() => setShowManualLog(null)}
                                         style={{ padding: '8px 16px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {editingLog && (
+                            <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', background: '#fff7ed' }}>
+                                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 15, color: '#9a3412' }}>Edit Log Time</h3>
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                    <div style={{ fontWeight: 600 }}>{editingLog.employeeName} - {editingLog.type}</div>
+                                    <input
+                                        type="date"
+                                        value={editDate}
+                                        onChange={(e) => setEditDate(e.target.value)}
+                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #fed7aa' }}
+                                    />
+                                    <input
+                                        type="time"
+                                        value={editTime}
+                                        onChange={(e) => setEditTime(e.target.value)}
+                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #fed7aa' }}
+                                    />
+                                    <button
+                                        onClick={handleUpdateLog}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#f97316', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        Save Changes
+                                    </button>
+                                    <button
+                                        onClick={() => setEditingLog(null)}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#94a3b8', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
                                     >
                                         Cancel
                                     </button>
@@ -422,7 +480,14 @@ export default function EmployeesPage() {
                                                         style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
                                                     />
                                                 ) : (
-                                                    <div style={{ width: 40, height: 40, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>👤</div>
+                                                    /* Fallback to Employee Profile Picture */
+                                                    <div style={{ width: 40, height: 40, borderRadius: 8, overflow: 'hidden', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        {(() => {
+                                                            const emp = employees.find(e => e.id === log.employeeId);
+                                                            if (emp?.photo) return <img src={emp.photo} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
+                                                            return <span style={{ fontSize: 18 }}>👤</span>;
+                                                        })()}
+                                                    </div>
                                                 )}
                                             </td>
                                             <td style={{ padding: '16px 20px' }}>
@@ -431,10 +496,10 @@ export default function EmployeesPage() {
                                             <td style={{ padding: '16px 20px' }}>
                                                 <span style={{
                                                     fontSize: 11, fontWeight: 800, padding: '4px 8px', borderRadius: 6,
-                                                    background: log.type === 'IN' ? '#ecfdf5' : '#fef2f2',
-                                                    color: log.type === 'IN' ? '#059669' : '#dc2626'
+                                                    background: log.type === 'IN' ? '#ecfdf5' : log.type === 'LEAVE' ? '#f5f3ff' : '#fef2f2',
+                                                    color: log.type === 'IN' ? '#059669' : log.type === 'LEAVE' ? '#7c3aed' : '#dc2626'
                                                 }}>
-                                                    CLOCKED {log.type === 'IN' ? 'IN' : 'OUT'}
+                                                    {log.type === 'LEAVE' ? 'ON LEAVE' : `CLOCKED ${log.type}`}
                                                 </span>
                                             </td>
                                             <td style={{ padding: '16px 20px' }}>
@@ -455,6 +520,18 @@ export default function EmployeesPage() {
                                                 )}
                                             </td>
                                             <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                                <button
+                                                    onClick={() => {
+                                                        const date = new Date(log.timestamp);
+                                                        setEditDate(date.toISOString().split('T')[0]);
+                                                        setEditTime(date.toTimeString().slice(0, 5));
+                                                        setEditingLog(log);
+                                                    }}
+                                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6366f1', fontSize: 14, marginRight: 10 }}
+                                                    title="Edit Time"
+                                                >
+                                                    ✏️
+                                                </button>
                                                 <button
                                                     onClick={() => handleDeleteLog(log.id)}
                                                     style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#cbd5e1', fontSize: 14 }}

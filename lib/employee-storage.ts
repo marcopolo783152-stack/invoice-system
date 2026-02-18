@@ -37,7 +37,7 @@ export interface TimeLog {
     id: string;
     employeeId: string;
     employeeName: string;
-    type: 'IN' | 'OUT';
+    type: 'IN' | 'OUT' | 'LEAVE';
     timestamp: string;  // ISO
     notes?: string;
     device?: string;
@@ -334,6 +334,30 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
     localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(localLogs.slice(0, 1000)));
 
     return data;
+}
+
+/**
+ * Update an existing time log
+ */
+export async function updateTimeLog(logId: string, updates: Partial<TimeLog>): Promise<void> {
+    if (isFirebaseConfigured() && db) {
+        try {
+            const { doc, updateDoc } = await import('firebase/firestore');
+            // If timestamp is updated, convert to Firestore timestamp
+            const data: any = { ...updates };
+            if (updates.timestamp) {
+                data.timestamp = Timestamp.fromDate(new Date(updates.timestamp));
+            }
+            await updateDoc(doc(db, LOG_COLLECTION, logId), data);
+        } catch (e) { console.error('Error updating log:', e); }
+    }
+
+    const localLogs = JSON.parse(localStorage.getItem(LOCAL_LOG_KEY) || '[]');
+    const idx = localLogs.findIndex((l: any) => l.id === logId);
+    if (idx >= 0) {
+        localLogs[idx] = { ...localLogs[idx], ...updates };
+        localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(localLogs));
+    }
 }
 
 /**
