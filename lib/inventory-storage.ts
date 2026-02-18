@@ -402,13 +402,19 @@ export async function deleteInventoryBatch(ids: string[]): Promise<void> {
 /**
  * Update inventory status based on invoice data
  */
-export async function updateInventoryStatusFromInvoice(invoiceData: InvoiceData): Promise<void> {
-    const items = await getInventoryItems();
+export async function updateInventoryStatusFromInvoice(
+    invoiceData: InvoiceData,
+    existingItems?: InventoryItem[]
+): Promise<InventoryItem[]> {
+    const items = existingItems || await getInventoryItems();
+    const updatedItems = [...items];
     let updates = 0;
 
     for (const invoiceItem of invoiceData.items) {
         if (!invoiceItem.sku) continue;
-        const inventoryItem = items.find(i => i.sku.toLowerCase() === invoiceItem.sku.toLowerCase());
+        const skuLower = invoiceItem.sku.toLowerCase();
+        const itemIdx = updatedItems.findIndex(i => i.sku.toLowerCase() === skuLower);
+        const inventoryItem = itemIdx >= 0 ? updatedItems[itemIdx] : null;
 
         let newStatus: InventoryItem['status'];
         if (invoiceItem.returned || (invoiceData as any).returned) {
@@ -423,12 +429,13 @@ export async function updateInventoryStatusFromInvoice(invoiceData: InvoiceData)
 
         if (inventoryItem) {
             if (newStatus !== inventoryItem.status) {
-                await saveInventoryItem({ ...inventoryItem, status: newStatus });
+                const updated = await saveInventoryItem({ ...inventoryItem, status: newStatus });
+                updatedItems[itemIdx] = updated;
                 updates++;
             }
         } else {
             // New rug found in invoice - add to inventory as SOLD/ON_APPROVAL
-            await saveInventoryItem({
+            const newItem = await saveInventoryItem({
                 sku: invoiceItem.sku,
                 description: invoiceItem.description,
                 shape: invoiceItem.shape,
@@ -451,9 +458,11 @@ export async function updateInventoryStatusFromInvoice(invoiceData: InvoiceData)
                 zone: invoiceItem.zone,
                 createdAt: invoiceData.date
             });
+            updatedItems.push(newItem);
             updates++;
         }
     }
+    return updatedItems;
 }
 
 /**
@@ -463,7 +472,8 @@ export async function syncAllInvoicesToInventory(): Promise<{ updated: number, t
     // We need to import getAllInvoices dynamically to avoid circular dependency
     const { getAllInvoices } = await import('./invoice-storage');
     const invoices = await getAllInvoices();
-    let updatedCount = 0;
+    let currentRegistry = await getInventoryItems();
+    let updatedInvoicesCount = 0;
 
     // Sort by date ascending to ensure historical order (oldest first)
     const sorted = [...invoices].sort((a, b) => new Date(a.data.date).getTime() - new Date(b.data.date).getTime());
@@ -471,9 +481,11 @@ export async function syncAllInvoicesToInventory(): Promise<{ updated: number, t
     for (const inv of sorted) {
         // Skip Wash/Repair invoices as requested
         if (inv.data.documentType === 'WASH') continue;
-        await updateInventoryStatusFromInvoice(inv.data);
-        updatedCount++;
+
+        // Update the registry state in-memory as we go
+        currentRegistry = await updateInventoryStatusFromInvoice(inv.data, currentRegistry);
+        updatedInvoicesCount++;
     }
 
-    return { updated: updatedCount, total: invoices.length };
+    return { updated: updatedInvoicesCount, total: invoices.length };
 }
