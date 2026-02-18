@@ -1083,3 +1083,8 @@ export async function getOutstandingBalances(): Promise<{
     .filter(b => b.balance > 0.01)
     .sort((a, b) => b.balance - a.balance);
 }
+
+/**
+ * SIGNATURE TOKEN WRAPPERS
+ */
+export { createSignatureToken, validateSignatureToken, useSignatureToken } from './firebase-storage';

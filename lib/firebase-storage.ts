@@ -407,3 +407,74 @@ export async function deleteUserFromCloud(username: string): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * SIGNATURE TOKEN MANAGEMENT
+ */
+
+const TOKENS_COLLECTION = 'signatureTokens';
+
+/**
+ * Create a one-time signature token for an invoice
+ */
+export async function createSignatureToken(invoiceId: string): Promise<string> {
+  if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
+
+  try {
+    const docRef = await addDoc(collection(db, TOKENS_COLLECTION), {
+      invoiceId,
+      createdAt: Timestamp.now(),
+      used: false,
+      expiresAt: Timestamp.fromMillis(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days expiry
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating signature token:', error);
+    throw error;
+  }
+}
+
+/**
+ * Validate and retrieve info for a signature token
+ */
+export async function validateSignatureToken(tokenId: string): Promise<{ invoiceId: string } | null> {
+  if (!isFirebaseConfigured() || !db) return null;
+
+  try {
+    const { getDoc } = await import('firebase/firestore');
+    const docRef = doc(db, TOKENS_COLLECTION, tokenId);
+    const snap = await getDoc(docRef);
+
+    if (!snap.exists()) return null;
+
+    const data = snap.data();
+    if (data.used) return null;
+
+    // Check expiry
+    if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
+      return null;
+    }
+
+    return { invoiceId: data.invoiceId };
+  } catch (error) {
+    console.error('Error validating token:', error);
+    return null;
+  }
+}
+
+/**
+ * Mark a signature token as used
+ */
+export async function useSignatureToken(tokenId: string): Promise<void> {
+  if (!isFirebaseConfigured() || !db) return;
+
+  try {
+    const docRef = doc(db, TOKENS_COLLECTION, tokenId);
+    await updateDoc(docRef, {
+      used: true,
+      usedAt: Timestamp.now()
+    });
+  } catch (error) {
+    console.error('Error marking token as used:', error);
+  }
+}

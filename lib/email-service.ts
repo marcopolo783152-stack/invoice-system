@@ -455,3 +455,39 @@ export function prepareInvoiceForEmail(invoiceElement: HTMLElement): string {
   return styles + clone.outerHTML;
 }
 
+/**
+ * Send signature request email to customer
+ */
+export async function sendSignatureRequestEmail(
+  toEmail: string,
+  customerName: string,
+  invoiceNumber: string,
+  signatureLink: string
+): Promise<boolean> {
+  const config = getEmailConfig();
+
+  if (!config.serviceId || !config.publicKey) {
+    console.warn('EmailJS not configured. Link:', signatureLink);
+    return false;
+  }
+
+  try {
+    await emailjs.send(
+      config.serviceId,
+      'signature_request_template', // Logic assumes user adds this template or it falls back to a default if we could
+      {
+        to_email: toEmail,
+        to_name: customerName,
+        invoice_number: invoiceNumber,
+        signature_link: signatureLink,
+        message: "Please sign your invoice by clicking the link below. This link is for one-time use."
+      },
+      config.publicKey
+    );
+    return true;
+  } catch (error) {
+    console.error('Failed to send signature request email:', error);
+    return false;
+  }
+}
+

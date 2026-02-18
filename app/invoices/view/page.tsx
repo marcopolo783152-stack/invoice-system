@@ -602,7 +602,7 @@ function InvoiceViewContent() {
                             <ArrowLeft size={18} /> Back to Invoices
                         </Link>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, flexWrap: 'wrap', gap: 20 }}>
                             <div>
                                 <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 12 }}>
                                     Invoice #{invoice.data.invoiceNumber}
@@ -624,7 +624,7 @@ function InvoiceViewContent() {
                                 <p style={{ color: '#64748b', marginTop: 4 }}>Created on {formatDateMMDDYYYY(invoice.createdAt)}</p>
                             </div>
 
-                            <div style={{ display: 'flex', gap: 12 }}>
+                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                                 <button
                                     onClick={() => setShowPaymentModal(true)}
                                     style={{
@@ -735,11 +735,57 @@ function InvoiceViewContent() {
                                         background: 'white',
                                         borderRadius: 12,
                                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                                        border: '1px solid #f1f5f9',
-                                        minWidth: 220,
-                                        zIndex: 50,
-                                        overflow: 'hidden'
+                                        border: '1px solid #e2e8f0',
+                                        zIndex: 100,
+                                        minWidth: 200,
+                                        overflow: 'hidden',
+                                        padding: '5px 0'
                                     }}>
+                                        <button
+                                            onClick={async () => {
+                                                setShowMoreMenu(false);
+                                                if (!invoice.data.soldTo.email) {
+                                                    alert('Customer email is required to send a signature link.');
+                                                    return;
+                                                }
+
+                                                if (confirm('Send a one-time signature link to this customer?')) {
+                                                    try {
+                                                        const { createSignatureToken } = await import('@/lib/invoice-storage');
+                                                        const { sendSignatureRequestEmail } = await import('@/lib/email-service');
+
+                                                        const token = await createSignatureToken(invoice.id);
+                                                        const link = `${window.location.origin}/public/signature/${token}`;
+
+                                                        const sent = await sendSignatureRequestEmail(
+                                                            invoice.data.soldTo.email,
+                                                            invoice.data.soldTo.name,
+                                                            invoice.data.invoiceNumber || 'New',
+                                                            link
+                                                        );
+
+                                                        if (sent) {
+                                                            alert('Signature link sent successfully!');
+                                                            logActivity('Signature Link Sent', `Sent link to ${invoice.data.soldTo.email} for invoice ${invoice.data.invoiceNumber}`);
+                                                        } else {
+                                                            alert('Failed to send email, but token was generated. Copy this link for the customer:\n\n' + link);
+                                                            console.log('Signature Link:', link);
+                                                        }
+                                                    } catch (error: any) {
+                                                        alert('Error: ' + error.message);
+                                                    }
+                                                }
+                                            }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 10,
+                                                width: '100%', padding: '12px 16px', background: 'none',
+                                                border: 'none', color: '#1e293b', fontSize: 14,
+                                                fontWeight: 500, cursor: 'pointer', textAlign: 'left',
+                                            }}
+                                            className="hover-row"
+                                        >
+                                            <Mail size={16} /> Send Signature Link
+                                        </button>
                                         {/* Actions Group */}
                                         <div style={{ padding: '8px 12px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                             Invoice Actions
