@@ -112,8 +112,8 @@ export default function EmployeesPage() {
 
         setTimeout(() => {
             window.print();
-            setPrintBadge(null);
-        }, 500);
+            setTimeout(() => setPrintBadge(null), 1000);
+        }, 800);
     };
 
     const handleDelete = async (id: string) => {
@@ -174,8 +174,10 @@ export default function EmployeesPage() {
                             });
                             setTimeout(() => {
                                 window.print();
-                                setPrintBadge(null);
-                            }, 500);
+                                // We keep the badge state for a moment longer to ensure 
+                                // some browsers' print preview doesn't clear the content
+                                setTimeout(() => setPrintBadge(null), 1000);
+                            }, 800);
                         }}
                         style={{ padding: '12px 24px', borderRadius: 12, border: '1px solid #6366f1', background: 'rgba(99, 102, 241, 0.05)', color: '#6366f1', fontWeight: 700, cursor: 'pointer' }}
                     >
