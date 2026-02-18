@@ -162,7 +162,7 @@ function SignatureContent() {
                         </button>
                     </div>
 
-                    <div style={{ borderTop: '1px solid #f1f5f9', transform: 'scale(0.95)', transformOrigin: 'top center' }}>
+                    <div style={{ borderTop: '1px solid #f1f5f9' }}>
                         <InvoiceTemplate
                             data={invoice.data}
                             calculations={calculations}
