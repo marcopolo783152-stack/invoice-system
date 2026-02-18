@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Employee, TimeLog, getEmployees, getTimeLogs } from '@/lib/employee-storage';
 import { Loader2 } from 'lucide-react';
 
-export default function EmployeeHistoryPrint() {
+function HistoryContent() {
     const searchParams = useSearchParams();
     const employeeId = searchParams.get('id');
 
@@ -149,5 +149,18 @@ export default function EmployeeHistoryPrint() {
                 }
             `}</style>
         </div>
+    );
+}
+
+export default function EmployeeHistoryPrint() {
+    return (
+        <Suspense fallback={
+            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Loader2 className="animate-spin" />
+                <span style={{ marginLeft: 10 }}>Loading...</span>
+            </div>
+        }>
+            <HistoryContent />
+        </Suspense>
     );
 }
