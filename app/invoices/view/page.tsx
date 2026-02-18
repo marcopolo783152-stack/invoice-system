@@ -602,7 +602,7 @@ function InvoiceViewContent() {
                             <ArrowLeft size={18} /> Back to Invoices
                         </Link>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, flexWrap: 'wrap', gap: 20 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
                             <div>
                                 <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 12 }}>
                                     Invoice #{invoice.data.invoiceNumber}
@@ -624,7 +624,7 @@ function InvoiceViewContent() {
                                 <p style={{ color: '#64748b', marginTop: 4 }}>Created on {formatDateMMDDYYYY(invoice.createdAt)}</p>
                             </div>
 
-                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: 12 }}>
                                 <button
                                     onClick={() => setShowPaymentModal(true)}
                                     style={{

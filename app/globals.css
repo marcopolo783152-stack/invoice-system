@@ -218,40 +218,22 @@ h6 {
   transform: translateY(0);
 }
 
-/* Responsive Overrides */
-@media (max-width: 1024px) {
-  .desktop-sidebar-space {
-    display: none;
-  }
+/* Responsive Overrides - Removed to force PC Version */
+.desktop-sidebar-space {
+  display: block;
+}
 
-  .mobile-only-header {
-    display: flex !important;
-    background: #ffffff !important;
-    border-bottom: 1px solid var(--surface-border) !important;
-  }
+.mobile-only-header {
+  display: none !important;
+}
 
-  .main-content {
-    margin-left: 0 !important;
-    padding-bottom: 80px;
-  }
+.main-content {
+  margin-left: 0 !important;
 }
 
 .sidebar-container {
   transform: translateX(0);
   visibility: visible;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s;
-}
-
-@media (max-width: 1024px) {
-  .sidebar-container {
-    transform: translateX(-100%);
-    visibility: hidden;
-  }
-
-  .sidebar-container.mobile-open {
-    transform: translateX(0);
-    visibility: visible;
-  }
 }
 
 /* Visibility Utilities */
@@ -261,16 +243,6 @@ h6 {
 
 .mobile-visible {
   display: none;
-}
-
-@media (max-width: 1024px) {
-  .mobile-hidden {
-    display: none !important;
-  }
-
-  .mobile-visible {
-    display: flex !important;
-  }
 }
 
 .focus-glow:focus {
