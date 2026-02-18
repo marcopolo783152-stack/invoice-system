@@ -234,6 +234,10 @@ h6 {
 .sidebar-container {
   transform: translateX(0);
   visibility: visible;
+  position: sticky !important;
+  left: 0;
+  top: 0;
+  height: 100vh;
 }
 
 /* Visibility Utilities */

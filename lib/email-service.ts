@@ -474,13 +474,13 @@ export async function sendSignatureRequestEmail(
   try {
     await emailjs.send(
       config.serviceId,
-      'signature_request_template', // Logic assumes user adds this template or it falls back to a default if we could
+      config.templateIdInvoice,
       {
         to_email: toEmail,
         to_name: customerName,
         invoice_number: invoiceNumber,
         signature_link: signatureLink,
-        message: "Please sign your invoice by clicking the link below. This link is for one-time use."
+        message: `Dear ${customerName},\n\nPlease sign your invoice #${invoiceNumber} at the link below. This link is for one-time use:\n\n${signatureLink}\n\nThank you!`
       },
       config.publicKey
     );

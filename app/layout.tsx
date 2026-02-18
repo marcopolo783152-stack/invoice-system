@@ -104,7 +104,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="viewport" content="width=1280" />
+        <meta name="viewport" content="width=1280, shrink-to-fit=no" />
       </head>
       <body className={inter.className}>
         <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', minWidth: 1280 }}>
