@@ -20,7 +20,6 @@ export default function RootLayout({
 }) {
   const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [showAddressBook, setShowAddressBook] = useState(false);
   const [showExportPreview, setShowExportPreview] = useState(false);
@@ -53,11 +52,7 @@ export default function RootLayout({
     };
 
     checkAuth();
-
-    // Regular interval fallback for edge cases
     const interval = setInterval(checkAuth, 1000);
-
-    // Also listen for storage changes for cross-tab or logout sync
     window.addEventListener('storage', checkAuth);
 
     const handleOpenNotifications = () => setShowNotifications(true);
@@ -72,25 +67,20 @@ export default function RootLayout({
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
-      // Clear ALL possible session/auth tokens
       sessionStorage.removeItem('mp-invoice-auth');
       sessionStorage.removeItem('mp-invoice-user');
       localStorage.removeItem('mp-invoice-auth');
       localStorage.removeItem('mp-invoice-user');
-
       setIsAuthenticated(false);
       setUser(null);
       window.location.href = '/';
-      // Force refresh on logout to clear all states
       setTimeout(() => window.location.reload(), 100);
     }
   };
 
-  // Check for ANY print page (Invoices or Inventory)
   const isPrintPage = pathname?.includes('/print');
   const isPublicPage = pathname?.startsWith('/public');
 
-  // For print pages, we want a completely clean layout without sidebars, modals, or flex wrappers
   if (isPrintPage) {
     return (
       <html lang="en">
@@ -108,7 +98,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', minWidth: 1280 }}>
-          {/* Global Modals - Only render if authenticated AND not public */}
+          {/* Global Modals */}
           {isAuthenticated && !isPublicPage && (
             <>
               <AddressBookModal
@@ -145,7 +135,6 @@ export default function RootLayout({
               <Sidebar
                 user={user}
                 onLogout={handleLogout}
-                onClose={() => { }} // No mobile close needed
                 isCollapsed={isCollapsed}
                 onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
                 onShowAddressBook={() => setShowAddressBook(true)}
