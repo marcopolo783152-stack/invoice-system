@@ -123,53 +123,101 @@ function EmployeePrintContent() {
                     background: 'white', margin: '0 auto'
                 }}>
                     <div style={{
-                        width: '3.5in', height: '2in', border: '1px solid #1e293b',
-                        borderRadius: 8, padding: 12, textAlign: 'left', display: 'flex',
-                        gap: 12, alignItems: 'center', background: '#fff', boxSizing: 'border-box',
-                        position: 'relative', overflow: 'hidden'
+                        width: '3.5in', height: '2in', border: '1px solid #c5a059',
+                        borderRadius: 12, overflow: 'hidden', background: '#fff',
+                        boxSizing: 'border-box', display: 'flex', position: 'relative',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
                     }}>
-                        {/* Left Side: Photo & Info */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <div style={{
-                                    width: 45, height: 45, borderRadius: '50%', background: '#f1f5f9',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-                                    border: '1px solid #e2e8f0'
-                                }}>
-                                    {employee.photo ? (
-                                        <img src={employee.photo} alt={employee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <span style={{ fontSize: 18 }}>👤</span>
-                                    )}
-                                </div>
-                                <div style={{ lineHeight: 1.1 }}>
-                                    <div style={{ fontSize: 11, fontWeight: 900, color: '#1e293b' }}>MARCO POLO</div>
-                                    <div style={{ fontSize: 8, color: '#64748b', letterSpacing: 1 }}>STAFF ID</div>
-                                </div>
-                            </div>
+                        {/* Luxury Sidebar Accent */}
+                        <div style={{
+                            width: 15, background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                            height: '100%', flexShrink: 0
+                        }}></div>
 
-                            <div style={{ marginTop: 2 }}>
-                                <h2 style={{ fontSize: 14, fontWeight: 900, color: '#0f172a', margin: 0 }}>{employee.name}</h2>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: '#4f46e5' }}>ID: {employee.empId}</div>
-                            </div>
-
+                        {/* Professional ID Content */}
+                        <div style={{ flex: 1, padding: 15, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                            {/* Logo Watermark */}
                             <div style={{
-                                fontSize: 6, color: '#cbd5e1', marginTop: 'auto',
-                                borderTop: '0.5px solid #f1f5f9', paddingTop: 4
+                                position: 'absolute', right: -20, bottom: -20, opacity: 0.03,
+                                fontSize: 100, fontWeight: 900, pointerEvents: 'none', transform: 'rotate(-15deg)'
                             }}>
-                                Alexandria, VA • (703) 461-0207
+                                MP
+                            </div>
+
+                            {/* Top Header Section */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                    <div style={{
+                                        width: 50, height: 50, borderRadius: 10, background: '#fff',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                                        border: '1.5px solid #e2e8f0', padding: 2
+                                    }}>
+                                        {employee.photo ? (
+                                            <img src={employee.photo} alt={employee.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+                                        ) : (
+                                            <span style={{ fontSize: 22 }}>👤</span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', letterSpacing: 0.5 }}>MARCO POLO</div>
+                                        <div style={{ fontSize: 7, fontWeight: 700, color: '#c5a059', textTransform: 'uppercase', letterSpacing: 2 }}>Oriental Rugs</div>
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: 6, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase' }}>Security ID</div>
+                                    <div style={{ fontSize: 10, fontWeight: 900, color: '#1e293b' }}>#{employee.empId}</div>
+                                </div>
+                            </div>
+
+                            {/* Staff Branding Section */}
+                            <div style={{ marginTop: 'auto' }}>
+                                <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', margin: '0 0 2px 0' }}>{employee.name}</h2>
+                                <div style={{
+                                    display: 'inline-block', padding: '2px 8px', borderRadius: 4,
+                                    background: '#1e293b', color: '#fff', fontSize: 8,
+                                    fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1
+                                }}>
+                                    Authorized Personnel
+                                </div>
+                            </div>
+
+                            {/* Corporate Footer Section */}
+                            <div style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+                                marginTop: 12, borderTop: '0.5px solid #f1f5f9', paddingTop: 6
+                            }}>
+                                <div style={{ fontSize: 6, color: '#94a3b8', fontWeight: 600 }}>
+                                    (703) 461-0207 • Alexandria, VA
+                                </div>
+                                <div style={{ fontSize: 5, color: '#cbd5e1', fontStyle: 'italic' }}>
+                                    Verified Member Since {new Date(employee.joinedDate).getFullYear()}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Right Side: QR */}
-                        <div style={{ textAlign: 'center', width: 80 }}>
-                            <img
-                                src={qrUrl}
-                                alt="QR Code"
-                                style={{ width: 70, height: 70 }}
-                                onLoad={() => setImageLoaded(true)}
-                            />
-                            <div style={{ fontSize: 7, color: '#94a3b8', marginTop: 4, fontWeight: 700 }}>SCAN TO CLOCK</div>
+                        {/* Secure QR Side Section */}
+                        <div style={{
+                            width: 90, background: '#f8fafc', borderLeft: '1px solid #f1f5f9',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            padding: 10
+                        }}>
+                            <div style={{
+                                background: '#fff', padding: 5, borderRadius: 8,
+                                border: '1px solid #e2e8f0', boxShadow: '0 5px 15px rgba(0,0,0,0.05)'
+                            }}>
+                                <img
+                                    src={qrUrl}
+                                    alt="QR Code"
+                                    style={{ width: 65, height: 65 }}
+                                    onLoad={() => setImageLoaded(true)}
+                                />
+                            </div>
+                            <div style={{
+                                marginTop: 8, fontSize: 6, fontWeight: 900, color: '#1e293b',
+                                textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center'
+                            }}>
+                                Scan to Access<br />Time Clock
+                            </div>
                         </div>
                     </div>
                 </div>

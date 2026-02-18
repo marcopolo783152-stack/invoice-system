@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee, EmployeePayment, recordPayment, getEmployeePayments, addManualTimeLog, deleteTimeLog } from '@/lib/employee-storage';
+import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee, EmployeePayment, recordPayment, getEmployeePayments, addManualTimeLog, deleteTimeLog, checkAutoClockOut } from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
 
@@ -133,7 +133,11 @@ export default function EmployeesPage() {
     };
 
     useEffect(() => {
-        loadData();
+        const init = async () => {
+            await checkAutoClockOut();
+            loadData();
+        };
+        init();
     }, []);
 
     const handlePrintBadge = (emp: Employee) => {

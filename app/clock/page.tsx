@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { clockInOut, Employee } from '@/lib/employee-storage';
+import { clockInOut, Employee, checkAutoClockOut } from '@/lib/employee-storage';
 import Link from 'next/link';
 
 export default function ClockPage() {
@@ -35,6 +35,9 @@ export default function ClockPage() {
         if (id) {
             setIdentifier(id);
         }
+
+        // Auto-cleanup if visiting after hours
+        checkAutoClockOut();
     }, []);
 
     // Haversine formula for distance in feet
