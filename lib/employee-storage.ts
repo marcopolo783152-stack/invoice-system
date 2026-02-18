@@ -30,6 +30,7 @@ export interface Employee {
     joinedDate: string;
     lastAction?: string;
     dailyRate?: number; // Salary per day
+    photo?: string; // Profile picture (Base64)
 }
 
 export interface TimeLog {
@@ -168,6 +169,13 @@ export async function clockInOut(
     employee.status = nextType;
     employee.lastAction = now;
 
+    // AUTO-SET PROFILE PICTURE: If employee doesn't have one, use this captured photo
+    let setsPhoto = false;
+    if (!employee.photo && facePhoto) {
+        employee.photo = facePhoto;
+        setsPhoto = true;
+    }
+
     if (isFirebaseConfigured() && db) {
         try {
             // Log entry
@@ -178,10 +186,13 @@ export async function clockInOut(
             log.id = logRef.id;
 
             // Update status in cloud
-            await updateDoc(doc(db, EMP_COLLECTION, employee.id), {
+            const updateFields: any = {
                 status: nextType,
                 lastAction: now
-            });
+            };
+            if (setsPhoto) updateFields.photo = facePhoto;
+
+            await updateDoc(doc(db, EMP_COLLECTION, employee.id), updateFields);
         } catch (e) {
             console.error('Firebase clock error:', e);
         }

@@ -238,29 +238,43 @@ export default function EmployeesPage() {
                                 border: '1px solid #e2e8f0', position: 'relative',
                                 display: 'flex', gap: 16
                             }}>
-                                <div style={{
-                                    width: 60, height: 60, borderRadius: 12,
-                                    background: '#f1f5f9', display: 'flex',
-                                    alignItems: 'center', justifyContent: 'center', fontSize: 24
-                                }}>
-                                    👤
-                                </div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div>
-                                            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{emp.name}</h3>
-                                            <span style={{ fontSize: 11, background: '#f1f5f9', padding: '2px 8px', borderRadius: 4, color: '#64748b', fontWeight: 700 }}>
-                                                ID: {emp.empId}
-                                            </span>
-                                        </div>
-                                        <span style={{
-                                            padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 900,
-                                            background: emp.status === 'IN' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
-                                            color: emp.status === 'IN' ? '#10b981' : '#f43f5e',
-                                            border: `1px solid ${emp.status === 'IN' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)'}`
+                                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 15 }}>
+                                        <div style={{
+                                            width: 48, height: 48, borderRadius: '50%', background: '#f1f5f9',
+                                            overflow: 'hidden', border: '2px solid #fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                            flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'
                                         }}>
-                                            {emp.status === 'IN' ? 'ON THE CLOCK' : 'OFFLINE'}
-                                        </span>
+                                            {emp.photo ? (
+                                                <img src={emp.photo} alt={emp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <span style={{ fontSize: 20 }}>👤</span>
+                                            )}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <h3 style={{
+                                                        fontSize: 17, fontWeight: 800, color: '#1e293b',
+                                                        margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                                                    }} title={emp.name}>
+                                                        {emp.name}
+                                                    </h3>
+                                                    <span style={{ fontSize: 10, background: '#f1f5f9', padding: '1px 6px', borderRadius: 4, color: '#64748b', fontWeight: 700 }}>
+                                                        ID: {emp.empId}
+                                                    </span>
+                                                </div>
+                                                <span style={{
+                                                    padding: '3px 8px', borderRadius: 20, fontSize: 9, fontWeight: 900,
+                                                    background: emp.status === 'IN' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+                                                    color: emp.status === 'IN' ? '#10b981' : '#f43f5e',
+                                                    border: `1px solid ${emp.status === 'IN' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)'}`,
+                                                    flexShrink: 0
+                                                }}>
+                                                    {emp.status === 'IN' ? 'IN' : 'OUT'}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div style={{ marginTop: 15, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#64748b' }}>
                                         <div style={{ display: 'flex', gap: 8 }}>📞 {emp.phone}</div>
