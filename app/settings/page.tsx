@@ -65,6 +65,10 @@ function EmailSettingsForm() {
                     <input name="templateIdInvoice" value={config.templateIdInvoice} onChange={handleChange} placeholder="template_..." style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
                 </div>
                 <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Template ID (Signature)</label>
+                    <input name="templateIdSignature" value={config.templateIdSignature || ''} onChange={handleChange} placeholder="template_..." style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
+                </div>
+                <div>
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Public Key</label>
                     <input name="publicKey" value={config.publicKey} onChange={handleChange} placeholder="User ID" style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
                 </div>

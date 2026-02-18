@@ -11,6 +11,7 @@ const STORAGE_KEY_EMAIL_CONFIG = 'emailjs_config';
 export interface EmailConfig {
   serviceId: string;
   templateIdInvoice: string;
+  templateIdSignature?: string; // Dedicated template for signatures
   templateIdConfirm: string; // Optional for now
   publicKey: string;
   privateKey?: string; // Optional, only needed for backend sending with attachments
@@ -18,12 +19,11 @@ export interface EmailConfig {
 
 const DEFAULT_CONFIG: EmailConfig = {
   serviceId: 'Marcopolo-Rugs',
-  templateIdInvoice: '', // User still needs to set this or we rely on them verifying it? 
-  // Actually, user likely has this in local storage. 
-  // But let's leave blank if we don't know it, or keep existing.
+  templateIdInvoice: '',
+  templateIdSignature: '',
   templateIdConfirm: '',
-  publicKey: 'Anj9zrEUo-VEWvMVw', // From Screenshot
-  privateKey: 'ZgV1UYxVUy0UQKBmgj3I5', // From Screenshot
+  publicKey: 'Anj9zrEUo-VEWvMVw',
+  privateKey: 'ZgV1UYxVUy0UQKBmgj3I5',
 };
 
 // Admin email for security confirmations
@@ -465,16 +465,17 @@ export async function sendSignatureRequestEmail(
   signatureLink: string
 ): Promise<boolean> {
   const config = getEmailConfig();
+  const templateId = config.templateIdSignature || config.templateIdInvoice;
 
-  if (!config.serviceId || !config.publicKey) {
-    console.warn('EmailJS not configured. Link:', signatureLink);
+  if (!config.serviceId || !templateId || !config.publicKey) {
+    console.warn('EmailJS not configured for signature request. Link:', signatureLink);
     return false;
   }
 
   try {
     await emailjs.send(
       config.serviceId,
-      config.templateIdInvoice,
+      templateId,
       {
         to_email: toEmail,
         to_name: customerName,
