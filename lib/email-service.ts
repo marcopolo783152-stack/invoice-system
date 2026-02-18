@@ -479,8 +479,10 @@ export async function sendSignatureRequestEmail(
         to_email: toEmail,
         to_name: customerName,
         invoice_number: invoiceNumber,
-        signature_link: signatureLink,
-        message: `Dear ${customerName},\n\nPlease sign your invoice #${invoiceNumber} at the link below. This link is for one-time use:\n\n${signatureLink}\n\nThank you!`
+        signature_link: signatureLink, // Keep for new templates
+        invoice_link: signatureLink,   // Add for existing template buttons
+        invoice_url: signatureLink,    // Alternate common param name
+        message: `Dear ${customerName},\n\nURGENT: Your signature is required for invoice #${invoiceNumber}. Please click the link below to sign electronically. This link is for one-time use:\n\n${signatureLink}\n\nThank you!`
       },
       config.publicKey
     );
