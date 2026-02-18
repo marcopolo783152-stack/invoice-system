@@ -116,13 +116,18 @@ export default function ClockPage() {
             minHeight: '100vh',
             background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 20, fontFamily: 'system-ui, -apple-system, sans-serif'
+            padding: '10px', fontFamily: 'system-ui, -apple-system, sans-serif',
+            width: '100vw', // Ensure full width
+            overflowX: 'hidden'
         }}>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+
             <div className="luxury-card" style={{
-                width: '100%', maxWidth: 500, background: 'rgba(255, 255, 255, 0.03)',
-                backdropFilter: 'blur(16px)', borderRadius: 32, padding: '40px',
+                width: '100%', maxWidth: '400px', background: 'rgba(255, 255, 255, 0.03)',
+                backdropFilter: 'blur(16px)', borderRadius: '24px', padding: '30px 20px',
                 border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center',
-                boxShadow: '0 50px 100px -20px rgba(0,0,0,0.5)'
+                boxShadow: '0 40px 80px -20px rgba(0,0,0,0.5)',
+                margin: 'auto'
             }}>
                 {status === 'SUCCESS' ? (
                     <div className="animate-in fade-in zoom-in duration-500">
@@ -143,7 +148,7 @@ export default function ClockPage() {
                 ) : (
                     <>
                         {/* Camera Preview */}
-                        <div style={{ width: 150, height: 150, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 24px', border: '4px solid rgba(255,255,255,0.1)', background: '#000' }}>
+                        <div style={{ width: 120, height: 120, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 20px', border: '3px solid rgba(255,255,255,0.1)', background: '#000' }}>
                             <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <canvas ref={canvasRef} style={{ display: 'none' }} />
                         </div>
