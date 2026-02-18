@@ -14,7 +14,8 @@ export default function EmployeeModal({ isOpen, onClose, onSave, initialData }: 
         phone: '',
         email: '',
         empId: '',
-        pin: ''
+        pin: '',
+        photo: ''
     });
     const [isSaving, setIsSaving] = useState(false);
 
@@ -27,7 +28,8 @@ export default function EmployeeModal({ isOpen, onClose, onSave, initialData }: 
                 phone: '',
                 email: '',
                 empId: '',
-                pin: ''
+                pin: '',
+                photo: ''
             });
         }
     }, [initialData, isOpen]);
@@ -46,6 +48,17 @@ export default function EmployeeModal({ isOpen, onClose, onSave, initialData }: 
             alert('Failed to save employee');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData({ ...formData, photo: reader.result as string });
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -70,6 +83,32 @@ export default function EmployeeModal({ isOpen, onClose, onSave, initialData }: 
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Photo Upload Section */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+                        <div style={{ position: 'relative', width: 100, height: 100 }}>
+                            <div style={{
+                                width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
+                                border: '3px solid #e2e8f0', background: '#f8fafc',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                {formData.photo ? (
+                                    <img src={formData.photo} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    <span style={{ fontSize: 32 }}>👤</span>
+                                )}
+                            </div>
+                            <label style={{
+                                position: 'absolute', bottom: 0, right: 0,
+                                background: '#3b82f6', color: '#fff', borderRadius: '50%',
+                                width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                            }}>
+                                <span style={{ fontSize: 16, fontWeight: 'bold' }}>+</span>
+                                <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+                            </label>
+                        </div>
+                    </div>
+
                     <div>
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>Full Name *</label>
                         <input

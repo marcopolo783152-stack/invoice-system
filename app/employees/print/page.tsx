@@ -59,9 +59,30 @@ function EmployeePrintContent() {
 
     if (isLoading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Loader2 className="animate-spin" size={32} color="#6366f1" />
-                <span style={{ marginLeft: 10, fontFamily: 'sans-serif', color: '#64748b' }}>Generating PDF...</span>
+            <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <Loader2 className="animate-spin" size={32} color="#6366f1" />
+                    <span style={{ marginLeft: 10, fontFamily: 'sans-serif', color: '#64748b' }}>Generating High-Quality PDF...</span>
+                </div>
+                {/* Fallback Manual Download */}
+                <button
+                    onClick={() => {
+                        if (printRef.current) {
+                            generatePDFBlobUrl(printRef.current, id || 'print').then(url => {
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `Employee_Print_${id || 'Poster'}.pdf`;
+                                a.click();
+                            });
+                        }
+                    }}
+                    style={{
+                        padding: '10px 20px', borderRadius: 8, border: '1px solid #e2e8f0',
+                        background: '#fff', color: '#64748b', cursor: 'pointer', fontSize: 13, fontWeight: 600
+                    }}
+                >
+                    Download Manually
+                </button>
             </div>
         );
     }

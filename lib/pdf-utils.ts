@@ -122,7 +122,7 @@ export async function getInvoicePDFBlob(
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i] as HTMLElement;
     const canvas = await html2canvas(page, {
-      scale: 2, // Increased for readability (was 0.6)
+      scale: 4, // Ultra Quality for Print
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',

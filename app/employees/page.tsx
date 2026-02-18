@@ -29,6 +29,7 @@ export default function EmployeesPage() {
     const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
     const [manualTime, setManualTime] = useState('10:00');
     const [manualType, setManualType] = useState<'IN' | 'OUT'>('IN');
+    const [isOvertime, setIsOvertime] = useState(false);
 
     const handleManualLog = async () => {
         if (!showManualLog) return;
@@ -38,9 +39,10 @@ export default function EmployeesPage() {
             employeeName: showManualLog.name,
             type: manualType,
             timestamp,
-            notes: 'Added by Administrator'
+            notes: isOvertime ? 'Overtime Work (Added by Admin)' : 'Added by Administrator'
         });
         setShowManualLog(null);
+        setIsOvertime(false);
         loadData();
     };
 
@@ -375,6 +377,16 @@ export default function EmployeesPage() {
                                     >
                                         Add Log
                                     </button>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+                                        <input
+                                            type="checkbox"
+                                            id="overtime"
+                                            checked={isOvertime}
+                                            onChange={e => setIsOvertime(e.target.checked)}
+                                            style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                        />
+                                        <label htmlFor="overtime" style={{ fontSize: 13, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>Overtime</label>
+                                    </div>
                                     <button
                                         onClick={() => setShowManualLog(null)}
                                         style={{ padding: '8px 16px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
