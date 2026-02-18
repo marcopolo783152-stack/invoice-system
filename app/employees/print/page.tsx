@@ -13,6 +13,7 @@ function EmployeePrintContent() {
     const [employee, setEmployee] = useState<Employee | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [qrUrl, setQrUrl] = useState('');
+    const [imageLoaded, setImageLoaded] = useState(false);
 
     useEffect(() => {
         const load = async () => {
@@ -38,13 +39,14 @@ function EmployeePrintContent() {
     }, [type, id]);
 
     useEffect(() => {
-        if (!isLoading && (type === 'poster' || employee)) {
+        if (!isLoading && imageLoaded && (type === 'poster' || employee)) {
+            // Extra brief delay to ensure layout stabilizer
             const timer = setTimeout(() => {
                 window.print();
-            }, 1000);
+            }, 500);
             return () => clearTimeout(timer);
         }
-    }, [isLoading, employee, type]);
+    }, [isLoading, imageLoaded, employee, type]);
 
     if (isLoading) {
         return (
@@ -86,7 +88,12 @@ function EmployeePrintContent() {
                         background: '#fff', boxShadow: '0 20px 40px rgba(0,0,0,0.05)',
                         marginBottom: 40
                     }}>
-                        <img src={qrUrl} alt="QR Code" style={{ width: 400, height: 400 }} />
+                        <img
+                            src={qrUrl}
+                            alt="QR Code"
+                            style={{ width: 400, height: 400 }}
+                            onLoad={() => setImageLoaded(true)}
+                        />
                     </div>
 
                     <div style={{ fontSize: 20, fontWeight: 800, color: '#4f46e5', marginBottom: 60 }}>
@@ -131,7 +138,12 @@ function EmployeePrintContent() {
                     </div>
 
                     <div style={{ marginTop: 20 }}>
-                        <img src={qrUrl} alt="QR Code" style={{ width: 160, height: 160 }} />
+                        <img
+                            src={qrUrl}
+                            alt="QR Code"
+                            style={{ width: 160, height: 160 }}
+                            onLoad={() => setImageLoaded(true)}
+                        />
                         <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 8 }}>SCAN TO CLOCK IN / OUT</div>
                     </div>
 

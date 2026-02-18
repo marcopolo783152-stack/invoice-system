@@ -84,7 +84,7 @@ export default function RootLayout({
   if (isPrintPage) {
     return (
       <html lang="en">
-        <body className={inter.className} style={{ background: 'white' }}>
+        <body className={inter.className} style={{ background: 'white', width: '100%', minWidth: 'auto' }}>
           {children}
         </body>
       </html>
