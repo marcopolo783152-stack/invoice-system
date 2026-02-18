@@ -1,0 +1,160 @@
+import React, { useState, useEffect } from 'react';
+import { Employee, saveEmployee } from '../lib/employee-storage';
+
+interface EmployeeModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: () => void;
+    initialData?: Employee | null;
+}
+
+export default function EmployeeModal({ isOpen, onClose, onSave, initialData }: EmployeeModalProps) {
+    const [formData, setFormData] = useState<Partial<Employee>>({
+        name: '',
+        phone: '',
+        email: '',
+        empId: '',
+        pin: ''
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData(initialData);
+        } else {
+            setFormData({
+                name: '',
+                phone: '',
+                email: '',
+                empId: '',
+                pin: ''
+            });
+        }
+    }, [initialData, isOpen]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        try {
+            await saveEmployee(formData);
+            onSave();
+            onClose();
+        } catch (error) {
+            console.error(error);
+            alert('Failed to save employee');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+            padding: 20
+        }} onClick={onClose}>
+            <div className="modal-content luxury-card" style={{
+                width: '100%', maxWidth: 450, background: '#fff', borderRadius: 20,
+                padding: 30, position: 'relative', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+            }} onClick={e => e.stopPropagation()}>
+                <div style={{ marginBottom: 25, textAlign: 'center' }}>
+                    <h2 style={{ fontSize: 24, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>
+                        {initialData ? 'Edit Employee' : 'Register Staff'}
+                    </h2>
+                    <p style={{ fontSize: 13, color: '#64748b' }}>
+                        Fill in the details to manage your team access.
+                    </p>
+                </div>
+
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>Full Name *</label>
+                        <input
+                            type="text"
+                            required
+                            value={formData.name}
+                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                            placeholder="e.g. Mohammad Nazif Saify"
+                            style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                        />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>Phone *</label>
+                            <input
+                                type="tel"
+                                required
+                                value={formData.phone}
+                                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                placeholder="571-000-0000"
+                                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>Employee ID</label>
+                            <input
+                                type="text"
+                                value={formData.empId}
+                                placeholder="Auto-gen if empty"
+                                onChange={e => setFormData({ ...formData, empId: e.target.value })}
+                                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>Email Address</label>
+                        <input
+                            type="email"
+                            value={formData.email}
+                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="staff@example.com"
+                            style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>Security PIN (Optional)</label>
+                        <input
+                            type="password"
+                            maxLength={4}
+                            value={formData.pin}
+                            onChange={e => setFormData({ ...formData, pin: e.target.value })}
+                            placeholder="4 digits"
+                            style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            style={{
+                                flex: 1, padding: '14px', borderRadius: 12, border: '1px solid #e2e8f0',
+                                background: '#f8fafc', color: '#64748b', fontWeight: 700, cursor: 'pointer'
+                            }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSaving}
+                            style={{
+                                flex: 2, padding: '14px', borderRadius: 12, border: 'none',
+                                background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+                                color: '#fff', fontWeight: 700, cursor: 'pointer',
+                                boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.4)'
+                            }}
+                        >
+                            {isSaving ? 'Saving...' : initialData ? 'Update Staff' : 'Add Employee'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}

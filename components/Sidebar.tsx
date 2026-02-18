@@ -117,6 +117,7 @@ export default function Sidebar({
         { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
         { label: 'Outstanding', href: '/outstanding', icon: Users, badge: outstandingBalances.length > 0 ? outstandingBalances.length : undefined },
         { label: 'Reports', href: '/reports', icon: BarChart },
+        { label: 'HR Management', href: '/employees', icon: Users },
         { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
         { label: 'Settings', href: '/settings', icon: Settings },
         { label: 'Audit Log', href: '/audit-log', icon: History }
