@@ -18,9 +18,9 @@ export interface EmailConfig {
 }
 
 const DEFAULT_CONFIG: EmailConfig = {
-  serviceId: 'Marcopolo-Rugs',
-  templateIdInvoice: '',
-  templateIdSignature: '',
+  serviceId: 'marcopolo2',
+  templateIdInvoice: 'marcopolo2',
+  templateIdSignature: 'marcopolo2',
   templateIdConfirm: '',
   publicKey: 'Anj9zrEUo-VEWvMVw',
   privateKey: 'ZgV1UYxVUy0UQKBmgj3I5',
