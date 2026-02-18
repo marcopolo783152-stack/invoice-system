@@ -11,10 +11,10 @@ export default function ClockPage() {
     const [lastAction, setLastAction] = useState<{ type: string, name: string } | null>(null);
     const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
 
-    // Geofencing coordinates (3260 Duke St)
-    const SHOP_LAT = 38.8052;
-    const SHOP_LNG = -77.0841;
-    const MAX_DISTANCE_FT = 400;
+    // Geofencing coordinates (Precision Shop Location)
+    const SHOP_LAT = 38.808028;
+    const SHOP_LNG = -77.087056;
+    const MAX_DISTANCE_FT = 700;
 
     const videoRef = React.useRef<HTMLVideoElement>(null);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -70,7 +70,7 @@ export default function ClockPage() {
             );
 
             if (distance > MAX_DISTANCE_FT) {
-                throw new Error(`Location Restricted: You are too far from the shop (${Math.round(distance)}ft away). Please clock in at 3260 Duke St.`);
+                throw new Error(`Location Restricted: You are too far from the shop (${Math.round(distance)}ft away). Please clock in at the authorized shop location.`);
             }
 
             // 2. Capture Photo
@@ -150,7 +150,7 @@ export default function ClockPage() {
 
                         <h1 style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 6 }}>Identity Verification</h1>
                         <p style={{ fontSize: 14, color: '#94a3b8', marginBottom: 30 }}>
-                            Scan QR / Enter ID within 400ft of Shop
+                            Scan QR / Enter ID within 700ft of Shop
                         </p>
 
                         <form onSubmit={handleClock} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
