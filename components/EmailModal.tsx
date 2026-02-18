@@ -67,6 +67,7 @@ export default function EmailModal({
                 });
             } else {
                 setConfig(currentConfig);
+                // Only switch to CONFIG if absolutely nothing is working (including defaults)
                 if (!isEmailConfigured()) {
                     setMode('CONFIG');
                 } else {
