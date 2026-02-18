@@ -103,6 +103,26 @@ export default function EmployeesPage() {
                     }}>
                         🕒 Kiosk View
                     </Link>
+                    <button
+                        onClick={() => {
+                            const baseUrl = window.location.origin;
+                            const clockUrl = `${baseUrl}/clock`;
+                            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(clockUrl)}`;
+                            setPrintBadge({
+                                id: 'shop-main',
+                                name: 'TIME CLOCK STATION',
+                                empId: 'SCAN TO START',
+                                qrUrl: qrUrl
+                            });
+                            setTimeout(() => {
+                                window.print();
+                                setPrintBadge(null);
+                            }, 500);
+                        }}
+                        style={{ padding: '12px 24px', borderRadius: 12, border: '1px solid #6366f1', background: 'rgba(99, 102, 241, 0.05)', color: '#6366f1', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                        🖨️ Print Shop QR
+                    </button>
                 </div>
             </div>
 
