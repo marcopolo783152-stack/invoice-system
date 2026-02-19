@@ -38,15 +38,29 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
 
     return (
         <div ref={ref} style={{ padding: 40, fontFamily: 'sans-serif', color: '#1e293b', width: '8.5in', background: 'white', boxSizing: 'border-box' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30, borderBottom: '2px solid #e2e8f0', paddingBottom: 20 }}>
+            {/* Company Branding Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                <div style={{ flex: 1 }}>
+                    <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0, color: '#0f172a' }}>MARCO POLO ORIENTAL RUGS, INC.</h2>
+                    <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>
+                        3260 DUKE ST • ALEXANDRIA, VA 22314<br />
+                        Phone: 703-461-0207 • Email: marcopolorugs@aol.com
+                    </div>
+                </div>
+                <div style={{ width: 120 }}>
+                    <img src="/LOGO.png" alt="Logo" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                </div>
+            </div>
+
+            {/* Report Header Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 30, borderBottom: '2px solid #e2e8f0', paddingBottom: 20 }}>
                 <div>
-                    <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#0f172a' }}>{rangeLabels[range]} Work History</h1>
+                    <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#6366f1' }}>{rangeLabels[range]} Work History</h1>
                     <div style={{ color: '#64748b', marginTop: 4 }}>Generated on {new Date().toLocaleDateString()}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 20, fontWeight: 700 }}>{employee.name}</div>
-                    <div style={{ color: '#64748b' }}>ID: {employee.empId}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b' }}>{employee.name}</div>
+                    <div style={{ color: '#64748b', fontWeight: 600 }}>Employee ID: {employee.empId}</div>
                 </div>
             </div>
 
