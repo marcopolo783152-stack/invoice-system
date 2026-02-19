@@ -165,21 +165,45 @@ export async function generateReportPDFBlobUrl(
     windowWidth: 1200, // Ensure desktop layout
   });
 
-  const imgData = canvas.toDataURL('image/jpeg', 0.8);
-  const pdfWidth = 8.5; // Standard width in inches
-  // Calculate height in inches based on aspect ratio
-  // 96 DPI is generic, or match canvas pixel ratio
-  // Better: (canvas.height / canvas.width) * pdfWidth
-  const pdfHeight = (canvas.height / canvas.width) * pdfWidth;
+  const imgWidth = canvas.width;
+  const imgHeight = canvas.height;
 
-  // Create PDF with custom size matching the content
+  const pageHeightPixels = (imgWidth / 8.5) * 11; // Standard Letter aspect ratio pixels
+  const totalPages = Math.ceil(imgHeight / pageHeightPixels);
+
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'in',
-    format: [pdfWidth, pdfHeight + 0.5] // Add small buffer
+    format: 'letter'
   });
 
-  pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+  for (let i = 0; i < totalPages; i++) {
+    const sourceY = i * pageHeightPixels;
+    const sWidth = imgWidth;
+    const sHeight = Math.min(pageHeightPixels, imgHeight - sourceY);
+
+    // Create a temporary canvas for this specific page slice
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.width = sWidth;
+    pageCanvas.height = pageHeightPixels; // Always use full page height for consistency
+
+    const ctx = pageCanvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, sWidth, pageHeightPixels);
+      ctx.drawImage(
+        canvas,
+        0, sourceY, sWidth, sHeight, // Source
+        0, 0, sWidth, sHeight        // Destination
+      );
+    }
+
+    const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.8);
+
+    if (i > 0) pdf.addPage();
+    pdf.addImage(pageImgData, 'JPEG', 0, 0, 8.5, 11);
+  }
+
   const blob = pdf.output('blob');
   return URL.createObjectURL(blob);
 }
