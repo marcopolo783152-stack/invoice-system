@@ -1,81 +1,13 @@
-'use client';
+import React, { forwardRef } from 'react';
+import { Employee, TimeLog, EmployeePayment } from '@/lib/employee-storage';
 
-import React, { useEffect, useState, Suspense, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Employee, TimeLog, EmployeePayment, getEmployees, getTimeLogs, getEmployeePayments } from '@/lib/employee-storage';
-import { Loader2 } from 'lucide-react';
-import { generateReportPDFBlobUrl } from '@/lib/pdf-utils';
+interface HistoryReportTemplateProps {
+    employee: Employee;
+    logs: TimeLog[];
+    payments: EmployeePayment[];
+}
 
-function HistoryContent() {
-    const searchParams = useSearchParams();
-    const employeeId = searchParams.get('id');
-
-    const [employee, setEmployee] = useState<Employee | null>(null);
-    const [logs, setLogs] = useState<TimeLog[]>([]);
-    const [payments, setPayments] = useState<EmployeePayment[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [pdfGenerating, setPdfGenerating] = useState(false);
-    const reportRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const load = async () => {
-            if (!employeeId) return;
-            try {
-                const [emps, allLogs, empPayments] = await Promise.all([
-                    getEmployees(),
-                    getTimeLogs(1000), // Fetch substantial history
-                    getEmployeePayments(employeeId)
-                ]);
-
-                const emp = emps.find(e => e.empId === employeeId || e.id === employeeId);
-                const empLogs = allLogs
-                    .filter(l => l.employeeId === (emp?.id || employeeId) || l.employeeName === emp?.name)
-                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-                setEmployee(emp || null);
-                setLogs(empLogs);
-                setPayments(empPayments);
-                setLoading(false);
-            } catch (e) {
-                console.error(e);
-                setLoading(false);
-            }
-        };
-        load();
-    }, [employeeId]);
-
-    // Auto-generate PDF when data is ready
-    useEffect(() => {
-        if (!loading && employee && reportRef.current && !pdfGenerating) {
-            const generate = async () => {
-                setPdfGenerating(true);
-                try {
-                    // Slight delay for rendering
-                    await new Promise(r => setTimeout(r, 1000));
-                    const url = await generateReportPDFBlobUrl(reportRef.current!, `History_${employee.name}`);
-                    window.location.replace(url);
-                } catch (e) {
-                    console.error('PDF Generation failed', e);
-                    window.print(); // Fallback
-                }
-            };
-            generate();
-        }
-    }, [loading, employee, pdfGenerating]);
-
-    if (loading || pdfGenerating) {
-        return (
-            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <Loader2 className="animate-spin" size={40} color="#4f46e5" />
-                <span style={{ marginTop: 15, fontSize: 18, fontWeight: 600, color: '#475569' }}>
-                    {pdfGenerating ? 'Generating PDF Report...' : 'Loading History...'}
-                </span>
-            </div>
-        );
-    }
-
-    if (!employee) return <div>Employee not found</div>;
-
+export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTemplateProps>(({ employee, logs, payments }, ref) => {
     // Calculations
     const daysWorkedSet = new Set(logs.filter(l => l.type === 'IN').map(l => l.timestamp.split('T')[0]));
     const daysWorked = daysWorkedSet.size;
@@ -97,7 +29,7 @@ function HistoryContent() {
     });
 
     return (
-        <div ref={reportRef} style={{ padding: 40, fontFamily: 'sans-serif', color: '#1e293b', maxWidth: 800, margin: '0 auto', background: 'white' }}>
+        <div ref={ref} style={{ padding: 40, fontFamily: 'sans-serif', color: '#1e293b', width: '8.5in', background: 'white', boxSizing: 'border-box' }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30, borderBottom: '2px solid #e2e8f0', paddingBottom: 20 }}>
                 <div>
@@ -195,17 +127,6 @@ function HistoryContent() {
             ))}
         </div>
     );
-}
+});
 
-export default function EmployeeHistoryPrint() {
-    return (
-        <Suspense fallback={
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Loader2 className="animate-spin" />
-                <span style={{ marginLeft: 10 }}>Loading...</span>
-            </div>
-        }>
-            <HistoryContent />
-        </Suspense>
-    );
-}
+HistoryReportTemplate.displayName = 'HistoryReportTemplate';

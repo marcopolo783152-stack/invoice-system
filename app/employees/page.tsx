@@ -1,6 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { HistoryReportTemplate } from '@/components/HistoryReportTemplate';
+import { generateReportPDFBlobUrl } from '@/lib/pdf-utils';
+import { Loader2 } from 'lucide-react';
+
+// ... (existing imports)
+
+
 import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee, EmployeePayment, recordPayment, getEmployeePayments, addManualTimeLog, deleteTimeLog, checkAutoClockOut, updateTimeLog } from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
@@ -24,8 +31,55 @@ export default function EmployeesPage() {
     const [payrollData, setPayrollData] = useState<Record<string, PayrollSummary>>({});
     const [isPaying, setIsPaying] = useState<string | null>(null);
 
+    // History Print State
+    const [historyPrintData, setHistoryPrintData] = useState<{
+        employee: Employee;
+        logs: TimeLog[];
+        payments: EmployeePayment[];
+    } | null>(null);
+    const historyPrintRef = useRef<HTMLDivElement>(null);
+    const [isGeneratingHistory, setIsGeneratingHistory] = useState(false);
+
     // Manual Log State
     const [showManualLog, setShowManualLog] = useState<{ empId: string, name: string } | null>(null);
+    // ... (rest of existing state)
+
+    const handlePrintHistory = async (emp: Employee) => {
+        setIsGeneratingHistory(true);
+        try {
+            const [allLogs, empPayments] = await Promise.all([
+                getTimeLogs(1000),
+                getEmployeePayments(emp.id)
+            ]);
+
+            const empLogs = allLogs
+                .filter(l => l.employeeId === emp.id || l.employeeName === emp.name)
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+            setHistoryPrintData({
+                employee: emp,
+                logs: empLogs,
+                payments: empPayments
+            });
+
+            // Wait for render
+            setTimeout(async () => {
+                if (historyPrintRef.current) {
+                    const url = await generateReportPDFBlobUrl(historyPrintRef.current, `History_${emp.name}`);
+                    window.open(url, '_blank');
+                    setHistoryPrintData(null);
+                    setIsGeneratingHistory(false);
+                }
+            }, 500);
+
+        } catch (e) {
+            console.error('Error generating history:', e);
+            setIsGeneratingHistory(false);
+            alert('Failed to generate history report');
+        }
+    };
+
+
     const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
     const [manualTime, setManualTime] = useState('10:00');
     const [manualType, setManualType] = useState<'IN' | 'OUT' | 'LEAVE'>('IN');

@@ -178,20 +178,20 @@ function EmployeePrintContent() {
                             </div>
 
                             {/* Photo & Main Info */}
-                            <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                                 <div style={{
-                                    width: 120, height: 120, borderRadius: 12, background: '#fff',
+                                    width: 80, height: 90, borderRadius: 8, background: '#fff',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-                                    border: '2px solid #e2e8f0', flexShrink: 0
+                                    border: '1.5px solid #e2e8f0', flexShrink: 0
                                 }}>
                                     {employee.photo ? (
                                         <img src={employee.photo} alt={employee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
-                                        <span style={{ fontSize: 40 }}>👤</span>
+                                        <span style={{ fontSize: 30 }}>👤</span>
                                     )}
                                 </div>
                                 <div>
-                                    <h2 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0', lineHeight: 1.1 }}>
+                                    <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0', lineHeight: 1.1 }}>
                                         {employee.name}
                                     </h2>
                                     <div style={{
