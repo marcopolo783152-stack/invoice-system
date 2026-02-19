@@ -4,14 +4,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HistoryReportTemplate } from '@/components/HistoryReportTemplate';
 import { generateReportPDFBlobUrl } from '@/lib/pdf-utils';
 import { Loader2 } from 'lucide-react';
-
-// ... (existing imports)
-
-
-import { Employee, TimeLog, getEmployees, getTimeLogs, deleteEmployee, EmployeePayment, recordPayment, getEmployeePayments, addManualTimeLog, deleteTimeLog, checkAutoClockOut, updateTimeLog } from '@/lib/employee-storage';
+import {
+    Employee,
+    TimeLog,
+    getEmployees,
+    getTimeLogs,
+    deleteEmployee,
+    EmployeePayment,
+    recordPayment,
+    getEmployeePayments,
+    addManualTimeLog,
+    deleteTimeLog,
+    checkAutoClockOut,
+    updateTimeLog
+} from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
-
 
 interface PayrollSummary {
     employeeId: string;
@@ -42,7 +50,15 @@ export default function EmployeesPage() {
 
     // Manual Log State
     const [showManualLog, setShowManualLog] = useState<{ empId: string, name: string } | null>(null);
-    // ... (rest of existing state)
+    const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
+    const [manualTime, setManualTime] = useState('10:00');
+    const [manualType, setManualType] = useState<'IN' | 'OUT' | 'LEAVE'>('IN');
+    const [isOvertime, setIsOvertime] = useState(false);
+
+    // Edit Log State
+    const [editingLog, setEditingLog] = useState<TimeLog | null>(null);
+    const [editDate, setEditDate] = useState('');
+    const [editTime, setEditTime] = useState('');
 
     const handlePrintHistory = async (emp: Employee) => {
         setIsGeneratingHistory(true);
@@ -78,17 +94,6 @@ export default function EmployeesPage() {
             alert('Failed to generate history report');
         }
     };
-
-
-    const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
-    const [manualTime, setManualTime] = useState('10:00');
-    const [manualType, setManualType] = useState<'IN' | 'OUT' | 'LEAVE'>('IN');
-    const [isOvertime, setIsOvertime] = useState(false);
-
-    // Edit Log State
-    const [editingLog, setEditingLog] = useState<TimeLog | null>(null);
-    const [editDate, setEditDate] = useState('');
-    const [editTime, setEditTime] = useState('');
 
     const handleManualLog = async () => {
         if (!showManualLog) return;
@@ -385,10 +390,18 @@ export default function EmployeesPage() {
                                         </button>
                                     </div>
                                     <button
-                                        onClick={() => window.open(`/employees/history?id=${emp.id}`, '_blank')}
-                                        style={{ width: '100%', marginTop: 10, padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#64748b' }}
+                                        onClick={() => handlePrintHistory(emp)}
+                                        disabled={isGeneratingHistory}
+                                        style={{
+                                            width: '100%', marginTop: 10, padding: '8px', borderRadius: 8,
+                                            border: '1px solid #e2e8f0', background: '#fff', fontSize: 11,
+                                            fontWeight: 700, cursor: isGeneratingHistory ? 'wait' : 'pointer',
+                                            color: isGeneratingHistory ? '#94a3b8' : '#64748b',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                                        }}
                                     >
-                                        📄 Print Work History
+                                        {isGeneratingHistory ? <Loader2 className="animate-spin" size={12} /> : '📄'}
+                                        {isGeneratingHistory ? 'Generating...' : 'Print Work History'}
                                     </button>
                                 </div>
                             </div>
@@ -672,6 +685,18 @@ export default function EmployeesPage() {
                 onSave={loadData}
                 initialData={editingEmp}
             />
+
+            {/* Hidden History Template for PDF Generation */}
+            {historyPrintData && (
+                <div style={{ position: 'absolute', top: -9999, left: -9999 }}>
+                    <HistoryReportTemplate
+                        ref={historyPrintRef}
+                        employee={historyPrintData.employee}
+                        logs={historyPrintData.logs}
+                        payments={historyPrintData.payments}
+                    />
+                </div>
+            )}
 
         </div>
     );
