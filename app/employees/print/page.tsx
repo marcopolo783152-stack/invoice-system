@@ -166,23 +166,10 @@ function EmployeePrintContent() {
                             </div>
 
                             {/* Top Header Section */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
-                                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                                    <div style={{
-                                        width: 50, height: 50, borderRadius: 10, background: '#fff',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-                                        border: '1.5px solid #e2e8f0', padding: 2
-                                    }}>
-                                        {employee.photo ? (
-                                            <img src={employee.photo} alt={employee.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
-                                        ) : (
-                                            <span style={{ fontSize: 22 }}>👤</span>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', letterSpacing: 0.5 }}>MARCO POLO</div>
-                                        <div style={{ fontSize: 7, fontWeight: 700, color: '#c5a059', textTransform: 'uppercase', letterSpacing: 2 }}>Oriental Rugs</div>
-                                    </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                                <div>
+                                    <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', letterSpacing: 0.5 }}>MARCO POLO</div>
+                                    <div style={{ fontSize: 7, fontWeight: 700, color: '#c5a059', textTransform: 'uppercase', letterSpacing: 2 }}>Oriental Rugs</div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
                                     <div style={{ fontSize: 6, fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase' }}>Security ID</div>
@@ -190,29 +177,43 @@ function EmployeePrintContent() {
                                 </div>
                             </div>
 
-                            {/* Staff Branding Section */}
-                            <div style={{ marginTop: 'auto' }}>
-                                <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', margin: '0 0 2px 0' }}>{employee.name}</h2>
+                            {/* Photo & Main Info */}
+                            <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
                                 <div style={{
-                                    display: 'inline-block', padding: '2px 8px', borderRadius: 4,
-                                    background: '#1e293b', color: '#fff', fontSize: 8,
-                                    fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1
+                                    width: 120, height: 120, borderRadius: 12, background: '#fff',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                                    border: '2px solid #e2e8f0', flexShrink: 0
                                 }}>
-                                    Authorized Personnel
+                                    {employee.photo ? (
+                                        <img src={employee.photo} alt={employee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <span style={{ fontSize: 40 }}>👤</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0', lineHeight: 1.1 }}>
+                                        {employee.name}
+                                    </h2>
+                                    <div style={{
+                                        display: 'inline-block', padding: '3px 10px', borderRadius: 4,
+                                        background: '#1e293b', color: '#fff', fontSize: 9,
+                                        fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1,
+                                        marginBottom: 8
+                                    }}>
+                                        Authorized Personnel
+                                    </div>
+                                    <div style={{ fontSize: 9, color: '#64748b', fontWeight: 600 }}>
+                                        Joined: {new Date(employee.joinedDate).getFullYear()}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Corporate Footer Section */}
+                            {/* Footer */}
                             <div style={{
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-                                marginTop: 12, borderTop: '0.5px solid #f1f5f9', paddingTop: 6
+                                marginTop: 'auto', borderTop: '0.5px solid #f1f5f9', paddingTop: 8,
+                                fontSize: 6, color: '#94a3b8', fontWeight: 600
                             }}>
-                                <div style={{ fontSize: 6, color: '#94a3b8', fontWeight: 600 }}>
-                                    (703) 461-0207 • Alexandria, VA
-                                </div>
-                                <div style={{ fontSize: 5, color: '#cbd5e1', fontStyle: 'italic' }}>
-                                    Verified Member Since {new Date(employee.joinedDate).getFullYear()}
-                                </div>
+                                (703) 461-0207 • Alexandria, VA
                             </div>
                         </div>
 

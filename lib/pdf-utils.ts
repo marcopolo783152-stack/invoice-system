@@ -150,6 +150,41 @@ export async function generatePDFBlobUrl(
 }
 
 /**
+ * Generate a PDF for a long report (dynamic height)
+ */
+export async function generateReportPDFBlobUrl(
+  element: HTMLElement,
+  filename: string
+): Promise<string> {
+  // Capture the full element
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: '#ffffff',
+    windowWidth: 1200, // Ensure desktop layout
+  });
+
+  const imgData = canvas.toDataURL('image/jpeg', 0.8);
+  const pdfWidth = 8.5; // Standard width in inches
+  // Calculate height in inches based on aspect ratio
+  // 96 DPI is generic, or match canvas pixel ratio
+  // Better: (canvas.height / canvas.width) * pdfWidth
+  const pdfHeight = (canvas.height / canvas.width) * pdfWidth;
+
+  // Create PDF with custom size matching the content
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'in',
+    format: [pdfWidth, pdfHeight + 0.5] // Add small buffer
+  });
+
+  pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+  const blob = pdf.output('blob');
+  return URL.createObjectURL(blob);
+}
+
+/**
  * Alternative: Direct print to PDF using browser
  * This uses the browser's native print-to-PDF capability
  */
