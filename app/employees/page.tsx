@@ -47,6 +47,7 @@ export default function EmployeesPage() {
     } | null>(null);
     const historyPrintRef = useRef<HTMLDivElement>(null);
     const [isGeneratingHistory, setIsGeneratingHistory] = useState(false);
+    const [reportRange, setReportRange] = useState<'WEEK' | 'MONTH' | 'YEAR' | 'ALL'>('ALL');
 
     // Manual Log State
     const [showManualLog, setShowManualLog] = useState<{ empId: string, name: string } | null>(null);
@@ -68,9 +69,20 @@ export default function EmployeesPage() {
                 getEmployeePayments(emp.id)
             ]);
 
-            const empLogs = allLogs
+            let empLogs = allLogs
                 .filter(l => l.employeeId === emp.id || l.employeeName === emp.name)
                 .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+            // Apply Date Filtering
+            if (reportRange !== 'ALL') {
+                const now = new Date();
+                const startDate = new Date();
+                if (reportRange === 'WEEK') startDate.setDate(now.getDate() - 7);
+                else if (reportRange === 'MONTH') startDate.setMonth(now.getMonth() - 1);
+                else if (reportRange === 'YEAR') startDate.setFullYear(now.getFullYear() - 1);
+
+                empLogs = empLogs.filter(l => new Date(l.timestamp) >= startDate);
+            }
 
             setHistoryPrintData({
                 employee: emp,
@@ -81,7 +93,8 @@ export default function EmployeesPage() {
             // Wait for render
             setTimeout(async () => {
                 if (historyPrintRef.current) {
-                    const url = await generateReportPDFBlobUrl(historyPrintRef.current, `History_${emp.name}`);
+                    const filename = `History_${emp.name}_${reportRange}`;
+                    const url = await generateReportPDFBlobUrl(historyPrintRef.current, filename);
                     window.open(url, '_blank');
                     setHistoryPrintData(null);
                     setIsGeneratingHistory(false);
@@ -280,37 +293,59 @@ export default function EmployeesPage() {
 
             <div style={{ maxWidth: 1200, margin: '0 auto' }}>
                 {/* View Switcher */}
-                <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid #e2e8f0', paddingBottom: 15 }}>
-                    <button
-                        onClick={() => setActiveView('STAFF')}
-                        style={{
-                            padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-                            background: activeView === 'STAFF' ? '#e2e8f0' : 'transparent',
-                            border: 'none', fontWeight: 700, color: activeView === 'STAFF' ? '#1e293b' : '#64748b'
-                        }}
-                    >
-                        👥 Staff Directory
-                    </button>
-                    <button
-                        onClick={() => setActiveView('LOGS')}
-                        style={{
-                            padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-                            background: activeView === 'LOGS' ? '#e2e8f0' : 'transparent',
-                            border: 'none', fontWeight: 700, color: activeView === 'LOGS' ? '#1e293b' : '#64748b'
-                        }}
-                    >
-                        📜 Activity Logs
-                    </button>
-                    <button
-                        onClick={() => setActiveView('PAYROLL')}
-                        style={{
-                            padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-                            background: activeView === 'PAYROLL' ? '#e2e8f0' : 'transparent',
-                            border: 'none', fontWeight: 700, color: activeView === 'PAYROLL' ? '#1e293b' : '#64748b'
-                        }}
-                    >
-                        💰 Payroll & Payments
-                    </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottom: '1px solid #e2e8f0', paddingBottom: 15 }}>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                        <button
+                            onClick={() => setActiveView('STAFF')}
+                            style={{
+                                padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                                background: activeView === 'STAFF' ? '#e2e8f0' : 'transparent',
+                                border: 'none', fontWeight: 700, color: activeView === 'STAFF' ? '#1e293b' : '#64748b'
+                            }}
+                        >
+                            👥 Staff Directory
+                        </button>
+                        <button
+                            onClick={() => setActiveView('LOGS')}
+                            style={{
+                                padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                                background: activeView === 'LOGS' ? '#e2e8f0' : 'transparent',
+                                border: 'none', fontWeight: 700, color: activeView === 'LOGS' ? '#1e293b' : '#64748b'
+                            }}
+                        >
+                            📜 Activity Logs
+                        </button>
+                        <button
+                            onClick={() => setActiveView('PAYROLL')}
+                            style={{
+                                padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                                background: activeView === 'PAYROLL' ? '#e2e8f0' : 'transparent',
+                                border: 'none', fontWeight: 700, color: activeView === 'PAYROLL' ? '#1e293b' : '#64748b'
+                            }}
+                        >
+                            💰 Payroll & Payments
+                        </button>
+                    </div>
+
+                    {activeView === 'STAFF' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Report Period:</span>
+                            <select
+                                value={reportRange}
+                                onChange={(e) => setReportRange(e.target.value as any)}
+                                style={{
+                                    padding: '6px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
+                                    fontSize: 12, fontWeight: 700, color: '#1e293b', background: '#fff',
+                                    outline: 'none', cursor: 'pointer'
+                                }}
+                            >
+                                <option value="ALL">All History</option>
+                                <option value="WEEK">Last 7 Days (Weekly)</option>
+                                <option value="MONTH">Last 30 Days (Monthly)</option>
+                                <option value="YEAR">Last 365 Days (Yearly)</option>
+                            </select>
+                        </div>
+                    )}
                 </div>
 
                 {activeView === 'STAFF' ? (
@@ -694,6 +729,7 @@ export default function EmployeesPage() {
                         employee={historyPrintData.employee}
                         logs={historyPrintData.logs}
                         payments={historyPrintData.payments}
+                        range={reportRange}
                     />
                 </div>
             )}

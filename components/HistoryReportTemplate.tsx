@@ -5,9 +5,10 @@ interface HistoryReportTemplateProps {
     employee: Employee;
     logs: TimeLog[];
     payments: EmployeePayment[];
+    range?: 'WEEK' | 'MONTH' | 'YEAR' | 'ALL';
 }
 
-export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTemplateProps>(({ employee, logs, payments }, ref) => {
+export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTemplateProps>(({ employee, logs, payments, range = 'ALL' }, ref) => {
     // Calculations
     const daysWorkedSet = new Set(logs.filter(l => l.type === 'IN').map(l => l.timestamp.split('T')[0]));
     const daysWorked = daysWorkedSet.size;
@@ -28,12 +29,19 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
         groupedLogs[key].push(log);
     });
 
+    const rangeLabels = {
+        'WEEK': 'Weekly',
+        'MONTH': 'Monthly',
+        'YEAR': 'Yearly',
+        'ALL': 'Full History'
+    };
+
     return (
         <div ref={ref} style={{ padding: 40, fontFamily: 'sans-serif', color: '#1e293b', width: '8.5in', background: 'white', boxSizing: 'border-box' }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30, borderBottom: '2px solid #e2e8f0', paddingBottom: 20 }}>
                 <div>
-                    <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#0f172a' }}>Work History Report</h1>
+                    <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#0f172a' }}>{rangeLabels[range]} Work History</h1>
                     <div style={{ color: '#64748b', marginTop: 4 }}>Generated on {new Date().toLocaleDateString()}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
