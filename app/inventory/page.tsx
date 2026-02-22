@@ -19,6 +19,8 @@ export default function InventoryManager() {
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
     const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'SOLD' | 'ON_APPROVAL' | 'WHOLESALE'>('ALL');
     const [isSyncing, setIsSyncing] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
 
     // Image Viewer state
     const [viewerOpen, setViewerOpen] = useState(false);
@@ -295,6 +297,17 @@ export default function InventoryManager() {
         );
     });
 
+    // Reset pagination when list changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, activeTab, activeMaterial, statusFilter]);
+
+    // Pagination Calculation
+    const totalItems = filteredItems.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginatedItems = filteredItems.slice(startIndex, startIndex + pageSize);
+
     return (
         <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
             <header style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
@@ -514,7 +527,7 @@ export default function InventoryManager() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredItems.slice(0, 500).map(item => (
+                                {paginatedItems.map(item => (
                                     <tr key={item.id} style={{
                                         borderBottom: '1px solid var(--surface-border)',
                                         background: selectedItems.has(item.id) ? 'rgba(197, 160, 89, 0.03)' : 'transparent',
@@ -643,6 +656,122 @@ export default function InventoryManager() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalItems > 0 && (
+                <div className="luxury-card" style={{
+                    marginTop: 24,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '16px 24px',
+                    gap: 16,
+                    flexWrap: 'wrap',
+                    background: '#ffffff'
+                }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                        Showing <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{totalItems === 0 ? 0 : startIndex + 1}</span> to <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{Math.min(startIndex + pageSize, totalItems)}</span> of <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{totalItems}</span> results
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Items per page:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value));
+                                    setCurrentPage(1);
+                                }}
+                                style={{
+                                    padding: '8px 12px',
+                                    borderRadius: 8,
+                                    border: '1px solid var(--surface-border)',
+                                    fontSize: 13,
+                                    background: '#ffffff',
+                                    color: 'var(--text-main)',
+                                    outline: 'none',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
+                                <option value={100}>100</option>
+                            </select>
+                        </div>
+
+                        {totalPages > 1 && (
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    className="luxury-button"
+                                    style={{
+                                        padding: '8px 16px',
+                                        background: currentPage === 1 ? '#f1f5f9' : 'var(--primary)',
+                                        color: currentPage === 1 ? 'var(--text-dim)' : '#ffffff',
+                                        opacity: currentPage === 1 ? 0.6 : 1,
+                                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                        boxShadow: currentPage === 1 ? 'none' : '0 4px 10px rgba(30, 80, 255, 0.2)'
+                                    }}
+                                >
+                                    Previous
+                                </button>
+
+                                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                    {[...Array(totalPages)].map((_, i) => {
+                                        const page = i + 1;
+                                        if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                                            return (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => setCurrentPage(page)}
+                                                    style={{
+                                                        width: 36,
+                                                        height: 36,
+                                                        borderRadius: 8,
+                                                        border: '1px solid',
+                                                        borderColor: currentPage === page ? 'var(--primary)' : 'var(--surface-border)',
+                                                        background: currentPage === page ? 'var(--primary)' : '#ffffff',
+                                                        color: currentPage === page ? '#ffffff' : 'var(--text-main)',
+                                                        fontSize: 13,
+                                                        fontWeight: 600,
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    {page}
+                                                </button>
+                                            );
+                                        }
+                                        if (page === currentPage - 2 || page === currentPage + 2) {
+                                            return <span key={page} style={{ color: 'var(--text-dim)', padding: '0 4px' }}>...</span>;
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+
+                                <button
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    className="luxury-button"
+                                    style={{
+                                        padding: '8px 16px',
+                                        background: currentPage === totalPages ? '#f1f5f9' : 'var(--primary)',
+                                        color: currentPage === totalPages ? 'var(--text-dim)' : '#ffffff',
+                                        opacity: currentPage === totalPages ? 0.6 : 1,
+                                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                        boxShadow: currentPage === totalPages ? 'none' : '0 4px 10px rgba(30, 80, 255, 0.2)'
+                                    }}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
