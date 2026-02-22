@@ -37,7 +37,16 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
     };
 
     return (
-        <div ref={ref} style={{ padding: 40, fontFamily: 'sans-serif', color: '#1e293b', width: '8.5in', background: 'white', boxSizing: 'border-box' }}>
+        <div ref={ref} style={{
+            padding: '0.6in',
+            fontFamily: 'sans-serif',
+            color: '#1e293b',
+            width: '8.5in',
+            minHeight: '11in',
+            background: 'white',
+            boxSizing: 'border-box',
+            position: 'relative'
+        }}>
             {/* Company Branding Row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                 <div style={{ flex: 1 }}>

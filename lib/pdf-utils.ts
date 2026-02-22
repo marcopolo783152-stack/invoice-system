@@ -158,7 +158,7 @@ export async function generateReportPDFBlobUrl(
 ): Promise<string> {
   // Capture the full element
   const canvas = await html2canvas(element, {
-    scale: 2,
+    scale: 3,
     useCORS: true,
     logging: false,
     backgroundColor: '#ffffff',
