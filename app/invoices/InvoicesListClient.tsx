@@ -36,6 +36,8 @@ function InvoicesListContent() {
     const [isMounted, setIsMounted] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [binInvoices, setBinInvoices] = useState<SavedInvoice[]>([]); // New state for bin invoices
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
 
     useEffect(() => {
         setIsMounted(true);
@@ -207,6 +209,7 @@ function InvoicesListContent() {
         });
 
         setFilteredInvoices(result);
+        setCurrentPage(1); // Reset to first page on filter change
     }, [searchTerm, typeFilter, sortOrder, invoices, binInvoices, viewMode]); // Add binInvoices and viewMode to dependencies
 
     if (!isMounted || loading) return <div className="p-10 text-gray-500">Loading invoices...</div>;
@@ -290,6 +293,12 @@ function InvoicesListContent() {
     };
 
     const visibleInvoices = filteredInvoices.filter(isSafeToRender);
+
+    // Pagination Logic
+    const totalInvoices = visibleInvoices.length;
+    const totalPages = Math.ceil(totalInvoices / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginatedInvoices = visibleInvoices.slice(startIndex, startIndex + pageSize);
 
     const handleExportAddressBook = () => {
         const csv = exportAddressBook();
@@ -586,7 +595,7 @@ function InvoicesListContent() {
                         </tr>
                     </thead>
                     <tbody>
-                        {visibleInvoices.map((inv) => {
+                        {paginatedInvoices.map((inv) => {
                             const isSelected = selectedIds.includes(inv.id);
                             const calcs = calculateInvoice(inv.data || {} as any);
                             return (
@@ -690,11 +699,126 @@ function InvoicesListContent() {
                         )}
                     </tbody>
                 </table>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '20px 24px',
+                        background: '#fbfcfd',
+                        borderTop: '1px solid var(--surface-border)'
+                    }}>
+                        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                            Showing <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{startIndex + 1}</span> to <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{Math.min(startIndex + pageSize, totalInvoices)}</span> of <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{totalInvoices}</span> results
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Items per page:</span>
+                                <select
+                                    value={pageSize}
+                                    onChange={(e) => {
+                                        setPageSize(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    style={{
+                                        padding: '4px 8px',
+                                        borderRadius: 6,
+                                        border: '1px solid var(--surface-border)',
+                                        fontSize: 12,
+                                        color: 'var(--text-main)',
+                                        outline: 'none',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    style={{
+                                        padding: '6px 12px',
+                                        borderRadius: 6,
+                                        border: '1px solid var(--surface-border)',
+                                        background: currentPage === 1 ? '#f1f5f9' : '#ffffff',
+                                        color: currentPage === 1 ? 'var(--text-dim)' : 'var(--text-main)',
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    Previous
+                                </button>
+
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                    {[...Array(totalPages)].map((_, i) => {
+                                        const page = i + 1;
+                                        // Simple page number logic: show first, last, and pages around current
+                                        if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                                            return (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => setCurrentPage(page)}
+                                                    style={{
+                                                        width: 32,
+                                                        height: 32,
+                                                        borderRadius: 6,
+                                                        border: '1px solid',
+                                                        borderColor: currentPage === page ? 'var(--primary)' : 'var(--surface-border)',
+                                                        background: currentPage === page ? 'var(--primary)' : '#ffffff',
+                                                        color: currentPage === page ? '#ffffff' : 'var(--text-main)',
+                                                        fontSize: 12,
+                                                        fontWeight: 600,
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    {page}
+                                                </button>
+                                            );
+                                        }
+                                        if (page === currentPage - 2 || page === currentPage + 2) {
+                                            return <span key={page} style={{ color: 'var(--text-dim)', padding: '0 4px' }}>...</span>;
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+
+                                <button
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    style={{
+                                        padding: '6px 12px',
+                                        borderRadius: 6,
+                                        border: '1px solid var(--surface-border)',
+                                        background: currentPage === totalPages ? '#f1f5f9' : '#ffffff',
+                                        color: currentPage === totalPages ? 'var(--text-dim)' : 'var(--text-main)',
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Mobile View */}
             <div className="mobile-visible" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {visibleInvoices.map((inv) => {
+                {paginatedInvoices.map((inv) => {
                     const calcs = calculateInvoice(inv.data || {} as any);
                     return (
                         <div key={inv.id}
