@@ -38,6 +38,7 @@ export default function EmployeesPage() {
     const [activeView, setActiveView] = useState<'STAFF' | 'LOGS' | 'PAYROLL'>('STAFF');
     const [payrollData, setPayrollData] = useState<Record<string, PayrollSummary>>({});
     const [isPaying, setIsPaying] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // History Print State
     const [historyPrintData, setHistoryPrintData] = useState<{
@@ -206,6 +207,16 @@ export default function EmployeesPage() {
         });
     };
 
+    const filteredEmployees = employees.filter(emp =>
+        emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.empId.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const filteredLogs = logs.filter(log =>
+        log.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        employees.find(e => e.id === log.employeeId)?.empId.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '20px' }}>
             {/* Header */}
@@ -285,29 +296,69 @@ export default function EmployeesPage() {
                     </div>
 
                     {activeView === 'STAFF' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Report Period:</span>
-                            <select
-                                value={reportRange}
-                                onChange={(e) => setReportRange(e.target.value as any)}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Search by name or ID..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{
+                                        padding: '8px 12px 8px 36px',
+                                        borderRadius: 10,
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: 13,
+                                        width: 250,
+                                        outline: 'none',
+                                        background: '#fff'
+                                    }}
+                                />
+                                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Report Period:</span>
+                                <select
+                                    value={reportRange}
+                                    onChange={(e) => setReportRange(e.target.value as any)}
+                                    style={{
+                                        padding: '6px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
+                                        fontSize: 12, fontWeight: 700, color: '#1e293b', background: '#fff',
+                                        outline: 'none', cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="ALL">All History</option>
+                                    <option value="WEEK">Last 7 Days (Weekly)</option>
+                                    <option value="MONTH">Last 30 Days (Monthly)</option>
+                                    <option value="YEAR">Last 365 Days (Yearly)</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
+                    {activeView !== 'STAFF' && (
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="text"
+                                placeholder="Search employees..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
-                                    padding: '6px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
-                                    fontSize: 12, fontWeight: 700, color: '#1e293b', background: '#fff',
-                                    outline: 'none', cursor: 'pointer'
+                                    padding: '8px 12px 8px 36px',
+                                    borderRadius: 10,
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: 13,
+                                    width: 250,
+                                    outline: 'none',
+                                    background: '#fff'
                                 }}
-                            >
-                                <option value="ALL">All History</option>
-                                <option value="WEEK">Last 7 Days (Weekly)</option>
-                                <option value="MONTH">Last 30 Days (Monthly)</option>
-                                <option value="YEAR">Last 365 Days (Yearly)</option>
-                            </select>
+                            />
+                            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
                         </div>
                     )}
                 </div>
 
                 {activeView === 'STAFF' ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 20 }}>
-                        {employees.map(emp => (
+                        {filteredEmployees.map(emp => (
                             <div key={emp.id} className="luxury-card" style={{
                                 background: '#fff', borderRadius: 16, padding: 24,
                                 border: '1px solid #e2e8f0', position: 'relative',
@@ -527,7 +578,7 @@ export default function EmployeesPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {logs.map(log => {
+                                {filteredLogs.map(log => {
                                     const compliance = checkShiftCompliance(log);
                                     return (
                                         <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -615,7 +666,7 @@ export default function EmployeesPage() {
                 ) : (
                     /* Payroll View */
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 20 }}>
-                        {employees.map(emp => {
+                        {filteredEmployees.map(emp => {
                             const stats = payrollData[emp.id];
                             return (
                                 <div key={emp.id} className="luxury-card" style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid #e2e8f0' }}>
