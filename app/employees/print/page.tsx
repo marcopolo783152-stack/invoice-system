@@ -2,16 +2,19 @@
 
 import React, { useEffect, useState, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getEmployees, Employee } from '@/lib/employee-storage';
+import { getEmployees, getTimeLogs, getEmployeePayments, Employee, TimeLog, EmployeePayment } from '@/lib/employee-storage';
 import { Loader2 } from 'lucide-react';
-import { generatePDFBlobUrl } from '@/lib/pdf-utils';
+import { generatePDFBlobUrl, generateReportPDFBlobUrl } from '@/lib/pdf-utils';
+import { HistoryReportTemplate } from '@/components/HistoryReportTemplate';
 
 function EmployeePrintContent() {
     const searchParams = useSearchParams();
     const type = searchParams.get('type'); // 'badge' or 'poster'
-    const id = searchParams.get('id'); // employee empId if badge
-
+    const range = searchParams.get('range') || 'ALL';
+    const id = searchParams.get('id'); // employee id or empId
     const [employee, setEmployee] = useState<Employee | null>(null);
+    const [historyLogs, setHistoryLogs] = useState<TimeLog[]>([]);
+    const [historyPayments, setHistoryPayments] = useState<EmployeePayment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [qrUrl, setQrUrl] = useState('');
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -33,6 +36,33 @@ function EmployeePrintContent() {
                     setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(clockUrl)}`);
                 }
                 setIsLoading(false);
+            } else if (type === 'history' && id) {
+                const emps = await getEmployees();
+                const emp = emps.find(e => e.id === id || e.empId === id);
+                if (emp) {
+                    setEmployee(emp);
+                    const [allLogs, empPayments] = await Promise.all([
+                        getTimeLogs(1000),
+                        getEmployeePayments(emp.id)
+                    ]);
+
+                    let empLogs = allLogs
+                        .filter(l => l.employeeId === emp.id || l.employeeName === emp.name)
+                        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+                    if (range !== 'ALL') {
+                        const now = new Date();
+                        const startDate = new Date();
+                        if (range === 'WEEK') startDate.setDate(now.getDate() - 7);
+                        else if (range === 'MONTH') startDate.setMonth(now.getMonth() - 1);
+                        else if (range === 'YEAR') startDate.setFullYear(now.getFullYear() - 1);
+                        empLogs = empLogs.filter(l => new Date(l.timestamp) >= startDate);
+                    }
+                    setHistoryLogs(empLogs);
+                    setHistoryPayments(empPayments);
+                    setImageLoaded(true); // No specific large image to wait for other than profile which is usually small
+                }
+                setIsLoading(false);
             } else {
                 setIsLoading(false);
             }
@@ -45,8 +75,13 @@ function EmployeePrintContent() {
             const generateAndOpen = async () => {
                 try {
                     // Give a small moment for styles to settle
-                    await new Promise(r => setTimeout(r, 800));
-                    const blobUrl = await generatePDFBlobUrl(printRef.current!, id || 'QR');
+                    await new Promise(r => setTimeout(r, 1000));
+                    let blobUrl = '';
+                    if (type === 'history') {
+                        blobUrl = await generateReportPDFBlobUrl(printRef.current!, `History_${employee?.name || 'Report'}`);
+                    } else {
+                        blobUrl = await generatePDFBlobUrl(printRef.current!, id || 'QR');
+                    }
                     window.location.replace(blobUrl);
                 } catch (e) {
                     console.error('PDF generation error, fallback to print:', e);
@@ -180,7 +215,7 @@ function EmployeePrintContent() {
                             {/* Photo & Main Info */}
                             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                                 <div style={{
-                                    width: 80, height: 90, borderRadius: 8, background: '#fff',
+                                    width: 100, height: 110, borderRadius: 8, background: '#fff',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
                                     border: '1.5px solid #e2e8f0', flexShrink: 0
                                 }}>
@@ -243,6 +278,16 @@ function EmployeePrintContent() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {type === 'history' && employee && (
+                <HistoryReportTemplate
+                    ref={printRef}
+                    employee={employee}
+                    logs={historyLogs}
+                    payments={historyPayments}
+                    range={range as any}
+                />
             )}
 
             {!isLoading && !employee && type !== 'poster' && (

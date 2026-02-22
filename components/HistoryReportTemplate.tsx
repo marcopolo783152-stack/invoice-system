@@ -147,6 +147,39 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
                     </table>
                 </div>
             ))}
+
+            {/* Payments History */}
+            {payments.length > 0 && (
+                <div style={{ marginTop: 40 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, borderBottom: '2px solid #e2e8f0', paddingBottom: 8, color: '#10b981', textTransform: 'uppercase' }}>
+                        Payment History
+                    </h3>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                            <tr style={{ textAlign: 'left', color: '#94a3b8' }}>
+                                <th style={{ padding: '8px 0', fontWeight: 700 }}>DATE</th>
+                                <th style={{ padding: '8px 0', fontWeight: 700 }}>AMOUNT</th>
+                                <th style={{ padding: '8px 0', fontWeight: 700, textAlign: 'right' }}>NOTES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {payments.map(payment => (
+                                <tr key={payment.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 500 }}>
+                                        {new Date(payment.date).toLocaleDateString()}
+                                    </td>
+                                    <td style={{ padding: '8px 0', color: '#10b981', fontWeight: 700 }}>
+                                        ${Number(payment.amount).toLocaleString()}
+                                    </td>
+                                    <td style={{ padding: '8px 0', textAlign: 'right', color: '#64748b' }}>
+                                        {payment.notes || '-'}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 });

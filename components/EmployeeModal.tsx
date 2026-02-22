@@ -85,7 +85,7 @@ export default function EmployeeModal({ isOpen, onClose, onSave, initialData }: 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Photo Upload Section */}
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-                        <div style={{ position: 'relative', width: 100, height: 100 }}>
+                        <div style={{ position: 'relative', width: 120, height: 120 }}>
                             <div style={{
                                 width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
                                 border: '3px solid #e2e8f0', background: '#f8fafc',

@@ -62,50 +62,7 @@ export default function EmployeesPage() {
     const [editTime, setEditTime] = useState('');
 
     const handlePrintHistory = async (emp: Employee) => {
-        setIsGeneratingHistory(true);
-        try {
-            const [allLogs, empPayments] = await Promise.all([
-                getTimeLogs(1000),
-                getEmployeePayments(emp.id)
-            ]);
-
-            let empLogs = allLogs
-                .filter(l => l.employeeId === emp.id || l.employeeName === emp.name)
-                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-            // Apply Date Filtering
-            if (reportRange !== 'ALL') {
-                const now = new Date();
-                const startDate = new Date();
-                if (reportRange === 'WEEK') startDate.setDate(now.getDate() - 7);
-                else if (reportRange === 'MONTH') startDate.setMonth(now.getMonth() - 1);
-                else if (reportRange === 'YEAR') startDate.setFullYear(now.getFullYear() - 1);
-
-                empLogs = empLogs.filter(l => new Date(l.timestamp) >= startDate);
-            }
-
-            setHistoryPrintData({
-                employee: emp,
-                logs: empLogs,
-                payments: empPayments
-            });
-
-            // Wait for render
-            setTimeout(async () => {
-                if (historyPrintRef.current) {
-                    const filename = `History_${emp.name}_${reportRange}`;
-                    const url = await generateReportPDFBlobUrl(historyPrintRef.current, filename);
-                    window.open(url, '_blank');
-                    setHistoryPrintData(null);
-                    setIsGeneratingHistory(false);
-                }
-            }, 500);
-
-        } catch (e) {
-            console.error('Error generating history:', e);
-            setIsGeneratingHistory(false);
-            alert('Failed to generate history report');
-        }
+        window.open(`/employees/print?type=history&id=${emp.id}&range=${reportRange}`, '_blank');
     };
 
     const handleManualLog = async () => {
@@ -359,7 +316,7 @@ export default function EmployeesPage() {
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 15 }}>
                                         <div style={{
-                                            width: 48, height: 48, borderRadius: '50%', background: '#f1f5f9',
+                                            width: 64, height: 64, borderRadius: '50%', background: '#f1f5f9',
                                             overflow: 'hidden', border: '2px solid #fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                                             flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'
                                         }}>
