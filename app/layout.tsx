@@ -94,10 +94,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="viewport" content="width=1280" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className={inter.className}>
-        <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', width: 1280 }}>
+        <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', width: '100%' }}>
           {/* Global Modals */}
           {isAuthenticated && !isPublicPage && (
             <>
@@ -149,7 +149,7 @@ export default function RootLayout({
             flex: 1,
             minHeight: '100vh',
             background: isPublicPage ? '#fff' : 'var(--bg-void)',
-            width: isAuthenticated && !isPublicPage ? (isCollapsed ? 1200 : 1020) : 1280
+            width: '100%'
           }}>
             {children}
           </div>
