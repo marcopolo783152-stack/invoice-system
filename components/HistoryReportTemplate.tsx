@@ -43,6 +43,7 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
             color: '#1e293b',
             width: '8.5in',
             minHeight: '11in',
+            margin: '0 auto',
             background: 'white',
             boxSizing: 'border-box',
             position: 'relative'

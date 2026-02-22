@@ -162,7 +162,7 @@ export async function generateReportPDFBlobUrl(
     useCORS: true,
     logging: false,
     backgroundColor: '#ffffff',
-    windowWidth: 1200, // Ensure desktop layout
+    windowWidth: 816, // Letter size at 96 DPI (8.5 * 96)
   });
 
   const imgWidth = canvas.width;
