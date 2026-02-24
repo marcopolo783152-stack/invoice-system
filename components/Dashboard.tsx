@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search, Calculator } from 'lucide-react';
+import { clockInOut, checkAutoClockOut } from '@/lib/employee-storage';
 import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import Link from 'next/link';
@@ -167,6 +168,9 @@ export default function Dashboard() {
         if (auth === '1' && user) {
             setIsAuthenticated(true);
             try { setCurrentUser(JSON.parse(user)); } catch { }
+
+            // Auto-cleanup for employees (6:00 PM rule)
+            checkAutoClockOut();
 
             // Initial Load (Instant)
             try {

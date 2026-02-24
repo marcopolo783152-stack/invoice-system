@@ -212,23 +212,39 @@ export async function clockInOut(
 
 /**
  * Perform Automatic Clock-out for all employees still "IN" after 6:00 PM
+ * This function also handles employees who forgot to clock out on previous days.
  */
 export async function checkAutoClockOut(): Promise<number> {
-    const now = new Date();
-    const currentHour = now.getHours();
-
-    // Only perform auto clock-out if it's after 6:00 PM
-    if (currentHour < 18) return 0;
-
     const employees = await getEmployees();
     const inEmployees = employees.filter(e => e.status === 'IN');
 
     if (inEmployees.length === 0) return 0;
 
-    const timestamp = now.toISOString();
+    const now = new Date();
+    const currentHour = now.getHours();
     let count = 0;
 
     for (const emp of inEmployees) {
+        if (!emp.lastAction) continue;
+
+        const lastActionDate = new Date(emp.lastAction);
+        const isToday = lastActionDate.toDateString() === now.toDateString();
+
+        // If clocked in today, ONLY clock out if it's currently past 6 PM
+        if (isToday) {
+            if (currentHour < 18) continue;
+        }
+
+        // Determine the "End of Shift" time (6:00 PM on the day they clocked in)
+        const endOfShift = new Date(lastActionDate);
+        endOfShift.setHours(18, 0, 0, 0);
+
+        // If they clocked in AFTER 6 PM (unlikely but possible), 
+        // they shouldn't be auto-clocked out immediately.
+        if (lastActionDate >= endOfShift && isToday) continue;
+
+        const timestamp = endOfShift.toISOString();
+
         // Create manual-style clock-out log
         const log: TimeLog = {
             id: 'auto-' + Math.random().toString(36).substr(2, 9),
@@ -236,7 +252,7 @@ export async function checkAutoClockOut(): Promise<number> {
             employeeName: emp.name,
             type: 'OUT',
             timestamp: timestamp,
-            notes: 'System Auto-Clock Out (End of Shift)'
+            notes: 'System Auto-Clock Out (Shift End 6:00 PM)'
         };
 
         emp.status = 'OUT';
@@ -247,7 +263,7 @@ export async function checkAutoClockOut(): Promise<number> {
                 // Add log to cloud
                 await addDoc(collection(db, LOG_COLLECTION), {
                     ...log,
-                    timestamp: Timestamp.fromDate(now)
+                    timestamp: Timestamp.fromDate(endOfShift)
                 });
                 // Update employee in cloud
                 await updateDoc(doc(db, EMP_COLLECTION, emp.id), {
@@ -261,8 +277,10 @@ export async function checkAutoClockOut(): Promise<number> {
         count++;
     }
 
-    // Update local storage
-    localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(employees));
+    if (count > 0) {
+        // Update local storage
+        localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(employees));
+    }
 
     return count;
 }
