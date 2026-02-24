@@ -195,6 +195,13 @@ export default function Dashboard() {
                 }
             }
             loadData();
+
+            // Continuous Audit (Check every 5 minutes for auto clock-out etc)
+            const auditInterval = setInterval(() => {
+                checkAutoClockOut();
+            }, 5 * 60 * 1000);
+
+            return () => clearInterval(auditInterval);
         } else {
             setIsAuthenticated(false);
             setLoading(false);

@@ -38,6 +38,13 @@ export default function ClockPage() {
 
         // Auto-cleanup if visiting after hours
         checkAutoClockOut();
+
+        // Continuous Audit (Check every 5 minutes)
+        const auditInterval = setInterval(() => {
+            checkAutoClockOut();
+        }, 5 * 60 * 1000);
+
+        return () => clearInterval(auditInterval);
     }, []);
 
     // Haversine formula for distance in feet
