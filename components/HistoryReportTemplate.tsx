@@ -176,7 +176,12 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
                             {payments.map(payment => (
                                 <tr key={payment.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                     <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 500 }}>
-                                        {new Date(payment.date).toLocaleDateString()}
+                                        {(() => {
+                                            try {
+                                                const d = new Date(payment.date);
+                                                return isNaN(d.getTime()) ? '-' : d.toLocaleDateString();
+                                            } catch (e) { return '-'; }
+                                        })()}
                                     </td>
                                     <td style={{ padding: '8px 0', color: '#10b981', fontWeight: 700 }}>
                                         ${Number(payment.amount).toLocaleString()}

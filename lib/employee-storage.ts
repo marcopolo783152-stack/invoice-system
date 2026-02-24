@@ -420,7 +420,10 @@ export async function recordPayment(payment: Partial<EmployeePayment>): Promise<
 
     if (isFirebaseConfigured() && db) {
         try {
-            const docRef = await addDoc(collection(db, PAY_COLLECTION), data);
+            const docRef = await addDoc(collection(db, PAY_COLLECTION), {
+                ...data,
+                date: Timestamp.fromDate(new Date(data.date))
+            });
             data.id = docRef.id;
         } catch (e) {
             console.error('Error saving payment to Firebase:', e);
@@ -445,7 +448,13 @@ export async function getEmployeePayments(employeeId: string): Promise<EmployeeP
             const snapshot = await getDocs(q);
             const payments: EmployeePayment[] = [];
             snapshot.forEach(doc => {
-                payments.push({ id: doc.id, ...doc.data() } as EmployeePayment);
+                const data = doc.data();
+                payments.push({
+                    ...data,
+                    id: doc.id,
+                    // Handle both Timestamp and string formats
+                    date: data.date instanceof Timestamp ? data.date.toDate().toISOString() : data.date
+                } as EmployeePayment);
             });
             return payments;
         } catch (e) {
