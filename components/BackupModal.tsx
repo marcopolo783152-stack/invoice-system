@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import styles from './BackupModal.module.css';
-import { X, FolderOpen, Save, RefreshCw, AlertTriangle, Download, HardDrive } from 'lucide-react';
+import { X, FolderOpen, Save, RefreshCw, AlertTriangle, Download, HardDrive, CheckCircle2 } from 'lucide-react';
 import { exportToDirectory } from '@/lib/bulk-export';
-import { getAllInvoices } from '@/lib/invoice-storage';
+import { getAllInvoices, getUnbackedInvoices, confirmSmartBackupComplete, SavedInvoice } from '@/lib/invoice-storage';
 
 interface BackupModalProps {
     onClose: () => void;
@@ -16,6 +15,8 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [unbackedInvoices, setUnbackedInvoices] = useState<SavedInvoice[]>([]);
+    const [backupType, setBackupType] = useState<'incremental' | 'full'>('incremental');
 
     useEffect(() => {
         if (!isWeb) {
@@ -23,6 +24,15 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
             if (savedPath) setBackupPath(savedPath);
             const last = localStorage.getItem('last_backup_date');
             if (last) setLastBackup(last);
+        }
+
+        // Check for unbacked changes
+        const unbacked = getUnbackedInvoices();
+        setUnbackedInvoices(unbacked);
+        if (unbacked.length === 0) {
+            setBackupType('full');
+        } else {
+            setBackupType('incremental');
         }
     }, [isWeb]);
 
@@ -43,11 +53,24 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
         setMessage('');
 
         try {
-            const invoices = await getAllInvoices();
+            let invoicesToBackup: SavedInvoice[] = [];
+
+            if (backupType === 'full') {
+                invoicesToBackup = await getAllInvoices();
+            } else {
+                invoicesToBackup = getUnbackedInvoices();
+            }
+
+            if (invoicesToBackup.length === 0) {
+                setStatus('error');
+                setMessage('No invoices found to backup.');
+                setLoading(false);
+                return;
+            }
 
             if (isWeb) {
                 // Web Backup: Trigger Download
-                await exportToDirectory(invoices, (p) => {
+                await exportToDirectory(invoicesToBackup, (p) => {
                     setMessage(p.status);
                 });
                 setStatus('success');
@@ -61,17 +84,18 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
                     return;
                 }
 
-                // Use the smart backup logic or simple file dump?
-                // The Sidebar backup button traditionally did the FULL export (PDFs/Zip)
-                // So we should stick to that for "Manual Backup"
-
-                await exportToDirectory(invoices, (p) => {
+                await exportToDirectory(invoicesToBackup, (p) => {
                     setMessage(p.status);
                 });
 
                 const now = new Date().toISOString();
+
+                // If success, mark smart backup as complete
+                confirmSmartBackupComplete();
+
                 localStorage.setItem('last_backup_date', now);
                 setLastBackup(now);
+                setUnbackedInvoices([]);
                 setStatus('success');
                 setMessage('Backup completed successfully!');
             }
@@ -109,7 +133,7 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
                                 <input
                                     type="text"
                                     value={backupPath}
-                                    readOnly={true} // Use readOnly to prevent typing, forcing directory selection
+                                    readOnly={true}
                                     placeholder="No folder selected..."
                                     className={styles.input}
                                 />
@@ -125,9 +149,41 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
                         </div>
                     )}
 
+                    <div className={styles.section}>
+                        <label className={styles.label}>Backup Type</label>
+                        <div className={styles.backupOptions}>
+                            <button
+                                className={`${styles.optionCard} ${backupType === 'incremental' ? styles.activeOption : ''} ${unbackedInvoices.length === 0 ? styles.disabledOption : ''}`}
+                                onClick={() => unbackedInvoices.length > 0 && setBackupType('incremental')}
+                                disabled={unbackedInvoices.length === 0}
+                            >
+                                <div className={styles.optionHeader}>
+                                    <RefreshCw size={18} />
+                                    <span>Incremental</span>
+                                </div>
+                                <p className={styles.optionDesc}>Only new or changed invoices since last backup.</p>
+                                {unbackedInvoices.length > 0 && (
+                                    <div className={styles.badge}>{unbackedInvoices.length} pending</div>
+                                )}
+                            </button>
+
+                            <button
+                                className={`${styles.optionCard} ${backupType === 'full' ? styles.activeOption : ''}`}
+                                onClick={() => setBackupType('full')}
+                            >
+                                <div className={styles.optionHeader}>
+                                    <Save size={18} />
+                                    <span>Full Backup</span>
+                                </div>
+                                <p className={styles.optionDesc}>Export all invoices currently in the system.</p>
+                            </button>
+                        </div>
+                    </div>
+
                     <div className={styles.statusCard}>
                         {lastBackup ? (
                             <div className={styles.lastBackup}>
+                                <CheckCircle2 size={16} color="#4caf50" />
                                 <span className={styles.statusLabel}>Last Successful Backup:</span>
                                 <span className={styles.statusValue}>{new Date(lastBackup).toLocaleString()}</span>
                             </div>
@@ -162,7 +218,7 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
                         ) : (
                             <>
                                 {isWeb ? <Download size={18} /> : <Save size={18} />}
-                                {isWeb ? 'Download Backup' : 'Start Backup'}
+                                {backupType === 'incremental' ? 'Sync Changes' : (isWeb ? 'Download Backup' : 'Start Full Backup')}
                             </>
                         )}
                     </button>

@@ -132,14 +132,26 @@ export async function hasUnbackedChanges(): Promise<boolean> {
 /**
  * Mark smart backup as complete
  */
-export function confirmSmartBackupComplete(): void {
-  const invoices = getAllInvoicesSync();
-  const latestUpdate = invoices.reduce((max, inv) => {
+export function confirmSmartBackupComplete(timestamp?: string): void {
+  const latestUpdate = timestamp || getAllInvoicesSync().reduce((max, inv) => {
     return inv.updatedAt > max ? inv.updatedAt : max;
   }, '');
+
   if (latestUpdate) {
     localStorage.setItem(SMART_BACKUP_KEY, latestUpdate);
   }
+}
+
+/**
+ * Get invoices that have been changed or created since the last smart backup
+ */
+export function getUnbackedInvoices(): SavedInvoice[] {
+  const invoices = getAllInvoicesSync();
+  const lastBackup = localStorage.getItem(SMART_BACKUP_KEY);
+
+  if (!lastBackup) return invoices; // First time backup
+
+  return invoices.filter(inv => inv.updatedAt > lastBackup);
 }
 
 export interface SavedInvoice {
