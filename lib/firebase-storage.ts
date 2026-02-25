@@ -29,6 +29,7 @@ export interface SavedInvoice {
   totalAmount: number;
   data: InvoiceData;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const COLLECTION_NAME = 'invoices';
@@ -48,13 +49,15 @@ export async function saveInvoiceToCloud(
   }
 
   try {
+    const now = Timestamp.now();
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       invoiceNumber,
       customerName,
       date: data.date,
       totalAmount,
       data,
-      createdAt: Timestamp.now()
+      createdAt: now,
+      updatedAt: now
     });
     return docRef.id;
   } catch (error) {
@@ -121,7 +124,8 @@ export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
         date: data.date,
         totalAmount: data.totalAmount,
         data: data.data,
-        createdAt: data.createdAt.toDate()
+        createdAt: data.createdAt.toDate(),
+        updatedAt: (data.updatedAt || data.createdAt).toDate()
       });
     });
 
@@ -153,7 +157,8 @@ export async function updateInvoiceInCloud(
       customerName,
       date: data.date,
       totalAmount,
-      data
+      data,
+      updatedAt: Timestamp.now()
     });
   } catch (error) {
     console.error('Error updating invoice in cloud:', error);
@@ -216,7 +221,8 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
         date: data.date,
         totalAmount: data.totalAmount,
         data: data.data,
-        createdAt: data.createdAt.toDate()
+        createdAt: data.createdAt.toDate(),
+        updatedAt: (data.updatedAt || data.createdAt).toDate()
       });
     });
     callback(invoices);
@@ -335,7 +341,8 @@ export async function getBinInvoicesFromCloud(): Promise<SavedInvoice[]> {
         date: data.date,
         totalAmount: data.totalAmount,
         data: data.data,
-        createdAt: data.createdAt.toDate()
+        createdAt: data.createdAt.toDate(),
+        updatedAt: (data.updatedAt || data.createdAt).toDate()
       });
     });
 

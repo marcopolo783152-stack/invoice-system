@@ -187,7 +187,7 @@ export async function getAllInvoices(): Promise<SavedInvoice[]> {
           id: invoice.id,
           data: invoice.data,
           createdAt: invoice.createdAt.toISOString(),
-          updatedAt: invoice.createdAt.toISOString(),
+          updatedAt: (invoice.updatedAt || invoice.createdAt).toISOString(),
           documentType: (invoice.data.documentType || 'INVOICE') as any
         }));
 
@@ -921,7 +921,7 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
           id: inv.id,
           data: inv.data,
           createdAt: inv.createdAt ? inv.createdAt.toISOString() : new Date().toISOString(),
-          updatedAt: inv.createdAt ? inv.createdAt.toISOString() : new Date().toISOString(),
+          updatedAt: inv.updatedAt ? inv.updatedAt.toISOString() : (inv.createdAt ? inv.createdAt.toISOString() : new Date().toISOString()),
           documentType: (inv.data.documentType || 'INVOICE') as any
         }));
 
