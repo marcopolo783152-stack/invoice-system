@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup, RefreshCw, Clock, DollarSign } from 'lucide-react';
 import styles from './Sidebar.module.css';
-import { exportAddressBook, getAllInvoices, getOutstandingBalances } from '@/lib/invoice-storage';
+import { exportAddressBook, getAllInvoices, getOutstandingBalances, getUnbackedInvoices, confirmSmartBackupComplete } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
 import { BackupModal } from './BackupModal';
 import ExportPreviewModal from './ExportPreviewModal';
@@ -80,17 +80,27 @@ export default function Sidebar({
         const isWeb = typeof window !== 'undefined' && !(window as any).electron;
         if (isWeb) {
             try {
-                // Check if API available
                 if (!(window as any).showDirectoryPicker) {
                     alert('Your browser does not support direct folder access. Please use Chrome, Edge, or Opera.');
                     return;
                 }
 
-                if (confirm("Start full backup (PDFs + JSON) to a local folder?")) {
+                const unbacked = getUnbackedInvoices();
+                const mode = unbacked.length > 0 ? 'incremental' : 'full';
+                const message = mode === 'incremental'
+                    ? `Found ${unbacked.length} new/changed invoices. Sync changes?`
+                    : "No new changes found. Start a full backup of all invoices?";
+
+                if (confirm(message)) {
                     setIsBackingUp(true);
-                    const invoices = await getAllInvoices();
+                    const invoicesToBackup = mode === 'incremental' ? unbacked : await getAllInvoices();
                     const { exportToDirectory } = await import('@/lib/bulk-export');
-                    await exportToDirectory(invoices);
+                    await exportToDirectory(invoicesToBackup);
+
+                    if (mode === 'incremental') {
+                        confirmSmartBackupComplete();
+                    }
+
                     alert("Backup Completed Successfully!");
                 }
             } catch (error: any) {

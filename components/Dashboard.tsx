@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search, Calculator } from 'lucide-react';
 import { clockInOut, checkAutoClockOut } from '@/lib/employee-storage';
-import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync } from '@/lib/invoice-storage';
+import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync, getUnbackedInvoices } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import Link from 'next/link';
 import Login from './Login';
@@ -31,17 +31,22 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
 
     const handleSmartSync = async () => {
         const isElectron = typeof window !== 'undefined' && (window as any).electron;
+        const unbacked = getUnbackedInvoices();
+
+        if (unbacked.length === 0) {
+            setStatus('uptodate');
+            return;
+        }
 
         if (!isElectron) {
-            // Web Fallback: Use exportToDirectory to save PDFs
+            // Web Fallback: Use exportToDirectory to save PDFs (Incremental)
             try {
-                await exportToDirectory(invoices, (p) => {
-                    // Optional: You could update a local state to show detailed progress here
+                await exportToDirectory(unbacked, (p) => {
                     console.log(p.status);
                 });
                 confirmSmartBackupComplete();
                 setStatus('uptodate');
-                alert('Backup Complete! All invoices saved as PDFs.');
+                alert(`Sync Complete! ${unbacked.length} new/changed invoices saved as PDFs.`);
             } catch (error: any) {
                 if (error.name !== 'AbortError') {
                     console.error('Backup failed:', error);
@@ -65,17 +70,20 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
                 }
             }
 
-            // Perform Smart Sync (Overwrite Master File)
+            // Perform PDF Sync (Incremental)
+            await exportToDirectory(unbacked, (p) => {
+                console.log(p.status);
+            });
+
+            // Also Update Master JSON (Full sync is usually fast for JSON)
             const data = exportInvoices();
-            // We assume Windows path separator for now as user is on Windows
             const fullPath = `${path}\\Invoices_Master.json`;
             const result = await (window as any).electron.saveBackup(fullPath, data);
 
             if (result.success) {
                 confirmSmartBackupComplete();
                 setStatus('uptodate');
-                // alert('Sync Complete: Master file updated!'); // Optional: Notification? 
-                // Let's just show visual feedback
+                alert(`Sync Complete! ${unbacked.length} changes backed up successfully.`);
             } else {
                 alert('Sync Failed: ' + result.error);
             }
