@@ -10,7 +10,7 @@ type Mode = 'rectangle' | 'round';
 
 export default function RugCalculatorModal({ isOpen, onClose }: RugCalculatorModalProps) {
     const [mode, setMode] = useState<Mode>('rectangle');
-    
+
     // Rectangle Inputs
     const [widthFt, setWidthFt] = useState('');
     const [widthIn, setWidthIn] = useState('');
@@ -21,28 +21,41 @@ export default function RugCalculatorModal({ isOpen, onClose }: RugCalculatorMod
     const [diameterFt, setDiameterFt] = useState('');
     const [diameterIn, setDiameterIn] = useState('');
 
+    const [pricePerSqFt, setPricePerSqFt] = useState('');
+
     const [result, setResult] = useState<number | null>(null);
+    const [totalPrice, setTotalPrice] = useState<number | null>(null);
 
     useEffect(() => {
         calculate();
-    }, [widthFt, widthIn, lengthFt, lengthIn, diameterFt, diameterIn, mode]);
+    }, [widthFt, widthIn, lengthFt, lengthIn, diameterFt, diameterIn, mode, pricePerSqFt]);
 
     const calculate = () => {
+        let area: number | null = null;
         if (mode === 'rectangle') {
             const w = (parseFloat(widthFt) || 0) + (parseFloat(widthIn) || 0) / 12;
             const l = (parseFloat(lengthFt) || 0) + (parseFloat(lengthIn) || 0) / 12;
-            if (w > 0 && l > 0) {
-                setResult(w * l);
-            } else {
-                setResult(null);
-            }
+            if (w > 0 && l > 0) area = w * l;
         } else {
             const d = (parseFloat(diameterFt) || 0) + (parseFloat(diameterIn) || 0) / 12;
             if (d > 0) {
                 const r = d / 2;
-                setResult(Math.PI * r * r);
+                area = Math.PI * r * r;
+            }
+        }
+
+        setResult(area);
+
+        if (area !== null && pricePerSqFt) {
+            setTotalPrice(area * parseFloat(pricePerSqFt));
+        } else {
+            setTotalPrice(area && pricePerSqFt ? area * parseFloat(pricePerSqFt) : null);
+            // Actually, simplified:
+            const p = parseFloat(pricePerSqFt);
+            if (area !== null && !isNaN(p) && p > 0) {
+                setTotalPrice(area * p);
             } else {
-                setResult(null);
+                setTotalPrice(null);
             }
         }
     };
@@ -51,7 +64,9 @@ export default function RugCalculatorModal({ isOpen, onClose }: RugCalculatorMod
         setWidthFt(''); setWidthIn('');
         setLengthFt(''); setLengthIn('');
         setDiameterFt(''); setDiameterIn('');
+        setPricePerSqFt('');
         setResult(null);
+        setTotalPrice(null);
     };
 
     if (!isOpen) return null;
@@ -70,7 +85,7 @@ export default function RugCalculatorModal({ isOpen, onClose }: RugCalculatorMod
                 border: '1px solid var(--surface-border)',
                 animation: 'slideUp 0.3s ease-out'
             }} onClick={e => e.stopPropagation()}>
-                
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <h2 style={{ fontSize: 24, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 12, color: 'var(--text-main)' }}>
                         <Calculator size={28} className="text-blue-600" style={{ color: 'var(--primary)' }} />
@@ -180,6 +195,28 @@ export default function RugCalculatorModal({ isOpen, onClose }: RugCalculatorMod
                         </div>
                     )}
 
+                    <div>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price per Sq Ft</label>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="number"
+                                value={pricePerSqFt}
+                                onChange={e => setPricePerSqFt(e.target.value)}
+                                placeholder="0.00"
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 12px 12px 32px',
+                                    borderRadius: 10,
+                                    border: '1px solid #cbd5e1',
+                                    fontSize: 16,
+                                    fontWeight: 600,
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+                            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 14, fontWeight: 700 }}>$</span>
+                        </div>
+                    </div>
+
                     {/* Result */}
                     <div style={{
                         marginTop: 12,
@@ -187,17 +224,32 @@ export default function RugCalculatorModal({ isOpen, onClose }: RugCalculatorMod
                         background: 'linear-gradient(135deg, var(--bg-slate) 0%, #f1f5f9 100%)',
                         borderRadius: 16,
                         textAlign: 'center',
-                        border: '1px solid #e2e8f0'
+                        border: '1px solid #e2e8f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 16
                     }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>TOTAL AREA</div>
-                        <div style={{ fontSize: 42, fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>
-                            {result !== null ? result.toFixed(2) : '0.00'}
-                            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', marginLeft: 6 }}>sq ft</span>
+                        <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>TOTAL AREA</div>
+                            <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>
+                                {result !== null ? result.toFixed(2) : '0.00'}
+                                <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', marginLeft: 6 }}>sq ft</span>
+                            </div>
                         </div>
+
+                        {totalPrice !== null && (
+                            <div style={{ paddingTop: 16, borderTop: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>ESTIMATED TOTAL</div>
+                                <div style={{ fontSize: 42, fontWeight: 900, color: '#10b981', lineHeight: 1 }}>
+                                    <span style={{ fontSize: 24, fontWeight: 700, marginRight: 2 }}>$</span>
+                                    {totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-                         <button
+                        <button
                             onClick={reset}
                             style={{
                                 background: 'transparent', border: 'none', color: 'var(--text-muted)',
