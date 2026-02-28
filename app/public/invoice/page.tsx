@@ -93,8 +93,8 @@ function PublicInvoiceContent() {
     }
 
     return (
-        <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh', background: '#f3f4f6', padding: '20px' }}>
-            <div style={{ maxWidth: 850, margin: '0 auto' }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh', background: '#f3f4f6', padding: '10px 0' }}>
+            <div style={{ maxWidth: 850, margin: '0 auto', padding: '0 10px' }}>
                 {/* Header Actions */}
                 <div style={{
                     display: 'flex',
@@ -141,18 +141,20 @@ function PublicInvoiceContent() {
                     className="invoice-paper"
                     style={{
                         background: 'white',
-                        padding: 40,
-                        borderRadius: 0,
+                        padding: 0,
+                        borderRadius: 8,
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        margin: '0 auto'
+                        margin: '0 auto',
+                        overflow: 'hidden'
                     }}
-                    ref={invoiceRef}
                 >
-                    <InvoiceTemplate
-                        data={invoice.data}
-                        calculations={calculations}
-                        businessInfo={businessConfig}
-                    />
+                    <div ref={invoiceRef}>
+                        <InvoiceTemplate
+                            data={invoice.data}
+                            calculations={calculations}
+                            businessInfo={businessConfig}
+                        />
+                    </div>
                 </div>
             </div>
         </div>
