@@ -109,6 +109,23 @@ export async function openPDFInNewTab(
   return createPDF(invoiceElement, invoiceNumber, false);
 }
 
+/**
+ * Generate and view PDF in current tab (replaces current page)
+ */
+export async function viewPDFInCurrentTab(
+  invoiceElement: HTMLElement,
+  invoiceNumber: string
+): Promise<void> {
+  try {
+    const blob = await getInvoicePDFBlob(invoiceElement, invoiceNumber);
+    const blobUrl = URL.createObjectURL(blob);
+    window.location.href = blobUrl;
+  } catch (error) {
+    console.error('Error viewing PDF in current tab:', error);
+    throw error;
+  }
+}
+
 export async function getInvoicePDFBlob(
   invoiceElement: HTMLElement,
   invoiceNumber: string

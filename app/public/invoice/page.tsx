@@ -7,7 +7,7 @@ import { getInvoiceByIdAsync, SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { businessConfig } from '@/config/business';
-import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
+import { generatePDF, openPDFInNewTab, viewPDFInCurrentTab } from '@/lib/pdf-utils';
 
 function PublicInvoiceContent() {
     const searchParams = useSearchParams();
@@ -26,6 +26,22 @@ function PublicInvoiceContent() {
             setLoading(false);
         }
     }, [id]);
+
+    // Handle automatic PDF view if requested via query param
+    useEffect(() => {
+        const shouldShowPDF = searchParams.get('pdf') === 'true';
+        if (shouldShowPDF && !loading && invoice && invoiceRef.current) {
+            // Give a small delay for the template to fully render
+            const timer = setTimeout(() => {
+                viewPDFInCurrentTab(invoiceRef.current!, invoice.data.invoiceNumber)
+                    .catch(err => {
+                        console.error('Auto-PDF generation failed:', err);
+                        // Fallback: the user can still click the download button if auto-trigger fails
+                    });
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, invoice, searchParams]);
 
     const loadInvoice = async (invoiceId: string) => {
         try {

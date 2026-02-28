@@ -382,7 +382,7 @@ function InvoicePageContent() {
     }
 
     // Generate Link using the actual ID
-    const link = `${window.location.origin}/public/invoice?id=${activeId}`;
+    const link = `${window.location.origin}/public/invoice?id=${activeId}&pdf=true`;
 
     const sending = confirm(
       `Send invoice to ${customerEmail}?\n\n` +
