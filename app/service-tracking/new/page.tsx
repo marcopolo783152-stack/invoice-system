@@ -174,17 +174,19 @@ export default function NewServiceOrderPage() {
         }
     };
 
-    const filteredInvoiceRugs = invoiceRugs.filter(item => {
+    const filteredInvoiceRugs = (invoiceRugs || []).filter(item => {
+        if (!item) return false;
         const query = searchTerm.toLowerCase();
-        return (item.sku || '').toLowerCase().includes(query) ||
-            (item.description || '').toLowerCase().includes(query) ||
-            (item.customerName || '').toLowerCase().includes(query);
+        return String(item.sku || '').toLowerCase().includes(query) ||
+            String(item.description || '').toLowerCase().includes(query) ||
+            String(item.customerName || '').toLowerCase().includes(query);
     });
 
-    const filteredInventory = inventory.filter(item => {
+    const filteredInventory = (inventory || []).filter(item => {
+        if (!item) return false;
         const query = searchTerm.toLowerCase();
-        return (item.sku || '').toLowerCase().includes(query) ||
-            (item.description || '').toLowerCase().includes(query);
+        return String(item.sku || '').toLowerCase().includes(query) ||
+            String(item.description || '').toLowerCase().includes(query);
     });
 
     const groupedInvoiceRugs = filteredInvoiceRugs.reduce((acc, current) => {
