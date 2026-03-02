@@ -16,6 +16,7 @@ interface ServiceRugItem {
     source: 'inventory' | 'invoice' | 'unlisted';
     invoiceId?: string;
     defaultServiceType?: 'Wash' | 'Repair' | 'Both';
+    isAlreadyAtService?: boolean;
 }
 
 const formatSize = (item: any) => {
@@ -29,7 +30,7 @@ const formatSize = (item: any) => {
 export default function NewServiceOrderPage() {
     const router = useRouter();
     const [vendors, setVendors] = useState<ServiceVendor[]>([]);
-    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [inventory, setInventory] = useState<ServiceRugItem[]>([]);
     const [invoiceRugs, setInvoiceRugs] = useState<ServiceRugItem[]>([]);
     const [atServiceRugs, setAtServiceRugs] = useState<ServiceRugItem[]>([]);
     const [completedRugs, setCompletedRugs] = useState<ServiceRugItem[]>([]);
@@ -111,8 +112,11 @@ export default function NewServiceOrderPage() {
 
 
 
+            // Get SKUs in stock inventory to avoid duplicates in invoice list
+            const inventorySkus = new Set((iData || []).map(item => item.sku));
+
             // Extract rugs from all invoices where items are marked for wash/repair
-            const washRugs: ServiceRugItem[] = [];
+            const initialWashRugs: ServiceRugItem[] = [];
             (invData || []).forEach(inv => {
                 if (!inv || !inv.data || !Array.isArray(inv.data.items)) return;
 
@@ -123,42 +127,49 @@ export default function NewServiceOrderPage() {
                     const status = inv.data.status || '';
                     const isPickedUp = status.toUpperCase() === 'PICKED_UP';
 
-                    // Do not show in invoice list if it already has a service record for THIS invoice (Wait to show returned ones)
+                    // Do not show in invoice list if it's already in stock inventory (User request: "dont show from inventory in service invoices")
+                    // OR already has a service record for THIS invoice (Wait to show returned ones)
+                    const isDuplicate = inventorySkus.has(item.sku);
                     const isAlreadyServicedForThisInvoice = alreadyServicedByInvoice.has(`${item.sku}-${String(inv.id)}`);
 
-                    const needsService = !isPickedUp && !isAlreadyServicedForThisInvoice && item.serviceType &&
+                    const needsService = !isPickedUp && !isDuplicate && !isAlreadyServicedForThisInvoice && item.serviceType &&
                         typeof item.serviceType === 'object' &&
                         (item.serviceType.wash || item.serviceType.repair);
 
-                    const wash = item.serviceType?.wash;
-                    const repair = item.serviceType?.repair;
-                    const defaultService: 'Wash' | 'Repair' | 'Both' = (wash && repair) ? 'Both' : (repair ? 'Repair' : 'Wash');
+                    if (needsService) {
+                        const wash = item.serviceType?.wash;
+                        const repair = item.serviceType?.repair;
+                        const defaultService: 'Wash' | 'Repair' | 'Both' = (wash && repair) ? 'Both' : (repair ? 'Repair' : 'Wash');
 
-                    if (needsService && !currentlyAtServiceSkus.has(item.sku)) {
-                        washRugs.push({
+                        initialWashRugs.push({
                             sku: item.sku,
                             description: item.description || '',
                             size: formatSize(item),
                             customerName: inv.data.soldTo?.name || 'Marco Polo',
                             source: 'invoice' as const,
                             invoiceId: inv.id,
-                            defaultServiceType: defaultService
+                            defaultServiceType: defaultService,
+                            isAlreadyAtService: currentlyAtServiceSkus.has(item.sku)
                         });
                     }
                 });
             });
 
-            setInvoiceRugs(washRugs);
+            setInvoiceRugs(initialWashRugs);
 
-            // Filter inventory for AVAILABLE AND NOT currently at service AND NOT already in the invoice list
-            const washRugSkus = new Set(washRugs.map(r => r.sku));
-            setInventory((iData || []).filter(item =>
-                item && item.status === 'AVAILABLE' && !currentlyAtServiceSkus.has(item.sku) && !washRugSkus.has(item.sku)
-            ));
+            // Filter inventory for AVAILABLE
+            setInventory((iData || []).filter(item => item && item.status === 'AVAILABLE').map(item => ({
+                sku: item.sku,
+                description: item.description || '',
+                size: formatSize(item),
+                customerName: 'Marco Polo',
+                source: 'inventory' as const,
+                isAlreadyAtService: currentlyAtServiceSkus.has(item.sku)
+            })));
 
             setOrderNumber(nextNum || `MP-${new Date().getFullYear()}-001`);
 
-            if (washRugs.length === 0 && (iData || []).length > 0) {
+            if (initialWashRugs.length === 0 && (iData || []).length > 0) {
                 setActiveTab('inventory');
             }
         } catch (error) {
