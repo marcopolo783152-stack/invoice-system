@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, XCircle, Clock, Save, Edit, User, FileText, CheckCircle, Truck, Calendar, Tag, Info, Printer, Edit2, X } from 'lucide-react';
-import { getServiceOrderById, markRugAsReturned, updateServiceOrder, ServiceOrder, ServiceOrderRug } from '@/lib/service-order-storage';
+import { ArrowLeft, CheckCircle2, XCircle, Clock, Save, Edit, User, FileText, CheckCircle, Truck, Calendar, Tag, Info, Printer, Edit2, X, Square, CheckSquare } from 'lucide-react';
+import { getServiceOrderById, markMultipleRugsAsReturned, updateServiceOrder, ServiceOrder, ServiceOrderRug } from '@/lib/service-order-storage';
+import { openPDFInNewTab } from '@/lib/pdf-utils';
 
 function ServiceOrderDetailContent() {
     const router = useRouter();
@@ -12,7 +13,8 @@ function ServiceOrderDetailContent() {
 
     const [order, setOrder] = useState<ServiceOrder | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedRug, setSelectedRug] = useState<ServiceOrderRug | null>(null);
+    const [selectedRugSkus, setSelectedRugSkus] = useState<string[]>([]);
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
     const [returnData, setReturnData] = useState({
         receivedBy: '',
         conditionNotes: '',
@@ -23,6 +25,7 @@ function ServiceOrderDetailContent() {
 
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState<Partial<ServiceOrder>>({});
+    const printRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (id) {
@@ -34,19 +37,36 @@ function ServiceOrderDetailContent() {
 
     const loadOrder = async (orderId: string) => {
         setIsLoading(true);
-        const data = await getServiceOrderById(orderId);
-        setOrder(data);
-        setIsLoading(false);
+        try {
+            const data = await getServiceOrderById(orderId);
+            setOrder(data);
+        } catch (error) {
+            console.error('Error loading order:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleMarkReturned = async (e: React.FormEvent) => {
+    const handleToggleRugSelection = (sku: string) => {
+        const rug = order?.rugs.find(r => r.sku === sku);
+        if (rug?.returned) return;
+
+        if (selectedRugSkus.includes(sku)) {
+            setSelectedRugSkus(selectedRugSkus.filter(s => s !== sku));
+        } else {
+            setSelectedRugSkus([...selectedRugSkus, sku]);
+        }
+    };
+
+    const handleMarkReturnedBulk = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedRug || !order) return;
+        if (!order || selectedRugSkus.length === 0) return;
 
         try {
-            const updatedOrder = await markRugAsReturned(order.id, selectedRug.sku, returnData);
+            const updatedOrder = await markMultipleRugsAsReturned(order.id, selectedRugSkus, returnData);
             setOrder(updatedOrder);
-            setSelectedRug(null);
+            setSelectedRugSkus([]);
+            setIsReturnModalOpen(false);
             setReturnData({
                 receivedBy: '',
                 conditionNotes: '',
@@ -55,7 +75,7 @@ function ServiceOrderDetailContent() {
                 dateReturned: new Date().toISOString().split('T')[0]
             });
         } catch (error) {
-            console.error('Error marking rug as returned:', error);
+            console.error('Error marking rugs as returned:', error);
             alert('Failed to update rug status');
         }
     };
@@ -73,12 +93,22 @@ function ServiceOrderDetailContent() {
         }
     };
 
-    const handlePrint = () => {
-        window.print();
+    const handlePrintPDF = async () => {
+        if (printRef.current && order) {
+            try {
+                await openPDFInNewTab(printRef.current, order.orderNumber);
+            } catch (error) {
+                console.error('PDF generation failed:', error);
+                alert('Failed to generate PDF. Falling back to browser print.');
+                window.print();
+            }
+        }
     };
 
     if (isLoading) return <div style={{ padding: '3rem', textAlign: 'center' }}>Loading...</div>;
     if (!order) return <div style={{ padding: '3rem', textAlign: 'center' }}>Order not found</div>;
+
+    const availableRugsCount = order.rugs.filter(r => !r.returned).length;
 
     return (
         <div style={{ padding: '2rem', maxWidth: '1100px', margin: '0 auto' }}>
@@ -125,11 +155,11 @@ function ServiceOrderDetailContent() {
                             <Edit2 size={16} /> Edit
                         </button>
                         <button
-                            onClick={handlePrint}
+                            onClick={handlePrintPDF}
                             className="no-print"
                             style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.875rem' }}
                         >
-                            <Printer size={16} /> Print Receipt
+                            <Printer size={16} /> Print Receipt (PDF)
                         </button>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', justifyContent: 'flex-end' }}>
@@ -147,7 +177,17 @@ function ServiceOrderDetailContent() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '1rem', border: '1px solid var(--border)', overflow: 'hidden' }}>
                         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Rugs in Order</h2>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Rugs in Order</h2>
+                                {availableRugsCount > 0 && selectedRugSkus.length > 0 && (
+                                    <button
+                                        onClick={() => setIsReturnModalOpen(true)}
+                                        style={{ backgroundColor: 'var(--primary)', color: 'white', border: 'none', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        Mark {selectedRugSkus.length} as Returned
+                                    </button>
+                                )}
+                            </div>
                             <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{order.rugs.length} total rugs</span>
                         </div>
 
@@ -159,17 +199,22 @@ function ServiceOrderDetailContent() {
                                         style={{
                                             padding: '1rem',
                                             borderRadius: '0.75rem',
-                                            border: `1px solid ${rug.returned ? 'var(--border)' : (selectedRug?.sku === rug.sku ? 'var(--primary)' : 'var(--border)')}`,
-                                            backgroundColor: rug.returned ? 'var(--bg-void)' : (selectedRug?.sku === rug.sku ? 'var(--primary-light)' : 'var(--bg-card)'),
+                                            border: `1px solid ${rug.returned ? 'var(--border)' : (selectedRugSkus.includes(rug.sku) ? 'var(--primary)' : 'var(--border)')}`,
+                                            backgroundColor: rug.returned ? 'var(--bg-void)' : (selectedRugSkus.includes(rug.sku) ? 'var(--primary-light)' : 'var(--bg-card)'),
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
                                             opacity: rug.returned ? 0.7 : 1,
                                             cursor: rug.returned ? 'default' : 'pointer'
                                         }}
-                                        onClick={() => !rug.returned && setSelectedRug(rug)}
+                                        onClick={() => handleToggleRugSelection(rug.sku)}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            {!rug.returned && (
+                                                <div style={{ color: selectedRugSkus.includes(rug.sku) ? 'var(--primary)' : 'var(--text-muted)' }}>
+                                                    {selectedRugSkus.includes(rug.sku) ? <CheckSquare size={20} /> : <Square size={20} />}
+                                                </div>
+                                            )}
                                             <div style={{ padding: '0.5rem', borderRadius: '0.5rem', backgroundColor: rug.returned ? '#E8F5E9' : '#FFF3E0', color: rug.returned ? '#4CAF50' : '#FF9800' }}>
                                                 {rug.returned ? <CheckCircle size={20} /> : <Tag size={20} />}
                                             </div>
@@ -186,21 +231,10 @@ function ServiceOrderDetailContent() {
                                                 <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{rug.dateReturned ? new Date(rug.dateReturned).toLocaleDateString() : 'N/A'}</div>
                                             </div>
                                         ) : (
-                                            <button
-                                                onClick={() => setSelectedRug(rug)}
-                                                style={{
-                                                    padding: '0.5rem 1rem',
-                                                    borderRadius: '0.5rem',
-                                                    border: '1px solid var(--primary)',
-                                                    backgroundColor: selectedRug?.sku === rug.sku ? 'var(--primary)' : 'transparent',
-                                                    color: selectedRug?.sku === rug.sku ? 'white' : 'var(--primary)',
-                                                    fontSize: '0.875rem',
-                                                    fontWeight: 600,
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                Mark Return
-                                            </button>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {rug.serviceType && <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '0.1rem 0.4rem', borderRadius: '0.2rem' }}>{rug.serviceType.toUpperCase()}</span>}
+                                                <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Out for Service</span>
+                                            </div>
                                         )}
                                     </div>
                                 ))}
@@ -219,268 +253,175 @@ function ServiceOrderDetailContent() {
                     )}
                 </div>
 
-                {/* Return Form (Overlay or Side panel style) */}
                 <div style={{ position: 'sticky', top: '2rem' }}>
-                    {selectedRug ? (
-                        <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '1rem', border: '1px solid var(--primary)', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                                <div>
-                                    <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Mark Rug Returned</h2>
-                                    <p style={{ color: 'var(--primary)', fontWeight: 700 }}>{selectedRug.sku}</p>
-                                </div>
-                                <button onClick={() => setSelectedRug(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-                                    <XCircle size={24} />
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleMarkReturned} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Return Date</label>
-                                    <input
-                                        required
-                                        type="date"
-                                        value={returnData.dateReturned}
-                                        onChange={e => setReturnData({ ...returnData, dateReturned: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
-                                    />
-                                </div>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Service Type</label>
-                                        <select
-                                            value={returnData.serviceType}
-                                            onChange={e => setReturnData({ ...returnData, serviceType: e.target.value })}
-                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
-                                        >
-                                            <option value="Wash">Wash</option>
-                                            <option value="Repair">Repair</option>
-                                            <option value="Wash & Repair">Both</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Cost</label>
-                                        <input
-                                            type="number"
-                                            value={returnData.cost || ''}
-                                            onChange={e => setReturnData({ ...returnData, cost: parseFloat(e.target.value) || 0 })}
-                                            placeholder="0.00"
-                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Received By</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        placeholder="Staff member name"
-                                        value={returnData.receivedBy}
-                                        onChange={e => setReturnData({ ...returnData, receivedBy: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Condition Notes</label>
-                                    <textarea
-                                        value={returnData.conditionNotes}
-                                        onChange={e => setReturnData({ ...returnData, conditionNotes: e.target.value })}
-                                        placeholder="Add any notes on return condition..."
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)', minHeight: '80px', resize: 'vertical' }}
-                                    />
-                                </div>
-
+                    <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '1rem', border: '1px solid var(--border)', padding: '1.5rem', textAlign: 'center' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Quick Actions</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <button
+                                onClick={() => router.push('/service-tracking')}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg-void)', fontWeight: 600, cursor: 'pointer' }}
+                            >
+                                View All Orders
+                            </button>
+                            {availableRugsCount > 0 && selectedRugSkus.length === 0 && (
                                 <button
-                                    type="submit"
-                                    style={{
-                                        marginTop: '1rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem',
-                                        backgroundColor: 'var(--primary)',
-                                        color: 'white',
-                                        padding: '1rem',
-                                        borderRadius: '0.5rem',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        fontWeight: 600
-                                    }}
+                                    onClick={() => setSelectedRugSkus(order.rugs.filter(r => !r.returned).map(r => r.sku))}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--primary)', color: 'var(--primary)', background: 'var(--primary-light)', fontWeight: 700, cursor: 'pointer' }}
                                 >
-                                    <Save size={20} />
-                                    Confirm Return
+                                    Select All for Return
                                 </button>
-                            </form>
+                            )}
                         </div>
-                    ) : (
-                        <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '1rem', border: '1px dashed var(--border)', padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                            <Tag size={40} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                            <p>Select a rug to mark it as returned from service.</p>
-                        </div>
-                    )}
+                    </div>
                 </div>
             </div>
 
-            {/* Edit Modal */}
-            {isEditing && (
-                <div className="no-print" style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 2000,
-                    backdropFilter: 'blur(4px)'
-                }}>
-                    <div style={{
-                        backgroundColor: 'var(--bg-card)',
-                        borderRadius: '1rem',
-                        width: '100%',
-                        maxWidth: '500px',
-                        padding: '2rem',
-                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
-                    }}>
+            {/* Return Modal (Bulk) */}
+            {isReturnModalOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, backdropFilter: 'blur(4px)' }}>
+                    <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '1rem', width: '100%', maxWidth: '450px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Edit Service Order</h3>
-                            <button
-                                type="button"
-                                onClick={() => setIsEditing(false)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
-                            >
-                                <X size={24} />
-                            </button>
+                            <div>
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Mark Returns</h3>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{selectedRugSkus.length} rugs selected</p>
+                            </div>
+                            <button onClick={() => setIsReturnModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={24} /></button>
                         </div>
 
-                        <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <form onSubmit={handleMarkReturnedBulk} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Return Date</label>
+                                <input required type="date" value={returnData.dateReturned} onChange={e => setReturnData({ ...returnData, dateReturned: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
+                            </div>
+
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Driver Name</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        value={editData.driverName || ''}
-                                        onChange={e => setEditData({ ...editData, driverName: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
-                                    />
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Service Type</label>
+                                    <select value={returnData.serviceType} onChange={e => setReturnData({ ...returnData, serviceType: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}>
+                                        <option value="Wash">Wash</option>
+                                        <option value="Repair">Repair</option>
+                                        <option value="Wash & Repair">Both</option>
+                                    </select>
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Pickup Time</label>
-                                    <input
-                                        type="time"
-                                        value={editData.pickupTime || ''}
-                                        onChange={e => setEditData({ ...editData, pickupTime: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
-                                    />
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Total Cost (Optional)</label>
+                                    <input type="number" placeholder="Total for all" onChange={e => setReturnData({ ...returnData, cost: parseFloat(e.target.value) || 0 })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
                                 </div>
                             </div>
 
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Pickup Date</label>
-                                <input
-                                    type="date"
-                                    value={editData.pickupDate || ''}
-                                    onChange={e => setEditData({ ...editData, pickupDate: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
-                                />
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Received By</label>
+                                <input required type="text" placeholder="Staff member name" value={returnData.receivedBy} onChange={e => setReturnData({ ...returnData, receivedBy: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
                             </div>
 
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Notes</label>
-                                <textarea
-                                    value={editData.notes || ''}
-                                    onChange={e => setEditData({ ...editData, notes: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)', minHeight: '100px', resize: 'vertical' }}
-                                />
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Condition Notes</label>
+                                <textarea value={returnData.conditionNotes} onChange={e => setReturnData({ ...returnData, conditionNotes: e.target.value })} placeholder="Add any notes on return condition..." style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)', minHeight: '80px', resize: 'vertical' }} />
                             </div>
 
-                            <button
-                                type="submit"
-                                style={{
-                                    marginTop: '1rem',
-                                    backgroundColor: 'var(--primary)',
-                                    color: 'white',
-                                    padding: '1rem',
-                                    borderRadius: '0.5rem',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '0.5rem'
-                                }}
-                            >
-                                <Save size={20} /> Save Changes
+                            <button type="submit" style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                                <CheckCircle size={20} /> Mark {selectedRugSkus.length} Rugs Returned
                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Hidden Print Section */}
-            <div id="print-section" style={{ display: 'none' }}>
-                <div style={{ padding: '2cm', fontFamily: 'serif' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <h1 style={{ fontSize: '24pt', fontWeight: 'bold' }}>SERVICE ORDER RECEIPT</h1>
-                        <p style={{ fontSize: '12pt' }}>{order.orderNumber}</p>
+            {/* Edit Modal */}
+            {isEditing && (
+                <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(4px)' }}>
+                    <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '1rem', width: '100%', maxWidth: '500px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Edit Service Order</h3>
+                            <button type="button" onClick={() => setIsEditing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Driver Name</label>
+                                    <input required type="text" value={editData.driverName || ''} onChange={e => setEditData({ ...editData, driverName: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Pickup Time</label>
+                                    <input type="time" value={editData.pickupTime || ''} onChange={e => setEditData({ ...editData, pickupTime: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Pickup Date</label>
+                                <input type="date" value={editData.pickupDate || ''} onChange={e => setEditData({ ...editData, pickupDate: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Notes</label>
+                                <textarea value={editData.notes || ''} onChange={e => setEditData({ ...editData, notes: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)', minHeight: '100px', resize: 'vertical' }} />
+                            </div>
+                            <button type="submit" style={{ marginTop: '1rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><Save size={20} /> Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Hidden PDF Generation Section */}
+            <div style={{ display: 'none' }}>
+                <div ref={printRef} className="pdf-page" style={{ padding: '40px', color: 'black', background: 'white', fontFamily: 'Inter, sans-serif' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid black', paddingBottom: '20px', marginBottom: '30px' }}>
+                        <div>
+                            <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>SERVICE ORDER</h1>
+                            <p style={{ margin: '5px 0' }}>#{order.orderNumber}</p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <h2 style={{ fontSize: '20px', margin: 0 }}>Marco Polo Rugs</h2>
+                            <p style={{ margin: '5px 0', color: '#666' }}>Service Tracking Report</p>
+                        </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '30px' }}>
                         <div>
-                            <h3 style={{ borderBottom: '1px solid black' }}>Vendor Info</h3>
-                            <p><strong>Company:</strong> {order.vendorName}</p>
+                            <h3 style={{ textTransform: 'uppercase', fontSize: '12px', color: '#666', marginBottom: '10px' }}>Service Provider</h3>
+                            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 5px 0' }}>{order.vendorName}</p>
+                            <p style={{ margin: 0 }}>{order.vendorId}</p>
                         </div>
                         <div>
-                            <h3 style={{ borderBottom: '1px solid black' }}>Order Info</h3>
-                            <p><strong>Date Sent:</strong> {new Date(order.dateSent).toLocaleDateString()}</p>
-                            <p><strong>Driver:</strong> {order.driverName}</p>
+                            <h3 style={{ textTransform: 'uppercase', fontSize: '12px', color: '#666', marginBottom: '10px' }}>Order Information</h3>
+                            <p style={{ margin: '0 0 5px 0' }}><strong>Date Sent:</strong> {new Date(order.dateSent).toLocaleDateString()}</p>
+                            <p style={{ margin: '0 0 5px 0' }}><strong>Driver:</strong> {order.driverName}</p>
+                            <p style={{ margin: 0 }}><strong>Pickup:</strong> {order.pickupDate} {order.pickupTime}</p>
                         </div>
                     </div>
 
-                    <h3 style={{ borderBottom: '1px solid black' }}>Rugs History / List</h3>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
+                    <h3 style={{ textTransform: 'uppercase', fontSize: '12px', color: '#666', marginBottom: '10px' }}>Rug List ({order.rugs.length} items)</h3>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
                         <thead>
-                            <tr style={{ borderBottom: '2px solid black' }}>
-                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>SKU</th>
-                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Description</th>
-                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Customer</th>
-                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Status</th>
-                                <th style={{ textAlign: 'right', padding: '0.5rem' }}>Cost</th>
+                            <tr style={{ borderBottom: '1px solid black' }}>
+                                <th style={{ textAlign: 'left', padding: '10px 5px' }}>SKU</th>
+                                <th style={{ textAlign: 'left', padding: '10px 5px' }}>Description</th>
+                                <th style={{ textAlign: 'left', padding: '10px 5px' }}>Customer</th>
+                                <th style={{ textAlign: 'right', padding: '10px 5px' }}>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {order.rugs.map(rug => (
                                 <tr key={rug.sku} style={{ borderBottom: '1px solid #eee' }}>
-                                    <td style={{ padding: '0.5rem' }}>{rug.sku}</td>
-                                    <td style={{ padding: '0.5rem' }}>{rug.description}</td>
-                                    <td style={{ padding: '0.5rem' }}>{rug.customerName || 'Marco Polo'}</td>
-                                    <td style={{ padding: '0.5rem' }}>{rug.returned ? 'Returned' : 'Out for Service'}</td>
-                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{rug.cost ? `$${rug.cost.toFixed(2)}` : '-'}</td>
+                                    <td style={{ padding: '12px 5px', fontWeight: 'bold' }}>{rug.sku}</td>
+                                    <td style={{ padding: '12px 5px' }}>{rug.description}</td>
+                                    <td style={{ padding: '12px 5px' }}>{rug.customerName || 'Marco Polo'}</td>
+                                    <td style={{ padding: '12px 5px', textAlign: 'right', fontWeight: rug.returned ? 'normal' : 'bold' }}>
+                                        {rug.returned ? 'Returned' : 'In Service'}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
-                        <tfoot>
-                            <tr style={{ borderTop: '2px solid black', fontWeight: 'bold' }}>
-                                <td colSpan={3} style={{ padding: '0.5rem', textAlign: 'right' }}>Total Investment:</td>
-                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                                    ${order.rugs.reduce((sum, r) => sum + (r.cost || 0), 0).toFixed(2)}
-                                </td>
-                            </tr>
-                        </tfoot>
                     </table>
 
                     {order.notes && (
-                        <div style={{ marginTop: '2rem' }}>
-                            <h3 style={{ borderBottom: '1px solid black' }}>Notes</h3>
-                            <p style={{ whiteSpace: 'pre-wrap' }}>{order.notes}</p>
+                        <div style={{ marginTop: '20px', padding: '15px', background: '#f9f9f9', borderRadius: '5px' }}>
+                            <h3 style={{ textTransform: 'uppercase', fontSize: '12px', color: '#666', marginBottom: '5px' }}>Additional Notes</h3>
+                            <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{order.notes}</p>
                         </div>
                     )}
+
+                    <div style={{ marginTop: '50px', paddingTop: '20px', borderTop: '1px solid #eee', fontSize: '10px', color: '#999', textAlign: 'center' }}>
+                        This is an official service order tracking document generated on {new Date().toLocaleString()}
+                    </div>
                 </div>
             </div>
 
@@ -488,9 +429,6 @@ function ServiceOrderDetailContent() {
                 @media print {
                     .no-print { display: none !important; }
                     body { background: white !important; }
-                    #print-section { display: block !important; }
-                    div[role="main"] { display: none !important; }
-                    #__next { overflow: visible !important; }
                 }
             `}</style>
         </div>

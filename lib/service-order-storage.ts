@@ -220,6 +220,61 @@ export async function markRugAsReturned(orderId: string, sku: string, returnData
     return await updateServiceOrder(orderId, { rugs: updatedRugs });
 }
 
+/**
+ * Mark multiple rugs as returned at once
+ */
+export async function markMultipleRugsAsReturned(
+    orderId: string,
+    skus: string[],
+    returnData: Partial<ServiceOrderRug>
+): Promise<ServiceOrder> {
+    const order = await getServiceOrderById(orderId);
+    if (!order) throw new Error('Order not found');
+
+    const updatedRugs = [...order.rugs];
+    const inventoryItems = await getInventoryItems();
+
+    for (const sku of skus) {
+        const rugIndex = updatedRugs.findIndex(r => r.sku === sku);
+        if (rugIndex === -1) continue;
+
+        updatedRugs[rugIndex] = {
+            ...updatedRugs[rugIndex],
+            ...returnData,
+            returned: true,
+            dateReturned: returnData.dateReturned || new Date().toISOString(),
+            cost: (returnData.cost || 0) / skus.length // Split cost if provided for bulk
+        };
+
+        // Update Rug in Inventory
+        const rugItem = inventoryItems.find(i => i.sku === sku);
+        if (rugItem) {
+            const historyEntry = {
+                dateSent: order.dateSent,
+                vendorName: order.vendorName,
+                dateReturned: updatedRugs[rugIndex].dateReturned,
+                serviceType: updatedRugs[rugIndex].serviceType || 'Service',
+                cost: updatedRugs[rugIndex].cost || 0,
+                notes: updatedRugs[rugIndex].conditionNotes,
+                receivedBy: updatedRugs[rugIndex].receivedBy
+            };
+
+            const currentHistory = (rugItem as any).serviceHistory || [];
+            rugItem.status = 'AVAILABLE';
+            (rugItem as any).serviceHistory = [...currentHistory, historyEntry];
+        }
+    }
+
+    // Save all updated inventory items
+    for (const item of inventoryItems) {
+        if (skus.includes(item.sku)) {
+            await saveInventoryItem(item);
+        }
+    }
+
+    return await updateServiceOrder(orderId, { rugs: updatedRugs });
+}
+
 export async function deleteServiceOrder(id: string): Promise<void> {
     const orders = await getServiceOrders();
     const order = orders.find(o => o.id === id);

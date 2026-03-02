@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { InventoryItem, deriveCategory } from '@/lib/inventory-storage';
 import { Printer, Tag, Calendar, Truck, User, Info, CheckCircle } from 'lucide-react';
+import { openPDFInNewTab } from '@/lib/pdf-utils';
+import { useRef } from 'react';
 
 interface InventoryModalProps {
     isOpen: boolean;
@@ -31,6 +33,7 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
     });
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
+    const historyPrintRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (initialData) {
@@ -551,7 +554,11 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }} className="no-print">
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)' }}>Service History</h3>
                             <button
-                                onClick={() => window.print()}
+                                onClick={async () => {
+                                    if (historyPrintRef.current) {
+                                        await openPDFInNewTab(historyPrintRef.current, `History-${initialData?.sku || 'Item'}`);
+                                    }
+                                }}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -590,8 +597,8 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
             </div>
 
             {/* Hidden Print Section for History */}
-            <div id="history-print-section" style={{ display: 'none' }}>
-                <div style={{ padding: '2cm', fontFamily: 'serif' }}>
+            <div style={{ display: 'none' }}>
+                <div ref={historyPrintRef} style={{ padding: '2cm', fontFamily: 'serif', color: 'black', background: 'white' }}>
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                         <h1 style={{ fontSize: '24pt', fontWeight: 'bold' }}>SERVICE HISTORY REPORT</h1>
                         <p style={{ fontSize: '14pt', fontWeight: 'bold' }}>SKU: {initialData?.sku}</p>

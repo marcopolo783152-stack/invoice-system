@@ -68,7 +68,10 @@ export default function NewServiceOrderPage() {
                 items.forEach(item => {
                     if (!item || !item.sku) return;
 
-                    const needsService = item.serviceType &&
+                    const status = inv.data.status || '';
+                    const isPickedUp = status.toUpperCase() === 'PICKED_UP';
+
+                    const needsService = !isPickedUp && item.serviceType &&
                         typeof item.serviceType === 'object' &&
                         (item.serviceType.wash || item.serviceType.repair);
 
