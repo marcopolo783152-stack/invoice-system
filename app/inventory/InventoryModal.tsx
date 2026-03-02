@@ -556,7 +556,7 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontWeight: 800, color: 'var(--primary)' }}>${entry.cost.toLocaleString()}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{new Date(entry.dateSent).toLocaleDateString()} - {new Date(entry.dateReturned).toLocaleDateString()}</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{new Date(entry.dateSent).toLocaleDateString()} - {entry.dateReturned ? new Date(entry.dateReturned).toLocaleDateString() : 'N/A'}</div>
                                     </div>
                                 </div>
                                 {entry.notes && <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', margin: 0, opacity: 0.8 }}>{entry.notes}</p>}

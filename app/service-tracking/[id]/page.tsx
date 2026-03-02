@@ -84,11 +84,11 @@ export default function ServiceOrderDetailPage({ params }: { params: Promise<{ i
                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
                         <Calendar size={18} />
-                        <span>Date Sent: {new Date(order.dateSent).toLocaleDateString()}</span>
+                        <span>Date Sent: {order.dateSent ? new Date(order.dateSent).toLocaleDateString() : 'N/A'}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
                         <Truck size={18} />
-                        <span>Pickup: {order.driverName} on {new Date(order.pickupDate).toLocaleDateString()} at {order.pickupTime}</span>
+                        <span>Pickup: {order.driverName} on {order.pickupDate ? new Date(order.pickupDate).toLocaleDateString() : 'N/A'} at {order.pickupTime}</span>
                     </div>
                 </div>
             </div>
@@ -132,7 +132,7 @@ export default function ServiceOrderDetailPage({ params }: { params: Promise<{ i
                                         {rug.returned ? (
                                             <div style={{ textAlign: 'right' }}>
                                                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4CAF50' }}>RETURNED</div>
-                                                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{new Date(rug.dateReturned!).toLocaleDateString()}</div>
+                                                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{rug.dateReturned ? new Date(rug.dateReturned).toLocaleDateString() : 'N/A'}</div>
                                             </div>
                                         ) : (
                                             <button

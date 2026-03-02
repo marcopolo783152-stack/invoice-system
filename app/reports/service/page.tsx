@@ -35,7 +35,7 @@ export default function ServiceReportsPage() {
             const sent = new Date(o.dateSent);
             const rugs = o.rugs.filter(r => r.returned && r.dateReturned);
             if (rugs.length === 0) return sum;
-            const latestReturn = Math.max(...rugs.map(r => new Date(r.dateReturned!).getTime()));
+            const latestReturn = Math.max(...rugs.map(r => r.dateReturned ? new Date(r.dateReturned).getTime() : 0));
             return sum + (latestReturn - sent.getTime()) / (1000 * 60 * 60 * 24);
         }, 0) / completedOrders.length
         : 0;
