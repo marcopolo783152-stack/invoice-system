@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { InventoryItem, deriveCategory } from '@/lib/inventory-storage';
+import { Printer, Tag, Calendar, Truck, User, Info, CheckCircle } from 'lucide-react';
 
 interface InventoryModalProps {
     isOpen: boolean;
@@ -547,6 +548,27 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                     </form>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }} className="no-print">
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)' }}>Service History</h3>
+                            <button
+                                onClick={() => window.print()}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid var(--glass-border)',
+                                    background: 'var(--glass-bg)',
+                                    color: 'var(--primary)',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 600
+                                }}
+                            >
+                                <Printer size={16} /> Print History
+                            </button>
+                        </div>
                         {initialData?.serviceHistory?.map((entry, idx) => (
                             <div key={idx} style={{ padding: '1.25rem', borderRadius: '1rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
@@ -566,6 +588,54 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                     </div>
                 )}
             </div>
+
+            {/* Hidden Print Section for History */}
+            <div id="history-print-section" style={{ display: 'none' }}>
+                <div style={{ padding: '2cm', fontFamily: 'serif' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                        <h1 style={{ fontSize: '24pt', fontWeight: 'bold' }}>SERVICE HISTORY REPORT</h1>
+                        <p style={{ fontSize: '14pt', fontWeight: 'bold' }}>SKU: {initialData?.sku}</p>
+                        <p>{initialData?.description}</p>
+                    </div>
+
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '2px solid black' }}>
+                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Date Sent</th>
+                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Vendor</th>
+                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Service</th>
+                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Returned</th>
+                                <th style={{ textAlign: 'right', padding: '0.5rem' }}>Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {initialData?.serviceHistory?.map((entry, idx) => (
+                                <tr key={idx} style={{ borderBottom: '1px solid #ddd' }}>
+                                    <td style={{ padding: '0.5rem' }}>{new Date(entry.dateSent).toLocaleDateString()}</td>
+                                    <td style={{ padding: '0.5rem' }}>{entry.vendorName}</td>
+                                    <td style={{ padding: '0.5rem' }}>{entry.serviceType}</td>
+                                    <td style={{ padding: '0.5rem' }}>{entry.dateReturned ? new Date(entry.dateReturned).toLocaleDateString() : 'Pending'}</td>
+                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>${entry.cost.toLocaleString()}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <div style={{ marginTop: '2rem', textAlign: 'right', fontWeight: 'bold' }}>
+                        Total Service Investment: ${initialData?.serviceHistory?.reduce((sum, e) => sum + e.cost, 0).toLocaleString()}
+                    </div>
+                </div>
+            </div>
+
+            <style jsx global>{`
+                @media print {
+                    .no-print { display: none !important; }
+                    body { background: white !important; }
+                    #history-print-section { display: block !important; }
+                    div[role="main"], .luxury-card, .luxury-button { display: none !important; }
+                    #__next { overflow: visible !important; }
+                }
+            `}</style>
         </div>
     );
 }

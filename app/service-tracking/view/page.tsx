@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, XCircle, Clock, Save, Edit, User, FileText, CheckCircle, Truck, Calendar, Tag, Info } from 'lucide-react';
-import { getServiceOrderById, markRugAsReturned, ServiceOrder, ServiceOrderRug } from '@/lib/service-order-storage';
+import { ArrowLeft, CheckCircle2, XCircle, Clock, Save, Edit, User, FileText, CheckCircle, Truck, Calendar, Tag, Info, Printer, Edit2, X } from 'lucide-react';
+import { getServiceOrderById, markRugAsReturned, updateServiceOrder, ServiceOrder, ServiceOrderRug } from '@/lib/service-order-storage';
 
 function ServiceOrderDetailContent() {
     const router = useRouter();
@@ -20,6 +20,9 @@ function ServiceOrderDetailContent() {
         cost: 0,
         dateReturned: new Date().toISOString().split('T')[0]
     });
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState<Partial<ServiceOrder>>({});
 
     useEffect(() => {
         if (id) {
@@ -57,6 +60,23 @@ function ServiceOrderDetailContent() {
         }
     };
 
+    const handleSaveEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!order) return;
+        try {
+            const updatedOrder = await updateServiceOrder(order.id, editData);
+            setOrder(updatedOrder);
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Error updating order:', error);
+            alert('Failed to update order details');
+        }
+    };
+
+    const handlePrint = () => {
+        window.print();
+    };
+
     if (isLoading) return <div style={{ padding: '3rem', textAlign: 'center' }}>Loading...</div>;
     if (!order) return <div style={{ padding: '3rem', textAlign: 'center' }}>Order not found</div>;
 
@@ -87,12 +107,36 @@ function ServiceOrderDetailContent() {
                     <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginTop: '0.25rem' }}>Sent to <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{order.vendorName}</span></p>
                 </div>
 
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button
+                            onClick={() => {
+                                setEditData({
+                                    driverName: order.driverName,
+                                    pickupDate: order.pickupDate,
+                                    pickupTime: order.pickupTime,
+                                    notes: order.notes
+                                });
+                                setIsEditing(true);
+                            }}
+                            className="no-print"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.875rem' }}
+                        >
+                            <Edit2 size={16} /> Edit
+                        </button>
+                        <button
+                            onClick={handlePrint}
+                            className="no-print"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.875rem' }}
+                        >
+                            <Printer size={16} /> Print Receipt
+                        </button>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', justifyContent: 'flex-end' }}>
                         <Calendar size={18} />
                         <span>Date Sent: {order.dateSent ? new Date(order.dateSent).toLocaleDateString() : 'N/A'}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', justifyContent: 'flex-end' }}>
                         <Truck size={18} />
                         <span>Pickup: {order.driverName} on {order.pickupDate ? new Date(order.pickupDate).toLocaleDateString() : 'N/A'} at {order.pickupTime}</span>
                     </div>
@@ -277,6 +321,175 @@ function ServiceOrderDetailContent() {
                     )}
                 </div>
             </div>
+
+            {/* Edit Modal */}
+            {isEditing && (
+                <div className="no-print" style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2000,
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        borderRadius: '1rem',
+                        width: '100%',
+                        maxWidth: '500px',
+                        padding: '2rem',
+                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Edit Service Order</h3>
+                            <button
+                                type="button"
+                                onClick={() => setIsEditing(false)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Driver Name</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={editData.driverName || ''}
+                                        onChange={e => setEditData({ ...editData, driverName: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Pickup Time</label>
+                                    <input
+                                        type="time"
+                                        value={editData.pickupTime || ''}
+                                        onChange={e => setEditData({ ...editData, pickupTime: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Pickup Date</label>
+                                <input
+                                    type="date"
+                                    value={editData.pickupDate || ''}
+                                    onChange={e => setEditData({ ...editData, pickupDate: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Notes</label>
+                                <textarea
+                                    value={editData.notes || ''}
+                                    onChange={e => setEditData({ ...editData, notes: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)', minHeight: '100px', resize: 'vertical' }}
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                style={{
+                                    marginTop: '1rem',
+                                    backgroundColor: 'var(--primary)',
+                                    color: 'white',
+                                    padding: '1rem',
+                                    borderRadius: '0.5rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem'
+                                }}
+                            >
+                                <Save size={20} /> Save Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Hidden Print Section */}
+            <div id="print-section" style={{ display: 'none' }}>
+                <div style={{ padding: '2cm', fontFamily: 'serif' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                        <h1 style={{ fontSize: '24pt', fontWeight: 'bold' }}>SERVICE ORDER RECEIPT</h1>
+                        <p style={{ fontSize: '12pt' }}>{order.orderNumber}</p>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                        <div>
+                            <h3 style={{ borderBottom: '1px solid black' }}>Vendor Info</h3>
+                            <p><strong>Company:</strong> {order.vendorName}</p>
+                        </div>
+                        <div>
+                            <h3 style={{ borderBottom: '1px solid black' }}>Order Info</h3>
+                            <p><strong>Date Sent:</strong> {new Date(order.dateSent).toLocaleDateString()}</p>
+                            <p><strong>Driver:</strong> {order.driverName}</p>
+                        </div>
+                    </div>
+
+                    <h3 style={{ borderBottom: '1px solid black' }}>Rugs History / List</h3>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '2px solid black' }}>
+                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>SKU</th>
+                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Description</th>
+                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Status</th>
+                                <th style={{ textAlign: 'right', padding: '0.5rem' }}>Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {order.rugs.map(rug => (
+                                <tr key={rug.sku} style={{ borderBottom: '1px solid #eee' }}>
+                                    <td style={{ padding: '0.5rem' }}>{rug.sku}</td>
+                                    <td style={{ padding: '0.5rem' }}>{rug.description}</td>
+                                    <td style={{ padding: '0.5rem' }}>{rug.returned ? 'Returned' : 'Out for Service'}</td>
+                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{rug.cost ? `$${rug.cost.toFixed(2)}` : '-'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                        <tfoot>
+                            <tr style={{ borderTop: '2px solid black', fontWeight: 'bold' }}>
+                                <td colSpan={3} style={{ padding: '0.5rem', textAlign: 'right' }}>Total Investment:</td>
+                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                                    ${order.rugs.reduce((sum, r) => sum + (r.cost || 0), 0).toFixed(2)}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    {order.notes && (
+                        <div style={{ marginTop: '2rem' }}>
+                            <h3 style={{ borderBottom: '1px solid black' }}>Notes</h3>
+                            <p style={{ whiteSpace: 'pre-wrap' }}>{order.notes}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <style jsx global>{`
+                @media print {
+                    .no-print { display: none !important; }
+                    body { background: white !important; }
+                    #print-section { display: block !important; }
+                    div[role="main"] { display: none !important; }
+                    #__next { overflow: visible !important; }
+                }
+            `}</style>
         </div>
     );
 }

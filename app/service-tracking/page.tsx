@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Truck, Search, Filter, Plus, ChevronRight, Calendar, User, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { getServiceOrders, ServiceOrder } from '@/lib/service-order-storage';
+import { Truck, Search, Filter, Plus, ChevronRight, Calendar, User, Clock, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
+import { getServiceOrders, ServiceOrder, deleteServiceOrder } from '@/lib/service-order-storage';
 
 export default function ServiceTrackingPage() {
     const [orders, setOrders] = useState<ServiceOrder[]>([]);
@@ -21,6 +21,20 @@ export default function ServiceTrackingPage() {
         const data = await getServiceOrders();
         setOrders(data);
         setIsLoading(false);
+    };
+
+    const handleDeleteOrder = async (e: React.MouseEvent, id: string, orderNumber: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (confirm(`Are you sure you want to delete Service Order ${orderNumber}?\n\nAny rugs in this order that aren't returned yet will be set back to AVAILABLE.`)) {
+            try {
+                await deleteServiceOrder(id);
+                loadOrders();
+            } catch (error) {
+                console.error('Error deleting service order:', error);
+                alert('Failed to delete service order');
+            }
+        }
     };
 
     const getDaysOut = (dateSent: string) => {
@@ -187,7 +201,29 @@ export default function ServiceTrackingPage() {
                                     </div>
                                 </div>
 
-                                <ChevronRight size={24} color="var(--text-muted)" />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <button
+                                        onClick={(e) => handleDeleteOrder(e, order.id, order.orderNumber)}
+                                        style={{
+                                            padding: '0.5rem',
+                                            borderRadius: '0.5rem',
+                                            border: 'none',
+                                            background: 'rgba(255, 68, 68, 0.1)',
+                                            color: '#ff4444',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transition: 'background 0.2s'
+                                        }}
+                                        title="Delete Order"
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 68, 68, 0.2)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 68, 68, 0.1)'}
+                                    >
+                                        <Trash2 size={20} />
+                                    </button>
+                                    <ChevronRight size={24} color="var(--text-muted)" />
+                                </div>
                             </Link>
                         );
                     })}

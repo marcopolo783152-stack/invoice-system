@@ -125,7 +125,7 @@ export async function createServiceOrder(order: Partial<ServiceOrder>): Promise<
         updatedAt: now.toISOString(),
     };
 
-    // Update rug statuses in inventory
+    // Update rug statuses in inventory (ONLY for listed rugs)
     const inventoryItems = await getInventoryItems();
     for (const rug of orderData.rugs) {
         const item = inventoryItems.find(i => i.sku === rug.sku);
@@ -216,4 +216,33 @@ export async function markRugAsReturned(orderId: string, sku: string, returnData
     }
 
     return await updateServiceOrder(orderId, { rugs: updatedRugs });
+}
+
+export async function deleteServiceOrder(id: string): Promise<void> {
+    const orders = await getServiceOrders();
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+
+    // Optional: Revert rug statuses to AVAILABLE if they were out for service
+    const inventoryItems = await getInventoryItems();
+    for (const rug of order.rugs) {
+        if (!rug.returned) {
+            const item = inventoryItems.find(i => i.sku === rug.sku);
+            if (item && item.status === 'OUT_FOR_SERVICE') {
+                await saveInventoryItem({ ...item, status: 'AVAILABLE' });
+            }
+        }
+    }
+
+    if (isFirebaseConfigured() && db) {
+        try {
+            const { deleteDoc } = await import('firebase/firestore');
+            await deleteDoc(doc(db, COLLECTION_NAME, id));
+        } catch (error) {
+            console.error('Error deleting service order from cloud:', error);
+        }
+    }
+
+    const filtered = orders.filter(o => o.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }

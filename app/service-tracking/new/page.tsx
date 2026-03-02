@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Plus, Trash2, Search, CheckSquare, Square, Truck, Calendar, Clock, User } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Search, CheckSquare, Square, Truck, Calendar, Clock, User, X } from 'lucide-react';
 import { getServiceVendors, ServiceVendor } from '@/lib/service-vendor-storage';
 import { createServiceOrder, generateOrderNumber } from '@/lib/service-order-storage';
 import { getInventoryItems, InventoryItem } from '@/lib/inventory-storage';
@@ -14,6 +14,9 @@ export default function NewServiceOrderPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRugSkus, setSelectedRugSkus] = useState<string[]>([]);
+    const [unlistedRugs, setUnlistedRugs] = useState<{ sku: string, description: string }[]>([]);
+    const [isUnlistedModalOpen, setIsUnlistedModalOpen] = useState(false);
+    const [newUnlistedRug, setNewUnlistedRug] = useState({ sku: '', description: '' });
     const [orderNumber, setOrderNumber] = useState('');
 
     const [orderData, setOrderData] = useState({
@@ -52,6 +55,22 @@ export default function NewServiceOrderPage() {
         }
     };
 
+    const handleAddUnlistedRug = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newUnlistedRug.sku) return;
+
+        // Check if SKU already exists in inventory or unlisted
+        if (inventory.some(i => i.sku === newUnlistedRug.sku) || unlistedRugs.some(r => r.sku === newUnlistedRug.sku)) {
+            alert('This SKU already exists in the list.');
+            return;
+        }
+
+        setUnlistedRugs([...unlistedRugs, newUnlistedRug]);
+        setSelectedRugSkus([...selectedRugSkus, newUnlistedRug.sku]);
+        setNewUnlistedRug({ sku: '', description: '' });
+        setIsUnlistedModalOpen(false);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!orderData.vendorId) {
@@ -63,13 +82,22 @@ export default function NewServiceOrderPage() {
             return;
         }
 
-        const selectedRugs = inventory
-            .filter(item => selectedRugSkus.includes(item.sku))
-            .map(item => ({
-                sku: item.sku,
-                description: item.description,
-                returned: false
-            }));
+        const selectedRugs = [
+            ...inventory
+                .filter(item => selectedRugSkus.includes(item.sku))
+                .map(item => ({
+                    sku: item.sku,
+                    description: item.description,
+                    returned: false
+                })),
+            ...unlistedRugs
+                .filter(item => selectedRugSkus.includes(item.sku))
+                .map(item => ({
+                    sku: item.sku,
+                    description: item.description,
+                    returned: false
+                }))
+        ];
 
         const vendor = vendors.find(v => v.id === orderData.vendorId);
 
@@ -87,7 +115,12 @@ export default function NewServiceOrderPage() {
         }
     };
 
-    const filteredInventory = inventory.filter(item =>
+    const allRugItems = [
+        ...inventory,
+        ...unlistedRugs.map(r => ({ ...r, status: 'AVAILABLE' as any, id: r.sku }))
+    ];
+
+    const filteredInventory = allRugItems.filter(item =>
         item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -222,7 +255,29 @@ export default function NewServiceOrderPage() {
                 {/* Right Side: Rug Selection */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div style={{ backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>Select Rugs from Inventory</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Select Rugs from Inventory</h2>
+                            <button
+                                type="button"
+                                onClick={() => setIsUnlistedModalOpen(true)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    color: 'var(--primary)',
+                                    background: 'var(--primary-light)',
+                                    border: 'none',
+                                    padding: '0.4rem 0.8rem',
+                                    borderRadius: '0.4rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <Plus size={14} />
+                                Add Unlisted
+                            </button>
+                        </div>
 
                         <div style={{ position: 'relative', marginBottom: '1rem' }}>
                             <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -282,6 +337,83 @@ export default function NewServiceOrderPage() {
                     </div>
                 </div>
             </form>
+
+            {/* Unlisted Rug Modal */}
+            {isUnlistedModalOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2000,
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        borderRadius: '1rem',
+                        width: '100%',
+                        maxWidth: '400px',
+                        padding: '2rem',
+                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Add Unlisted Rug</h3>
+                            <button
+                                type="button"
+                                onClick={() => setIsUnlistedModalOpen(false)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleAddUnlistedRug} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>SKU / ID</label>
+                                <input
+                                    required
+                                    type="text"
+                                    placeholder="Enter Rug SKU"
+                                    value={newUnlistedRug.sku}
+                                    onChange={e => setNewUnlistedRug({ ...newUnlistedRug, sku: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Description</label>
+                                <input
+                                    required
+                                    type="text"
+                                    placeholder="e.g. 8x10 Persian Red"
+                                    value={newUnlistedRug.description}
+                                    onChange={e => setNewUnlistedRug({ ...newUnlistedRug, description: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                style={{
+                                    marginTop: '1rem',
+                                    backgroundColor: 'var(--primary)',
+                                    color: 'white',
+                                    padding: '1rem',
+                                    borderRadius: '0.5rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: 600
+                                }}
+                            >
+                                Add to Selection
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
