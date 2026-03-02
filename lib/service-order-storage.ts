@@ -74,7 +74,7 @@ export async function getServiceOrders(): Promise<ServiceOrder[]> {
                     pickupDate: data.pickupDate || '',
                     pickupTime: data.pickupTime || '',
                     notes: data.notes || '',
-                    rugs: data.rugs || [],
+                    rugs: Array.isArray(data.rugs) ? data.rugs : [],
                     status: data.status || 'ACTIVE',
                     createdAt: data.createdAt?.toDate?.()?.toISOString() || (data.createdAt ? new Date(data.createdAt).toISOString() : new Date().toISOString()),
                     updatedAt: data.updatedAt?.toDate?.()?.toISOString() || (data.updatedAt ? new Date(data.updatedAt).toISOString() : new Date().toISOString())
@@ -104,8 +104,9 @@ export async function getServiceOrderById(id: string): Promise<ServiceOrder | nu
 export async function generateOrderNumber(): Promise<string> {
     const orders = await getServiceOrders();
     const year = new Date().getFullYear();
-    const count = orders.filter(o => o.orderNumber.startsWith(`SO-${year}`)).length + 1;
-    return `SO-${year}-${count.toString().padStart(3, '0')}`;
+    const prefix = `SO-${year}`;
+    const count = (orders || []).filter(o => o && o.orderNumber && o.orderNumber.startsWith(prefix)).length + 1;
+    return `${prefix}-${count.toString().padStart(3, '0')}`;
 }
 
 export async function createServiceOrder(order: Partial<ServiceOrder>): Promise<ServiceOrder> {
