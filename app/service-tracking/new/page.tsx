@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Plus, Trash2, Search, CheckSquare, Square, Truck, Calendar, Clock, User, X, Laptop } from 'lucide-react';
 import { getServiceVendors, ServiceVendor } from '@/lib/service-vendor-storage';
-import { createServiceOrder, generateOrderNumber } from '@/lib/service-order-storage';
+import { createServiceOrder, generateOrderNumber, getServiceOrders, ServiceOrder } from '@/lib/service-order-storage';
 import { getInventoryItems, InventoryItem } from '@/lib/inventory-storage';
 import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 
@@ -21,6 +21,7 @@ export default function NewServiceOrderPage() {
     const [vendors, setVendors] = useState<ServiceVendor[]>([]);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [invoiceRugs, setInvoiceRugs] = useState<ServiceRugItem[]>([]);
+    const [atServiceRugs, setAtServiceRugs] = useState<ServiceRugItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRugSkus, setSelectedRugSkus] = useState<string[]>([]);
@@ -28,7 +29,7 @@ export default function NewServiceOrderPage() {
     const [isUnlistedModalOpen, setIsUnlistedModalOpen] = useState(false);
     const [newUnlistedRug, setNewUnlistedRug] = useState({ sku: '', description: '' });
     const [orderNumber, setOrderNumber] = useState('');
-    const [activeTab, setActiveTab] = useState<'invoices' | 'inventory'>('invoices');
+    const [activeTab, setActiveTab] = useState<'invoices' | 'inventory' | 'atService'>('invoices');
     const [fetchError, setFetchError] = useState<string | null>(null);
 
     const [orderData, setOrderData] = useState({
@@ -49,15 +50,42 @@ export default function NewServiceOrderPage() {
         setIsLoading(true);
         setFetchError(null);
         try {
-            const [vData, iData, invData, nextNum] = await Promise.all([
+            const [vData, iData, invData, nextNum, orders] = await Promise.all([
                 getServiceVendors(),
                 getInventoryItems(),
                 getAllInvoices(),
-                generateOrderNumber()
+                generateOrderNumber(),
+                getServiceOrders()
             ]);
 
             setVendors(vData || []);
-            setInventory((iData || []).filter(item => item && item.status === 'AVAILABLE'));
+
+            // Get all SKUs currently in active service orders
+            const currentlyAtServiceSkus = new Set<string>();
+            const serviceRugDetails: ServiceRugItem[] = [];
+
+            (orders || []).forEach(order => {
+                if (order.status !== 'COMPLETED') {
+                    order.rugs.forEach(rug => {
+                        if (!rug.returned) {
+                            currentlyAtServiceSkus.add(rug.sku);
+                            serviceRugDetails.push({
+                                sku: rug.sku,
+                                description: rug.description,
+                                customerName: rug.customerName,
+                                source: 'inventory' // Default for display
+                            });
+                        }
+                    });
+                }
+            });
+
+            setAtServiceRugs(serviceRugDetails);
+
+            // Filter inventory for AVAILABLE AND NOT currently at service
+            setInventory((iData || []).filter(item =>
+                item && item.status === 'AVAILABLE' && !currentlyAtServiceSkus.has(item.sku)
+            ));
 
             // Extract rugs from all invoices where items are marked for wash/repair
             const washRugs: ServiceRugItem[] = [];
@@ -75,12 +103,12 @@ export default function NewServiceOrderPage() {
                         typeof item.serviceType === 'object' &&
                         (item.serviceType.wash || item.serviceType.repair);
 
-                    if (needsService) {
+                    if (needsService && !currentlyAtServiceSkus.has(item.sku)) {
                         washRugs.push({
                             sku: item.sku,
                             description: item.description || '',
                             customerName: inv.data.soldTo?.name || 'Marco Polo',
-                            source: 'invoice',
+                            source: 'invoice' as const,
                             invoiceId: inv.id
                         });
                     }
@@ -288,11 +316,14 @@ export default function NewServiceOrderPage() {
                             <button type="button" onClick={() => setActiveTab('inventory')} style={{ background: 'none', border: 'none', padding: '0.5rem 0.25rem', fontWeight: 700, fontSize: '0.9rem', color: activeTab === 'inventory' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'inventory' ? '2px solid var(--primary)' : 'none', cursor: 'pointer' }}>
                                 Stock Inventory ({inventory.length})
                             </button>
+                            <button type="button" onClick={() => setActiveTab('atService')} style={{ background: 'none', border: 'none', padding: '0.5rem 0.25rem', fontWeight: 700, fontSize: '0.9rem', color: activeTab === 'atService' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'atService' ? '2px solid var(--primary)' : 'none', cursor: 'pointer' }}>
+                                Already Out ({atServiceRugs.length})
+                            </button>
                         </div>
 
                         <div style={{ position: 'relative', marginBottom: '1rem' }}>
                             <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input type="text" placeholder={activeTab === 'invoices' ? "Search customer or SKU..." : "Search SKU or description..."} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
+                            <input type="text" placeholder={activeTab === 'atService' ? "Search rugs currently out..." : (activeTab === 'invoices' ? "Search customer or SKU..." : "Search SKU or description...")} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
                         </div>
 
                         <div style={{ flex: 1, overflowY: 'auto', maxHeight: '500px', paddingRight: '0.5rem' }}>
@@ -323,13 +354,36 @@ export default function NewServiceOrderPage() {
                                         ))}
                                     </div>
                                 )
-                            ) : (
+                            ) : activeTab === 'inventory' ? (
                                 filteredInventory.length === 0 ? (
                                     <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No matching inventory found.</p>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                         {filteredInventory.map(item => (
                                             <RugSelectionItem key={item.sku} sku={item.sku} description={item.description || ''} isSelected={selectedRugSkus.includes(item.sku)} onToggle={() => handleToggleRug(item.sku)} source="inventory" />
+                                        ))}
+                                    </div>
+                                )
+                            ) : (
+                                atServiceRugs.length === 0 ? (
+                                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No rugs currently at service.</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        {atServiceRugs.filter(r =>
+                                            String(r.sku || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            String(r.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            String(r.customerName || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).map(rug => (
+                                            <div key={rug.sku} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)', opacity: 0.6 }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rug.sku}</div>
+                                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.4rem', borderRadius: '0.25rem', backgroundColor: '#e0f2fe', color: '#0369a1' }}>AT SERVICE</div>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{rug.description}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>{rug.customerName}</div>
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 )
