@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup, RefreshCw, Clock, DollarSign } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup, RefreshCw, Clock, DollarSign, Truck, Wrench } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices, getOutstandingBalances, getUnbackedInvoices, confirmSmartBackupComplete } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
@@ -129,6 +129,8 @@ export default function Sidebar({
         { label: 'Reports', href: '/reports', icon: BarChart },
         { label: 'HR Management', href: '/employees', icon: Clock },
         { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
+        { label: 'Service Tracking', href: '/service-tracking', icon: Truck },
+        { label: 'Service Vendors', href: '/service-vendors', icon: Wrench },
         { label: 'Settings', href: '/settings', icon: Settings },
         { label: 'Audit Log', href: '/audit-log', icon: History }
     ];

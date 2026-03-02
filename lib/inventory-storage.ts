@@ -30,11 +30,20 @@ export interface InventoryItem {
     lengthFeet: number;
     lengthInches: number;
     price: number;
-    status: 'AVAILABLE' | 'SOLD' | 'ON_APPROVAL' | 'WHOLESALE';
+    status: 'AVAILABLE' | 'SOLD' | 'ON_APPROVAL' | 'WHOLESALE' | 'OUT_FOR_SERVICE' | 'BACK_FROM_SERVICE';
     image?: string; // Legacy: Base64
     images?: string[]; // New: Array of base64 images
     createdAt: string;
     updatedAt: string;
+    serviceHistory?: {
+        dateSent: string;
+        vendorName: string;
+        dateReturned?: string;
+        serviceType: string;
+        cost: number;
+        notes?: string;
+        receivedBy?: string;
+    }[];
     // New Fields
     category?: string; // e.g. "Runner", "9x12"
     origin?: string;
@@ -168,6 +177,7 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
                     importCost: Number(data.importCost) || 0,
                     totalCost: Number(data.totalCost) || 0,
                     zone: data.zone || '',
+                    serviceHistory: data.serviceHistory || [],
                     createdAt: data.createdAt?.toDate?.()?.toISOString() || (data.createdAt ? new Date(data.createdAt).toISOString() : new Date().toISOString()),
                     updatedAt: data.updatedAt?.toDate?.()?.toISOString() || (data.updatedAt ? new Date(data.updatedAt).toISOString() : new Date().toISOString())
                 });
@@ -319,7 +329,8 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
         colorBg: item.colorBg || '',
         importCost: Number(item.importCost) || 0,
         totalCost: Number(item.totalCost) || 0,
-        zone: item.zone || ''
+        zone: item.zone || '',
+        serviceHistory: item.serviceHistory || []
     };
 
     if (isFirebaseConfigured() && db) {
