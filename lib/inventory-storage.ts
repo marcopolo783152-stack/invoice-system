@@ -102,11 +102,35 @@ export async function markInventoryTagsPrinted(ids: string[]): Promise<void> {
     }
 }
 
-/**
- * Generate a local ID if not using Firebase (or for temp local storage)
- */
 function generateId(): string {
     return 'inv_' + Math.random().toString(36).substr(2, 9);
+}
+
+/**
+ * Safe localStorage setter that handles QuotaExceededError
+ * by stripping images if necessary to save space.
+ */
+function safeLocalStorageSet(key: string, items: InventoryItem[]): void {
+    try {
+        localStorage.setItem(key, JSON.stringify(items));
+    } catch (e: any) {
+        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+            console.warn('LocalStorage quota exceeded. Retrying without images...');
+            try {
+                // Strip images and try again
+                const stripped = items.map(item => ({
+                    ...item,
+                    image: '',
+                    images: []
+                }));
+                localStorage.setItem(key, JSON.stringify(stripped));
+            } catch (innerError) {
+                console.error('Failed to save even without images:', innerError);
+            }
+        } else {
+            console.error('Error saving to localStorage:', e);
+        }
+    }
 }
 
 /**
@@ -184,7 +208,7 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
             });
 
             // Update local cache
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            safeLocalStorageSet(STORAGE_KEY, items);
             return items;
         } catch (error) {
             console.error('Error fetching inventory from cloud:', error);
@@ -275,7 +299,7 @@ export async function importInventoryBatch(newItems: Partial<InventoryItem>[]): 
     const newSkus = new Set(processed.map(i => i.sku.toLowerCase()));
     const preserved = currentItems.filter(i => !newSkus.has(i.sku.toLowerCase()));
     const final = [...preserved, ...processed];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(final));
+    safeLocalStorageSet(STORAGE_KEY, final);
 
     if (isFirebaseConfigured() && db) {
         try {
@@ -372,7 +396,7 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
         newItem = { ...itemData, id: generateId(), createdAt: now.toISOString() } as InventoryItem;
         items.push(newItem);
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    safeLocalStorageSet(STORAGE_KEY, items);
     return newItem;
 }
 
@@ -386,7 +410,7 @@ export async function deleteInventoryItem(id: string): Promise<void> {
         try {
             const items: InventoryItem[] = JSON.parse(stored);
             const filtered = items.filter(i => i.id !== id);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+            safeLocalStorageSet(STORAGE_KEY, filtered);
         } catch (e) { console.error(e); }
     }
 
@@ -414,7 +438,7 @@ export async function deleteInventoryBatch(ids: string[]): Promise<void> {
             const items: InventoryItem[] = JSON.parse(stored);
             const idSet = new Set(ids);
             const filtered = items.filter(i => !idSet.has(i.id));
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+            safeLocalStorageSet(STORAGE_KEY, filtered);
         } catch (e) { console.error(e); }
     }
 
