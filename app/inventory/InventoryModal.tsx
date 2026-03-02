@@ -597,39 +597,80 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
             </div>
 
             {/* Hidden Print Section for History */}
-            <div style={{ display: 'none' }}>
-                <div ref={historyPrintRef} style={{ padding: '2cm', fontFamily: 'serif', color: 'black', background: 'white' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <h1 style={{ fontSize: '24pt', fontWeight: 'bold' }}>SERVICE HISTORY REPORT</h1>
-                        <p style={{ fontSize: '14pt', fontWeight: 'bold' }}>SKU: {initialData?.sku}</p>
-                        <p>{initialData?.description}</p>
-                    </div>
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '850px' }}>
+                <div ref={historyPrintRef}>
+                    <div className="pdf-page" style={{
+                        padding: '40px',
+                        color: 'black',
+                        background: 'white',
+                        fontFamily: "'Inter', sans-serif",
+                        minHeight: '1050px',
+                        width: '800px',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        {/* Branding Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #333', paddingBottom: '20px', marginBottom: '30px' }}>
+                            <div style={{ flex: 1 }}>
+                                <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0 0 5px 0' }}>MARCO POLO ORIENTAL RUGS, INC.</h1>
+                                <p style={{ margin: '1px 0', fontSize: '11px' }}>3260 DUKE ST, ALEXANDRIA, VA 22314</p>
+                                <p style={{ margin: '1px 0', fontSize: '11px' }}>Phone: 703-461-0207</p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <img
+                                    src="/LOGO.png"
+                                    alt="Logo"
+                                    style={{ height: '50px', marginBottom: '5px', objectFit: 'contain' }}
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                                <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>SERVICE HISTORY REPORT</h2>
+                            </div>
+                        </div>
 
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '2px solid black' }}>
-                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Date Sent</th>
-                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Vendor</th>
-                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Service</th>
-                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Returned</th>
-                                <th style={{ textAlign: 'right', padding: '0.5rem' }}>Cost</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {initialData?.serviceHistory?.map((entry, idx) => (
-                                <tr key={idx} style={{ borderBottom: '1px solid #ddd' }}>
-                                    <td style={{ padding: '0.5rem' }}>{new Date(entry.dateSent).toLocaleDateString()}</td>
-                                    <td style={{ padding: '0.5rem' }}>{entry.vendorName}</td>
-                                    <td style={{ padding: '0.5rem' }}>{entry.serviceType}</td>
-                                    <td style={{ padding: '0.5rem' }}>{entry.dateReturned ? new Date(entry.dateReturned).toLocaleDateString() : 'Pending'}</td>
-                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>${entry.cost.toLocaleString()}</td>
+                        <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '10px' }}>
+                                <span style={{ fontWeight: 600, fontSize: '12px' }}>SKU:</span>
+                                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{initialData?.sku}</span>
+                                <span style={{ fontWeight: 600, fontSize: '12px' }}>Description:</span>
+                                <span style={{ fontSize: '13px' }}>{initialData?.description}</span>
+                            </div>
+                        </div>
+
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', border: '1px solid #e2e8f0' }}>
+                            <thead>
+                                <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #333' }}>
+                                    <th style={{ textAlign: 'left', padding: '10px', fontSize: '11px' }}>Date Sent</th>
+                                    <th style={{ textAlign: 'left', padding: '10px', fontSize: '11px' }}>Vendor</th>
+                                    <th style={{ textAlign: 'left', padding: '10px', fontSize: '11px' }}>Service</th>
+                                    <th style={{ textAlign: 'left', padding: '10px', fontSize: '11px' }}>Returned</th>
+                                    <th style={{ textAlign: 'right', padding: '10px', fontSize: '11px' }}>Cost</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {initialData?.serviceHistory?.map((entry, idx) => (
+                                    <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                        <td style={{ padding: '10px', fontSize: '12px' }}>{new Date(entry.dateSent).toLocaleDateString()}</td>
+                                        <td style={{ padding: '10px', fontSize: '12px' }}>{entry.vendorName}</td>
+                                        <td style={{ padding: '10px', fontSize: '12px' }}>{entry.serviceType}</td>
+                                        <td style={{ padding: '10px', fontSize: '12px' }}>{entry.dateReturned ? new Date(entry.dateReturned).toLocaleDateString() : 'Pending'}</td>
+                                        <td style={{ padding: '10px', textAlign: 'right', fontSize: '12px', fontWeight: 'bold' }}>
+                                            ${entry.cost.toLocaleString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
 
-                    <div style={{ marginTop: '2rem', textAlign: 'right', fontWeight: 'bold' }}>
-                        Total Service Investment: ${initialData?.serviceHistory?.reduce((sum, e) => sum + e.cost, 0).toLocaleString()}
+                        <div style={{ marginTop: '20px', textAlign: 'right', padding: '10px', borderTop: '2px solid #333' }}>
+                            <span style={{ fontSize: '12px', marginRight: '10px' }}>Total Service Investment:</span>
+                            <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                                ${initialData?.serviceHistory?.reduce((sum, e) => sum + e.cost, 0).toLocaleString()}
+                            </span>
+                        </div>
+
+                        <div style={{ marginTop: 'auto', paddingTop: '20px', fontSize: '10px', color: '#94a3b8', textAlign: 'center' }}>
+                            Generated on {new Date().toLocaleString()}
+                        </div>
                     </div>
                 </div>
             </div>

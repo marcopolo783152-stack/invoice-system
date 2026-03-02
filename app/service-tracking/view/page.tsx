@@ -367,66 +367,97 @@ function ServiceOrderDetailContent() {
             )}
 
             {/* Hidden PDF Generation Section */}
-            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', overflow: 'hidden', height: 0, width: '800px' }}>
-                <div ref={printRef} className="pdf-page" style={{ padding: '40px', color: 'black', background: 'white', fontFamily: 'Inter, sans-serif', width: '800px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid black', paddingBottom: '20px', marginBottom: '30px' }}>
-                        <div>
-                            <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>SERVICE ORDER</h1>
-                            <p style={{ margin: '5px 0' }}>#{order.orderNumber}</p>
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '850px' }}>
+                <div ref={printRef}>
+                    <div className="pdf-page" style={{
+                        padding: '40px',
+                        color: 'black',
+                        background: 'white',
+                        fontFamily: "'Inter', sans-serif",
+                        minHeight: '1050px',
+                        width: '800px',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        {/* Professional Header - Matches Invoice Style */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #333', paddingBottom: '20px', marginBottom: '30px' }}>
+                            <div style={{ flex: 1 }}>
+                                <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0', color: '#000' }}>MARCO POLO ORIENTAL RUGS, INC.</h1>
+                                <p style={{ margin: '2px 0', fontSize: '13px' }}>3260 DUKE ST</p>
+                                <p style={{ margin: '2px 0', fontSize: '13px' }}>ALEXANDRIA, VA 22314</p>
+                                <p style={{ margin: '2px 0', fontSize: '13px' }}>Phone: 703-461-0207</p>
+                                <p style={{ margin: '2px 0', fontSize: '13px' }}>Email: marcopolorugs@aol.com</p>
+                            </div>
+                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <img
+                                    src="/LOGO.png"
+                                    alt="Logo"
+                                    style={{ height: '80px', marginBottom: '10px', objectFit: 'contain' }}
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                                <div style={{ textAlign: 'right' }}>
+                                    <h2 style={{ fontSize: '20px', margin: 0, color: '#333' }}>SERVICE ORDER</h2>
+                                    <p style={{ margin: '5px 0', fontWeight: 'bold', fontSize: '14px' }}>#{order.orderNumber}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <h2 style={{ fontSize: '20px', margin: 0 }}>Marco Polo Rugs</h2>
-                            <p style={{ margin: '5px 0', color: '#666' }}>Service Tracking Report</p>
-                        </div>
-                    </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '30px' }}>
-                        <div>
-                            <h3 style={{ textTransform: 'uppercase', fontSize: '12px', color: '#666', marginBottom: '10px' }}>Service Provider</h3>
-                            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 5px 0' }}>{order.vendorName}</p>
-                            <p style={{ margin: 0 }}>{order.vendorId}</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '30px' }}>
+                            <div>
+                                <h3 style={{ textTransform: 'uppercase', fontSize: '11px', color: '#666', marginBottom: '8px', fontWeight: 600 }}>Service Provider</h3>
+                                <p style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{order.vendorName}</p>
+                                <p style={{ margin: 0, fontSize: '13px' }}>{order.vendorId}</p>
+                            </div>
+                            <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <h3 style={{ textTransform: 'uppercase', fontSize: '11px', color: '#666', marginBottom: '8px', fontWeight: 600 }}>Order Information</h3>
+                                <p style={{ margin: '0 0 4px 0', fontSize: '13px' }}><strong>Date Sent:</strong> {new Date(order.dateSent).toLocaleDateString()}</p>
+                                <p style={{ margin: '0 0 4px 0', fontSize: '13px' }}><strong>Driver:</strong> {order.driverName}</p>
+                                <p style={{ margin: 0, fontSize: '13px' }}><strong>Pickup:</strong> {order.pickupDate} {order.pickupTime}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 style={{ textTransform: 'uppercase', fontSize: '12px', color: '#666', marginBottom: '10px' }}>Order Information</h3>
-                            <p style={{ margin: '0 0 5px 0' }}><strong>Date Sent:</strong> {new Date(order.dateSent).toLocaleDateString()}</p>
-                            <p style={{ margin: '0 0 5px 0' }}><strong>Driver:</strong> {order.driverName}</p>
-                            <p style={{ margin: 0 }}><strong>Pickup:</strong> {order.pickupDate} {order.pickupTime}</p>
-                        </div>
-                    </div>
 
-                    <h3 style={{ textTransform: 'uppercase', fontSize: '12px', color: '#666', marginBottom: '10px' }}>Rug List ({order.rugs.length} items)</h3>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid black' }}>
-                                <th style={{ textAlign: 'left', padding: '10px 5px' }}>SKU</th>
-                                <th style={{ textAlign: 'left', padding: '10px 5px' }}>Description</th>
-                                <th style={{ textAlign: 'left', padding: '10px 5px' }}>Customer</th>
-                                <th style={{ textAlign: 'right', padding: '10px 5px' }}>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {order.rugs.map(rug => (
-                                <tr key={rug.sku} style={{ borderBottom: '1px solid #eee' }}>
-                                    <td style={{ padding: '12px 5px', fontWeight: 'bold' }}>{rug.sku}</td>
-                                    <td style={{ padding: '12px 5px' }}>{rug.description}</td>
-                                    <td style={{ padding: '12px 5px' }}>{rug.customerName || 'Marco Polo'}</td>
-                                    <td style={{ padding: '12px 5px', textAlign: 'right', fontWeight: rug.returned ? 'normal' : 'bold' }}>
-                                        {rug.returned ? 'Returned' : 'In Service'}
-                                    </td>
+                        <h3 style={{ textTransform: 'uppercase', fontSize: '11px', color: '#666', marginBottom: '10px', fontWeight: 600 }}>Rug List ({order.rugs.length} items)</h3>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px', border: '1px solid #e2e8f0' }}>
+                            <thead>
+                                <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #333' }}>
+                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '12px' }}>SKU</th>
+                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '12px' }}>Description</th>
+                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '12px' }}>Customer</th>
+                                    <th style={{ textAlign: 'right', padding: '12px 10px', fontSize: '12px' }}>Status</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {order.rugs.map(rug => (
+                                    <tr key={rug.sku} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                        <td style={{ padding: '12px 10px', fontWeight: 'bold', fontSize: '13px' }}>{rug.sku}</td>
+                                        <td style={{ padding: '12px 10px', fontSize: '13px' }}>{rug.description}</td>
+                                        <td style={{ padding: '12px 10px', fontSize: '13px' }}>{rug.customerName || 'Marco Polo'}</td>
+                                        <td style={{ padding: '12px 10px', textAlign: 'right', fontSize: '12px' }}>
+                                            <span style={{
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                backgroundColor: rug.returned ? '#dcfce7' : '#fef9c3',
+                                                color: rug.returned ? '#166534' : '#854d0e',
+                                                fontWeight: 600
+                                            }}>
+                                                {rug.returned ? 'Returned' : 'In Service'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
 
-                    {order.notes && (
-                        <div style={{ marginTop: '20px', padding: '15px', background: '#f9f9f9', borderRadius: '5px' }}>
-                            <h3 style={{ textTransform: 'uppercase', fontSize: '12px', color: '#666', marginBottom: '5px' }}>Additional Notes</h3>
-                            <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{order.notes}</p>
+                        {order.notes && (
+                            <div style={{ marginTop: 'auto', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <h3 style={{ textTransform: 'uppercase', fontSize: '11px', color: '#666', marginBottom: '5px', fontWeight: 600 }}>Additional Notes</h3>
+                                <p style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '13px' }}>{order.notes}</p>
+                            </div>
+                        )}
+
+                        <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0', fontSize: '10px', color: '#94a3b8', textAlign: 'center' }}>
+                            This is an official tracking document generated by Marco Polo Rugs Tracking System on {new Date().toLocaleString()}
                         </div>
-                    )}
-
-                    <div style={{ marginTop: '50px', paddingTop: '20px', borderTop: '1px solid #eee', fontSize: '10px', color: '#999', textAlign: 'center' }}>
-                        This is an official service order tracking document generated on {new Date().toLocaleString()}
                     </div>
                 </div>
             </div>
