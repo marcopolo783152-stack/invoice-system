@@ -211,7 +211,13 @@ function ServiceOrderDetailContent() {
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                             {!rug.returned && (
-                                                <div style={{ color: selectedRugSkus.includes(rug.sku) ? 'var(--primary)' : 'var(--text-muted)' }}>
+                                                <div
+                                                    style={{ color: selectedRugSkus.includes(rug.sku) ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleToggleRugSelection(rug.sku);
+                                                    }}
+                                                >
                                                     {selectedRugSkus.includes(rug.sku) ? <CheckSquare size={20} /> : <Square size={20} />}
                                                 </div>
                                             )}
@@ -361,8 +367,8 @@ function ServiceOrderDetailContent() {
             )}
 
             {/* Hidden PDF Generation Section */}
-            <div style={{ display: 'none' }}>
-                <div ref={printRef} className="pdf-page" style={{ padding: '40px', color: 'black', background: 'white', fontFamily: 'Inter, sans-serif' }}>
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', overflow: 'hidden', height: 0, width: '800px' }}>
+                <div ref={printRef} className="pdf-page" style={{ padding: '40px', color: 'black', background: 'white', fontFamily: 'Inter, sans-serif', width: '800px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid black', paddingBottom: '20px', marginBottom: '30px' }}>
                         <div>
                             <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>SERVICE ORDER</h1>
