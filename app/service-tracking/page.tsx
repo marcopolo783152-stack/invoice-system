@@ -124,7 +124,7 @@ export default function ServiceTrackingPage() {
                         return (
                             <Link
                                 key={order.id}
-                                href={`/service-tracking/${order.id}`}
+                                href={`/service-tracking/view?id=${order.id}`}
                                 style={{
                                     backgroundColor: 'var(--bg-card)',
                                     borderRadius: '1rem',
