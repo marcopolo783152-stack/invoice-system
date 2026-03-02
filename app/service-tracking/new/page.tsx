@@ -6,11 +6,20 @@ import { ArrowLeft, Save, Plus, Trash2, Search, CheckSquare, Square, Truck, Cale
 import { getServiceVendors, ServiceVendor } from '@/lib/service-vendor-storage';
 import { createServiceOrder, generateOrderNumber } from '@/lib/service-order-storage';
 import { getInventoryItems, InventoryItem } from '@/lib/inventory-storage';
+import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
+
+interface ServiceRugItem {
+    sku: string;
+    description: string;
+    customerName: string;
+    source: 'inventory' | 'invoice';
+}
 
 export default function NewServiceOrderPage() {
     const router = useRouter();
     const [vendors, setVendors] = useState<ServiceVendor[]>([]);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [invoiceRugs, setInvoiceRugs] = useState<ServiceRugItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRugSkus, setSelectedRugSkus] = useState<string[]>([]);
@@ -35,14 +44,34 @@ export default function NewServiceOrderPage() {
 
     const loadData = async () => {
         setIsLoading(true);
-        const [vData, iData, nextNum] = await Promise.all([
+        const [vData, iData, invData, nextNum] = await Promise.all([
             getServiceVendors(),
             getInventoryItems(),
+            getAllInvoices(),
             generateOrderNumber()
         ]);
         setVendors(vData);
-        // Only show AVAILABLE rugs
+        // Only show AVAILABLE rugs from inventory
         setInventory(iData.filter(item => item.status === 'AVAILABLE'));
+
+        // Extract rugs from WASH invoices
+        const washRugs: ServiceRugItem[] = [];
+        invData.forEach(inv => {
+            if (inv.documentType === 'WASH' || inv.data.documentType === 'WASH') {
+                inv.data.items.forEach(item => {
+                    if (item.serviceType?.wash || item.serviceType?.repair) {
+                        washRugs.push({
+                            sku: item.sku,
+                            description: item.description,
+                            customerName: inv.data.soldTo?.name || 'Marco Polo',
+                            source: 'invoice'
+                        });
+                    }
+                });
+            }
+        });
+        setInvoiceRugs(washRugs);
+
         setOrderNumber(nextNum);
         setIsLoading(false);
     };
@@ -88,6 +117,15 @@ export default function NewServiceOrderPage() {
                 .map(item => ({
                     sku: item.sku,
                     description: item.description,
+                    customerName: 'Marco Polo',
+                    returned: false
+                })),
+            ...invoiceRugs
+                .filter(item => selectedRugSkus.includes(item.sku))
+                .map(item => ({
+                    sku: item.sku,
+                    description: item.description,
+                    customerName: item.customerName,
                     returned: false
                 })),
             ...unlistedRugs
@@ -95,6 +133,7 @@ export default function NewServiceOrderPage() {
                 .map(item => ({
                     sku: item.sku,
                     description: item.description,
+                    customerName: 'Marco Polo',
                     returned: false
                 }))
         ];
@@ -116,11 +155,25 @@ export default function NewServiceOrderPage() {
     };
 
     const allRugItems = [
-        ...inventory,
-        ...unlistedRugs.map(r => ({ ...r, status: 'AVAILABLE' as any, id: r.sku }))
+        ...inventory.map(i => ({ sku: i.sku, description: i.description, customerName: 'Marco Polo', source: 'inventory' as const })),
+        ...invoiceRugs,
+        ...unlistedRugs.map(r => ({ sku: r.sku, description: r.description, customerName: 'Marco Polo', source: 'unlisted' as const }))
     ];
 
-    const filteredInventory = allRugItems.filter(item =>
+    // Deduplicate by SKU, prioritizing invoice rugs if they have the same SKU
+    const uniqueRugItems = allRugItems.reduce((acc, current) => {
+        const x = acc.find(item => item.sku === current.sku);
+        if (!x) {
+            return acc.concat([current]);
+        } else if (current.source === 'invoice') {
+            // Priority to invoice rug if it has customer info
+            return acc.filter(item => item.sku !== current.sku).concat([current]);
+        } else {
+            return acc;
+        }
+    }, [] as any[]);
+
+    const filteredInventory = uniqueRugItems.filter(item =>
         item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -315,8 +368,16 @@ export default function NewServiceOrderPage() {
                                         >
                                             {selectedRugSkus.includes(item.sku) ? <CheckSquare size={20} color="var(--primary)" /> : <Square size={20} color="var(--text-muted)" />}
                                             <div style={{ flex: 1 }}>
-                                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.sku}</div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.sku}</div>
+                                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: '0.25rem', backgroundColor: item.source === 'invoice' ? 'var(--primary-light)' : 'var(--bg-void)', color: item.source === 'invoice' ? 'var(--primary)' : 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                                                        {item.source.toUpperCase()}
+                                                    </div>
+                                                </div>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</div>
+                                                <div style={{ fontSize: '0.75rem', color: item.customerName === 'Marco Polo' ? 'var(--text-muted)' : 'var(--primary)', fontWeight: item.customerName === 'Marco Polo' ? 400 : 600 }}>
+                                                    {item.customerName}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

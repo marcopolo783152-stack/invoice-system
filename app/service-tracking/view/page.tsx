@@ -176,6 +176,7 @@ function ServiceOrderDetailContent() {
                                             <div>
                                                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>{rug.sku}</div>
                                                 <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{rug.description}</div>
+                                                <div style={{ fontSize: '0.75rem', color: rug.customerName === 'Marco Polo' ? 'var(--text-muted)' : 'var(--primary)', fontWeight: 600 }}>{rug.customerName}</div>
                                             </div>
                                         </div>
 
@@ -448,6 +449,7 @@ function ServiceOrderDetailContent() {
                             <tr style={{ borderBottom: '2px solid black' }}>
                                 <th style={{ textAlign: 'left', padding: '0.5rem' }}>SKU</th>
                                 <th style={{ textAlign: 'left', padding: '0.5rem' }}>Description</th>
+                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Customer</th>
                                 <th style={{ textAlign: 'left', padding: '0.5rem' }}>Status</th>
                                 <th style={{ textAlign: 'right', padding: '0.5rem' }}>Cost</th>
                             </tr>
@@ -457,6 +459,7 @@ function ServiceOrderDetailContent() {
                                 <tr key={rug.sku} style={{ borderBottom: '1px solid #eee' }}>
                                     <td style={{ padding: '0.5rem' }}>{rug.sku}</td>
                                     <td style={{ padding: '0.5rem' }}>{rug.description}</td>
+                                    <td style={{ padding: '0.5rem' }}>{rug.customerName}</td>
                                     <td style={{ padding: '0.5rem' }}>{rug.returned ? 'Returned' : 'Out for Service'}</td>
                                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{rug.cost ? `$${rug.cost.toFixed(2)}` : '-'}</td>
                                 </tr>
