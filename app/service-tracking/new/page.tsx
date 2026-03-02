@@ -52,23 +52,31 @@ export default function NewServiceOrderPage() {
         ]);
         setVendors(vData);
         // Only show AVAILABLE rugs from inventory
-        setInventory(iData.filter(item => item.status === 'AVAILABLE'));
+        setInventory((iData || []).filter(item => item && item.status === 'AVAILABLE'));
 
-        // Extract rugs from WASH invoices
+        // Extract rugs from all invoices where items are marked for wash/repair
         const washRugs: ServiceRugItem[] = [];
-        invData.forEach(inv => {
-            if (inv.documentType === 'WASH' || inv.data.documentType === 'WASH') {
-                inv.data.items.forEach(item => {
-                    if (item.serviceType?.wash || item.serviceType?.repair) {
-                        washRugs.push({
-                            sku: item.sku,
-                            description: item.description,
-                            customerName: inv.data.soldTo?.name || 'Marco Polo',
-                            source: 'invoice'
-                        });
-                    }
-                });
-            }
+        (invData || []).forEach(inv => {
+            if (!inv || !inv.data || !inv.data.items) return;
+
+            const items = inv.data.items;
+            items.forEach(item => {
+                if (!item || !item.sku) return;
+
+                // Check if marked for service in ANY type of invoice
+                const needsService = item.serviceType &&
+                    typeof item.serviceType === 'object' &&
+                    (item.serviceType.wash || item.serviceType.repair);
+
+                if (needsService) {
+                    washRugs.push({
+                        sku: item.sku,
+                        description: item.description || '',
+                        customerName: inv.data.soldTo?.name || 'Marco Polo',
+                        source: 'invoice'
+                    });
+                }
+            });
         });
         setInvoiceRugs(washRugs);
 
@@ -155,9 +163,14 @@ export default function NewServiceOrderPage() {
     };
 
     const allRugItems = [
-        ...inventory.map(i => ({ sku: i.sku, description: i.description, customerName: 'Marco Polo', source: 'inventory' as const })),
-        ...invoiceRugs,
-        ...unlistedRugs.map(r => ({ sku: r.sku, description: r.description, customerName: 'Marco Polo', source: 'unlisted' as const }))
+        ...inventory
+            .filter(i => i && i.sku)
+            .map(i => ({ sku: i.sku, description: i.description || '', customerName: 'Marco Polo', source: 'inventory' as const })),
+        ...invoiceRugs
+            .filter(i => i && i.sku),
+        ...unlistedRugs
+            .filter(r => r && r.sku)
+            .map(r => ({ sku: r.sku, description: r.description || '', customerName: 'Marco Polo', source: 'unlisted' as const }))
     ];
 
     // Deduplicate by SKU, prioritizing invoice rugs if they have the same SKU
@@ -173,10 +186,12 @@ export default function NewServiceOrderPage() {
         }
     }, [] as any[]);
 
-    const filteredInventory = uniqueRugItems.filter(item =>
-        item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredInventory = uniqueRugItems.filter(item => {
+        const sku = (item.sku || '').toLowerCase();
+        const desc = (item.description || '').toLowerCase();
+        const search = searchTerm.toLowerCase();
+        return sku.includes(search) || desc.includes(search);
+    });
 
     return (
         <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
@@ -371,12 +386,12 @@ export default function NewServiceOrderPage() {
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.sku}</div>
                                                     <div style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: '0.25rem', backgroundColor: item.source === 'invoice' ? 'var(--primary-light)' : 'var(--bg-void)', color: item.source === 'invoice' ? 'var(--primary)' : 'var(--text-muted)', border: '1px solid var(--border)' }}>
-                                                        {item.source.toUpperCase()}
+                                                        {(item.source || 'inventory').toUpperCase()}
                                                     </div>
                                                 </div>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</div>
-                                                <div style={{ fontSize: '0.75rem', color: item.customerName === 'Marco Polo' ? 'var(--text-muted)' : 'var(--primary)', fontWeight: item.customerName === 'Marco Polo' ? 400 : 600 }}>
-                                                    {item.customerName}
+                                                <div style={{ fontSize: '0.75rem', color: (item.customerName || 'Marco Polo') === 'Marco Polo' ? 'var(--text-muted)' : 'var(--primary)', fontWeight: (item.customerName || 'Marco Polo') === 'Marco Polo' ? 400 : 600 }}>
+                                                    {item.customerName || 'Marco Polo'}
                                                 </div>
                                             </div>
                                         </div>
