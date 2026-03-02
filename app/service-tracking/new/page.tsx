@@ -397,9 +397,7 @@ export default function NewServiceOrderPage() {
                             <button type="button" onClick={() => setActiveTab('invoices')} style={{ background: 'none', border: 'none', padding: '0.5rem 0.25rem', fontWeight: 700, fontSize: '0.9rem', color: activeTab === 'invoices' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'invoices' ? '2px solid var(--primary)' : 'none', cursor: 'pointer' }}>
                                 Service Invoices ({invoiceRugs.length})
                             </button>
-                            <button type="button" onClick={() => setActiveTab('inventory')} style={{ background: 'none', border: 'none', padding: '0.5rem 0.25rem', fontWeight: 700, fontSize: '0.9rem', color: activeTab === 'inventory' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'inventory' ? '2px solid var(--primary)' : 'none', cursor: 'pointer' }}>
-                                Stock Inventory ({inventory.length})
-                            </button>
+
                             <button type="button" onClick={() => setActiveTab('atService')} style={{ background: 'none', border: 'none', padding: '0.5rem 0.25rem', fontWeight: 700, fontSize: '0.9rem', color: activeTab === 'atService' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'atService' ? '2px solid var(--primary)' : 'none', cursor: 'pointer' }}>
                                 Already Out ({atServiceRugs.length})
                             </button>
@@ -457,26 +455,6 @@ export default function NewServiceOrderPage() {
                                                     ))}
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                )
-                            ) : activeTab === 'inventory' ? (
-                                filteredInventory.length === 0 ? (
-                                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No matching inventory found.</p>
-                                ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        {filteredInventory.map(item => (
-                                            <RugSelectionItem
-                                                key={item.sku}
-                                                sku={item.sku}
-                                                description={item.description || ''}
-                                                size={formatSize(item)}
-                                                isSelected={!!selectedRugsMap[item.sku]}
-                                                onToggle={() => handleToggleRug(item.sku)}
-                                                source="inventory"
-                                                serviceType={selectedRugsMap[item.sku]}
-                                                onServiceTypeChange={(type) => handleServiceTypeChange(item.sku, type)}
-                                            />
                                         ))}
                                     </div>
                                 )
