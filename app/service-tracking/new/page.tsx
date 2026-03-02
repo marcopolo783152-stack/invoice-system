@@ -14,6 +14,7 @@ interface ServiceRugItem {
     customerName: string;
     source: 'inventory' | 'invoice' | 'unlisted';
     invoiceId?: string;
+    defaultServiceType?: 'Wash' | 'Repair' | 'Both';
 }
 
 export default function NewServiceOrderPage() {
@@ -24,7 +25,7 @@ export default function NewServiceOrderPage() {
     const [atServiceRugs, setAtServiceRugs] = useState<ServiceRugItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedRugSkus, setSelectedRugSkus] = useState<string[]>([]);
+    const [selectedRugsMap, setSelectedRugsMap] = useState<Record<string, 'Wash' | 'Repair' | 'Both'>>({});
     const [unlistedRugs, setUnlistedRugs] = useState<ServiceRugItem[]>([]);
     const [isUnlistedModalOpen, setIsUnlistedModalOpen] = useState(false);
     const [newUnlistedRug, setNewUnlistedRug] = useState({ sku: '', description: '' });
@@ -103,13 +104,18 @@ export default function NewServiceOrderPage() {
                         typeof item.serviceType === 'object' &&
                         (item.serviceType.wash || item.serviceType.repair);
 
+                    const wash = item.serviceType?.wash;
+                    const repair = item.serviceType?.repair;
+                    const defaultService: 'Wash' | 'Repair' | 'Both' = (wash && repair) ? 'Both' : (repair ? 'Repair' : 'Wash');
+
                     if (needsService && !currentlyAtServiceSkus.has(item.sku)) {
                         washRugs.push({
                             sku: item.sku,
                             description: item.description || '',
                             customerName: inv.data.soldTo?.name || 'Marco Polo',
                             source: 'invoice' as const,
-                            invoiceId: inv.id
+                            invoiceId: inv.id,
+                            defaultServiceType: defaultService
                         });
                     }
                 });
@@ -129,12 +135,38 @@ export default function NewServiceOrderPage() {
         }
     };
 
-    const handleToggleRug = (sku: string) => {
-        if (selectedRugSkus.includes(sku)) {
-            setSelectedRugSkus(selectedRugSkus.filter(s => s !== sku));
+    const handleToggleRug = (sku: string, defaultType: 'Wash' | 'Repair' | 'Both' = 'Wash') => {
+        const newMap = { ...selectedRugsMap };
+        if (newMap[sku]) {
+            delete newMap[sku];
         } else {
-            setSelectedRugSkus([...selectedRugSkus, sku]);
+            newMap[sku] = defaultType;
         }
+        setSelectedRugsMap(newMap);
+    };
+
+    const handleServiceTypeChange = (sku: string, type: 'Wash' | 'Repair' | 'Both') => {
+        if (selectedRugsMap[sku]) {
+            setSelectedRugsMap({ ...selectedRugsMap, [sku]: type });
+        }
+    };
+
+    const handleSelectAllGroup = (rugs: ServiceRugItem[]) => {
+        const newMap = { ...selectedRugsMap };
+        const allInGroupSelected = rugs.every(r => !!newMap[r.sku]);
+
+        if (allInGroupSelected) {
+            // Deselect all in group
+            rugs.forEach(r => delete newMap[r.sku]);
+        } else {
+            // Select all in group
+            rugs.forEach(r => {
+                if (!newMap[r.sku]) {
+                    newMap[r.sku] = r.defaultServiceType || 'Wash';
+                }
+            });
+        }
+        setSelectedRugsMap(newMap);
     };
 
     const handleAddUnlistedRug = (e: React.FormEvent) => {
@@ -151,11 +183,12 @@ export default function NewServiceOrderPage() {
             sku: newUnlistedRug.sku,
             description: newUnlistedRug.description,
             customerName: 'Marco Polo',
-            source: 'unlisted'
+            source: 'unlisted',
+            defaultServiceType: 'Wash'
         };
 
         setUnlistedRugs([...unlistedRugs, rug]);
-        setSelectedRugSkus([...selectedRugSkus, rug.sku]);
+        setSelectedRugsMap({ ...selectedRugsMap, [rug.sku]: 'Wash' });
         setNewUnlistedRug({ sku: '', description: '' });
         setIsUnlistedModalOpen(false);
     };
@@ -166,10 +199,6 @@ export default function NewServiceOrderPage() {
             alert('Please select a service company');
             return;
         }
-        if (selectedRugSkus.length === 0) {
-            alert('Please select at least one rug');
-            return;
-        }
 
         const allAvailableRugs: ServiceRugItem[] = [
             ...inventory.map(i => ({ sku: i.sku, description: i.description || '', customerName: 'Marco Polo', source: 'inventory' as const })),
@@ -177,12 +206,19 @@ export default function NewServiceOrderPage() {
             ...unlistedRugs
         ];
 
+        const selectedRugSkus = Object.keys(selectedRugsMap);
+        if (selectedRugSkus.length === 0) {
+            alert('Please select at least one rug');
+            return;
+        }
+
         const selectedRugs = allAvailableRugs
             .filter(item => selectedRugSkus.includes(item.sku))
             .map(item => ({
                 sku: item.sku,
                 description: item.description,
                 customerName: item.customerName,
+                serviceType: selectedRugsMap[item.sku],
                 returned: false
             }));
 
@@ -292,11 +328,11 @@ export default function NewServiceOrderPage() {
 
                     <button
                         type="submit"
-                        disabled={selectedRugSkus.length === 0}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '1.125rem', opacity: selectedRugSkus.length === 0 ? 0.5 : 1 }}
+                        disabled={Object.keys(selectedRugsMap).length === 0}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '1.125rem', opacity: Object.keys(selectedRugsMap).length === 0 ? 0.5 : 1 }}
                     >
                         <CheckSquare size={20} />
-                        Confirm & Send {selectedRugSkus.length > 0 ? `(${selectedRugSkus.length} Rugs)` : ''}
+                        Confirm & Send {Object.keys(selectedRugsMap).length > 0 ? `(${Object.keys(selectedRugsMap).length} Rugs)` : ''}
                     </button>
                 </div>
 
@@ -341,13 +377,31 @@ export default function NewServiceOrderPage() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                         {Object.entries(groupedInvoiceRugs).map(([customer, rugs]) => (
                                             <div key={customer}>
-                                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <User size={14} />
-                                                    {customer.toUpperCase()}
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <User size={14} />
+                                                        {customer.toUpperCase()}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSelectAllGroup(rugs)}
+                                                        style={{ fontSize: '0.7rem', color: 'var(--primary)', background: 'var(--primary-light)', border: 'none', padding: '0.2rem 0.5rem', borderRadius: '0.25rem', cursor: 'pointer', fontWeight: 700 }}
+                                                    >
+                                                        {rugs.every(r => !!selectedRugsMap[r.sku]) ? 'Deselect All' : 'Select All'}
+                                                    </button>
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                     {rugs.map(rug => (
-                                                        <RugSelectionItem key={rug.sku} sku={rug.sku} description={rug.description} isSelected={selectedRugSkus.includes(rug.sku)} onToggle={() => handleToggleRug(rug.sku)} source="invoice" />
+                                                        <RugSelectionItem
+                                                            key={rug.sku}
+                                                            sku={rug.sku}
+                                                            description={rug.description}
+                                                            isSelected={!!selectedRugsMap[rug.sku]}
+                                                            onToggle={() => handleToggleRug(rug.sku, rug.defaultServiceType)}
+                                                            source="invoice"
+                                                            serviceType={selectedRugsMap[rug.sku]}
+                                                            onServiceTypeChange={(type) => handleServiceTypeChange(rug.sku, type)}
+                                                        />
                                                     ))}
                                                 </div>
                                             </div>
@@ -360,7 +414,16 @@ export default function NewServiceOrderPage() {
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                         {filteredInventory.map(item => (
-                                            <RugSelectionItem key={item.sku} sku={item.sku} description={item.description || ''} isSelected={selectedRugSkus.includes(item.sku)} onToggle={() => handleToggleRug(item.sku)} source="inventory" />
+                                            <RugSelectionItem
+                                                key={item.sku}
+                                                sku={item.sku}
+                                                description={item.description || ''}
+                                                isSelected={!!selectedRugsMap[item.sku]}
+                                                onToggle={() => handleToggleRug(item.sku)}
+                                                source="inventory"
+                                                serviceType={selectedRugsMap[item.sku]}
+                                                onServiceTypeChange={(type) => handleServiceTypeChange(item.sku, type)}
+                                            />
                                         ))}
                                     </div>
                                 )
@@ -394,7 +457,16 @@ export default function NewServiceOrderPage() {
                                     <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.75rem' }}>UNLISTED ITEMS</div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                         {unlistedRugs.map(rug => (
-                                            <RugSelectionItem key={rug.sku} sku={rug.sku} description={rug.description} isSelected={selectedRugSkus.includes(rug.sku)} onToggle={() => handleToggleRug(rug.sku)} source="unlisted" />
+                                            <RugSelectionItem
+                                                key={rug.sku}
+                                                sku={rug.sku}
+                                                description={rug.description}
+                                                isSelected={!!selectedRugsMap[rug.sku]}
+                                                onToggle={() => handleToggleRug(rug.sku)}
+                                                source="unlisted"
+                                                serviceType={selectedRugsMap[rug.sku]}
+                                                onServiceTypeChange={(type) => handleServiceTypeChange(rug.sku, type)}
+                                            />
                                         ))}
                                     </div>
                                 </div>
@@ -402,8 +474,8 @@ export default function NewServiceOrderPage() {
                         </div>
 
                         <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{selectedRugSkus.length} rugs selected</span>
-                            <button type="button" onClick={() => setSelectedRugSkus([])} style={{ fontSize: '0.875rem', color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear Selection</button>
+                            <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{Object.keys(selectedRugsMap).length} rugs selected</span>
+                            <button type="button" onClick={() => setSelectedRugsMap({})} style={{ fontSize: '0.875rem', color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear Selection</button>
                         </div>
                     </div>
                 </div>
@@ -414,17 +486,60 @@ export default function NewServiceOrderPage() {
     );
 }
 
-function RugSelectionItem({ sku, description, isSelected, onToggle, source }: { sku: string, description: string, isSelected: boolean, onToggle: () => void, source: string }) {
+function RugSelectionItem({
+    sku,
+    description,
+    isSelected,
+    onToggle,
+    source,
+    serviceType,
+    onServiceTypeChange
+}: {
+    sku: string,
+    description: string,
+    isSelected: boolean,
+    onToggle: () => void,
+    source: string,
+    serviceType?: 'Wash' | 'Repair' | 'Both',
+    onServiceTypeChange: (type: 'Wash' | 'Repair' | 'Both') => void
+}) {
     return (
-        <div onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', borderRadius: '0.5rem', border: `1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`, backgroundColor: isSelected ? 'var(--primary-light)' : 'var(--bg-void)', cursor: 'pointer', transition: 'all 0.2s' }}>
-            {isSelected ? <CheckSquare size={20} color="var(--primary)" /> : <Square size={20} color="var(--text-muted)" />}
-            <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{sku}</div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.4rem', borderRadius: '0.25rem', backgroundColor: source === 'invoice' ? 'var(--primary-light)' : 'var(--bg-void)', color: source === 'invoice' ? 'var(--primary)' : 'var(--text-muted)', border: '1px solid var(--border)' }}>{source.toUpperCase()}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem', borderRadius: '0.5rem', border: `1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`, backgroundColor: isSelected ? 'var(--primary-light)' : 'var(--bg-void)', transition: 'all 0.2s' }}>
+            <div onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}>
+                {isSelected ? <CheckSquare size={20} color="var(--primary)" /> : <Square size={20} color="var(--text-muted)" />}
+                <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{sku}</div>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.4rem', borderRadius: '0.25rem', backgroundColor: source === 'invoice' ? 'var(--primary-light)' : 'var(--bg-void)', color: source === 'invoice' ? 'var(--primary)' : 'var(--text-muted)', border: '1px solid var(--border)' }}>{source.toUpperCase()}</div>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{description}</div>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{description}</div>
             </div>
+
+            {isSelected && (
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', paddingLeft: '2.25rem' }}>
+                    {(['Wash', 'Repair', 'Both'] as const).map((type) => (
+                        <button
+                            key={type}
+                            type="button"
+                            onClick={() => onServiceTypeChange(type)}
+                            style={{
+                                flex: 1,
+                                padding: '0.3rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                borderRadius: '0.25rem',
+                                border: `1px solid ${serviceType === type ? 'var(--primary)' : 'var(--border)'}`,
+                                backgroundColor: serviceType === type ? 'var(--primary)' : 'white',
+                                color: serviceType === type ? 'white' : 'var(--text-muted)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            {type}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
