@@ -111,11 +111,9 @@ export default function NewServiceOrderPage() {
             setCompletedRugs(completedRugDetails);
 
 
-
-            // Get SKUs in stock inventory to avoid duplicates in invoice list
-            const inventorySkus = new Set((iData || []).map(item => item.sku));
-
             // Extract rugs from all invoices where items are marked for wash/repair
+            // IMPORTANT: Invoice rugs take priority — even if a rug also exists in inventory,
+            // it should show here because it's tied to a customer order.
             const initialWashRugs: ServiceRugItem[] = [];
             (invData || []).forEach(inv => {
                 if (!inv || !inv.data || !Array.isArray(inv.data.items)) return;
@@ -127,12 +125,10 @@ export default function NewServiceOrderPage() {
                     const status = inv.data.status || '';
                     const isPickedUp = status.toUpperCase() === 'PICKED_UP';
 
-                    // Do not show in invoice list if it's already in stock inventory (User request: "dont show from inventory in service invoices")
-                    // OR already has a service record for THIS invoice (Wait to show returned ones)
-                    const isDuplicate = inventorySkus.has(item.sku);
+                    // Only skip if already serviced for THIS specific invoice
                     const isAlreadyServicedForThisInvoice = alreadyServicedByInvoice.has(`${item.sku}-${String(inv.id)}`);
 
-                    const needsService = !isPickedUp && !isDuplicate && !isAlreadyServicedForThisInvoice && item.serviceType &&
+                    const needsService = !isPickedUp && !isAlreadyServicedForThisInvoice && item.serviceType &&
                         typeof item.serviceType === 'object' &&
                         (item.serviceType.wash || item.serviceType.repair);
 
@@ -157,8 +153,12 @@ export default function NewServiceOrderPage() {
 
             setInvoiceRugs(initialWashRugs);
 
-            // Filter inventory for AVAILABLE
-            setInventory((iData || []).filter(item => item && item.status === 'AVAILABLE').map(item => ({
+            // Filter inventory: show AVAILABLE rugs NOT already showing in the invoice list
+            // This prevents double-listing a rug that appears in both inventory and an invoice
+            const invoiceRugSkus = new Set(initialWashRugs.map(r => r.sku));
+            setInventory((iData || []).filter(item =>
+                item && item.status === 'AVAILABLE' && !invoiceRugSkus.has(item.sku)
+            ).map(item => ({
                 sku: item.sku,
                 description: item.description || '',
                 size: formatSize(item),
