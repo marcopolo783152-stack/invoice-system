@@ -61,24 +61,24 @@ export default function NewServiceOrderPage() {
 
             setVendors(vData || []);
 
-            // Get all SKUs currently in active service orders
+            // Get all SKUs currently in active service orders or previously serviced
             const currentlyAtServiceSkus = new Set<string>();
+            const alreadyServicedSkus = new Set<string>();
             const serviceRugDetails: ServiceRugItem[] = [];
 
             (orders || []).forEach(order => {
-                if (order.status !== 'COMPLETED') {
-                    order.rugs.forEach(rug => {
-                        if (!rug.returned) {
-                            currentlyAtServiceSkus.add(rug.sku);
-                            serviceRugDetails.push({
-                                sku: rug.sku,
-                                description: rug.description,
-                                customerName: rug.customerName,
-                                source: 'inventory' // Default for display
-                            });
-                        }
-                    });
-                }
+                order.rugs.forEach(rug => {
+                    alreadyServicedSkus.add(rug.sku);
+                    if (!rug.returned && order.status !== 'COMPLETED') {
+                        currentlyAtServiceSkus.add(rug.sku);
+                        serviceRugDetails.push({
+                            sku: rug.sku,
+                            description: rug.description,
+                            customerName: rug.customerName,
+                            source: 'inventory'
+                        });
+                    }
+                });
             });
 
             setAtServiceRugs(serviceRugDetails);
@@ -87,6 +87,9 @@ export default function NewServiceOrderPage() {
             setInventory((iData || []).filter(item =>
                 item && item.status === 'AVAILABLE' && !currentlyAtServiceSkus.has(item.sku)
             ));
+
+            // Get SKUs in stock inventory to avoid duplicates in invoice list
+            const inventorySkus = new Set((iData || []).map(item => item.sku));
 
             // Extract rugs from all invoices where items are marked for wash/repair
             const washRugs: ServiceRugItem[] = [];
@@ -100,7 +103,11 @@ export default function NewServiceOrderPage() {
                     const status = inv.data.status || '';
                     const isPickedUp = status.toUpperCase() === 'PICKED_UP';
 
-                    const needsService = !isPickedUp && item.serviceType &&
+                    // Do not show in invoice list if it's already in stock inventory or already has/had a service order
+                    const isDuplicate = inventorySkus.has(item.sku);
+                    const isAlreadyServiced = alreadyServicedSkus.has(item.sku);
+
+                    const needsService = !isPickedUp && !isDuplicate && !isAlreadyServiced && item.serviceType &&
                         typeof item.serviceType === 'object' &&
                         (item.serviceType.wash || item.serviceType.repair);
 

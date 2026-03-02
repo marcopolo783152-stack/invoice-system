@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, XCircle, Clock, Save, Edit, User, FileText, CheckCircle, Truck, Calendar, Tag, Info, Printer, Edit2, X, Square, CheckSquare } from 'lucide-react';
 import { getServiceOrderById, markMultipleRugsAsReturned, updateServiceOrder, ServiceOrder, ServiceOrderRug } from '@/lib/service-order-storage';
+import { getServiceVendors, ServiceVendor } from '@/lib/service-vendor-storage';
 import { openPDFInNewTab } from '@/lib/pdf-utils';
 
 function ServiceOrderDetailContent() {
@@ -12,6 +13,7 @@ function ServiceOrderDetailContent() {
     const id = searchParams.get('id');
 
     const [order, setOrder] = useState<ServiceOrder | null>(null);
+    const [vendor, setVendor] = useState<ServiceVendor | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedRugSkus, setSelectedRugSkus] = useState<string[]>([]);
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
@@ -40,6 +42,11 @@ function ServiceOrderDetailContent() {
         try {
             const data = await getServiceOrderById(orderId);
             setOrder(data);
+            if (data?.vendorId) {
+                const vendors = await getServiceVendors();
+                const v = vendors.find(v => v.id === data.vendorId);
+                setVendor(v || null);
+            }
         } catch (error) {
             console.error('Error loading order:', error);
         } finally {
@@ -406,7 +413,15 @@ function ServiceOrderDetailContent() {
                             <div>
                                 <h3 style={{ textTransform: 'uppercase', fontSize: '11px', color: '#666', marginBottom: '8px', fontWeight: 600 }}>Service Provider</h3>
                                 <p style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{order.vendorName}</p>
-                                <p style={{ margin: 0, fontSize: '13px' }}>{order.vendorId}</p>
+                                {vendor && (
+                                    <>
+                                        <p style={{ margin: '2px 0', fontSize: '13px' }}>{vendor.address}</p>
+                                        <p style={{ margin: '2px 0', fontSize: '13px' }}>Phone: {vendor.phone}</p>
+                                        <p style={{ margin: '2px 0', fontSize: '13px' }}>Email: {vendor.email}</p>
+                                        {vendor.contactPerson && <p style={{ margin: '2px 0', fontSize: '13px' }}>Attn: {vendor.contactPerson}</p>}
+                                    </>
+                                )}
+                                {!vendor && <p style={{ margin: 0, fontSize: '13px' }}>ID: {order.vendorId}</p>}
                             </div>
                             <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                 <h3 style={{ textTransform: 'uppercase', fontSize: '11px', color: '#666', marginBottom: '8px', fontWeight: 600 }}>Order Information</h3>
