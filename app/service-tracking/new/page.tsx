@@ -246,8 +246,9 @@ export default function NewServiceOrderPage() {
             return;
         }
 
+        // Combine all rug sources — inventory is already ServiceRugItem[], no re-processing needed
         const allAvailableRugs: ServiceRugItem[] = [
-            ...inventory.map(i => ({ sku: i.sku, description: i.description || '', size: formatSize(i), customerName: 'Marco Polo', source: 'inventory' as const })),
+            ...inventory,
             ...invoiceRugs,
             ...unlistedRugs
         ];
