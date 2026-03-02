@@ -22,6 +22,7 @@ import { InventoryItem, saveInventoryItem, getInventoryItems } from './inventory
 export interface ServiceOrderRug {
     sku: string;
     description: string;
+    size?: string;
     customerName: string;
     returned: boolean;
     dateReturned?: string;

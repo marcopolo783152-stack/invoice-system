@@ -435,27 +435,32 @@ function ServiceOrderDetailContent() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px', border: '1px solid #e2e8f0' }}>
                             <thead>
                                 <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #333' }}>
-                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '12px' }}>SKU</th>
-                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '12px' }}>Description</th>
-                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '12px' }}>Customer</th>
-                                    <th style={{ textAlign: 'right', padding: '12px 10px', fontSize: '12px' }}>Status</th>
+                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px' }}>SKU</th>
+                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px' }}>DESCRIPTION</th>
+                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px' }}>SIZE</th>
+                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px' }}>SERVICE</th>
+                                    <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px' }}>CUSTOMER</th>
+                                    <th style={{ textAlign: 'right', padding: '12px 10px', fontSize: '11px' }}>STATUS</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {order.rugs.map(rug => (
                                     <tr key={rug.sku} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                        <td style={{ padding: '12px 10px', fontWeight: 'bold', fontSize: '13px' }}>{rug.sku}</td>
-                                        <td style={{ padding: '12px 10px', fontSize: '13px' }}>{rug.description}</td>
-                                        <td style={{ padding: '12px 10px', fontSize: '13px' }}>{rug.customerName || 'Marco Polo'}</td>
-                                        <td style={{ padding: '12px 10px', textAlign: 'right', fontSize: '12px' }}>
+                                        <td style={{ padding: '10px', fontWeight: 'bold', fontSize: '12px' }}>{rug.sku}</td>
+                                        <td style={{ padding: '10px', fontSize: '12px' }}>{rug.description}</td>
+                                        <td style={{ padding: '10px', fontSize: '12px' }}>{rug.size || 'N/A'}</td>
+                                        <td style={{ padding: '10px', fontSize: '11px', fontWeight: 600, color: 'var(--primary)' }}>{rug.serviceType?.toUpperCase() || 'SERVICE'}</td>
+                                        <td style={{ padding: '10px', fontSize: '12px' }}>{rug.customerName || 'Marco Polo'}</td>
+                                        <td style={{ padding: '10px', textAlign: 'right', fontSize: '11px' }}>
                                             <span style={{
-                                                padding: '2px 8px',
+                                                padding: '2px 6px',
                                                 borderRadius: '4px',
                                                 backgroundColor: rug.returned ? '#dcfce7' : '#fef9c3',
                                                 color: rug.returned ? '#166534' : '#854d0e',
-                                                fontWeight: 600
+                                                fontWeight: 800,
+                                                fontSize: '10px'
                                             }}>
-                                                {rug.returned ? 'Returned' : 'In Service'}
+                                                {rug.returned ? 'RETURNED' : 'IN SERVICE'}
                                             </span>
                                         </td>
                                     </tr>

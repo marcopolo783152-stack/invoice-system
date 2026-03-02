@@ -11,11 +11,20 @@ import { getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 interface ServiceRugItem {
     sku: string;
     description: string;
+    size?: string;
     customerName: string;
     source: 'inventory' | 'invoice' | 'unlisted';
     invoiceId?: string;
     defaultServiceType?: 'Wash' | 'Repair' | 'Both';
 }
+
+const formatSize = (item: any) => {
+    if (!item) return '';
+    if (item.shape === 'round') {
+        return `Dia: ${item.widthFeet || 0}'${item.widthInches || 0}"`;
+    }
+    return `${item.widthFeet || 0}'${item.widthInches || 0}" x ${item.lengthFeet || 0}'${item.lengthInches || 0}"`;
+};
 
 export default function NewServiceOrderPage() {
     const router = useRouter();
@@ -28,7 +37,7 @@ export default function NewServiceOrderPage() {
     const [selectedRugsMap, setSelectedRugsMap] = useState<Record<string, 'Wash' | 'Repair' | 'Both'>>({});
     const [unlistedRugs, setUnlistedRugs] = useState<ServiceRugItem[]>([]);
     const [isUnlistedModalOpen, setIsUnlistedModalOpen] = useState(false);
-    const [newUnlistedRug, setNewUnlistedRug] = useState({ sku: '', description: '' });
+    const [newUnlistedRug, setNewUnlistedRug] = useState({ sku: '', description: '', size: '' });
     const [orderNumber, setOrderNumber] = useState('');
     const [activeTab, setActiveTab] = useState<'invoices' | 'inventory' | 'atService'>('invoices');
     const [fetchError, setFetchError] = useState<string | null>(null);
@@ -74,6 +83,7 @@ export default function NewServiceOrderPage() {
                         serviceRugDetails.push({
                             sku: rug.sku,
                             description: rug.description,
+                            size: rug.size,
                             customerName: rug.customerName,
                             source: 'inventory'
                         });
@@ -119,6 +129,7 @@ export default function NewServiceOrderPage() {
                         washRugs.push({
                             sku: item.sku,
                             description: item.description || '',
+                            size: formatSize(item),
                             customerName: inv.data.soldTo?.name || 'Marco Polo',
                             source: 'invoice' as const,
                             invoiceId: inv.id,
@@ -189,6 +200,7 @@ export default function NewServiceOrderPage() {
         const rug: ServiceRugItem = {
             sku: newUnlistedRug.sku,
             description: newUnlistedRug.description,
+            size: newUnlistedRug.size,
             customerName: 'Marco Polo',
             source: 'unlisted',
             defaultServiceType: 'Wash'
@@ -196,7 +208,7 @@ export default function NewServiceOrderPage() {
 
         setUnlistedRugs([...unlistedRugs, rug]);
         setSelectedRugsMap({ ...selectedRugsMap, [rug.sku]: 'Wash' });
-        setNewUnlistedRug({ sku: '', description: '' });
+        setNewUnlistedRug({ sku: '', description: '', size: '' });
         setIsUnlistedModalOpen(false);
     };
 
@@ -208,7 +220,7 @@ export default function NewServiceOrderPage() {
         }
 
         const allAvailableRugs: ServiceRugItem[] = [
-            ...inventory.map(i => ({ sku: i.sku, description: i.description || '', customerName: 'Marco Polo', source: 'inventory' as const })),
+            ...inventory.map(i => ({ sku: i.sku, description: i.description || '', size: formatSize(i), customerName: 'Marco Polo', source: 'inventory' as const })),
             ...invoiceRugs,
             ...unlistedRugs
         ];
@@ -224,6 +236,7 @@ export default function NewServiceOrderPage() {
             .map(item => ({
                 sku: item.sku,
                 description: item.description,
+                size: item.size,
                 customerName: item.customerName,
                 serviceType: selectedRugsMap[item.sku],
                 returned: false
@@ -403,6 +416,7 @@ export default function NewServiceOrderPage() {
                                                             key={rug.sku}
                                                             sku={rug.sku}
                                                             description={rug.description}
+                                                            size={rug.size}
                                                             isSelected={!!selectedRugsMap[rug.sku]}
                                                             onToggle={() => handleToggleRug(rug.sku, rug.defaultServiceType)}
                                                             source="invoice"
@@ -425,6 +439,7 @@ export default function NewServiceOrderPage() {
                                                 key={item.sku}
                                                 sku={item.sku}
                                                 description={item.description || ''}
+                                                size={formatSize(item)}
                                                 isSelected={!!selectedRugsMap[item.sku]}
                                                 onToggle={() => handleToggleRug(item.sku)}
                                                 source="inventory"
@@ -468,6 +483,7 @@ export default function NewServiceOrderPage() {
                                                 key={rug.sku}
                                                 sku={rug.sku}
                                                 description={rug.description}
+                                                size={rug.size}
                                                 isSelected={!!selectedRugsMap[rug.sku]}
                                                 onToggle={() => handleToggleRug(rug.sku)}
                                                 source="unlisted"
@@ -496,6 +512,7 @@ export default function NewServiceOrderPage() {
 function RugSelectionItem({
     sku,
     description,
+    size,
     isSelected,
     onToggle,
     source,
@@ -504,6 +521,7 @@ function RugSelectionItem({
 }: {
     sku: string,
     description: string,
+    size?: string,
     isSelected: boolean,
     onToggle: () => void,
     source: string,
@@ -520,6 +538,7 @@ function RugSelectionItem({
                         <div style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.4rem', borderRadius: '0.25rem', backgroundColor: source === 'invoice' ? 'var(--primary-light)' : 'var(--bg-void)', color: source === 'invoice' ? 'var(--primary)' : 'var(--text-muted)', border: '1px solid var(--border)' }}>{source.toUpperCase()}</div>
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{description}</div>
+                    {size && <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>Size: {size}</div>}
                 </div>
             </div>
 
@@ -568,6 +587,10 @@ function UnlistedRugModal({ isOpen, onClose, onSubmit, newRug, setNewRug }: any)
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Description</label>
                         <input required type="text" placeholder="e.g. 8x10 Persian Red" value={newRug.description} onChange={e => setNewRug({ ...newRug, description: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Size</label>
+                        <input type="text" placeholder="e.g. 8' x 10'" value={newRug.size} onChange={e => setNewRug({ ...newRug, size: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
                     </div>
                     <button type="submit" style={{ marginTop: '1rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Add to Selection</button>
                 </form>
