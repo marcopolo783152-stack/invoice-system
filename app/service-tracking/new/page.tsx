@@ -43,6 +43,7 @@ export default function NewServiceOrderPage() {
     const [orderNumber, setOrderNumber] = useState('');
     const [activeTab, setActiveTab] = useState<'invoices' | 'inventory' | 'atService' | 'completed'>('invoices');
     const [fetchError, setFetchError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [orderData, setOrderData] = useState({
         vendorId: '',
@@ -241,12 +242,18 @@ export default function NewServiceOrderPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (!orderData.vendorId) {
             alert('Please select a service company');
             return;
         }
 
-        // Combine all rug sources — inventory is already ServiceRugItem[], no re-processing needed
+        if (!orderData.driverName.trim()) {
+            alert('Please enter the driver name');
+            return;
+        }
+
+        // Combine all rug sources
         const allAvailableRugs: ServiceRugItem[] = [
             ...inventory,
             ...invoiceRugs,
@@ -271,8 +278,14 @@ export default function NewServiceOrderPage() {
                 returned: false
             }));
 
+        if (selectedRugs.length === 0) {
+            alert('Error: Could not match selected rugs. Please try again.');
+            return;
+        }
+
         const vendor = vendors.find(v => v.id === orderData.vendorId);
 
+        setIsSubmitting(true);
         try {
             await createServiceOrder({
                 ...orderData,
@@ -283,7 +296,8 @@ export default function NewServiceOrderPage() {
             router.push('/service-tracking');
         } catch (error) {
             console.error('Error creating service order:', error);
-            alert('Failed to create service order');
+            alert('Failed to create service order. Please check all fields and try again.');
+            setIsSubmitting(false);
         }
     };
 
@@ -353,7 +367,7 @@ export default function NewServiceOrderPage() {
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>Driver Name</label>
-                                    <input required type="text" placeholder="Who picked up?" value={orderData.driverName} onChange={e => setOrderData({ ...orderData, driverName: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
+                                    <input type="text" placeholder="Who picked up?" value={orderData.driverName} onChange={e => setOrderData({ ...orderData, driverName: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }} />
                                 </div>
                             </div>
 
@@ -377,11 +391,11 @@ export default function NewServiceOrderPage() {
 
                     <button
                         type="submit"
-                        disabled={Object.keys(selectedRugsMap).length === 0}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '1.125rem', opacity: Object.keys(selectedRugsMap).length === 0 ? 0.5 : 1 }}
+                        disabled={Object.keys(selectedRugsMap).length === 0 || isSubmitting}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '0.5rem', border: 'none', cursor: (Object.keys(selectedRugsMap).length === 0 || isSubmitting) ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '1.125rem', opacity: (Object.keys(selectedRugsMap).length === 0 || isSubmitting) ? 0.5 : 1 }}
                     >
                         <CheckSquare size={20} />
-                        Confirm & Send {Object.keys(selectedRugsMap).length > 0 ? `(${Object.keys(selectedRugsMap).length} Rugs)` : ''}
+                        {isSubmitting ? 'Saving...' : `Confirm & Send ${Object.keys(selectedRugsMap).length > 0 ? `(${Object.keys(selectedRugsMap).length} Rugs)` : ''}`}
                     </button>
                 </div>
 
