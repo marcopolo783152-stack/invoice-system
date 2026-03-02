@@ -109,13 +109,7 @@ export default function NewServiceOrderPage() {
             setAtServiceRugs(serviceRugDetails);
             setCompletedRugs(completedRugDetails);
 
-            // Filter inventory for AVAILABLE AND NOT currently at service
-            setInventory((iData || []).filter(item =>
-                item && item.status === 'AVAILABLE' && !currentlyAtServiceSkus.has(item.sku)
-            ));
 
-            // Get SKUs in stock inventory to avoid duplicates in invoice list
-            const inventorySkus = new Set((iData || []).map(item => item.sku));
 
             // Extract rugs from all invoices where items are marked for wash/repair
             const washRugs: ServiceRugItem[] = [];
@@ -129,11 +123,10 @@ export default function NewServiceOrderPage() {
                     const status = inv.data.status || '';
                     const isPickedUp = status.toUpperCase() === 'PICKED_UP';
 
-                    // Do not show in invoice list if it's already in stock inventory or already has a service record for THIS invoice
-                    const isDuplicate = inventorySkus.has(item.sku);
+                    // Do not show in invoice list if it already has a service record for THIS invoice (Wait to show returned ones)
                     const isAlreadyServicedForThisInvoice = alreadyServicedByInvoice.has(`${item.sku}-${String(inv.id)}`);
 
-                    const needsService = !isPickedUp && !isDuplicate && !isAlreadyServicedForThisInvoice && item.serviceType &&
+                    const needsService = !isPickedUp && !isAlreadyServicedForThisInvoice && item.serviceType &&
                         typeof item.serviceType === 'object' &&
                         (item.serviceType.wash || item.serviceType.repair);
 
@@ -156,6 +149,13 @@ export default function NewServiceOrderPage() {
             });
 
             setInvoiceRugs(washRugs);
+
+            // Filter inventory for AVAILABLE AND NOT currently at service AND NOT already in the invoice list
+            const washRugSkus = new Set(washRugs.map(r => r.sku));
+            setInventory((iData || []).filter(item =>
+                item && item.status === 'AVAILABLE' && !currentlyAtServiceSkus.has(item.sku) && !washRugSkus.has(item.sku)
+            ));
+
             setOrderNumber(nextNum || `MP-${new Date().getFullYear()}-001`);
 
             if (washRugs.length === 0 && (iData || []).length > 0) {
