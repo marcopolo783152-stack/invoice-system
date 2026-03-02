@@ -80,7 +80,7 @@ export default function NewServiceOrderPage() {
             (orders || []).forEach(order => {
                 order.rugs.forEach(rug => {
                     if (rug.invoiceId) {
-                        alreadyServicedByInvoice.add(`${rug.sku}-${rug.invoiceId}`);
+                        alreadyServicedByInvoice.add(`${rug.sku}-${String(rug.invoiceId)}`);
                     }
 
                     if (!rug.returned && order.status !== 'COMPLETED') {
@@ -131,7 +131,7 @@ export default function NewServiceOrderPage() {
 
                     // Do not show in invoice list if it's already in stock inventory or already has a service record for THIS invoice
                     const isDuplicate = inventorySkus.has(item.sku);
-                    const isAlreadyServicedForThisInvoice = alreadyServicedByInvoice.has(`${item.sku}-${inv.id}`);
+                    const isAlreadyServicedForThisInvoice = alreadyServicedByInvoice.has(`${item.sku}-${String(inv.id)}`);
 
                     const needsService = !isPickedUp && !isDuplicate && !isAlreadyServicedForThisInvoice && item.serviceType &&
                         typeof item.serviceType === 'object' &&

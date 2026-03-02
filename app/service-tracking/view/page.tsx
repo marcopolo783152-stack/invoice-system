@@ -234,21 +234,26 @@ function ServiceOrderDetailContent() {
                                             <div>
                                                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>{rug.sku}</div>
                                                 <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{rug.description}</div>
-                                                <div style={{ fontSize: '0.75rem', color: (rug.customerName || 'Marco Polo') === 'Marco Polo' ? 'var(--text-muted)' : 'var(--primary)', fontWeight: 600 }}>{rug.customerName || 'Marco Polo'}</div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem' }}>
+                                                    {rug.size && <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700 }}>Size: {rug.size}</div>}
+                                                    <div style={{ fontSize: '0.75rem', color: (rug.customerName || 'Marco Polo') === 'Marco Polo' ? 'var(--text-muted)' : 'var(--primary)', fontWeight: 600 }}>{rug.customerName || 'Marco Polo'}</div>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {rug.returned ? (
-                                            <div style={{ textAlign: 'right' }}>
-                                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4CAF50' }}>RETURNED</div>
-                                                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{rug.dateReturned ? new Date(rug.dateReturned).toLocaleDateString() : 'N/A'}</div>
-                                            </div>
-                                        ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 {rug.serviceType && <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '0.1rem 0.4rem', borderRadius: '0.2rem' }}>{rug.serviceType.toUpperCase()}</span>}
-                                                <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Out for Service</span>
+                                                {rug.returned ? (
+                                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4CAF50', backgroundColor: '#E8F5E9', padding: '0.1rem 0.5rem', borderRadius: '0.25rem' }}>RETURNED</span>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Out for Service</span>
+                                                )}
                                             </div>
-                                        )}
+                                            {rug.returned && rug.dateReturned && (
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(rug.dateReturned).toLocaleDateString()}</div>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
