@@ -24,6 +24,7 @@ export interface ServiceOrderRug {
     description: string;
     size?: string;
     customerName: string;
+    invoiceId?: string; // Track which invoice this service belongs to
     returned: boolean;
     dateReturned?: string;
     receivedBy?: string;

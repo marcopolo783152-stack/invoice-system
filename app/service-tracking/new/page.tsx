@@ -32,6 +32,7 @@ export default function NewServiceOrderPage() {
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [invoiceRugs, setInvoiceRugs] = useState<ServiceRugItem[]>([]);
     const [atServiceRugs, setAtServiceRugs] = useState<ServiceRugItem[]>([]);
+    const [completedRugs, setCompletedRugs] = useState<ServiceRugItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRugsMap, setSelectedRugsMap] = useState<Record<string, 'Wash' | 'Repair' | 'Both'>>({});
@@ -39,7 +40,7 @@ export default function NewServiceOrderPage() {
     const [isUnlistedModalOpen, setIsUnlistedModalOpen] = useState(false);
     const [newUnlistedRug, setNewUnlistedRug] = useState({ sku: '', description: '', size: '' });
     const [orderNumber, setOrderNumber] = useState('');
-    const [activeTab, setActiveTab] = useState<'invoices' | 'inventory' | 'atService'>('invoices');
+    const [activeTab, setActiveTab] = useState<'invoices' | 'inventory' | 'atService' | 'completed'>('invoices');
     const [fetchError, setFetchError] = useState<string | null>(null);
 
     const [orderData, setOrderData] = useState({
@@ -72,12 +73,16 @@ export default function NewServiceOrderPage() {
 
             // Get all SKUs currently in active service orders or previously serviced
             const currentlyAtServiceSkus = new Set<string>();
-            const alreadyServicedSkus = new Set<string>();
+            const alreadyServicedByInvoice = new Set<string>(); // "sku-invoiceId"
             const serviceRugDetails: ServiceRugItem[] = [];
+            const completedRugDetails: ServiceRugItem[] = [];
 
             (orders || []).forEach(order => {
                 order.rugs.forEach(rug => {
-                    alreadyServicedSkus.add(rug.sku);
+                    if (rug.invoiceId) {
+                        alreadyServicedByInvoice.add(`${rug.sku}-${rug.invoiceId}`);
+                    }
+
                     if (!rug.returned && order.status !== 'COMPLETED') {
                         currentlyAtServiceSkus.add(rug.sku);
                         serviceRugDetails.push({
@@ -85,13 +90,24 @@ export default function NewServiceOrderPage() {
                             description: rug.description,
                             size: rug.size,
                             customerName: rug.customerName,
-                            source: 'inventory'
+                            source: 'inventory',
+                            invoiceId: rug.invoiceId
+                        });
+                    } else if (rug.returned) {
+                        completedRugDetails.push({
+                            sku: rug.sku,
+                            description: rug.description,
+                            size: rug.size,
+                            customerName: rug.customerName,
+                            source: 'inventory',
+                            invoiceId: rug.invoiceId
                         });
                     }
                 });
             });
 
             setAtServiceRugs(serviceRugDetails);
+            setCompletedRugs(completedRugDetails);
 
             // Filter inventory for AVAILABLE AND NOT currently at service
             setInventory((iData || []).filter(item =>
@@ -113,11 +129,11 @@ export default function NewServiceOrderPage() {
                     const status = inv.data.status || '';
                     const isPickedUp = status.toUpperCase() === 'PICKED_UP';
 
-                    // Do not show in invoice list if it's already in stock inventory or already has/had a service order
+                    // Do not show in invoice list if it's already in stock inventory or already has a service record for THIS invoice
                     const isDuplicate = inventorySkus.has(item.sku);
-                    const isAlreadyServiced = alreadyServicedSkus.has(item.sku);
+                    const isAlreadyServicedForThisInvoice = alreadyServicedByInvoice.has(`${item.sku}-${inv.id}`);
 
-                    const needsService = !isPickedUp && !isDuplicate && !isAlreadyServiced && item.serviceType &&
+                    const needsService = !isPickedUp && !isDuplicate && !isAlreadyServicedForThisInvoice && item.serviceType &&
                         typeof item.serviceType === 'object' &&
                         (item.serviceType.wash || item.serviceType.repair);
 
@@ -238,6 +254,7 @@ export default function NewServiceOrderPage() {
                 description: item.description,
                 size: item.size,
                 customerName: item.customerName,
+                invoiceId: item.invoiceId,
                 serviceType: selectedRugsMap[item.sku],
                 returned: false
             }));
@@ -375,6 +392,9 @@ export default function NewServiceOrderPage() {
                             <button type="button" onClick={() => setActiveTab('atService')} style={{ background: 'none', border: 'none', padding: '0.5rem 0.25rem', fontWeight: 700, fontSize: '0.9rem', color: activeTab === 'atService' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'atService' ? '2px solid var(--primary)' : 'none', cursor: 'pointer' }}>
                                 Already Out ({atServiceRugs.length})
                             </button>
+                            <button type="button" onClick={() => setActiveTab('completed')} style={{ background: 'none', border: 'none', padding: '0.5rem 0.25rem', fontWeight: 700, fontSize: '0.9rem', color: activeTab === 'completed' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'completed' ? '2px solid var(--primary)' : 'none', cursor: 'pointer' }}>
+                                Completed ({completedRugs.length})
+                            </button>
                         </div>
 
                         <div style={{ position: 'relative', marginBottom: '1rem' }}>
@@ -449,7 +469,7 @@ export default function NewServiceOrderPage() {
                                         ))}
                                     </div>
                                 )
-                            ) : (
+                            ) : activeTab === 'atService' ? (
                                 atServiceRugs.length === 0 ? (
                                     <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No rugs currently at service.</p>
                                 ) : (
@@ -467,6 +487,32 @@ export default function NewServiceOrderPage() {
                                                     </div>
                                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{rug.description}</div>
                                                     <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>{rug.customerName}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )
+                            ) : (
+                                completedRugs.length === 0 ? (
+                                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No recently completed rugs.</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        {completedRugs.filter(r =>
+                                            String(r.sku || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            String(r.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            String(r.customerName || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).map(rug => (
+                                            <div key={`${rug.sku}-${rug.invoiceId || 'idx'}`} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #4CAF50', backgroundColor: 'rgba(76, 175, 80, 0.05)' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rug.sku}</div>
+                                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.4rem', borderRadius: '0.25rem', backgroundColor: '#e8f5e9', color: '#2e7d32', border: '1px solid #c8e6c9' }}>COMPLETED</div>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{rug.description}</div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem' }}>
+                                                        {rug.size && <div style={{ fontSize: '0.75rem', color: '#2e7d32', fontWeight: 600 }}>Size: {rug.size}</div>}
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{rug.customerName}</div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
