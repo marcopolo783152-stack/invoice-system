@@ -88,7 +88,7 @@ export default function NewServiceOrderPage() {
             });
 
             setInvoiceRugs(washRugs);
-            setOrderNumber(nextNum || `SO-${new Date().getFullYear()}-001`);
+            setOrderNumber(nextNum || `MP-${new Date().getFullYear()}-001`);
 
             if (washRugs.length === 0 && (iData || []).length > 0) {
                 setActiveTab('inventory');

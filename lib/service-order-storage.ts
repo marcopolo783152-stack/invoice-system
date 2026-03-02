@@ -104,7 +104,7 @@ export async function getServiceOrderById(id: string): Promise<ServiceOrder | nu
 export async function generateOrderNumber(): Promise<string> {
     const orders = await getServiceOrders();
     const year = new Date().getFullYear();
-    const prefix = `SO-${year}`;
+    const prefix = `MP-${year}`;
     const count = (orders || []).filter(o => o && o.orderNumber && o.orderNumber.startsWith(prefix)).length + 1;
     return `${prefix}-${count.toString().padStart(3, '0')}`;
 }
