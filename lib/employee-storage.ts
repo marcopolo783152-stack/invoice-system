@@ -444,7 +444,8 @@ export async function recordPayment(payment: Partial<EmployeePayment>): Promise<
 export async function getEmployeePayments(employeeId: string): Promise<EmployeePayment[]> {
     if (isFirebaseConfigured() && db) {
         try {
-            const q = query(collection(db, PAY_COLLECTION), where('employeeId', '==', employeeId), orderBy('date', 'desc'));
+            // Remove orderBy to prevent need for composite index in Firebase
+            const q = query(collection(db, PAY_COLLECTION), where('employeeId', '==', employeeId));
             const snapshot = await getDocs(q);
             const payments: EmployeePayment[] = [];
             snapshot.forEach(doc => {
@@ -456,7 +457,9 @@ export async function getEmployeePayments(employeeId: string): Promise<EmployeeP
                     date: data.date instanceof Timestamp ? data.date.toDate().toISOString() : data.date
                 } as EmployeePayment);
             });
-            return payments;
+
+            // Sort payments locally (descending by date)
+            return payments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         } catch (e) {
             console.error('Error fetching payments:', e);
         }
@@ -464,7 +467,7 @@ export async function getEmployeePayments(employeeId: string): Promise<EmployeeP
 
     const localData = localStorage.getItem(LOCAL_PAY_KEY);
     const allPayments: EmployeePayment[] = localData ? JSON.parse(localData) : [];
-    return allPayments.filter(p => p.employeeId === employeeId);
+    return allPayments.filter(p => p.employeeId === employeeId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
 /**
