@@ -471,6 +471,22 @@ export async function getEmployeePayments(employeeId: string): Promise<EmployeeP
 }
 
 /**
+ * Delete a salary payment
+ */
+export async function deleteEmployeePayment(paymentId: string): Promise<void> {
+    if (isFirebaseConfigured() && db) {
+        try {
+            const { deleteDoc } = await import('firebase/firestore');
+            await deleteDoc(doc(db, PAY_COLLECTION, paymentId));
+        } catch (e) { console.error('Error deleting payment:', e); }
+    }
+
+    const localPayments = JSON.parse(localStorage.getItem(LOCAL_PAY_KEY) || '[]');
+    const filtered = localPayments.filter((p: any) => p.id !== paymentId);
+    localStorage.setItem(LOCAL_PAY_KEY, JSON.stringify(filtered));
+}
+
+/**
  * Count unique work days for an employee
  */
 export async function getWorkDays(employeeId: string): Promise<number> {

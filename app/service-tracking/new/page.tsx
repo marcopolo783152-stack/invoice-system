@@ -266,17 +266,19 @@ export default function NewServiceOrderPage() {
             return;
         }
 
-        const selectedRugs = allAvailableRugs
-            .filter(item => selectedRugSkus.includes(item.sku))
-            .map(item => ({
-                sku: item.sku,
-                description: item.description,
-                size: item.size,
-                customerName: item.customerName,
-                invoiceId: item.invoiceId,
-                serviceType: selectedRugsMap[item.sku],
+        const selectedRugs = selectedRugSkus.map(sku => {
+            const item = allAvailableRugs.find(r => r.sku === sku);
+            // Default to unlisted structure if not found (should be in allAvailableRugs but safe fallback)
+            return {
+                sku: sku,
+                description: item?.description || 'Unknown Item',
+                size: item?.size || '',
+                customerName: item?.customerName || 'Marco Polo',
+                invoiceId: item?.invoiceId,
+                serviceType: selectedRugsMap[sku],
                 returned: false
-            }));
+            };
+        });
 
         if (selectedRugs.length === 0) {
             alert('Error: Could not match selected rugs. Please try again.');

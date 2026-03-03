@@ -16,7 +16,8 @@ import {
     addManualTimeLog,
     deleteTimeLog,
     checkAutoClockOut,
-    updateTimeLog
+    updateTimeLog,
+    deleteEmployeePayment
 } from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
@@ -61,6 +62,10 @@ export default function EmployeesPage() {
     const [editingLog, setEditingLog] = useState<TimeLog | null>(null);
     const [editDate, setEditDate] = useState('');
     const [editTime, setEditTime] = useState('');
+
+    // Payment History State
+    const [viewingPaymentsFor, setViewingPaymentsFor] = useState<{ empId: string, name: string } | null>(null);
+    const [employeePaymentsList, setEmployeePaymentsList] = useState<EmployeePayment[]>([]);
 
     const handlePrintHistory = async (emp: Employee) => {
         window.open(`/employees/print?type=history&id=${emp.id}&range=${reportRange}`, '_blank');
@@ -175,10 +180,31 @@ export default function EmployeesPage() {
                 notes: 'Manual payment from dashboard'
             });
             await loadData();
+            // Refresh payment list if modal is open
+            if (viewingPaymentsFor?.empId === empId) {
+                const refreshed = await getEmployeePayments(empId);
+                setEmployeePaymentsList(refreshed);
+            }
         } catch (error) {
             console.error(error);
         } finally {
             setIsPaying(null);
+        }
+    };
+
+    const handleViewPayments = async (empId: string, name: string) => {
+        setViewingPaymentsFor({ empId, name });
+        const list = await getEmployeePayments(empId);
+        setEmployeePaymentsList(list);
+    };
+
+    const handleDeletePayment = async (paymentId: string) => {
+        if (!confirm('Are you sure you want to delete this payment? This will alter their balance.')) return;
+        await deleteEmployeePayment(paymentId);
+        await loadData();
+        if (viewingPaymentsFor) {
+            const list = await getEmployeePayments(viewingPaymentsFor.empId);
+            setEmployeePaymentsList(list);
         }
     };
 
@@ -713,6 +739,12 @@ export default function EmployeesPage() {
                                             >
                                                 {isPaying === emp.id ? '...' : 'Pay Staff'}
                                             </button>
+                                            <button
+                                                onClick={() => handleViewPayments(emp.id, emp.name)}
+                                                style={{ padding: '10px 20px', borderRadius: 10, background: '#f8fafc', color: '#64748b', fontWeight: 700, border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                                            >
+                                                <span>📋</span> History
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -728,6 +760,49 @@ export default function EmployeesPage() {
                 onSave={loadData}
                 initialData={editingEmp}
             />
+
+            {/* Payment History Modal */}
+            {viewingPaymentsFor && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+                }}>
+                    <div style={{
+                        background: '#fff', borderRadius: 16, width: '100%', maxWidth: 500,
+                        maxHeight: '80vh', display: 'flex', flexDirection: 'column'
+                    }}>
+                        <div style={{ padding: 20, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Payment History: {viewingPaymentsFor.name}</h3>
+                            <button onClick={() => setViewingPaymentsFor(null)} style={{ border: 'none', background: 'transparent', fontSize: 20, cursor: 'pointer' }}>×</button>
+                        </div>
+                        <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
+                            {employeePaymentsList.length === 0 ? (
+                                <p style={{ color: '#64748b', textAlign: 'center', padding: '20px 0' }}>No payments recorded yet.</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    {employeePaymentsList.map(pay => (
+                                        <div key={pay.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 15, border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc' }}>
+                                            <div>
+                                                <div style={{ fontWeight: 800, color: '#1e293b', fontSize: 16 }}>${pay.amount.toFixed(2)}</div>
+                                                <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                                                    {formatDate(pay.date)} • {pay.notes || 'No notes'}
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeletePayment(pay.id)}
+                                                style={{ border: 'none', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Hidden History Template for PDF Generation */}
             {historyPrintData && (

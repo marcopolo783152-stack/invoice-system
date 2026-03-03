@@ -140,7 +140,14 @@ export async function createServiceOrder(order: Partial<ServiceOrder>): Promise<
 
     if (isFirebaseConfigured() && db) {
         try {
-            const finalData = { ...orderData, updatedAt: Timestamp.now(), createdAt: Timestamp.now() };
+            // Remove undefined values to prevent Firebase errors
+            const cleanRugs = orderData.rugs.map((r: any) => {
+                const clean = { ...r };
+                if (clean.invoiceId === undefined) delete clean.invoiceId;
+                if (clean.size === undefined) delete clean.size;
+                return clean;
+            });
+            const finalData = { ...orderData, rugs: cleanRugs, updatedAt: Timestamp.now(), createdAt: Timestamp.now() };
             const docRef = await addDoc(collection(db, COLLECTION_NAME), finalData);
             return { ...orderData, id: docRef.id, createdAt: now.toISOString() } as ServiceOrder;
         } catch (error) {
