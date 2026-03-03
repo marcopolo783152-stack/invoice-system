@@ -471,12 +471,42 @@ export async function getEmployeePayments(employeeId: string): Promise<EmployeeP
  * Count unique work days for an employee
  */
 export async function getWorkDays(employeeId: string): Promise<number> {
-    // We need all logs for this employee to count unique dates
-    // For now, let's fetch a large batch or all from local
+    if (isFirebaseConfigured() && db) {
+        try {
+            // Query Firebase directly for all time logs for this employee
+            const q = query(
+                collection(db, LOG_COLLECTION),
+                where('employeeId', '==', employeeId),
+                where('type', '==', 'IN')
+            );
+            const snapshot = await getDocs(q);
+            const employeeLogs: TimeLog[] = [];
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                employeeLogs.push({
+                    ...data,
+                    id: doc.id,
+                    timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
+                } as TimeLog);
+            });
+
+            const uniqueDays = new Set(employeeLogs.map(l => {
+                const date = new Date(l.timestamp);
+                return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+            }));
+
+            return uniqueDays.size;
+        } catch (e) {
+            console.error('Error fetching work days from Firebase:', e);
+            // Fall back to local if Firebase fails
+        }
+    }
+
+    // Fallback if no Firebase or error
     const localData = localStorage.getItem(LOCAL_LOG_KEY);
     const allLogs: TimeLog[] = localData ? JSON.parse(localData) : [];
 
-    // In production with Firebase, you might want a more specific query
     const employeeLogs = allLogs.filter(l => l.employeeId === employeeId && l.type === 'IN');
 
     const uniqueDays = new Set(employeeLogs.map(l => {
