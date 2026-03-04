@@ -25,6 +25,7 @@ import { printInvoice, generatePDF, openPDFInNewTab, isMobileDevice } from '@/li
 import { saveInvoice, getInvoicesCount, getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
 import { sendInvoiceEmail, prepareInvoiceForEmail, isEmailConfigured } from '@/lib/email-service';
 import { businessConfig } from '@/config/business';
+import { generateInvoiceNumber } from '@/lib/invoice-number';
 import styles from './page.module.css';
 
 function InvoicePageContent() {
@@ -210,11 +211,13 @@ function InvoicePageContent() {
     // Clear errors and set data
     setErrors([]);
     setInvoiceData(data);
-    setShowPreview(true);
-    setShowSearch(false);
 
     // Save invoice to storage (async)
     saveInvoice(data, editId || undefined).then(async (savedInv) => {
+      // Save succeeded, so we can now safely swap the UI to the preview page
+      setShowPreview(true);
+      setShowSearch(false);
+
       // Capture the ID for email/link generation
       if (savedInv && savedInv.id) {
         setSavedInvoiceId(savedInv.id);
@@ -236,12 +239,14 @@ function InvoicePageContent() {
       console.error('Error saving invoice:', error);
       // If error (like overwrite protection), show it to user
       alert(`Failed to save invoice: ${error.message}`);
-      // If it's a duplicate number error, we might want to prompt user to regenerate
+      // If it's a duplicate number error, prompt user to auto-regenerate and retry
       if (typeof error.message === 'string' && error.message.includes('already exists')) {
-        const shouldRegen = confirm('This invoice number is already taken. Would you like to generate a new number?');
+        const shouldRegen = confirm('This invoice number is already taken. Would you like to generate a new number and try saving again?');
         if (shouldRegen) {
-          localStorage.removeItem('currentInvoiceNumber');
-          window.location.reload(); // Simplest way to get a fresh number
+          generateInvoiceNumber().then(newNumber => {
+            localStorage.setItem('currentInvoiceNumber', newNumber);
+            handleFormSubmit({ ...data, invoiceNumber: newNumber });
+          });
         }
       }
     });

@@ -124,8 +124,8 @@ export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
         date: data.date,
         totalAmount: data.totalAmount,
         data: data.data,
-        createdAt: data.createdAt.toDate(),
-        updatedAt: (data.updatedAt || data.createdAt).toDate()
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt?.seconds ? data.createdAt.seconds * 1000 : (data.createdAt || Date.now())),
+        updatedAt: (data.updatedAt || data.createdAt)?.toDate ? (data.updatedAt || data.createdAt).toDate() : new Date((data.updatedAt || data.createdAt)?.seconds ? (data.updatedAt || data.createdAt).seconds * 1000 : (data.updatedAt || data.createdAt || Date.now()))
       });
     });
 
@@ -221,8 +221,8 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
         date: data.date,
         totalAmount: data.totalAmount,
         data: data.data,
-        createdAt: data.createdAt.toDate(),
-        updatedAt: (data.updatedAt || data.createdAt).toDate()
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt?.seconds ? data.createdAt.seconds * 1000 : (data.createdAt || Date.now())),
+        updatedAt: (data.updatedAt || data.createdAt)?.toDate ? (data.updatedAt || data.createdAt).toDate() : new Date((data.updatedAt || data.createdAt)?.seconds ? (data.updatedAt || data.createdAt).seconds * 1000 : (data.updatedAt || data.createdAt || Date.now()))
       });
     });
     callback(invoices);
@@ -341,8 +341,8 @@ export async function getBinInvoicesFromCloud(): Promise<SavedInvoice[]> {
         date: data.date,
         totalAmount: data.totalAmount,
         data: data.data,
-        createdAt: data.createdAt.toDate(),
-        updatedAt: (data.updatedAt || data.createdAt).toDate()
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt?.seconds ? data.createdAt.seconds * 1000 : (data.createdAt || Date.now())),
+        updatedAt: (data.updatedAt || data.createdAt)?.toDate ? (data.updatedAt || data.createdAt).toDate() : new Date((data.updatedAt || data.createdAt)?.seconds ? (data.updatedAt || data.createdAt).seconds * 1000 : (data.updatedAt || data.createdAt || Date.now()))
       });
     });
 

@@ -360,19 +360,15 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
   let existingIndex = -1;
   if (existingId) {
     existingIndex = invoices.findIndex(inv => inv.id === existingId);
-  } else {
-    // If NO existingId is provided (New Invoice), we MUST NOT just overwrite an invoice with the same number.
-    // That causes data loss. We should check if the number is taken.
-    const collisionIndex = invoices.findIndex(
-      inv => inv.data.invoiceNumber === data.invoiceNumber
-    );
+  }
 
-    if (collisionIndex >= 0) {
-      // Collision detected!
-      // We cannot proceed, or we risk overwriting an old invoice with a new one.
-      // We should throw an error to alert the user/UI.
-      throw new Error(`Invoice number ${data.invoiceNumber} already exists. Please refresh or generate a new number.`);
-    }
+  // Prevent duplicate invoice numbers across BOTH new and edited invoices
+  const collisionIndex = invoices.findIndex(
+    inv => inv.data.invoiceNumber === data.invoiceNumber && inv.id !== existingId
+  );
+
+  if (collisionIndex >= 0) {
+    throw new Error(`Invoice number ${data.invoiceNumber} already exists. Please refresh or generate a new number.`);
   }
 
   const now = new Date().toISOString();
