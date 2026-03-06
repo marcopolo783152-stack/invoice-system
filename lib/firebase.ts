@@ -27,14 +27,14 @@ export function isFirebaseConfigured(): boolean {
     firebaseConfig.projectId &&
     firebaseConfig.apiKey !== ''
   );
-  
+
   console.log('Firebase configured:', hasConfig);
   console.log('Firebase config:', {
     hasApiKey: !!firebaseConfig.apiKey,
     hasProjectId: !!firebaseConfig.projectId,
     projectId: firebaseConfig.projectId
   });
-  
+
   return hasConfig;
 }
 
@@ -64,3 +64,34 @@ try {
 export { app };
 
 export { db };
+
+/**
+ * Global Error Handler for Firebase Quota Exhaustion
+ * Call this inside try/catch blocks making Firebase requests to alert the user if the database is full.
+ */
+export function checkFirebaseQuotaError(error: any) {
+  if (!error) return;
+
+  const errorString = (error.message || error.code || error.toString()).toLowerCase();
+
+  // Firebase specific quota exceeded / resource exhausted errors
+  if (
+    errorString.includes('quota-exceeded') ||
+    errorString.includes('quota exceeded') ||
+    errorString.includes('resource-exhausted') ||
+    errorString.includes('resource exhausted') ||
+    error.code === 'resource-exhausted'
+  ) {
+    const alertMessage = "CRITICAL ALARM: Your Firebase Database is full or has exceeded its quota limits! Please upgrade your Firebase plan immediately to continue saving and loading invoices.";
+    console.error(alertMessage, error);
+
+    // Alert the user on the client side
+    if (typeof window !== 'undefined') {
+      alert(alertMessage);
+    }
+
+    return true;
+  }
+
+  return false;
+}

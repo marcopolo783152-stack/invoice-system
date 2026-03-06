@@ -18,7 +18,7 @@ import {
   updateDoc,
   limit
 } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from './firebase';
+import { db, isFirebaseConfigured, checkFirebaseQuotaError } from './firebase';
 import { InvoiceData } from './calculations';
 
 export interface SavedInvoice {
@@ -61,6 +61,7 @@ export async function saveInvoiceToCloud(
     });
     return docRef.id;
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error saving invoice to cloud:', error);
     throw error;
   }
@@ -97,6 +98,7 @@ export async function getNextInvoiceNumber(): Promise<string> {
     // Format: MP########
     return `MP${next.toString().padStart(8, '0')}`;
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Failed to generate next invoice number from cloud:', error);
     throw error;
   }
@@ -149,6 +151,7 @@ export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
 
     return invoices;
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error getting invoices from cloud:', error);
     return [];
   }
@@ -179,6 +182,7 @@ export async function updateInvoiceInCloud(
       updatedAt: Timestamp.now()
     });
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error updating invoice in cloud:', error);
     throw error;
   }
@@ -195,6 +199,7 @@ export async function deleteInvoiceFromCloud(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, COLLECTION_NAME, id));
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error deleting invoice from cloud:', error);
     throw error;
   }
@@ -212,6 +217,7 @@ export async function deleteMultipleInvoicesFromCloud(ids: string[]): Promise<vo
     const deletePromises = ids.map(id => deleteDoc(doc(db!, COLLECTION_NAME, id)));
     await Promise.all(deletePromises);
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error deleting multiple invoices from cloud:', error);
     throw error;
   }
@@ -245,6 +251,7 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
     });
     callback(invoices);
   }, (error) => {
+    checkFirebaseQuotaError(error);
     console.error('Error in invoice subscription:', error);
   });
 }
@@ -293,6 +300,7 @@ export async function moveToCloudBin(id: string): Promise<void> {
     await batch.commit();
 
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error moving to cloud bin:', error);
     throw error;
   }
@@ -334,6 +342,7 @@ export async function restoreFromCloudBin(cloudBinId: string): Promise<void> {
     await batch.commit();
 
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error restoring from cloud bin:', error);
     throw error;
   }
@@ -366,6 +375,7 @@ export async function getBinInvoicesFromCloud(): Promise<SavedInvoice[]> {
 
     return invoices;
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error getting bin invoices from cloud:', error);
     return [];
   }
@@ -381,6 +391,7 @@ export async function permanentlyDeleteFromCloudBin(ids: string[]): Promise<void
     const deletePromises = ids.map(id => deleteDoc(doc(db!, DELETED_COLLECTION_NAME, id)));
     await Promise.all(deletePromises);
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error permanently deleting from cloud bin:', error);
     throw error;
   }
@@ -402,6 +413,7 @@ export async function saveUserToCloud(user: any): Promise<void> {
       setDoc(docRef, { ...user, updatedAt: Timestamp.now() })
     );
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error saving user to cloud:', error);
     throw error;
   }
@@ -417,6 +429,7 @@ export async function getUsersFromCloud(): Promise<any[]> {
     querySnapshot.forEach((doc) => users.push(doc.data()));
     return users;
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error getting users from cloud:', error);
     return [];
   }
@@ -428,6 +441,7 @@ export async function deleteUserFromCloud(username: string): Promise<void> {
   try {
     await deleteDoc(doc(db, USERS_COLLECTION, username));
   } catch (error) {
+    checkFirebaseQuotaError(error);
     console.error('Error deleting user from cloud:', error);
     throw error;
   }
