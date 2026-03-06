@@ -163,93 +163,30 @@ export interface SavedInvoice {
 }
 
 /**
- * Get all saved invoices (Cloud-First with Local Cache)
+ * Get all saved invoices (Cloud-Only)
  */
 export async function getAllInvoices(): Promise<SavedInvoice[]> {
-  if (typeof window === 'undefined') return [];
-
-  let cloudInvoices: SavedInvoice[] = [];
-  let fetchedFromCloud = false;
-
-  // 1. Try Firebase as Primary Source
-  if (isFirebaseConfigured()) {
-    try {
-      const rawCloudInvoices = await Promise.race([
-        getInvoicesFromCloud(),
-        new Promise<any[]>((_, reject) =>
-          setTimeout(() => reject(new Error('Cloud fetch timeout (5s)')), 5000)
-        )
-      ]);
-
-      cloudInvoices = rawCloudInvoices
-        .filter((inv: CloudInvoice) => inv && inv.data)
-        .map((invoice: CloudInvoice) => ({
-          id: invoice.id,
-          data: invoice.data,
-          createdAt: invoice.createdAt.toISOString(),
-          updatedAt: (invoice.updatedAt || invoice.createdAt).toISOString(),
-          documentType: (invoice.data.documentType || 'INVOICE') as any
-        }));
-
-      fetchedFromCloud = true;
-
-      // UPDATE LOCAL STORAGE TO MATCH CLOUD (Source of Truth Sync, with Conflict Resolution)
-      const localInvoices = getAllInvoicesSync();
-      const localMap = new Map(localInvoices.map(inv => [inv.id, inv]));
-
-      // Merge Cloud with Local: If Local is newer, keep Local. Otherwise use Cloud.
-      const mergedInvoices = cloudInvoices.map(cloudInv => {
-        const localInv = localMap.get(cloudInv.id);
-        if (localInv) {
-          const localDate = new Date(localInv.updatedAt).getTime();
-          const cloudDate = new Date(cloudInv.updatedAt).getTime();
-          // If local is strictly newer (by at least 2 seconds to avoid clock drift), keep local
-          // Otherwise trust cloud (server authority)
-          if (localDate > cloudDate + 2000) {
-            console.log(`Keeping local version of invoice ${cloudInv.data.invoiceNumber} (Newer than cloud)`);
-            return localInv;
-          }
-        }
-        return cloudInv;
-      });
-
-      const cloudIds = new Set(mergedInvoices.map(inv => inv.id));
-      const nowTs = new Date().getTime();
-      const thirtySecondsInMs = 30 * 1000;
-
-      // Preserve strictly local-only invoices (not in cloud-merged set)
-      const localOnly = localInvoices.filter(l => {
-        if (cloudIds.has(l.id)) return false;
-        // Keep if short ID (not uploaded) or very recent
-        const isShortId = l.id.length < 20;
-        const updatedAt = new Date(l.updatedAt || 0).getTime();
-        const isVeryRecent = (nowTs - updatedAt) < thirtySecondsInMs;
-        return isShortId || isVeryRecent;
-      });
-
-      let finalInvoices = [...mergedInvoices, ...localOnly];
-
-      // CRITICAL FIX: Filter out invoices that appear in the Cloud but are deleted locally (Zombies)
-      try {
-        const localBinString = localStorage.getItem('deleted_invoices');
-        if (localBinString) {
-          const localBin: SavedInvoice[] = JSON.parse(localBinString);
-          const dataInBinIds = new Set(localBin.map(i => i.id));
-          finalInvoices = finalInvoices.filter(inv => !dataInBinIds.has(inv.id));
-        }
-      } catch (e) { }
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(finalInvoices));
-      console.log('CLOUD-SYNC: Local storage updated (Merged with Conflict Resolution).');
-
-      return finalInvoices;
-    } catch (error) {
-      console.warn('Cloud fetch failed, falling back to local storage:', error);
-    }
+  if (!isFirebaseConfigured()) {
+    console.error('Firebase not configured. Cloud-only mode requires Firebase.');
+    return [];
   }
 
-  // 2. Fallback to LocalStorage if offline or cloud failed
-  return getAllInvoicesSync();
+  try {
+    const rawCloudInvoices = await getInvoicesFromCloud();
+
+    return rawCloudInvoices
+      .filter((inv: CloudInvoice) => inv && inv.data)
+      .map((invoice: CloudInvoice) => ({
+        id: invoice.id,
+        data: invoice.data,
+        createdAt: invoice.createdAt.toISOString(),
+        updatedAt: (invoice.updatedAt || invoice.createdAt).toISOString(),
+        documentType: (invoice.data.documentType || 'INVOICE') as any
+      }));
+  } catch (error) {
+    console.error('Cloud fetch failed. System is completely offline:', error);
+    return [];
+  }
 }
 
 /**
@@ -345,25 +282,22 @@ const sanitizeForFirestore = (obj: any): any => {
 };
 
 /**
- * Save an invoice (to both Firebase and localStorage)
+ * Save an invoice (Cloud-Only)
  * If the customer is Martinez, force invoice number to MP00000002
  */
 export async function saveInvoice(data: InvoiceData, existingId?: string): Promise<SavedInvoice> {
-  const invoices = getAllInvoicesSync();
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase not configured. Please connect to the cloud to save invoices.');
+  }
 
   // Force invoice number for Martinez
   if (data.soldTo && typeof data.soldTo.name === 'string' && data.soldTo.name.trim().toLowerCase() === 'martinez') {
     data.invoiceNumber = 'MP00000002';
   }
 
-  // Check if invoice already exists
-  let existingIndex = -1;
-  if (existingId) {
-    existingIndex = invoices.findIndex(inv => inv.id === existingId);
-  }
-
-  // Prevent duplicate invoice numbers across BOTH new and edited invoices
-  const collisionIndex = invoices.findIndex(
+  // Check for duplicate invoice number in the cloud
+  const allInvoices = await getAllInvoices();
+  const collisionIndex = allInvoices.findIndex(
     inv => inv.data.invoiceNumber === data.invoiceNumber && inv.id !== existingId
   );
 
@@ -373,103 +307,61 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
 
   const now = new Date().toISOString();
   let savedInvoice: SavedInvoice;
-
-  // If this is a return, set returned/returnNote
   const isReturn = !!data.returned;
 
-  if (existingIndex >= 0) {
-    savedInvoice = {
-      ...invoices[existingIndex],
-      data: {
-        ...data,
-        returned: isReturn ? true : (data.returned || false),
-        returnNote: (isReturn ? data.returnNote : data.returnNote) || '',
-      },
-      updatedAt: now,
-    };
-    invoices[existingIndex] = savedInvoice;
+  const safeData = sanitizeForFirestore({
+    ...data,
+    returned: isReturn ? true : (data.returned || false),
+    returnNote: (isReturn ? data.returnNote : data.returnNote) || '',
+  });
 
-    if (isFirebaseConfigured()) {
-      if (savedInvoice.id && savedInvoice.id.length >= 20) {
-        try {
-          await updateInvoiceInCloud(
-            savedInvoice.id,
-            data.invoiceNumber,
-            data.soldTo.name,
-            0, // Will be calculated
-            sanitizeForFirestore(savedInvoice.data)
-          );
-          alert('Sync Success: Invoice updated in cloud.');
-        } catch (error) {
-          console.warn('Firebase update failed, attempting to create new doc:', error);
-          // Fallback logic...
-          try {
-            // ... existing fallback code ...
-            const newId = await saveInvoiceToCloud(
-              data.invoiceNumber,
-              data.soldTo.name,
-              0,
-              sanitizeForFirestore(savedInvoice.data)
-            );
-            savedInvoice.id = newId;
-            invoices[existingIndex] = savedInvoice;
-            alert('Sync Success: Invoice created in cloud (recovered from local).');
-          } catch (e: any) {
-            alert(`Sync Error: ${e.message}`);
-          }
-        }
-      } else {
-        // Local ID (Short) - Needs Promotion to Cloud
-        try {
-          const newId = await saveInvoiceToCloud(
-            data.invoiceNumber,
-            data.soldTo.name,
-            0,
-            sanitizeForFirestore(savedInvoice.data)
-          );
-          // Replace local ID with real Cloud ID
-          savedInvoice.id = newId;
-          invoices[existingIndex] = savedInvoice;
-          alert('Sync Success: Invoice uploaded to cloud.');
-        } catch (error: any) {
-          console.error('Failed to promote local invoice to cloud:', error);
-          alert(`Sync Error: Failed to upload local invoice. ${error.message}`);
-        }
-      }
+  const calcs = calculateInvoice(safeData as any);
+  const totalAmount = calcs.totalDue;
+
+  if (existingId) {
+    // UPDATE EXISTING INVOICE IN CLOUD
+    try {
+      await updateInvoiceInCloud(
+        existingId,
+        safeData.invoiceNumber,
+        safeData.soldTo.name,
+        totalAmount,
+        safeData
+      );
+      savedInvoice = {
+        id: existingId,
+        data: safeData as InvoiceData,
+        documentType: (safeData.documentType || 'INVOICE') as any,
+        createdAt: now, // We don't have exact createdAt here without full fetch, but it's acceptable for the return object
+        updatedAt: now,
+      };
+    } catch (error: any) {
+      console.error('Firebase update failed:', error);
+      throw new Error(`Failed to update invoice in cloud: ${error.message}`);
     }
   } else {
-    // NEW INVOICE
-    let firebaseId = '';
-    if (isFirebaseConfigured()) {
-      try {
-        firebaseId = await saveInvoiceToCloud(
-          data.invoiceNumber,
-          data.soldTo.name,
-          0, // Will be calculated
-          sanitizeForFirestore(data)
-        );
-      } catch (error) {
-        console.error('Firebase save failed, saved locally:', error);
-      }
+    // CREATE NEW INVOICE IN CLOUD
+    try {
+      const firebaseId = await saveInvoiceToCloud(
+        safeData.invoiceNumber,
+        safeData.soldTo.name,
+        totalAmount,
+        safeData
+      );
+      savedInvoice = {
+        id: firebaseId,
+        data: safeData as InvoiceData,
+        documentType: (safeData.documentType || 'INVOICE') as any,
+        createdAt: now,
+        updatedAt: now,
+      };
+    } catch (error: any) {
+      console.error('Firebase save failed:', error);
+      throw new Error(`Failed to save invoice to cloud: ${error.message}`);
     }
-    savedInvoice = {
-      id: firebaseId || Math.random().toString(36).substr(2, 9),
-      data: {
-        ...data,
-        returned: isReturn ? true : (data.returned || false),
-        returnNote: (isReturn ? data.returnNote : data.returnNote) || '',
-      },
-      documentType: (data.documentType || 'INVOICE') as any,
-      createdAt: now,
-      updatedAt: now,
-    };
-    invoices.push(savedInvoice);
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
-
   // Trigger inventory status update (fire and forget)
-  // We don't await this to keep the UI snappy, but errors are logged
   updateInventoryStatusFromInvoice(savedInvoice.data).catch(err =>
     console.error('Error auto-updating inventory status:', err)
   );
@@ -608,144 +500,70 @@ export async function updateInvoice(id: string, updates: Partial<InvoiceData>): 
 }
 
 /**
- * Delete an invoice (Moves to Cloud Bin + Local Item removal)
+ * Delete an invoice (Moves to Cloud Bin)
  */
 export async function deleteInvoice(id: string): Promise<boolean> {
-  const invoices = getAllInvoicesSync();
-  const idx = invoices.findIndex(inv => inv.id === id);
-  if (idx === -1) return false;
-  const [deletedInvoice] = invoices.splice(idx, 1);
-
-  // Delete from Firebase (Moves to Bin)
-  if (isFirebaseConfigured()) {
-    try {
-      await moveToCloudBin(id);
-    } catch (error) {
-      console.error('Cloud move to bin failed:', error);
-      // If cloud fails, we still remove locally but maybe don't move to local bin yet?
-      // Actually, let's keep local bin as a fallback
-      let bin: SavedInvoice[] = [];
-      try { bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]'); } catch { }
-      bin.push(deletedInvoice);
-      localStorage.setItem('deleted_invoices', JSON.stringify(bin));
-    }
-  } else {
-    // Local only
-    let bin: SavedInvoice[] = [];
-    try { bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]'); } catch { }
-    bin.push(deletedInvoice);
-    localStorage.setItem('deleted_invoices', JSON.stringify(bin));
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase not configured. Cannot delete from cloud.');
   }
 
-  // Update localStorage
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
-  return true;
+  try {
+    await moveToCloudBin(id);
+    return true;
+  } catch (error) {
+    console.error('Cloud move to bin failed:', error);
+    return false;
+  }
 }
 
 // Move the following functions out of deleteInvoice
 
 /**
- * Restore an invoice from the bin (deleted_invoices)
- */
-export function restoreInvoiceFromBin(id: string): boolean {
-  let bin: SavedInvoice[] = [];
-  try {
-    bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
-  } catch { }
-  const idx = bin.findIndex(inv => inv.id === id);
-  if (idx === -1) return false;
-  const [restored] = bin.splice(idx, 1);
-  // Add back to invoices
-  const invoices = getAllInvoicesSync();
-  invoices.push(restored);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
-  localStorage.setItem('deleted_invoices', JSON.stringify(bin));
-  return true;
-}
-
-/**
  * Get all deleted invoices in the bin (Sync for local, but should use async for cloud)
  */
 export function getDeletedInvoices(): SavedInvoice[] {
-  try {
-    const parsed = JSON.parse(localStorage.getItem('deleted_invoices') || '[]');
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((inv: any) => inv && inv.data && typeof inv.data === 'object');
-  } catch {
-    return [];
-  }
+  console.warn("getDeletedInvoices (Sync) called in Cloud-Only mode. Use getDeletedInvoicesAsync.");
+  return [];
 }
 
-
-
 /**
- * Get deleted invoices (Async, merging Cloud + Local)
+ * Get deleted invoices (Cloud-only)
  */
 export async function getDeletedInvoicesAsync(): Promise<SavedInvoice[]> {
-  if (!isFirebaseConfigured()) return getDeletedInvoices();
+  if (!isFirebaseConfigured()) {
+    console.error('Firebase not configured. Cloud-only mode requires Firebase.');
+    return [];
+  }
 
   try {
     const cloudBin = await getBinInvoicesFromCloud();
-    const localBin = getDeletedInvoices();
 
-    const cloudIds = new Set(cloudBin.map(i => i.id));
-    const missingLocal = localBin.filter(l => !cloudIds.has(l.id));
-
-    // Map cloud bin invoices to Local SavedInvoice format
-    const mappedCloudBin: SavedInvoice[] = cloudBin.map(inv => ({
+    return cloudBin.map(inv => ({
       id: inv.id,
       data: inv.data,
       createdAt: inv.createdAt.toISOString(),
       updatedAt: inv.createdAt.toISOString(),
       documentType: (inv.data.documentType || 'INVOICE') as any
     }));
-
-    const merged = [...mappedCloudBin, ...missingLocal];
-    merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return merged;
   } catch (e) {
-    return getDeletedInvoices();
+    console.error('Failed to get deleted invoices from cloud:', e);
+    return [];
   }
 }
 
 /**
- * Restore multiple invoices from the bin
+ * Restore multiple invoices from the bin (Cloud-Only)
  */
 export async function restoreMultipleInvoices(ids: string[]): Promise<boolean> {
-  const localBin = getDeletedInvoices();
-  const toRestore = localBin.filter(inv => ids.includes(inv.id));
-  const remainingBin = localBin.filter(inv => !ids.includes(inv.id));
-
-  // 1. Move from Cloud Bin to Live
-  if (isFirebaseConfigured()) {
-    for (const uid of ids) {
-      if (uid.length >= 20) { // Cloud IDs are long
-        try {
-          await restoreFromCloudBin(uid);
-        } catch (e) {
-          console.error('Failed to restore from cloud bin:', uid, e);
-        }
-      }
-    }
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase not configured. Cannot restore in cloud-only mode.');
   }
 
-  // 2. Handle local items if any
-  if (toRestore.length > 0) {
-    const invoices = getAllInvoicesSync();
-    const currentIds = new Set(invoices.map(i => i.id));
-    const cleanRestore = toRestore.filter(i => !currentIds.has(i.id));
-
-    invoices.push(...cleanRestore);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
-    localStorage.setItem('deleted_invoices', JSON.stringify(remainingBin));
-
-    // Upload restored locals to cloud
-    if (isFirebaseConfigured()) {
-      for (const inv of cleanRestore) {
-        try {
-          await saveInvoiceToCloud(inv.data.invoiceNumber, inv.data.soldTo.name, 0, inv.data);
-        } catch (e) { }
-      }
+  for (const uid of ids) {
+    try {
+      await restoreFromCloudBin(uid);
+    } catch (e) {
+      console.error('Failed to restore from cloud bin:', uid, e);
     }
   }
 
@@ -753,65 +571,42 @@ export async function restoreMultipleInvoices(ids: string[]): Promise<boolean> {
 }
 
 /**
- * Permanently delete multiple invoices from the bin
+ * Permanently delete multiple invoices from the bin (Cloud-Only)
  */
 export async function permanentlyDeleteInvoices(ids: string[]): Promise<boolean> {
-  // 1. Delete from Cloud
-  if (isFirebaseConfigured()) {
-    const cloudIds = ids.filter(id => id.length >= 20);
-    if (cloudIds.length > 0) {
-      try {
-        await permanentlyDeleteFromCloudBin(cloudIds);
-      } catch (e) {
-        console.error('Cloud permanent delete failed', e);
-      }
-    }
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase not configured. Cannot delete permanently in cloud-only mode.');
   }
 
-  // 2. Delete from Local
-  let bin = getDeletedInvoices();
-  const remainingBin = bin.filter(inv => !ids.includes(inv.id));
-  localStorage.setItem('deleted_invoices', JSON.stringify(remainingBin));
+  const cloudIds = ids.filter(id => id.length >= 20);
+  if (cloudIds.length > 0) {
+    try {
+      await permanentlyDeleteFromCloudBin(cloudIds);
+    } catch (e) {
+      console.error('Cloud permanent delete failed', e);
+      return false;
+    }
+  }
 
   return true;
 }
 
 /**
- * Delete multiple invoices (from both Firebase and localStorage)
+ * Delete multiple invoices (Cloud-Only)
  */
 export async function deleteMultipleInvoices(ids: string[]): Promise<boolean> {
-  const invoices = getAllInvoicesSync();
-  const toDelete = invoices.filter(inv => ids.includes(inv.id));
-  const remaining = invoices.filter(inv => !ids.includes(inv.id));
-
-  if (toDelete.length === 0 && !isFirebaseConfigured()) return false;
-
-  // 1. Move to Cloud Bin
-  if (isFirebaseConfigured()) {
-    for (const id of ids) {
-      try {
-        await moveToCloudBin(id);
-      } catch (e) {
-        console.error(`Failed to move ${id} to cloud bin, using local bin fallback`);
-        // Fallback: Add to local bin
-        const invoice = toDelete.find(inv => inv.id === id);
-        if (invoice) {
-          let bin: SavedInvoice[] = [];
-          try { bin = JSON.parse(localStorage.getItem('deleted_invoices') || '[]'); } catch { }
-          bin.push(invoice);
-          localStorage.setItem('deleted_invoices', JSON.stringify(bin));
-        }
-      }
-    }
-  } else {
-    // Local only
-    let bin = getDeletedInvoices();
-    bin.push(...toDelete);
-    localStorage.setItem('deleted_invoices', JSON.stringify(bin));
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase not configured. Cannot delete multiple invoices in cloud-only mode.');
   }
 
-  // Update local active storage
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+  for (const id of ids) {
+    try {
+      await moveToCloudBin(id);
+    } catch (e) {
+      console.error(`Failed to move ${id} to cloud bin:`, e);
+    }
+  }
+
   return true;
 }
 
@@ -904,7 +699,7 @@ export async function getCustomerDebt(customerName: string): Promise<{ totalDebt
 
 /**
  * Subscribe to invoices (Wrapper for Cloud Subscription)
- * Automatically keeps localStorage in sync with Cloud deletions
+ * In Cloud-Only mode, this simply passes the mapped cloud items to the callback.
  */
 export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void): () => void {
   if (typeof window === 'undefined') return () => { };
@@ -921,34 +716,12 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
           documentType: (inv.data.documentType || 'INVOICE') as any
         }));
 
-      // SYNC LOCAL STORAGE (PURGE DELETED)
-      // This is critical for cross-device sync. If an item is gone from Cloud, it must go from Local.
-      const localInvoices = getAllInvoicesSync();
-      const cloudIds = new Set(mappedCloudInvoices.map(i => i.id));
-
-      const nowTs = new Date().getTime();
-      const thirtySecondsInMs = 30 * 1000;
-
-      // Preserve local-only invoices if:
-      // 1. They haven't been uploaded yet (short IDs)
-      // 2. They were JUST saved on this device (less than 30s ago) to avoid race conditions
-      const localOnly = localInvoices.filter(l => {
-        if (cloudIds.has(l.id)) return false;
-        const isShortId = l.id.length < 20;
-        const updatedAt = new Date(l.updatedAt || 0).getTime();
-        const isVeryRecent = (nowTs - updatedAt) < thirtySecondsInMs;
-        return isShortId || isVeryRecent;
-      });
-
-      const newLocalState = [...mappedCloudInvoices, ...localOnly];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newLocalState));
-
       // Sort desc by date for UI
-      newLocalState.sort((a, b) =>
+      mappedCloudInvoices.sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
-      callback(newLocalState);
+      callback(mappedCloudInvoices);
     });
   }
 
@@ -957,89 +730,14 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
 
 /**
  * Diagnostic Force Sync
- * Manually checks local vs cloud and forces upload of missing items.
- * returns a report string.
+ * In Cloud-Only mode, this is mostly obsolete.
  */
 export async function diagnoseAndSync(): Promise<string> {
   if (!isFirebaseConfigured()) {
-    return 'Cloud is not configured.';
+    return 'Cloud is not configured. The system only operates online.';
   }
 
-  try {
-    // 1. Get Local Invoices
-    const localInvoices = getAllInvoicesSync();
-    if (localInvoices.length === 0) return 'No local invoices to sync.';
-
-    // 2. Get Cloud Invoices (Fresh)
-    const cloudInvoices = await getInvoicesFromCloud();
-    const cloudIds = new Set(cloudInvoices.map(i => i.id));
-
-    // 3. Find Missing (Truly local only - Short IDs)
-    // We ONLY auto-upload invoices that haven't reached the cloud yet (short IDs).
-    // If it has a long ID and is missing, it means it was likely deleted from the cloud.
-    const cloudNumbers = new Set(cloudInvoices.map((i: CloudInvoice) => i.invoiceNumber));
-    const cloudNumberToId = new Map(cloudInvoices.map((i: CloudInvoice) => [i.invoiceNumber, i.id]));
-
-    const missing = localInvoices.filter(l => l.id.length < 20 && !cloudNumbers.has(l.data.invoiceNumber));
-
-    // Find local invoices that have a cloud match (by number) but have a different ID (promotion case)
-    const toPromote = localInvoices.filter(l =>
-      cloudNumbers.has(l.data.invoiceNumber) && l.id !== cloudNumberToId.get(l.data.invoiceNumber)
-    );
-
-    // 4. Update local IDs for promoted invoices (Deduplication Fix)
-    if (toPromote.length > 0) {
-      toPromote.forEach(local => {
-        const cloudId = cloudNumberToId.get(local.data.invoiceNumber);
-        if (cloudId) {
-          const idx = localInvoices.findIndex(i => i.data.invoiceNumber === local.data.invoiceNumber);
-          if (idx !== -1) {
-            localInvoices[idx].id = cloudId;
-          }
-        }
-      });
-      saveInvoicesSync(localInvoices);
-      console.log(`AUTO-SYNC: Linked ${toPromote.length} local invoices to existing cloud records.`);
-    }
-
-    if (missing.length === 0) {
-      return 'All invoices are already synchronized.';
-    }
-
-    // 5. Force Upload for truly missing ones
-    let successCount = 0;
-    let errors = [];
-
-    for (const invoice of missing) {
-      try {
-        const newId = await saveInvoiceToCloud(
-          invoice.data.invoiceNumber,
-          invoice.data.soldTo.name,
-          0,
-          invoice.data
-        );
-        // Update local ID to match cloud
-        const index = localInvoices.findIndex(i => i.data.invoiceNumber === invoice.data.invoiceNumber);
-        if (index !== -1) {
-          localInvoices[index].id = newId as any as string; // Ensure string
-          saveInvoicesSync(localInvoices);
-        }
-        successCount++;
-      } catch (err: any) {
-        errors.push(`${invoice.data.invoiceNumber}: ${err.message}`);
-      }
-    }
-
-    if (errors.length > 0) {
-      return `Synced ${successCount}/${missing.length}. Errors: ${errors.join(', ')}`;
-    }
-
-    return `Successfully synced ${successCount} invoices.`;
-
-  } catch (error: any) {
-    console.error('Force sync failed:', error);
-    return `Sync failed: ${error.message}`;
-  }
+  return 'System is in Cloud-Only mode. All data is synchronized immediately with Firebase.';
 }
 
 /**
