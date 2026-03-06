@@ -93,15 +93,15 @@ function InvoicesListContent() {
             if (viewMode === 'active') {
                 // Real-time listener for active invoices
                 unsubscribe = subscribeToInvoices((data) => {
-                    // Filter OUT drafts for active view
-                    const activeOnly = data.filter(i => !i.data.isDraft);
+                    // Filter OUT drafts for active view (use optional chaining to prevent crash if data.data is undefined)
+                    const activeOnly = data.filter(i => !i.data?.isDraft);
                     setInvoices(activeOnly);
                     setLoading(false);
                 });
             } else if (viewMode === 'drafts') {
                 // Drafts View
                 const activeData = await getAllInvoices();
-                const drafts = activeData.filter(i => i.data.isDraft === true);
+                const drafts = activeData.filter(i => i.data?.isDraft === true);
                 setInvoices(drafts);
                 setLoading(false);
             } else {

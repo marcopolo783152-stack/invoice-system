@@ -116,17 +116,35 @@ export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
 
     const invoices: SavedInvoice[] = [];
     querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      invoices.push({
-        id: doc.id,
-        invoiceNumber: data.invoiceNumber,
-        customerName: data.customerName,
-        date: data.date,
-        totalAmount: data.totalAmount,
-        data: data.data,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt?.seconds ? data.createdAt.seconds * 1000 : (data.createdAt || Date.now())),
-        updatedAt: (data.updatedAt || data.createdAt)?.toDate ? (data.updatedAt || data.createdAt).toDate() : new Date((data.updatedAt || data.createdAt)?.seconds ? (data.updatedAt || data.createdAt).seconds * 1000 : (data.updatedAt || data.createdAt || Date.now()))
-      });
+      try {
+        const data = doc.data();
+        let createdAt = new Date();
+        let updatedAt = new Date();
+
+        try {
+          createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt?.seconds ? data.createdAt.seconds * 1000 : (data.createdAt || Date.now()));
+          if (isNaN(createdAt.getTime())) createdAt = new Date();
+        } catch (e) { }
+
+        try {
+          const ud = data.updatedAt || data.createdAt;
+          updatedAt = ud?.toDate ? ud.toDate() : new Date(ud?.seconds ? ud.seconds * 1000 : (ud || Date.now()));
+          if (isNaN(updatedAt.getTime())) updatedAt = createdAt;
+        } catch (e) { updatedAt = createdAt; }
+
+        invoices.push({
+          id: doc.id,
+          invoiceNumber: data.invoiceNumber || 'UNKNOWN',
+          customerName: data.customerName || 'Unknown',
+          date: data.date || '',
+          totalAmount: data.totalAmount || 0,
+          data: data.data || {} as InvoiceData,
+          createdAt,
+          updatedAt
+        });
+      } catch (e) {
+        console.warn('Skipping corrupted invoice doc:', doc.id);
+      }
     });
 
     return invoices;
