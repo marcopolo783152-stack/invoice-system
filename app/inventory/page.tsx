@@ -287,11 +287,11 @@ export default function InventoryManager() {
         // 5. Search Filter
         if (!searchTerm) return true;
         const term = searchTerm.toLowerCase();
-        const mat = (item.material || '').toLowerCase(); // Include material in search
+        const mat = (item.material || '').toString().toLowerCase(); // Include material in search
         return (
-            item.sku.toLowerCase().includes(term) ||
-            item.description.toLowerCase().includes(term) ||
-            item.origin?.toLowerCase().includes(term) ||
+            (item.sku || '').toString().toLowerCase().includes(term) ||
+            (item.description || '').toString().toLowerCase().includes(term) ||
+            (item.origin || '').toString().toLowerCase().includes(term) ||
             mat.includes(term) ||
             false
         );
