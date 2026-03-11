@@ -432,7 +432,10 @@ function ServiceOrderDetailContent() {
                                 <h3 style={{ textTransform: 'uppercase', fontSize: '11px', color: '#666', marginBottom: '8px', fontWeight: 600 }}>Order Information</h3>
                                 <p style={{ margin: '0 0 4px 0', fontSize: '13px' }}><strong>Date Sent:</strong> {new Date(order.dateSent).toLocaleDateString()}</p>
                                 <p style={{ margin: '0 0 4px 0', fontSize: '13px' }}><strong>Driver:</strong> {order.driverName}</p>
-                                <p style={{ margin: 0, fontSize: '13px' }}><strong>Pickup:</strong> {order.pickupDate} {order.pickupTime}</p>
+                                <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}><strong>Pickup:</strong> {order.pickupDate} {order.pickupTime}</p>
+                                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '4px' }}>
+                                    <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Total Items: {order.rugs.length}</p>
+                                </div>
                             </div>
                         </div>
 
