@@ -111,13 +111,15 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                                         }}
                                         alt=""
                                     />
-                                    {/* The Actual Uploaded Rug Image Bound Box */}
+                                    {/* The Actual Uploaded Rug Image Bound Box - RECESSED INSIDE FRAME */}
                                     <div style={{ 
                                         position: 'absolute', 
-                                        top: '12%', bottom: '12%', left: '12%', right: '12%', 
+                                        top: '10%', bottom: '11%', left: '10%', right: '10%', 
                                         zIndex: 2, 
                                         display: 'flex', justifyContent: 'center', alignItems: 'center',
-                                        background: 'transparent'
+                                        background: 'white',
+                                        overflow: 'hidden',
+                                        boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.4)' // Creates "depth" inside frame
                                     }}>
                                         {appraisal.rugImage ? (
                                             <img 
@@ -131,7 +133,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                                                 }} 
                                             />
                                         ) : (
-                                            <div style={{ fontWeight: 'bold', fontSize: '14pt' }}>Rug Photo Here</div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '14pt', color: '#ccc' }}>Rug Photo Here</div>
                                         )}
                                     </div>
                                 </div>
