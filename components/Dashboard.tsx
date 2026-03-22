@@ -430,9 +430,17 @@ export default function Dashboard() {
                     </button>
 
                     <Link
+                        href="/appraisals"
+                        className="luxury-button"
+                        style={{ padding: '10px 20px', background: 'var(--bg-nebula)', color: 'var(--text-main)', border: '1px solid var(--surface-border)', marginLeft: 'auto' }}
+                    >
+                        📜 Appraisals
+                    </Link>
+
+                    <Link
                         href="/inventory"
                         className="luxury-button"
-                        style={{ padding: '10px 20px', marginLeft: 'auto' }}
+                        style={{ padding: '10px 20px', marginLeft: 12 }}
                     >
                         📦 Inventory
                     </Link>

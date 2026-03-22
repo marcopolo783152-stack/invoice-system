@@ -1,0 +1,246 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, Save, Upload } from 'lucide-react';
+import { Appraisal, saveAppraisal } from '@/lib/appraisals-storage';
+
+export default function NewAppraisalPage() {
+    const router = useRouter();
+    const [saving, setSaving] = useState(false);
+    
+    const [appraisal, setAppraisal] = useState<Partial<Appraisal>>({
+        date: new Date().toISOString().split('T')[0],
+        customerName: '',
+        customerAddress: '',
+        rugNumber: '',
+        type: '',
+        size: '',
+        composition: 'Wool',
+        origin: '',
+        condition: 'Good',
+        value: 0,
+        rugImage: ''
+    });
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setAppraisal(prev => ({ ...prev, rugImage: reader.result as string }));
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!appraisal.customerName || !appraisal.rugNumber) {
+            alert('Customer Name and Rug Number are required.');
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const id = await saveAppraisal({
+                ...appraisal,
+                id: `APP-${Date.now()}`,
+                createdAt: new Date().toISOString()
+            } as Appraisal);
+            
+            router.push(`/appraisals/print?id=${id}`);
+        } catch (error) {
+            console.error(error);
+            alert('Failed to save appraisal');
+            setSaving(false);
+        }
+    };
+
+    const inputStyle = {
+        width: '100%',
+        padding: '12px 16px',
+        borderRadius: '8px',
+        border: '1px solid #cbd5e1',
+        fontSize: '15px',
+        outline: 'none',
+        transition: 'border-color 0.2s',
+        marginBottom: '16px'
+    };
+
+    const labelStyle = {
+        display: 'block',
+        fontSize: '13px',
+        fontWeight: 'bold',
+        color: '#475569',
+        marginBottom: '6px'
+    };
+
+    return (
+        <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
+            <Link href="/appraisals" style={{ color: '#6366f1', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '20px' }}>
+                <ArrowLeft size={16} /> Back to Appraisals
+            </Link>
+            
+            <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
+                <div style={{ padding: '24px 30px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                    <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Create New Certificate of Appraisal</h1>
+                    <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Fill out the details below to generate a printable Certificate of Authenticity.</p>
+                </div>
+
+                <form onSubmit={handleSubmit} style={{ padding: '30px' }}>
+                    
+                    <div style={{ display: 'flex', gap: '30px' }}>
+                        
+                        {/* LEFT COLUMN: Data Fields */}
+                        <div style={{ flex: 1 }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
+                                Client Information
+                            </h3>
+                            <label style={labelStyle}>Date</label>
+                            <input 
+                                type="date" 
+                                style={inputStyle} 
+                                value={appraisal.date} 
+                                onChange={e => setAppraisal({...appraisal, date: e.target.value})} 
+                            />
+                            
+                            <label style={labelStyle}>Customer Name</label>
+                            <input 
+                                type="text" 
+                                placeholder="e.g. John Doe"
+                                style={inputStyle} 
+                                value={appraisal.customerName} 
+                                onChange={e => setAppraisal({...appraisal, customerName: e.target.value})} 
+                                required
+                            />
+                            
+                            <label style={labelStyle}>Address / Location</label>
+                            <input 
+                                type="text" 
+                                placeholder="e.g. 3260 Duke St Alexandria VA 22314"
+                                style={inputStyle} 
+                                value={appraisal.customerAddress} 
+                                onChange={e => setAppraisal({...appraisal, customerAddress: e.target.value})} 
+                            />
+
+                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginTop: '30px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
+                                Rug Details
+                            </h3>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+                                <div>
+                                    <label style={labelStyle}>Rug Number</label>
+                                    <input type="text" style={inputStyle} value={appraisal.rugNumber} onChange={e => setAppraisal({...appraisal, rugNumber: e.target.value})} required />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Type / Style</label>
+                                    <input type="text" style={inputStyle} placeholder="e.g. Persian Tabriz" value={appraisal.type} onChange={e => setAppraisal({...appraisal, type: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Size</label>
+                                    <input type="text" style={inputStyle} placeholder="e.g. 8' x 10'" value={appraisal.size} onChange={e => setAppraisal({...appraisal, size: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Composition</label>
+                                    <input type="text" style={inputStyle} value={appraisal.composition} onChange={e => setAppraisal({...appraisal, composition: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Origin</label>
+                                    <input type="text" style={inputStyle} placeholder="e.g. Iran" value={appraisal.origin} onChange={e => setAppraisal({...appraisal, origin: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Condition</label>
+                                    <input type="text" style={inputStyle} value={appraisal.condition} onChange={e => setAppraisal({...appraisal, condition: e.target.value})} />
+                                </div>
+                            </div>
+                            
+                            <label style={labelStyle}>Estimated Retail Value ($)</label>
+                            <input 
+                                type="number" 
+                                style={{...inputStyle, fontSize: '20px', fontWeight: 'bold', color: '#10b981'}} 
+                                placeholder="0.00"
+                                value={appraisal.value || ''} 
+                                onChange={e => setAppraisal({...appraisal, value: parseFloat(e.target.value) || 0})} 
+                                min="0" step="0.01"
+                            />
+                        </div>
+
+                        {/* RIGHT COLUMN: Image Upload */}
+                        <div style={{ width: '400px' }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
+                                Rug Photo
+                            </h3>
+                            
+                            <div style={{ 
+                                border: '2px dashed #cbd5e1', 
+                                borderRadius: '12px', 
+                                padding: '2px',
+                                background: '#f8fafc',
+                                height: '500px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}>
+                                {appraisal.rugImage ? (
+                                    <>
+                                        <img src={appraisal.rugImage} alt="Rug" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        <button 
+                                            type="button"
+                                            onClick={() => setAppraisal({...appraisal, rugImage: ''})}
+                                            style={{
+                                                position: 'absolute', top: '10px', right: '10px',
+                                                background: 'rgba(255,255,255,0.9)', border: '1px solid #ef4444',
+                                                color: '#ef4444', padding: '6px 12px', borderRadius: '6px',
+                                                fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                            }}
+                                        >
+                                            Remove ✕
+                                        </button>
+                                    </>
+                                ) : (
+                                    <label style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px' }}>
+                                        <Upload size={48} color="#94a3b8" style={{ marginBottom: '16px' }} />
+                                        <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>Upload Rug Image</span>
+                                        <span style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>Click to browse or drag and drop a photo of the rug here.</span>
+                                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                                    </label>
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
+                        <Link 
+                            href="/appraisals"
+                            style={{ padding: '14px 24px', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 'bold', textDecoration: 'none' }}
+                        >
+                            Cancel
+                        </Link>
+                        <button 
+                            type="submit" 
+                            disabled={saving}
+                            style={{ 
+                                padding: '14px 32px', borderRadius: '10px', border: 'none', 
+                                background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', 
+                                fontWeight: 'bold', fontSize: '16px', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                opacity: saving ? 0.7 : 1
+                            }}
+                        >
+                            <Save size={20} />
+                            {saving ? 'Generating...' : 'Save & Generate Certificate'}
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    );
+}
