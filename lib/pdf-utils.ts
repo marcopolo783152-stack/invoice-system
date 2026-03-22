@@ -44,9 +44,9 @@ async function createPDF(invoiceElement: HTMLElement, invoiceNumber: string, isD
       const page = pages[i] as HTMLElement;
 
       // Generate canvas for the page
-      // We use a slightly smaller width to avoid any potential overflow
+      // We use a higher scale for Ultra High Quality (4x)
       const canvas = await html2canvas(page, {
-        scale: 2, // High quality
+        scale: 4, // Ultra Quality for sharp text and photos
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -54,6 +54,7 @@ async function createPDF(invoiceElement: HTMLElement, invoiceNumber: string, isD
         // Removed width/height to allow html2canvas to determine correct element bounds
       });
 
+      // Use PNG for maximum lossless quality on the single-page certificate
       const imgData = canvas.toDataURL('image/png');
       const imgProps = pdf.getImageProperties(imgData);
 

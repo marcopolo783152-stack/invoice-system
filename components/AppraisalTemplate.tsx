@@ -181,7 +181,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                     Date: {formatLongDate(appraisal.date)}
                 </div>
 
-                <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
+                <div style={{ marginTop: 'auto', paddingTop: '40px', paddingBottom: '30px' }}>
                     {/* Signature Area */}
                     <div style={{ marginBottom: '10px' }}>
                         <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Marco Polo Oriental Rugs</div>
