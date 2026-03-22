@@ -19,7 +19,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
     return (
         <div style={{ 
             width: '8.5in',
-            padding: '0.5in 0.5in 1in 0.5in', // Standard safe margin
+            padding: '0.5in 0.5in 2in 0.5in', // Standard safe margin
             margin: '10px auto',
             background: 'white',
             fontFamily: '"Times New Roman", Times, serif', // Classic appraisal font
@@ -95,8 +95,8 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                                 <div style={{ 
                                     position: 'relative',
                                     width: '100%',
-                                    maxWidth: '340px',
-                                    height: '460px',
+                                    maxWidth: '300px',
+                                    height: '380px',
                                     margin: '0 auto',
                                 }}>
                                     {/* The Frame Graphic Background */}
@@ -177,11 +177,11 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                 </table>
 
                 {/* Date line closely underneath the table */}
-                <div style={{ textAlign: 'right', fontWeight: 'bold', fontStyle: 'italic', fontSize: '12pt', marginBottom: '25px', paddingRight: '10px' }}>
+                <div style={{ textAlign: 'right', fontWeight: 'bold', fontStyle: 'italic', fontSize: '11pt', marginBottom: '15px', paddingRight: '10px' }}>
                     Date: {formatLongDate(appraisal.date)}
                 </div>
 
-                <div style={{ marginTop: '50px', paddingTop: '20px', paddingBottom: '40px', color: '#000' }}>
+                <div style={{ marginTop: '20px', paddingTop: '10px', paddingBottom: '20px', color: '#000' }}>
                     {/* Signature Area */}
                     <div style={{ marginBottom: '10px' }}>
                         <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Marco Polo Oriental Rugs</div>
