@@ -28,32 +28,33 @@ export default function AppraisalTemplate({ appraisal }: Props) {
             boxSizing: 'border-box'
         }}>
             
-            {/* Header Banner */}
-            <div style={{ width: '100%', marginBottom: '15px' }}>
+            {/* Header Banner (Design on the head) */}
+            <div style={{ width: '100%', marginBottom: '15px', textAlign: 'center' }}>
                 <img 
-                    src="/appraisal_assets/image4.jpeg" 
+                    src="/appraisal_assets/image1.png" 
                     alt="Certificate Banner" 
-                    style={{ width: '100%', height: 'auto', display: 'block' }} 
+                    style={{ maxWidth: '100%', height: 'auto', display: 'inline-block' }} 
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
             </div>
 
             {/* Sub-header Statement */}
-            <div style={{ fontSize: '12pt', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '15px' }}>
+            <div style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '15px' }}>
                 THIS DOCUMENT CERTIFIES THAT THE FOLLOWING ORIENTAL RUG IS THE PROPERTY OF:
             </div>
 
-            {/* Customer Info & Emblem */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-                <div style={{ fontSize: '13pt', fontStyle: 'italic', fontWeight: 'bold' }}>
+            {/* Customer Info & Logo */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px' }}>
+                <div style={{ fontSize: '12pt', fontStyle: 'italic', fontWeight: 'bold' }}>
                     <div>{appraisal.customerName}</div>
-                    <div style={{ marginTop: '5px' }}>{appraisal.customerAddress}</div>
+                    <div style={{ marginTop: '3px' }}>{appraisal.customerAddress}</div>
                 </div>
+                {/* The Logo */}
                 <div style={{ width: '120px' }}>
                     <img 
-                        src="/appraisal_assets/image3.jpeg" 
-                        alt="Emblem" 
-                        style={{ width: '100%', height: 'auto', borderRadius: '50%' }} 
+                        src="/appraisal_assets/image2.jpeg" 
+                        alt="Logo" 
+                        style={{ width: '100%', height: 'auto' }} 
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                 </div>
@@ -86,20 +87,39 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                             verticalAlign: 'middle',
                             background: '#fcfcfc'
                         }}>
-                            {/* Wooden Picture Frame Effect */}
+                            {/* Custom Image Frame */}
                             {appraisal.rugImage ? (
                                 <div style={{ 
-                                    border: '15px ridge #8B4513', // Classic brown wooden ridge
-                                    display: 'inline-block', 
-                                    padding: '0', 
-                                    background: 'white',
-                                    boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5), 5px 5px 15px rgba(0,0,0,0.3)'
+                                    position: 'relative',
+                                    display: 'inline-block',
+                                    width: '100%',
+                                    maxWidth: '350px',
+                                    padding: '8% 8%', // Creates the inner margin to sit inside the picture frame graphic
+                                    boxSizing: 'border-box'
                                 }}>
-                                    <div style={{ border: '2px solid #deb887' }}>
+                                    {/* The Frame Graphic Background */}
+                                    <img 
+                                        src="/appraisal_assets/image3.jpeg" 
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0, left: 0,
+                                            width: '100%', height: '100%',
+                                            zIndex: 1,
+                                            objectFit: 'fill' // Stretch slightly to ensure it encapsulates
+                                        }}
+                                        alt=""
+                                    />
+                                    {/* The Actual Uploaded Rug Image (On top) */}
+                                    <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
                                         <img 
                                             src={appraisal.rugImage} 
                                             alt="Rug Photo" 
-                                            style={{ maxHeight: '450px', maxWidth: '100%', display: 'block' }} 
+                                            style={{ 
+                                                maxHeight: '400px', 
+                                                maxWidth: '100%', 
+                                                display: 'block',
+                                                boxShadow: '0 4px 8px rgba(0,0,0,0.3)' 
+                                            }} 
                                         />
                                     </div>
                                 </div>
