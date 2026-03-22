@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getAppraisals, deleteAppraisal, Appraisal } from '@/lib/appraisals-storage';
-import { Search, Plus, Trash2, Printer, ArrowLeft } from 'lucide-react';
+import { Search, Plus, Trash2, Printer, ArrowLeft, Edit } from 'lucide-react';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
 
 export default function AppraisalsPage() {
@@ -128,7 +128,17 @@ export default function AppraisalsPage() {
                                         ${app.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </td>
                                     <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    router.push(`/appraisals/new?edit=${app.id}`);
+                                                }}
+                                                style={{ border: 'none', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
+                                                title="Edit"
+                                            >
+                                                <Edit size={16} />
+                                            </button>
                                             <button 
                                                 onClick={(e) => handlePrint(app.id, e)}
                                                 style={{ border: 'none', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}

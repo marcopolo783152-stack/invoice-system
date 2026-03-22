@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Upload } from 'lucide-react';
-import { Appraisal, saveAppraisal } from '@/lib/appraisals-storage';
+import { ArrowLeft, Save, Upload, Search, Edit } from 'lucide-react';
+import { Appraisal, saveAppraisal, getAppraisalById } from '@/lib/appraisals-storage';
+import { Customer, searchCustomers } from '@/lib/customer-storage';
 
-export default function NewAppraisalPage() {
+function AppraisalFormContent() {
     const router = useRouter();
     const [saving, setSaving] = useState(false);
     
@@ -24,15 +25,75 @@ export default function NewAppraisalPage() {
         rugImage: ''
     });
 
+    const [customerSuggestions, setCustomerSuggestions] = useState<Customer[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    
+    // Support Edit Mode
+    const searchParams = useSearchParams();
+    const editId = searchParams?.get('edit');
+
+    useEffect(() => {
+        if (editId) {
+            getAppraisalById(editId).then(data => {
+                if (data) setAppraisal(data);
+            });
+        }
+    }, [editId]);
+
+    const handleCustomerNameChange = async (value: string) => {
+        setAppraisal(prev => ({ ...prev, customerName: value }));
+        if (value.length > 1) {
+            const matches = await searchCustomers(value);
+            setCustomerSuggestions(matches);
+            setShowSuggestions(true);
+        } else {
+            setShowSuggestions(false);
+        }
+    };
+
+    const selectCustomer = (customer: Customer) => {
+        setAppraisal(prev => ({
+            ...prev,
+            customerName: customer.name,
+            customerAddress: `${customer.address} ${customer.city} ${customer.state} ${customer.zip}`.trim().replace(/\s+/g, ' ')
+        }));
+        setShowSuggestions(false);
+    };
+
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setAppraisal(prev => ({ ...prev, rugImage: reader.result as string }));
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800;
+            const MAX_HEIGHT = 800;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+
+            // Compress to JPEG at 70% quality to avoid 5MB localStorage limit
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            setAppraisal(prev => ({ ...prev, rugImage: compressedBase64 }));
         };
-        reader.readAsDataURL(file);
+        img.src = URL.createObjectURL(file);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -46,8 +107,8 @@ export default function NewAppraisalPage() {
         try {
             const id = await saveAppraisal({
                 ...appraisal,
-                id: `APP-${Date.now()}`,
-                createdAt: new Date().toISOString()
+                id: editId || `APP-${Date.now()}`,
+                createdAt: appraisal.createdAt || new Date().toISOString()
             } as Appraisal);
             
             router.push(`/appraisals/print?id=${id}`);
@@ -107,14 +168,37 @@ export default function NewAppraisalPage() {
                             />
                             
                             <label style={labelStyle}>Customer Name</label>
-                            <input 
-                                type="text" 
-                                placeholder="e.g. John Doe"
-                                style={inputStyle} 
-                                value={appraisal.customerName} 
-                                onChange={e => setAppraisal({...appraisal, customerName: e.target.value})} 
-                                required
-                            />
+                            <div style={{ position: 'relative' }}>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. John Doe"
+                                    style={inputStyle} 
+                                    value={appraisal.customerName} 
+                                    onChange={e => handleCustomerNameChange(e.target.value)} 
+                                    required
+                                />
+                                {showSuggestions && customerSuggestions.length > 0 && (
+                                    <div style={{
+                                        position: 'absolute', top: '100%', left: 0, right: 0,
+                                        background: 'white', border: '1px solid #e2e8f0',
+                                        borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                        zIndex: 50, maxHeight: '200px', overflowY: 'auto', marginTop: '-12px'
+                                    }}>
+                                        {customerSuggestions.map(cust => (
+                                            <div 
+                                                key={cust.id} 
+                                                onClick={() => selectCustomer(cust)}
+                                                style={{ padding: '10px 16px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', fontSize: '14px' }}
+                                                onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                                onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                                            >
+                                                <div style={{ fontWeight: 'bold' }}>{cust.name}</div>
+                                                <div style={{ fontSize: '12px', color: '#64748b' }}>{cust.address} {cust.city}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                             
                             <label style={labelStyle}>Address / Location</label>
                             <input 
@@ -242,5 +326,13 @@ export default function NewAppraisalPage() {
                 </form>
             </div>
         </div>
+    );
+}
+
+export default function NewAppraisalPage() {
+    return (
+        <Suspense fallback={<div style={{ padding: 40, textAlign: 'center' }}>Loading...</div>}>
+            <AppraisalFormContent />
+        </Suspense>
     );
 }

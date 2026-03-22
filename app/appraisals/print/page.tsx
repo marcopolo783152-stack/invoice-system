@@ -4,11 +4,14 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getAppraisalById, Appraisal } from '@/lib/appraisals-storage';
 import AppraisalTemplate from '@/components/AppraisalTemplate';
+import { generatePDF } from '@/lib/pdf-utils';
 
 function PrintContent() {
     const searchParams = useSearchParams();
     const [appraisal, setAppraisal] = useState<Appraisal | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const printRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const id = searchParams.get('id');
@@ -33,7 +36,7 @@ function PrintContent() {
     return (
         <div style={{ background: '#525659', minHeight: '100vh', padding: '20px 0' }}>
             {/* Top Toolbar for Printing */}
-            <div className="print-hide" style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <div className="print-hide" style={{ textAlign: 'center', marginBottom: '20px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
                 <button 
                     onClick={() => window.print()}
                     style={{ 
@@ -50,11 +53,33 @@ function PrintContent() {
                 >
                     🖨️ Print Certificate
                 </button>
+                <button 
+                    onClick={async () => {
+                        if (printRef.current) {
+                            await generatePDF(printRef.current, `Appraisal_${appraisal.id}`);
+                        }
+                    }}
+                    style={{ 
+                        padding: '12px 24px', 
+                        fontSize: '16px', 
+                        fontWeight: 'bold', 
+                        background: '#10b981', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    📄 Download PDF
+                </button>
             </div>
 
             {/* The A4/Letter Sized Document Container */}
             <div style={{ boxShadow: '0 0 20px rgba(0,0,0,0.5)', width: 'max-content', margin: '0 auto' }}>
-                <AppraisalTemplate appraisal={appraisal} />
+                <div ref={printRef} className="pdf-page" style={{ background: 'white' }}>
+                    <AppraisalTemplate appraisal={appraisal} />
+                </div>
             </div>
 
             <style dangerouslySetInnerHTML={{__html: `
