@@ -42,7 +42,8 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                         display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
                         fontFamily: 'Algerian, "Times New Roman", Times, serif',
-                        color: 'black', textShadow: '1px 1px 2px rgba(255,255,255,0.8)'
+                        color: '#065f46', // Professional Dark Green
+                        textShadow: '1px 1px 1px rgba(255,255,255,0.6)'
                     }}>
                         <div style={{ fontSize: '28pt', fontWeight: 'bold', paddingTop: '10px' }}>CERTIFICATE OF AUTHENTICITY &</div>
                         <div style={{ fontSize: '28pt', fontWeight: 'bold', marginTop: '5px' }}>APPRAISAL</div>
@@ -55,7 +56,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                 </div>
 
                 {/* Customer Info & Logo with Line */}
-                <div style={{ position: 'relative', height: '100px', marginBottom: '20px' }}>
+                <div style={{ position: 'relative', height: '100px', marginBottom: '20px', color: '#000' }}>
                     <div style={{ fontSize: '13pt', fontStyle: 'italic', fontWeight: 'bold' }}>{appraisal.customerName}</div>
                     <div style={{ fontSize: '11pt', fontStyle: 'italic', fontWeight: 'bold', marginTop: '8px' }}>{appraisal.customerAddress}</div>
                     
@@ -169,7 +170,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                             <td style={{ border: '1px solid black', padding: '12px 15px', fontWeight: 'bold', fontSize: '14pt' }}>
                                 Estimated<br/>Retail Value
                             </td>
-                            <td style={{ border: '1px solid black', borderRight: 'none', padding: '12px 15px', fontSize: '14pt', textAlign: 'center', fontWeight: 'bold' }}>
+                            <td style={{ border: '1px solid black', borderRight: 'none', padding: '12px 15px', fontSize: '14pt', textAlign: 'center', fontWeight: 'bold', color: '#065f46' }}>
                                 ${appraisal.value?.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </td>
                         </tr>
@@ -181,7 +182,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                     Date: {formatLongDate(appraisal.date)}
                 </div>
 
-                <div style={{ marginTop: 'auto', paddingTop: '40px', paddingBottom: '60px' }}>
+                <div style={{ marginTop: 'auto', paddingTop: '40px', paddingBottom: '60px', color: '#000' }}>
                     {/* Signature Area */}
                     <div style={{ marginBottom: '10px' }}>
                         <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Marco Polo Oriental Rugs</div>
