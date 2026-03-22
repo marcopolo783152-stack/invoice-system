@@ -38,17 +38,9 @@ function PrintContent() {
             {/* Top Toolbar for Printing */}
             <div className="print-hide" style={{ textAlign: 'center', marginBottom: '20px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
                 <button 
-                    onClick={async () => {
-                        if (printRef.current) {
-                            setIsPrinting(true);
-                            try {
-                                await openPDFInNewTab(printRef.current, `Appraisal_${appraisal.id}`);
-                            } finally {
-                                setIsPrinting(false);
-                            }
-                        }
+                    onClick={() => {
+                        window.print();
                     }}
-                    disabled={isPrinting}
                     style={{ 
                         padding: '12px 24px', 
                         fontSize: '16px', 
@@ -57,12 +49,11 @@ function PrintContent() {
                         color: 'white', 
                         border: 'none', 
                         borderRadius: '8px',
-                        cursor: isPrinting ? 'wait' : 'pointer',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                        opacity: isPrinting ? 0.7 : 1
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
                     }}
                 >
-                    {isPrinting ? '⏳ Preparing...' : '🖨️ Print Certificate'}
+                    🖨️ Print Certificate
                 </button>
                 <button 
                     onClick={async () => {
