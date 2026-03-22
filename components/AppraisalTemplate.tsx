@@ -41,10 +41,10 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                     <div style={{
                         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                         display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-                        fontFamily: '"Times New Roman", Times, serif',
+                        fontFamily: 'Algerian, "Times New Roman", Times, serif',
                         color: 'black', textShadow: '1px 1px 2px rgba(255,255,255,0.8)'
                     }}>
-                        <div style={{ fontSize: '28pt', fontWeight: 'bold' }}>CERTIFICATE OF AUTHENTICITY &</div>
+                        <div style={{ fontSize: '28pt', fontWeight: 'bold', paddingTop: '10px' }}>CERTIFICATE OF AUTHENTICITY &</div>
                         <div style={{ fontSize: '28pt', fontWeight: 'bold', marginTop: '5px' }}>APPRAISAL</div>
                     </div>
                 </div>
@@ -58,9 +58,6 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                 <div style={{ position: 'relative', height: '100px', marginBottom: '20px' }}>
                     <div style={{ fontSize: '13pt', fontStyle: 'italic', fontWeight: 'bold' }}>{appraisal.customerName}</div>
                     <div style={{ fontSize: '11pt', fontStyle: 'italic', fontWeight: 'bold', marginTop: '8px' }}>{appraisal.customerAddress}</div>
-                    
-                    {/* The Horizontal Line that stops before the emblem */}
-                    <div style={{ width: 'calc(100% - 160px)', borderBottom: '1px solid black', marginTop: '10px' }}></div>
                     
                     {/* The Logo overlapped on the right */}
                     <img 
@@ -127,9 +124,9 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                                                 src={appraisal.rugImage} 
                                                 alt="Rug Photo" 
                                                 style={{ 
-                                                    maxWidth: '100%', 
-                                                    maxHeight: '100%', 
-                                                    objectFit: 'contain',
+                                                    width: '100%', 
+                                                    height: '100%', 
+                                                    objectFit: 'cover',
                                                     display: 'block'
                                                 }} 
                                             />
@@ -182,18 +179,20 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                     Date: {formatLongDate(appraisal.date)}
                 </div>
 
-                {/* Signature Area */}
-                <div style={{ marginBottom: '10px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Marco Polo Oriental Rugs</div>
-                    <div style={{ fontSize: '12pt', marginBottom: '25px' }}>Certified Oriental Rug Appraiser</div>
-                    
-                    {/* Signature Line */}
-                    <div style={{ width: '250px', borderBottom: '1px solid black', marginBottom: '5px' }}></div>
-                </div>
+                <div style={{ position: 'absolute', bottom: '0.4in', left: '0.2in', right: '0.2in' }}>
+                    {/* Signature Area */}
+                    <div style={{ marginBottom: '10px' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Marco Polo Oriental Rugs</div>
+                        <div style={{ fontSize: '12pt', marginBottom: '25px' }}>Certified Oriental Rug Appraiser</div>
+                        
+                        {/* Signature Line */}
+                        <div style={{ width: '250px', borderBottom: '1px solid black', marginBottom: '5px' }}></div>
+                    </div>
 
-                {/* Footer */}
-                <div style={{ textAlign: 'left', fontWeight: 'bold', fontStyle: 'italic', fontSize: '10pt', position: 'absolute', bottom: '0.2in', left: '0.2in', right: '0.2in' }}>
-                    MARCO POLO ORIENTAL RUGS | 3260 DUKE STREET, ALEXANDRIA, VA 22314 | (703) 461-0207
+                    {/* Footer */}
+                    <div style={{ textAlign: 'left', fontWeight: 'bold', fontStyle: 'italic', fontSize: '10pt', marginTop: '15px' }}>
+                        MARCO POLO ORIENTAL RUGS | 3260 DUKE STREET, ALEXANDRIA, VA 22314 | (703) 461-0207
+                    </div>
                 </div>
             </div>
 
