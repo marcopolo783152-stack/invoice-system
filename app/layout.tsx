@@ -1,6 +1,6 @@
 'use client';
 
-import { Inter } from 'next/font/google';
+import { Inter, Cinzel, Cinzel_Decorative } from 'next/font/google';
 import { usePathname } from 'next/navigation';
 import './globals.css';
 import './print.css';
@@ -12,6 +12,8 @@ import NotificationModal from '@/components/NotificationModal';
 import { useState, useEffect, Suspense } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
+const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '700'] });
+const cinzelDecorative = Cinzel_Decorative({ subsets: ['latin'], weight: ['400', '700'] });
 
 export default function RootLayout({
   children,

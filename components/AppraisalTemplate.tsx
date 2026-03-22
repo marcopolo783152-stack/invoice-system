@@ -22,11 +22,16 @@ export default function AppraisalTemplate({ appraisal }: Props) {
             padding: '0.5in 0.5in 2in 0.5in', // Standard safe margin
             margin: '10px auto',
             background: 'white',
-            fontFamily: '"Times New Roman", Times, serif', // Classic appraisal font
+            fontFamily: 'Cinzel, "Times New Roman", Times, serif', // Elegant web font that works everywhere
             position: 'relative',
             boxSizing: 'border-box'
         }}>
             
+            {/* Ensure fonts are loaded from Google Fonts for all devices */}
+            <style dangerouslySetInnerHTML={{__html: `
+                @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&display=swap');
+            `}} />
+
             <div style={{ padding: '0.1in', position: 'relative' }}>
                 
                 {/* Header Banner (Design on the head) with OVERLAY TEXT */}
@@ -40,7 +45,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                     <div style={{
                         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                         display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-                        fontFamily: 'Algerian, "Times New Roman", Times, serif',
+                        fontFamily: '"Cinzel Decorative", Algerian, serif',
                         color: '#065f46', // Professional Dark Green
                         textShadow: '1px 1px 1px rgba(255,255,255,0.6)'
                     }}>
