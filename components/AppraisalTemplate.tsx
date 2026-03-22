@@ -19,16 +19,15 @@ export default function AppraisalTemplate({ appraisal }: Props) {
     return (
         <div style={{ 
             width: '8.5in',
-            minHeight: '11in',
-            padding: '0.5in 0.5in 1.5in 0.5in', // Increased to 1.5in for extreme printer safety
-            margin: '0 auto',
+            padding: '0.5in 0.5in 1in 0.5in', // Standard safe margin
+            margin: '10px auto',
             background: 'white',
             fontFamily: '"Times New Roman", Times, serif', // Classic appraisal font
             position: 'relative',
             boxSizing: 'border-box'
         }}>
             
-            <div style={{ padding: '0.2in', position: 'relative', height: '100%' }}>
+            <div style={{ padding: '0.1in', position: 'relative' }}>
                 
                 {/* Header Banner (Design on the head) with OVERLAY TEXT */}
                 <div style={{ position: 'relative', width: '100%', marginBottom: '10px', textAlign: 'center' }}>
@@ -182,7 +181,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                     Date: {formatLongDate(appraisal.date)}
                 </div>
 
-                <div style={{ marginTop: '100px', paddingTop: '40px', paddingBottom: '60px', color: '#000' }}>
+                <div style={{ marginTop: '50px', paddingTop: '20px', paddingBottom: '40px', color: '#000' }}>
                     {/* Signature Area */}
                     <div style={{ marginBottom: '10px' }}>
                         <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Marco Polo Oriental Rugs</div>
