@@ -28,16 +28,25 @@ export default function AppraisalTemplate({ appraisal }: Props) {
             boxSizing: 'border-box'
         }}>
             
-            <div style={{ border: '1px solid #d1d5db', padding: '0.25in', position: 'relative', height: '100%' }}>
+            <div style={{ padding: '0.2in', position: 'relative', height: '100%' }}>
                 
-                {/* Header Banner (Design on the head) */}
-                <div style={{ width: '100%', marginBottom: '10px', textAlign: 'center' }}>
+                {/* Header Banner (Design on the head) with OVERLAY TEXT */}
+                <div style={{ position: 'relative', width: '100%', marginBottom: '10px', textAlign: 'center' }}>
                     <img 
                         src="/appraisal_assets/image1.png" 
-                        alt="Certificate Banner" 
+                        alt="Certificate Banner Background" 
                         style={{ width: '100%', height: 'auto', display: 'block' }} 
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+                        fontFamily: '"Times New Roman", Times, serif',
+                        color: 'black', textShadow: '1px 1px 2px rgba(255,255,255,0.8)'
+                    }}>
+                        <div style={{ fontSize: '28pt', fontWeight: 'bold' }}>CERTIFICATE OF AUTHENTICITY &</div>
+                        <div style={{ fontSize: '28pt', fontWeight: 'bold', marginTop: '5px' }}>APPRAISAL</div>
+                    </div>
                 </div>
 
                 {/* Sub-header Statement */}
@@ -83,20 +92,17 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                                 width: '45%', 
                                 textAlign: 'center', 
                                 verticalAlign: 'middle',
-                                padding: '2px'
+                                padding: '10px'
                             }}>
-                                {/* Custom Frame Background */}
+                                {/* Custom Frame Background rigidly containerized */}
                                 <div style={{ 
                                     position: 'relative',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
                                     width: '100%',
-                                    height: '100%',
-                                    minHeight: '450px',
-                                    padding: '12% 12%', // Inner margin to sit inside the picture frame graphic
-                                    boxSizing: 'border-box'
+                                    maxWidth: '340px',
+                                    height: '460px',
+                                    margin: '0 auto',
                                 }}>
+                                    {/* The Frame Graphic Background */}
                                     <img 
                                         src="/appraisal_assets/image3.jpeg" 
                                         style={{
@@ -104,18 +110,27 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                                             top: 0, left: 0,
                                             width: '100%', height: '100%',
                                             zIndex: 1,
+                                            objectFit: 'fill'
                                         }}
                                         alt=""
                                     />
-                                    <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
+                                    {/* The Actual Uploaded Rug Image Bound Box */}
+                                    <div style={{ 
+                                        position: 'absolute', 
+                                        top: '12%', bottom: '12%', left: '12%', right: '12%', 
+                                        zIndex: 2, 
+                                        display: 'flex', justifyContent: 'center', alignItems: 'center',
+                                        background: 'transparent'
+                                    }}>
                                         {appraisal.rugImage ? (
                                             <img 
                                                 src={appraisal.rugImage} 
                                                 alt="Rug Photo" 
                                                 style={{ 
-                                                    maxHeight: '400px', 
                                                     maxWidth: '100%', 
-                                                    display: 'block',
+                                                    maxHeight: '100%', 
+                                                    objectFit: 'contain',
+                                                    display: 'block'
                                                 }} 
                                             />
                                         ) : (
@@ -177,7 +192,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                 </div>
 
                 {/* Footer */}
-                <div style={{ textAlign: 'left', fontWeight: 'bold', fontStyle: 'italic', fontSize: '10pt', position: 'absolute', bottom: '0.4in', left: '0.5in', right: '0.5in' }}>
+                <div style={{ textAlign: 'left', fontWeight: 'bold', fontStyle: 'italic', fontSize: '10pt', position: 'absolute', bottom: '0.2in', left: '0.2in', right: '0.2in' }}>
                     MARCO POLO ORIENTAL RUGS | 3260 DUKE STREET, ALEXANDRIA, VA 22314 | (703) 461-0207
                 </div>
             </div>
