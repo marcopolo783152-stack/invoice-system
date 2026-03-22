@@ -59,19 +59,11 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                                 `}</style>
                             </defs>
                             
-                            {/* Layer 1: The Dark Green Base (Thick) */}
-                            <text x="450" y="55" fontSize="40" className="algerian-svg" fill="#065f46" stroke="#065f46" strokeWidth="1.2">
+                            {/* Solid Green Header as requested */}
+                            <text x="450" y="55" fontSize="26" className="algerian-svg" fill="#065f46">
                                 CERTIFICATE OF AUTHENTICITY &
                             </text>
-                            <text x="450" y="115" fontSize="52" className="algerian-svg" fill="#065f46" stroke="#065f46" strokeWidth="1.2">
-                                APPRAISAL
-                            </text>
-
-                            {/* Layer 2: The "Inline" White Stroke which creates the Algerian look */}
-                            <text x="450" y="55" fontSize="40" className="algerian-svg" fill="#065f46" stroke="white" strokeWidth="0.6" opacity="0.9">
-                                CERTIFICATE OF AUTHENTICITY &
-                            </text>
-                            <text x="450" y="115" fontSize="52" className="algerian-svg" fill="#065f46" stroke="white" strokeWidth="0.6" opacity="0.9">
+                            <text x="450" y="115" fontSize="26" className="algerian-svg" fill="#065f46">
                                 APPRAISAL
                             </text>
                         </svg>
