@@ -202,8 +202,21 @@ export default function AppraisalTemplate({ appraisal }: Props) {
             {/* Specific Print Styles to ensure exact formatting when printing */}
             <style dangerouslySetInnerHTML={{__html: `
                 @media print {
-                    @page { margin: 0; size: letter; }
-                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
+                    @page { 
+                        size: letter; 
+                        margin: 0.5in; 
+                    }
+                    body { 
+                        -webkit-print-color-adjust: exact; 
+                        print-color-adjust: exact; 
+                        background: white !important;
+                    }
+                    .pdf-page {
+                        box-shadow: none !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                    }
                 }
             `}} />
         </div>
