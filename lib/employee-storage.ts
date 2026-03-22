@@ -141,6 +141,9 @@ export async function clockInOut(
     facePhoto?: string,
     location?: TimeLog['location']
 ): Promise<{ employee: Employee, log: TimeLog }> {
+    // Ensure anyone left IN from previous shifts or past 6PM is auto-clocked out before creating new logs.
+    await checkAutoClockOut();
+
     const employees = await getEmployees();
     const employee = employees.find(e => {
         const cleanId = identifier.trim();
