@@ -13,6 +13,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  getDoc,
   getDocs,
   query,
   updateDoc,
@@ -156,6 +157,55 @@ export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
     return [];
   }
 }
+
+/**
+ * Get a specific invoice from Firebase by ID
+ */
+export async function getInvoiceByIdFromCloud(id: string): Promise<SavedInvoice | null> {
+  if (!isFirebaseConfigured() || !db) {
+    return null;
+  }
+
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const snap = await getDoc(docRef);
+
+    if (!snap.exists()) {
+      return null;
+    }
+
+    const data = snap.data();
+    let createdAt = new Date();
+    let updatedAt = new Date();
+
+    try {
+      createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt?.seconds ? data.createdAt.seconds * 1000 : (data.createdAt || Date.now()));
+      if (isNaN(createdAt.getTime())) createdAt = new Date();
+    } catch (e) { }
+
+    try {
+      const ud = data.updatedAt || data.createdAt;
+      updatedAt = ud?.toDate ? ud.toDate() : new Date(ud?.seconds ? ud.seconds * 1000 : (ud || Date.now()));
+      if (isNaN(updatedAt.getTime())) updatedAt = createdAt;
+    } catch (e) { updatedAt = createdAt; }
+
+    return {
+      id: snap.id,
+      invoiceNumber: data.invoiceNumber || 'UNKNOWN',
+      customerName: data.customerName || 'Unknown',
+      date: data.date || '',
+      totalAmount: data.totalAmount || 0,
+      data: data.data || {} as InvoiceData,
+      createdAt,
+      updatedAt
+    };
+  } catch (error) {
+    checkFirebaseQuotaError(error);
+    console.error('Error getting invoice by ID from cloud:', error);
+    return null;
+  }
+}
+
 
 /**
  * Update invoice in Firebase

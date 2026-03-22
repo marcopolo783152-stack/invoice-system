@@ -426,12 +426,22 @@ function InvoiceViewContent() {
         const currentData = invoice.data as any;
         const currentPayments = currentData.payments || [];
 
+        const newPayments = [...currentPayments, payment];
+        const newData = {
+            ...currentData,
+            payments: newPayments
+        };
+        
+        const calcs = calculateInvoice(newData);
+        if (calcs.balanceDue <= 0.01) {
+            newData.terms = 'Paid';
+        } else {
+            newData.terms = 'Outstanding';
+        }
+
         const updatedInvoice = {
             ...invoice,
-            data: {
-                ...invoice.data,
-                payments: [...currentPayments, payment]
-            },
+            data: newData,
             updatedAt: new Date().toISOString()
         };
 
@@ -459,12 +469,21 @@ function InvoiceViewContent() {
             const currentPayments = invoice.data.payments || [];
             const updatedPayments = currentPayments.filter(p => p.id !== paymentId);
 
+            const newData = {
+                ...invoice.data,
+                payments: updatedPayments
+            };
+            
+            const calcs = calculateInvoice(newData);
+            if (calcs.balanceDue <= 0.01) {
+                newData.terms = 'Paid';
+            } else {
+                newData.terms = 'Outstanding';
+            }
+
             const updatedInvoice = {
                 ...invoice,
-                data: {
-                    ...invoice.data,
-                    payments: updatedPayments
-                },
+                data: newData,
                 updatedAt: new Date().toISOString()
             };
 

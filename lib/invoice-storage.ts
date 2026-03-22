@@ -102,7 +102,8 @@ import {
   restoreFromCloudBin,
   getBinInvoicesFromCloud,
   permanentlyDeleteFromCloudBin,
-  SavedInvoice as CloudInvoice
+  SavedInvoice as CloudInvoice,
+  getInvoiceByIdFromCloud
 } from './firebase-storage';
 import { isFirebaseConfigured } from './firebase';
 import { updateInventoryStatusFromInvoice } from './inventory-storage';
@@ -386,14 +387,28 @@ export function getInvoiceById(id: string): SavedInvoice | null {
  * Get invoice by ID (asynchronous, checks cloud + local)
  */
 export async function getInvoiceByIdAsync(id: string): Promise<SavedInvoice | null> {
+  if (isFirebaseConfigured()) {
+    try {
+      const cloudInv = await getInvoiceByIdFromCloud(id);
+      if (cloudInv) {
+        return {
+          id: cloudInv.id,
+          data: cloudInv.data,
+          createdAt: cloudInv.createdAt.toISOString(),
+          updatedAt: (cloudInv.updatedAt || cloudInv.createdAt).toISOString(),
+          documentType: (cloudInv.data.documentType || 'INVOICE') as any
+        };
+      }
+    } catch (error) {
+      console.error('Failed to fetch invoice from cloud by ID, falling back to local', error);
+    }
+  }
+
   // First try local
   const local = getInvoiceById(id);
   if (local) return local;
 
-  // Then try fetching all (which checks cloud)
-  // Optimization: In a real app we'd fetch just one, but here we reuse existing logic
-  const all = await getAllInvoices();
-  return all.find(inv => inv.id === id) || null;
+  return null;
 }
 
 /**

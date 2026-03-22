@@ -600,48 +600,6 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
 
       {/* Payment Status & Terms */}
       <div className={styles.row}>
-        <div className={styles.formGroup}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            Payment Status:
-            {terms?.toLowerCase().includes('paid') && <span style={{ fontSize: 12, background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: 4 }}>PAID</span>}
-          </label>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-            <button
-              type="button"
-              onClick={() => setTerms('Paid')}
-              style={{
-                flex: 1,
-                padding: '10px',
-                border: 'none',
-                background: terms === 'Paid' ? '#16a34a' : '#f3f4f6',
-                color: terms === 'Paid' ? 'white' : '#6b7280',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                transition: 'all 0.2s'
-              }}
-            >
-              ✅ Paid
-            </button>
-            <button
-              type="button"
-              onClick={() => setTerms('Due on Receipt')}
-              style={{
-                flex: 1,
-                padding: '10px',
-                border: 'none',
-                background: terms !== 'Paid' ? '#dc2626' : '#f3f4f6',
-                color: terms !== 'Paid' ? 'white' : '#6b7280',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                transition: 'all 0.2s'
-              }}
-            >
-              ⏳ Unpaid
-            </button>
-          </div>
-        </div>
         <div className={styles.formGroup} style={{ flex: 2 }}>
           <label>Terms:</label>
           <input
