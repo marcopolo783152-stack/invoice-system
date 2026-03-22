@@ -59,11 +59,11 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                                 `}</style>
                             </defs>
                             
-                            {/* Solid Green Header at exact size 28 */}
-                            <text x="450" y="55" fontSize="28" className="algerian-svg" fill="#065f46">
+                            {/* Solid Green Header at exact size 34 */}
+                            <text x="450" y="55" fontSize="34" className="algerian-svg" fill="#065f46">
                                 CERTIFICATE OF AUTHENTICITY &
                             </text>
-                            <text x="450" y="115" fontSize="28" className="algerian-svg" fill="#065f46">
+                            <text x="450" y="115" fontSize="34" className="algerian-svg" fill="#065f46">
                                 APPRAISAL
                             </text>
                         </svg>
