@@ -10,7 +10,7 @@ function PrintContent() {
     const searchParams = useSearchParams();
     const [appraisal, setAppraisal] = useState<Appraisal | null>(null);
     const [loading, setLoading] = useState(true);
-
+    const [isPrinting, setIsPrinting] = useState(false);
     const printRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -40,9 +40,15 @@ function PrintContent() {
                 <button 
                     onClick={async () => {
                         if (printRef.current) {
-                            await openPDFInNewTab(printRef.current, `Appraisal_${appraisal.id}`);
+                            setIsPrinting(true);
+                            try {
+                                await openPDFInNewTab(printRef.current, `Appraisal_${appraisal.id}`);
+                            } finally {
+                                setIsPrinting(false);
+                            }
                         }
                     }}
+                    disabled={isPrinting}
                     style={{ 
                         padding: '12px 24px', 
                         fontSize: '16px', 
@@ -51,18 +57,25 @@ function PrintContent() {
                         color: 'white', 
                         border: 'none', 
                         borderRadius: '8px',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                        cursor: isPrinting ? 'wait' : 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        opacity: isPrinting ? 0.7 : 1
                     }}
                 >
-                    🖨️ Print Certificate
+                    {isPrinting ? '⏳ Preparing...' : '🖨️ Print Certificate'}
                 </button>
                 <button 
                     onClick={async () => {
                         if (printRef.current) {
-                            await generatePDF(printRef.current, `Appraisal_${appraisal.id}`);
+                            setIsPrinting(true);
+                            try {
+                                await generatePDF(printRef.current, `Appraisal_${appraisal.id}`);
+                            } finally {
+                                setIsPrinting(false);
+                            }
                         }
                     }}
+                    disabled={isPrinting}
                     style={{ 
                         padding: '12px 24px', 
                         fontSize: '16px', 
@@ -71,18 +84,22 @@ function PrintContent() {
                         color: 'white', 
                         border: 'none', 
                         borderRadius: '8px',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                        cursor: isPrinting ? 'wait' : 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        opacity: isPrinting ? 0.7 : 1
                     }}
                 >
-                    📄 Download PDF
+                    {isPrinting ? '⏳ Preparing...' : '📄 Download PDF'}
                 </button>
             </div>
 
             {/* The A4/Letter Sized Document Container */}
             <div style={{ boxShadow: '0 0 20px rgba(0,0,0,0.5)', width: 'max-content', margin: '0 auto' }}>
-                <div ref={printRef} className="pdf-page" style={{ background: 'white' }}>
-                    <AppraisalTemplate appraisal={appraisal} />
+                {/* PDF generation ref must contain the pdf-page div */}
+                <div ref={printRef}>
+                    <div className="pdf-page" style={{ background: 'white' }}>
+                        <AppraisalTemplate appraisal={appraisal} />
+                    </div>
                 </div>
             </div>
 
