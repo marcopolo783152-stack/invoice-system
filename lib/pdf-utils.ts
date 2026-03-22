@@ -44,9 +44,9 @@ async function createPDF(invoiceElement: HTMLElement, invoiceNumber: string, isD
       const page = pages[i] as HTMLElement;
 
       // Generate canvas for the page
-      // We use a higher scale for Ultra High Quality (4x)
+      // We use a 3x scale for High Quality (Best balance of speed and sharpness)
       const canvas = await html2canvas(page, {
-        scale: 4, // Ultra Quality for sharp text and photos
+        scale: 3, // Balanced High Quality (faster than 4x)
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
