@@ -44,13 +44,37 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                     />
                     <div style={{
                         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-                        fontFamily: '"Cinzel Decorative", Algerian, serif',
-                        color: '#065f46', // Professional Dark Green
-                        textShadow: '1px 1px 1px rgba(255,255,255,0.6)'
+                        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'
                     }}>
-                        <div style={{ fontSize: '28pt', fontWeight: 'bold', paddingTop: '10px' }}>CERTIFICATE OF AUTHENTICITY &</div>
-                        <div style={{ fontSize: '28pt', fontWeight: 'bold', marginTop: '5px' }}>APPRAISAL</div>
+                        <svg width="100%" height="100%" viewBox="0 0 900 140" preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
+                            <defs>
+                                <style>{`
+                                    @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap');
+                                    .algerian-svg {
+                                        font-family: Algerian, "Cinzel Decorative", serif;
+                                        font-weight: 700;
+                                        text-anchor: middle;
+                                        letter-spacing: 2px;
+                                    }
+                                `}</style>
+                            </defs>
+                            
+                            {/* Layer 1: The Dark Green Base (Thick) */}
+                            <text x="450" y="55" fontSize="40" className="algerian-svg" fill="#065f46" stroke="#065f46" strokeWidth="1.2">
+                                CERTIFICATE OF AUTHENTICITY &
+                            </text>
+                            <text x="450" y="115" fontSize="52" className="algerian-svg" fill="#065f46" stroke="#065f46" strokeWidth="1.2">
+                                APPRAISAL
+                            </text>
+
+                            {/* Layer 2: The "Inline" White Stroke which creates the Algerian look */}
+                            <text x="450" y="55" fontSize="40" className="algerian-svg" fill="#065f46" stroke="white" strokeWidth="0.6" opacity="0.9">
+                                CERTIFICATE OF AUTHENTICITY &
+                            </text>
+                            <text x="450" y="115" fontSize="52" className="algerian-svg" fill="#065f46" stroke="white" strokeWidth="0.6" opacity="0.9">
+                                APPRAISAL
+                            </text>
+                        </svg>
                     </div>
                 </div>
 
