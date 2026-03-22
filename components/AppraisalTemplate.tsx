@@ -20,7 +20,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
         <div style={{ 
             width: '8.5in',
             minHeight: '11in',
-            padding: '0.5in', // 0.5 inch margins as standard in MS Word
+            padding: '0.5in 0.5in 1.2in 0.5in', // Increased bottom margin significantly (1.2in)
             margin: '0 auto',
             background: 'white',
             fontFamily: '"Times New Roman", Times, serif', // Classic appraisal font
