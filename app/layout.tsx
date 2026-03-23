@@ -10,6 +10,7 @@ import ExportPreviewModal from '@/components/ExportPreviewModal';
 import HelpModal from '@/components/HelpModal';
 import NotificationModal from '@/components/NotificationModal';
 import { useState, useEffect, Suspense } from 'react';
+import { checkAutoClockOut } from '@/lib/employee-storage';
 
 const inter = Inter({ subsets: ['latin'] });
 const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '700'] });
@@ -60,10 +61,19 @@ export default function RootLayout({
     const handleOpenNotifications = () => setShowNotifications(true);
     window.addEventListener('open-notifications', handleOpenNotifications);
 
+    // Global background interval to auto-clock out employees exactly at 6:00 PM if the dashboard is open
+    const clockOutInterval = setInterval(() => {
+      const now = new Date();
+      if (now.getHours() === 18 && now.getMinutes() === 0) {
+        checkAutoClockOut();
+      }
+    }, 60000);
+
     return () => {
       window.removeEventListener('storage', checkAuth);
       window.removeEventListener('open-notifications', handleOpenNotifications);
       clearInterval(interval);
+      clearInterval(clockOutInterval);
     };
   }, []);
 
