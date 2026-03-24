@@ -62,12 +62,18 @@ export default function RootLayout({
     window.addEventListener('open-notifications', handleOpenNotifications);
 
     // Global background interval to auto-clock out employees exactly at 6:00 PM if the dashboard is open
+    // We use a local state flag to prevent multi-firing and safeguard against browser throttling skipping the 18:00 minute
     const clockOutInterval = setInterval(() => {
       const now = new Date();
-      if (now.getHours() === 18 && now.getMinutes() === 0) {
-        checkAutoClockOut();
+      if (now.getHours() >= 18) {
+        const lastAuto = localStorage.getItem('last_auto_clock_out');
+        const todayStr = now.toDateString();
+        if (lastAuto !== todayStr) {
+            checkAutoClockOut();
+            localStorage.setItem('last_auto_clock_out', todayStr);
+        }
       }
-    }, 60000);
+    }, 30000); // Check every 30 seconds
 
     return () => {
       window.removeEventListener('storage', checkAuth);

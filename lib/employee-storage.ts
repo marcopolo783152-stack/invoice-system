@@ -242,11 +242,17 @@ export async function checkAutoClockOut(): Promise<number> {
         const endOfShift = new Date(lastActionDate);
         endOfShift.setHours(18, 0, 0, 0);
 
-        // If they clocked in AFTER 6 PM (unlikely but possible), 
-        // they shouldn't be auto-clocked out immediately.
-        if (lastActionDate >= endOfShift) continue;
+        // If they clocked in AFTER 6 PM today, leave them for now.
+        if (lastActionDate >= endOfShift && isToday) continue;
 
-        const timestamp = endOfShift.toISOString();
+        let clockOutTime = endOfShift;
+        // If they clocked in after 6 PM on a previous day, clock them out at 11:59 PM that same day to avoid negative time
+        if (lastActionDate >= endOfShift) {
+            clockOutTime = new Date(lastActionDate);
+            clockOutTime.setHours(23, 59, 59, 999);
+        }
+
+        const timestamp = clockOutTime.toISOString();
 
         // Create manual-style clock-out log
         const log: TimeLog = {
