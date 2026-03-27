@@ -135,6 +135,12 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [discountPercentage, setDiscountPercentage] = useState(
     initialData?.discountPercentage || 0
   );
+  const [discountValue, setDiscountValue] = useState(
+    initialData?.discountValue !== undefined ? initialData.discountValue : (initialData?.discountPercentage || 0)
+  );
+  const [discountType, setDiscountType] = useState<'percentage' | 'amount'>(
+    initialData?.discountType || 'percentage'
+  );
   const [downpayment, setDownpayment] = useState(
     initialData?.downpayment || 0
   );
@@ -198,6 +204,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         terms: '',
         soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' },
         discountPercentage,
+        discountValue,
+        discountType,
         additionalCharges,
         downpayment,
         payments: initialData?.payments || [] // Use existing payments from editing
@@ -210,7 +218,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         setTerms(newTerms);
       }
     }
-  }, [items, mode, documentType, discountPercentage, additionalCharges, downpayment, initialData?.payments]);
+  }, [items, mode, documentType, discountValue, discountType, additionalCharges, downpayment, initialData?.payments]);
 
 
   const handleSkuChange = async (itemId: string, value: string) => {
@@ -449,11 +457,11 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       soldTo,
       items,
       mode,
-      discountPercentage: (mode.startsWith('retail') || mode === 'wash') ? discountPercentage : undefined,
-      downpayment, // Ensure downpayment is included
       additionalCharges,
       notes,
       signature,
+      discountType,
+      discountValue,
       servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
       pickupDate: documentType === 'WASH' ? pickupDate : undefined,
       // Auto-calculate status if it's currently 'washing' or 'repairing' (initial states)
@@ -1181,64 +1189,68 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                 </tr>
 
                 {documentType === 'CONSIGNMENT' && (
-                  <>
-                    <tr>
-                      <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Downpayment:</td>
-                      <td style={{ padding: '8px 0', textAlign: 'right', minWidth: 100 }}>
-                        <input
-                          type="number"
-                          value={downpayment}
-                          onChange={(e) => setDownpayment(Number(e.target.value))}
-                          onFocus={(e) => e.target.select()}
-                          min="0"
-                          step="0.01"
-                          style={{ width: '100%', textAlign: 'right', padding: '4px', borderRadius: 4, border: '1px solid #cbd5e1', fontWeight: 600, color: '#0f172a' }}
-                          placeholder="0.00"
-                        />
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Balance Due:</td>
-                      <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
-                        {(() => {
-                          const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, downpayment });
-                          return formatCurrency(calc.balanceDue || 0);
-                        })()}
-                      </td>
-                    </tr>
-                  </>
+                  <tr>
+                    <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Downpayment:</td>
+                    <td style={{ padding: '8px 0', textAlign: 'right', minWidth: 100 }}>
+                      <input
+                        type="number"
+                        value={downpayment}
+                        onChange={(e) => setDownpayment(Number(e.target.value))}
+                        onFocus={(e) => e.target.select()}
+                        min="0"
+                        step="0.01"
+                        style={{ width: '100%', textAlign: 'right', padding: '4px', borderRadius: 4, border: '1px solid #cbd5e1', fontWeight: 600, color: '#0f172a' }}
+                        placeholder="0.00"
+                      />
+                    </td>
+                  </tr>
                 )}
-                {documentType !== 'CONSIGNMENT' && (
-                  <>
-                    {(isRetail || mode === 'wash') && discountPercentage > 0 && (
-                      <tr>
-                        <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Discount ({discountPercentage}%):</td>
-                        <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
-                          {(() => {
-                            const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountPercentage });
-                            return `-${formatCurrency(calc.discount)}`;
-                          })()}
-                        </td>
-                      </tr>
-                    )}
-                    {additionalCharges.map(charge => (
-                      <tr key={charge.id}>
-                        <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>{charge.description}:</td>
-                        <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
-                          +{formatCurrency(charge.amount)}
-                        </td>
-                      </tr>
-                    ))}
-                    <tr>
-                      <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Total Due:</td>
-                      <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
-                        {(() => {
-                          const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountPercentage, additionalCharges });
-                          return formatCurrency(calc.totalDue);
-                        })()}
-                      </td>
-                    </tr>
-                  </>
+
+                {discountValue > 0 && (
+                  <tr>
+                    <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>
+                      Discount ({discountType === 'percentage' ? `${discountValue}%` : formatCurrency(discountValue)}):
+                    </td>
+                    <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
+                      {(() => {
+                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType });
+                        return `-${formatCurrency(calc.discount)}`;
+                      })()}
+                    </td>
+                  </tr>
+                )}
+
+                {additionalCharges.map(charge => (
+                  <tr key={charge.id}>
+                    <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>{charge.description}:</td>
+                    <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
+                      +{formatCurrency(charge.amount)}
+                    </td>
+                  </tr>
+                ))}
+
+                <tr>
+                  <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>
+                    {documentType === 'CONSIGNMENT' ? 'Total Consignment Value:' : 'Total Due:'}
+                  </td>
+                  <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
+                    {(() => {
+                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, additionalCharges });
+                      return formatCurrency(calc.totalDue);
+                    })()}
+                  </td>
+                </tr>
+
+                {documentType === 'CONSIGNMENT' && (
+                  <tr>
+                    <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Balance Due:</td>
+                    <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
+                      {(() => {
+                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, downpayment, additionalCharges });
+                        return formatCurrency(calc.balanceDue || 0);
+                      })()}
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -1246,24 +1258,35 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         </div>
       </div >
 
-      {/* Additional Options */}
-      {
-        (isRetail || mode === 'wash') && (
-          <div className={styles.formGroup}>
-            <label>Discount (%):</label>
-            <input
-              type="number"
-              value={discountPercentage}
-              onChange={(e) => setDiscountPercentage(Number(e.target.value))}
-              onFocus={(e) => e.target.select()}
-              min="0"
-              max="100"
-              step="0.01"
-              className={styles.input}
-            />
-          </div>
-        )
-      }
+      <div className={styles.formGroup}>
+        <label>Discount:</label>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select
+            value={discountType}
+            onChange={(e) => setDiscountType(e.target.value as 'percentage' | 'amount')}
+            className={styles.select}
+            style={{ width: 'auto', minWidth: 120 }}
+          >
+            <option value="percentage">Percentage (%)</option>
+            <option value="amount">Fixed Amount ($)</option>
+          </select>
+          <input
+            type="number"
+            value={discountValue}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              setDiscountValue(val);
+              setDiscountPercentage(discountType === 'percentage' ? val : 0);
+            }}
+            onFocus={(e) => e.target.select()}
+            min="0"
+            max={discountType === 'percentage' ? 100 : undefined}
+            step="0.01"
+            className={styles.input}
+            placeholder={discountType === 'percentage' ? '0%' : '$0.00'}
+          />
+        </div>
+      </div>
 
       <div className={styles.formGroup}>
         <label>Additional Charges:</label>

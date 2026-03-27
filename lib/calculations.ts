@@ -96,7 +96,9 @@ export interface InvoiceData {
   };
   items: InvoiceItem[];
   mode: InvoiceMode;
-  discountPercentage?: number;  // Optional, only for retail modes
+  discountPercentage?: number;  // LEGACY: Still used for backward compatibility
+  discountValue?: number;       // New: Unified discount value
+  discountType?: 'percentage' | 'amount'; // New: Type of discount
   additionalCharges?: { id: string; amount: number; description: string }[];
   notes?: string;
   signature?: string;  // Base64 encoded signature image
@@ -249,23 +251,32 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     .reduce((sum, item) => sum + item.amount, 0);
 
   const returnedAmount = subtotal - netSubtotal;
+  const isWash = data.documentType === 'WASH' || data.mode === 'wash'; 
 
-  // Calculate discount (only for retail OR wash)
+  // Calculate discount (Now for ALL modes)
   let discount = 0;
-  const isWash = data.documentType === 'WASH' || data.mode === 'wash'; // Check mode too for safety
+  const discountType = data.discountType || 'percentage';
+  const discountValue = data.discountValue !== undefined ? data.discountValue : (data.discountPercentage || 0);
 
-  if ((isRetail || isWash) && data.discountPercentage) {
-    discount = subtotal * (data.discountPercentage / 100);
+  if (discountType === 'percentage') {
+    discount = subtotal * (discountValue / 100);
+  } else {
+    discount = discountValue;
   }
 
-  // Net discount (proportional to net subtotal)
+  // Calculate net discount (proportional to net subtotal for percentage, or fixed for amount)
   let netDiscount = 0;
-  if ((isRetail || isWash) && data.discountPercentage) {
-    netDiscount = netSubtotal * (data.discountPercentage / 100);
+  if (discountType === 'percentage') {
+    netDiscount = netSubtotal * (discountValue / 100);
+  } else {
+    // For fixed amount discounts, if there are returns, we need to decide if the discount is reduced.
+    // Standard business logic usually keeps the fixed discount unless it exceeds the total.
+    // But for consistency with percentage, we'll apply it to the net total, capped by net subtotal.
+    netDiscount = Math.min(discountValue, netSubtotal);
   }
 
-  const subtotalAfterDiscount = subtotal - discount;
-  const netSubtotalAfterDiscount = netSubtotal - netDiscount;
+  const subtotalAfterDiscount = Math.max(0, subtotal - discount);
+  const netSubtotalAfterDiscount = Math.max(0, netSubtotal - netDiscount);
 
   // Calculate sales tax (only for retail, applied after discount, but not for consignments or wash)
   let salesTax = 0;

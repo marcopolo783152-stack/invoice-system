@@ -359,11 +359,11 @@ export default function InvoiceTemplate({
                         </tr>
                       )}
 
-                      {/* Discount Row - Retail OR Wash */}
-                      {(isRetail || data.mode === 'wash') && calculations.discount > 0 && (
+                      {/* Discount Row - ALL MODES */}
+                      {calculations.discount > 0 && (
                         <tr>
                           <td className={styles.totalLabel}>
-                            Discount ({data.discountPercentage}%):
+                            Discount ({data.discountType === 'amount' ? formatCurrency(data.discountValue || 0) : `${data.discountValue || data.discountPercentage || 0}%`}):
                           </td>
                           <td className={styles.totalValue}>-{formatCurrency(calculations.discount)}</td>
                         </tr>
