@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './BackupModal.module.css';
 import { X, FolderOpen, Save, RefreshCw, AlertTriangle, Download, HardDrive, CheckCircle2 } from 'lucide-react';
 import { exportToDirectory } from '@/lib/bulk-export';
-import { getAllInvoices, getUnbackedInvoices, confirmSmartBackupComplete, SavedInvoice } from '@/lib/invoice-storage';
+import { getAllInvoices, getUnbackedData, confirmSmartBackupComplete, SavedInvoice } from '@/lib/invoice-storage';
 
 interface BackupModalProps {
     onClose: () => void;
@@ -16,6 +16,7 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [unbackedInvoices, setUnbackedInvoices] = useState<SavedInvoice[]>([]);
+    const [unbackedCount, setUnbackedCount] = useState<number>(0);
     const [backupType, setBackupType] = useState<'incremental' | 'full'>('incremental');
 
     useEffect(() => {
@@ -27,13 +28,17 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
         }
 
         // Check for unbacked changes
-        const unbacked = getUnbackedInvoices();
-        setUnbackedInvoices(unbacked);
-        if (unbacked.length === 0) {
-            setBackupType('full');
-        } else {
-            setBackupType('incremental');
-        }
+        const checkUnbacked = async () => {
+            const unbackedData = await getUnbackedData();
+            setUnbackedInvoices(unbackedData.invoices);
+            setUnbackedCount(unbackedData.totalCount);
+            if (unbackedData.totalCount === 0) {
+                setBackupType('full');
+            } else {
+                setBackupType('incremental');
+            }
+        };
+        checkUnbacked();
     }, [isWeb]);
 
     const handleSelectFolder = async () => {
@@ -58,10 +63,10 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
             if (backupType === 'full') {
                 invoicesToBackup = await getAllInvoices();
             } else {
-                invoicesToBackup = getUnbackedInvoices();
+                invoicesToBackup = unbackedInvoices;
             }
 
-            if (invoicesToBackup.length === 0) {
+            if (invoicesToBackup.length === 0 && backupType === 'full') {
                 setStatus('error');
                 setMessage('No invoices found to backup.');
                 setLoading(false);
@@ -153,17 +158,17 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
                         <label className={styles.label}>Backup Type</label>
                         <div className={styles.backupOptions}>
                             <button
-                                className={`${styles.optionCard} ${backupType === 'incremental' ? styles.activeOption : ''} ${unbackedInvoices.length === 0 ? styles.disabledOption : ''}`}
-                                onClick={() => unbackedInvoices.length > 0 && setBackupType('incremental')}
-                                disabled={unbackedInvoices.length === 0}
+                                className={`${styles.optionCard} ${backupType === 'incremental' ? styles.activeOption : ''} ${unbackedCount === 0 ? styles.disabledOption : ''}`}
+                                onClick={() => unbackedCount > 0 && setBackupType('incremental')}
+                                disabled={unbackedCount === 0}
                             >
                                 <div className={styles.optionHeader}>
                                     <RefreshCw size={18} />
                                     <span>Incremental</span>
                                 </div>
-                                <p className={styles.optionDesc}>Only new or changed invoices since last backup.</p>
-                                {unbackedInvoices.length > 0 && (
-                                    <div className={styles.badge}>{unbackedInvoices.length} pending</div>
+                                <p className={styles.optionDesc}>Only new or changed data since last backup.</p>
+                                {unbackedCount > 0 && (
+                                    <div className={styles.badge}>{unbackedCount} pending</div>
                                 )}
                             </button>
 

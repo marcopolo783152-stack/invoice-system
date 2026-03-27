@@ -15,20 +15,44 @@ export interface Appraisal {
     value: number;
     rugImage?: string; // Base64 representation of the rug photo
     createdAt: string;
+    updatedAt?: string;
 }
 
 const COLLECTION_NAME = 'appraisals';
 const LOCAL_KEY = 'mns_appraisals_local';
 
+/**
+ * Helper to sanitize data for Firestore (remove undefined)
+ */
+const sanitizeForFirestore = (obj: any): any => {
+  if (obj === undefined) return null;
+  if (obj === null) return null;
+  if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+  if (typeof obj === 'object' && !(obj instanceof Date)) {
+    const newObj: any = {};
+    Object.keys(obj).forEach(key => {
+      const val = sanitizeForFirestore(obj[key]);
+      if (val !== undefined) newObj[key] = val;
+    });
+    return newObj;
+  }
+  return obj;
+};
+
 export async function saveAppraisal(appraisal: Appraisal): Promise<string> {
     const id = appraisal.id || `APP-${Date.now()}`;
-    const data = { ...appraisal, id };
+    const data = { ...appraisal, id, updatedAt: new Date().toISOString() };
 
     if (isFirebaseConfigured() && db) {
         try {
-            await setDoc(doc(db, COLLECTION_NAME, id), data);
-        } catch (e) {
+            const safeData = sanitizeForFirestore(data);
+            await setDoc(doc(db, COLLECTION_NAME, id), safeData);
+        } catch (e: any) {
             console.error('Error saving appraisal to cloud:', e);
+            if (typeof window !== 'undefined') {
+                alert(`Failed to save to server: ${e.message}`);
+            }
+            throw e; // Bubble up error so it doesn't silently fall back incorrectly
         }
     }
 
@@ -48,13 +72,25 @@ export async function getAppraisals(): Promise<Appraisal[]> {
         try {
             const snapshot = await getDocs(query(collection(db, COLLECTION_NAME), orderBy('date', 'desc')));
             const cloudData = snapshot.docs.map(doc => doc.data() as Appraisal);
-            // Optionally cache to local
+            
+            // Merge local and cloud so we don't accidentally erase unsynced local appraisals
             if (typeof window !== 'undefined') {
+                const local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+                const cloudMap = new Map(cloudData.map(a => [a.id, a]));
+                for (const l of local) {
+                    if (!cloudMap.has(l.id)) {
+                        cloudData.push(l); // Keep orphaned local appraisals visible
+                    }
+                }
+                cloudData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                 localStorage.setItem(LOCAL_KEY, JSON.stringify(cloudData));
             }
             return cloudData;
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error fetching appraisals from cloud:', e);
+            if (typeof window !== 'undefined' && e.message?.includes('Missing or insufficient permissions')) {
+                alert("CRITICAL ALARM: Your Firebase Rules are blocking access to Appraisals. Please update your Firestore Rules.");
+            }
         }
     }
 

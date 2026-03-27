@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search, Calculator } from 'lucide-react';
 import { clockInOut, checkAutoClockOut } from '@/lib/employee-storage';
-import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync, getUnbackedInvoices } from '@/lib/invoice-storage';
+import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync, getUnbackedData } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import Link from 'next/link';
 import Login from './Login';
@@ -31,9 +31,10 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
 
     const handleSmartSync = async () => {
         const isElectron = typeof window !== 'undefined' && (window as any).electron;
-        const unbacked = getUnbackedInvoices();
+        const unbackedData = await getUnbackedData();
+        const unbacked = unbackedData.invoices;
 
-        if (unbacked.length === 0) {
+        if (unbackedData.totalCount === 0) {
             setStatus('uptodate');
             return;
         }
@@ -41,12 +42,24 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
         if (!isElectron) {
             // Web Fallback: Use exportToDirectory to save PDFs (Incremental)
             try {
-                await exportToDirectory(unbacked, (p) => {
-                    console.log(p.status);
-                });
+                if (unbacked.length > 0) {
+                    await exportToDirectory(unbacked, (p) => {
+                        console.log(p.status);
+                    });
+                } else {
+                    // Even if no invoices, we still need to run exportToDirectory for JSONs
+                    // but exportToDirectory throws if invoices array is empty. 
+                    // Wait, let's just pass all invoices if unbacked is empty but we need to backup JSONs
+                    // Actually, modifying exportToDirectory to not throw when invoices=[] is safer.
+                    // For now, let's just use getAllInvoicesSync() if unbacked is empty but totalCount > 0
+                    const { getAllInvoicesSync } = await import('@/lib/invoice-storage');
+                    await exportToDirectory(unbacked.length > 0 ? unbacked : getAllInvoicesSync(), (p) => {
+                        console.log(p.status);
+                    });
+                }
                 confirmSmartBackupComplete();
                 setStatus('uptodate');
-                alert(`Sync Complete! ${unbacked.length} new/changed invoices saved as PDFs.`);
+                alert(`Sync Complete! ${unbackedData.totalCount} changes saved.`);
             } catch (error: any) {
                 if (error.name !== 'AbortError') {
                     console.error('Backup failed:', error);
@@ -71,19 +84,38 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
             }
 
             // Perform PDF Sync (Incremental)
-            await exportToDirectory(unbacked, (p) => {
-                console.log(p.status);
-            });
+            if (unbacked.length > 0) {
+                await exportToDirectory(unbacked, (p) => {
+                    console.log(p.status);
+                });
+            } else {
+                // If only Appraisals/Inventory changed, we still want to save JSONs.
+                // Re-run exportToDirectory to dump JSONs (with at least 1 invoice to prevent throw)
+                const { getAllInvoicesSync } = await import('@/lib/invoice-storage');
+                const all = getAllInvoicesSync();
+                if (all.length > 0) {
+                    await exportToDirectory([all[0]], (p) => console.log(p.status));
+                }
+            }
 
             // Also Update Master JSON (Full sync is usually fast for JSON)
             const data = exportInvoices();
             const fullPath = `${path}\\Invoices_Master.json`;
             const result = await (window as any).electron.saveBackup(fullPath, data);
+            
+            const { getAppraisals } = await import('@/lib/appraisals-storage');
+            const { getInventoryItems } = await import('@/lib/inventory-storage');
+
+            const appraisalsData = JSON.stringify(await getAppraisals(), null, 2);
+            await (window as any).electron.saveBackup(`${path}\\Appraisals_Master.json`, appraisalsData);
+
+            const inventoryData = JSON.stringify(await getInventoryItems(), null, 2);
+            await (window as any).electron.saveBackup(`${path}\\Inventory_Master.json`, inventoryData);
 
             if (result.success) {
                 confirmSmartBackupComplete();
                 setStatus('uptodate');
-                alert(`Sync Complete! ${unbacked.length} changes backed up successfully.`);
+                alert(`Sync Complete! ${unbackedData.totalCount} changes backed up successfully.`);
             } else {
                 alert('Sync Failed: ' + result.error);
             }

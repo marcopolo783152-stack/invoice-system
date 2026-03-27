@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup, RefreshCw, Clock, DollarSign, Truck, Wrench } from 'lucide-react';
 import styles from './Sidebar.module.css';
-import { exportAddressBook, getAllInvoices, getOutstandingBalances, getUnbackedInvoices, confirmSmartBackupComplete } from '@/lib/invoice-storage';
+import { exportAddressBook, getAllInvoices, getOutstandingBalances, getUnbackedData, confirmSmartBackupComplete } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
 import { BackupModal } from './BackupModal';
 import ExportPreviewModal from './ExportPreviewModal';
@@ -85,17 +85,32 @@ export default function Sidebar({
                     return;
                 }
 
-                const unbacked = getUnbackedInvoices();
-                const mode = unbacked.length > 0 ? 'incremental' : 'full';
+                const unbackedData = await getUnbackedData();
+                const mode = unbackedData.totalCount > 0 ? 'incremental' : 'full';
                 const message = mode === 'incremental'
-                    ? `Found ${unbacked.length} new/changed invoices. Sync changes?`
-                    : "No new changes found. Start a full backup of all invoices?";
+                    ? `Found ${unbackedData.totalCount} new/changed items across the system. Sync changes?`
+                    : "No new changes found. Start a full backup of all data?";
 
                 if (confirm(message)) {
                     setIsBackingUp(true);
-                    const invoicesToBackup = mode === 'incremental' ? unbacked : await getAllInvoices();
+                    
+                    const invoicesToBackup = mode === 'incremental' ? unbackedData.invoices : await getAllInvoices();
                     const { exportToDirectory } = await import('@/lib/bulk-export');
-                    await exportToDirectory(invoicesToBackup);
+
+                    if (invoicesToBackup.length > 0) {
+                        await exportToDirectory(invoicesToBackup);
+                    } else {
+                        // If no invoices but there are other changes, still export JSONs
+                        const { getAllInvoicesSync } = await import('@/lib/invoice-storage');
+                        const allInv = getAllInvoicesSync();
+                        if (allInv.length > 0) {
+                            await exportToDirectory([allInv[0]]);
+                        } else {
+                            alert("System is completely empty.");
+                            setIsBackingUp(false);
+                            return;
+                        }
+                    }
 
                     if (mode === 'incremental') {
                         confirmSmartBackupComplete();

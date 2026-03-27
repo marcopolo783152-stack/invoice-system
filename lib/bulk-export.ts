@@ -246,6 +246,33 @@ export async function exportToDirectory(
     root.unmount();
     document.body.removeChild(container);
 
+    // Write Master JSONs to root directory
+    onProgress?.({ current: total, total, status: 'Saving Master Data Files...', percentage: 95 });
+    
+    // Dynamically import to avoid circular dependency issues at the top of file
+    const { exportInvoices } = await import('./invoice-storage');
+    const { getAppraisals } = await import('./appraisals-storage');
+    const { getInventoryItems } = await import('./inventory-storage');
+
+    try {
+      const invoicesJsonHandle = await rootHandle.getFileHandle('Invoices_Master.json', { create: true });
+      const writableInv = await invoicesJsonHandle.createWritable();
+      await writableInv.write(exportInvoices());
+      await writableInv.close();
+
+      const appraisalsJsonHandle = await rootHandle.getFileHandle('Appraisals_Master.json', { create: true });
+      const writableApp = await appraisalsJsonHandle.createWritable();
+      await writableApp.write(JSON.stringify(await getAppraisals(), null, 2));
+      await writableApp.close();
+
+      const inventoryJsonHandle = await rootHandle.getFileHandle('Inventory_Master.json', { create: true });
+      const writableInventory = await inventoryJsonHandle.createWritable();
+      await writableInventory.write(JSON.stringify(await getInventoryItems(), null, 2));
+      await writableInventory.close();
+    } catch (e) {
+      console.warn('Could not save one or more JSON Master files', e);
+    }
+
     onProgress?.({ current: total, total, status: 'Backup Complete!', percentage: 100 });
 
   } catch (error) {

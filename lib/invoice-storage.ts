@@ -116,27 +116,16 @@ const SMART_BACKUP_KEY = 'last_smart_backup_ts';
  * Check if there are any changes since the last smart backup
  */
 export async function hasUnbackedChanges(): Promise<boolean> {
-  const invoices = getAllInvoicesSync();
-  if (invoices.length === 0) return false;
-
-  const lastBackup = localStorage.getItem(SMART_BACKUP_KEY);
-  if (!lastBackup) return true; // Never backed up
-
-  // Find the most recent update
-  const latestUpdate = invoices.reduce((max, inv) => {
-    return inv.updatedAt > max ? inv.updatedAt : max;
-  }, '');
-
-  return latestUpdate > lastBackup;
+  const data = await getUnbackedData();
+  return data.totalCount > 0;
 }
 
 /**
  * Mark smart backup as complete
  */
 export function confirmSmartBackupComplete(timestamp?: string): void {
-  const latestUpdate = timestamp || getAllInvoicesSync().reduce((max, inv) => {
-    return inv.updatedAt > max ? inv.updatedAt : max;
-  }, '');
+  // We just set to the current time to be safe, because computing the exact latest timestamp across all collections is overkill
+  const latestUpdate = timestamp || new Date().toISOString();
 
   if (latestUpdate) {
     localStorage.setItem(SMART_BACKUP_KEY, latestUpdate);
@@ -144,7 +133,41 @@ export function confirmSmartBackupComplete(timestamp?: string): void {
 }
 
 /**
- * Get invoices that have been changed or created since the last smart backup
+ * Get data that has been changed or created since the last smart backup
+ */
+export async function getUnbackedData() {
+  const { getAppraisals } = await import('./appraisals-storage');
+  const { getInventoryItems } = await import('./inventory-storage');
+
+  const invoices = getAllInvoicesSync();
+  const appraisals = await getAppraisals();
+  const inventory = await getInventoryItems();
+
+  const lastBackup = localStorage.getItem(SMART_BACKUP_KEY);
+
+  if (!lastBackup) {
+    return {
+      invoices,
+      appraisals,
+      inventory,
+      totalCount: invoices.length + appraisals.length + inventory.length
+    };
+  }
+
+  const unbackedInvoices = invoices.filter(inv => inv.updatedAt > lastBackup);
+  const unbackedAppraisals = appraisals.filter(app => (app.updatedAt || app.createdAt) > lastBackup);
+  const unbackedInventory = inventory.filter(inv => (inv.updatedAt || inv.createdAt) > lastBackup);
+
+  return {
+    invoices: unbackedInvoices,
+    appraisals: unbackedAppraisals,
+    inventory: unbackedInventory,
+    totalCount: unbackedInvoices.length + unbackedAppraisals.length + unbackedInventory.length
+  };
+}
+
+/**
+ * Kept for backward compatibility if needed synchronously
  */
 export function getUnbackedInvoices(): SavedInvoice[] {
   const invoices = getAllInvoicesSync();
