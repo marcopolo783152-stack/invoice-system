@@ -342,6 +342,8 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
   const calcs = calculateInvoice(safeData as any);
   const totalAmount = calcs.totalDue;
 
+  const existing = existingId ? allInvoices.find(inv => inv.id === existingId) : null;
+
   if (existingId) {
     // UPDATE EXISTING INVOICE IN CLOUD
     try {
@@ -356,7 +358,7 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
         id: existingId,
         data: safeData as InvoiceData,
         documentType: (safeData.documentType || 'INVOICE') as any,
-        createdAt: now, // We don't have exact createdAt here without full fetch, but it's acceptable for the return object
+        createdAt: existing?.createdAt || now,
         updatedAt: now,
       };
     } catch (error: any) {

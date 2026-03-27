@@ -78,6 +78,7 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
                 await exportToDirectory(invoicesToBackup, (p) => {
                     setMessage(p.status);
                 });
+                if (backupType === 'incremental') confirmSmartBackupComplete();
                 setStatus('success');
                 setMessage('Backup downloaded successfully!');
             } else {
@@ -96,7 +97,7 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
                 const now = new Date().toISOString();
 
                 // If success, mark smart backup as complete
-                confirmSmartBackupComplete();
+                if (backupType === 'incremental') confirmSmartBackupComplete();
 
                 localStorage.setItem('last_backup_date', now);
                 setLastBackup(now);

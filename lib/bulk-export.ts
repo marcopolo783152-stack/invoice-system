@@ -151,12 +151,9 @@ export async function exportSelectedInvoices(
  * Structure: Root -> Sales/Consignment/Wash -> [Invoice#] [Name] [Phone].pdf
  */
 export async function exportToDirectory(
-  invoices: SavedInvoice[],
+  invoices: SavedInvoice[] = [],
   onProgress?: ProgressCallback
 ): Promise<void> {
-  if (invoices.length === 0) {
-    throw new Error('No invoices to backup');
-  }
 
   // 1. Request Directory Handle
   let rootHandle: any;
@@ -178,73 +175,77 @@ export async function exportToDirectory(
       percentage: 0,
     });
 
-    // 2. Create Subdirectories
-    const salesHandle = await rootHandle.getDirectoryHandle('Sales', { create: true });
-    const consignmentHandle = await rootHandle.getDirectoryHandle('Consignment', { create: true });
-    const washHandle = await rootHandle.getDirectoryHandle('Wash_Repair_Services', { create: true });
-
-    // Container (Hidden)
-    const container = document.createElement('div');
-    Object.assign(container.style, {
-      position: 'absolute', left: '-10000px', top: '0', width: '800px', visibility: 'visible'
-    });
-    document.body.appendChild(container);
-    const root = createRoot(container);
-
-    for (let i = 0; i < invoices.length; i++) {
-      const invoice = invoices[i];
-      const calculations = calculateInvoice(invoice.data);
-
-      onProgress?.({
-        current: i + 1,
-        total,
-        status: `Backing up ${invoice.data.invoiceNumber}...`,
-        percentage: Math.round(((i + 1) / total) * 100),
-      });
-
-      // Render
-      await new Promise<void>(resolve => {
-        root.render(
-          React.createElement('div', { className: 'pdf-export-wrapper', style: { background: 'white' } },
-            React.createElement(InvoiceTemplate, {
-              data: invoice.data,
-              calculations: calculations,
-              businessInfo: businessConfig
-            })
-          )
-        );
-        setTimeout(resolve, 50);
-      });
-      await new Promise(resolve => setTimeout(resolve, 100)); // Slight delay
-
-      // Generate Blob
-      const pdfBlob = await getInvoicePDFBlob(container, invoice.data.invoiceNumber);
-
-      // Filename: [Invoice#] [Name] [Phone].pdf
-      // Sanitize filename to be safe for Windows
-      const safe = (str: string) => (str || '').replace(/[^a-zA-Z0-9- ]/g, '').trim();
-      const invNum = safe(invoice.data.invoiceNumber);
-      const name = safe(invoice.data.soldTo.name);
-      const phone = safe(invoice.data.soldTo.phone);
-
-      const filename = `${invNum} ${name} ${phone}.pdf`;
-
-      // Determine Target Folder
-      let targetHandle = salesHandle;
-      const type = invoice.data.documentType || 'INVOICE';
-      if (type === 'CONSIGNMENT') targetHandle = consignmentHandle;
-      else if (type === 'WASH') targetHandle = washHandle;
-
-      // Write File
-      const fileHandle = await targetHandle.getFileHandle(filename, { create: true });
-      const writable = await fileHandle.createWritable();
-      await writable.write(pdfBlob);
-      await writable.close();
+    // 2. Create Subdirectories (Only if we have invoices to process)
+    let salesHandle, consignmentHandle, washHandle;
+    if (invoices.length > 0) {
+        salesHandle = await rootHandle.getDirectoryHandle('Sales', { create: true });
+        consignmentHandle = await rootHandle.getDirectoryHandle('Consignment', { create: true });
+        washHandle = await rootHandle.getDirectoryHandle('Wash_Repair_Services', { create: true });
     }
 
-    // Cleanup
-    root.unmount();
-    document.body.removeChild(container);
+    if (invoices.length > 0) {
+        // Container (Hidden)
+        const container = document.createElement('div');
+        Object.assign(container.style, {
+            position: 'absolute', left: '-10000px', top: '0', width: '800px', visibility: 'visible'
+        });
+        document.body.appendChild(container);
+        const root = createRoot(container);
+
+        for (let i = 0; i < invoices.length; i++) {
+            const invoice = invoices[i];
+            const calculations = calculateInvoice(invoice.data);
+
+            onProgress?.({
+                current: i + 1,
+                total,
+                status: `Backing up ${invoice.data.invoiceNumber}...`,
+                percentage: Math.round(((i + 1) / total) * 100),
+            });
+
+            // Render
+            await new Promise<void>(resolve => {
+                root.render(
+                    React.createElement('div', { className: 'pdf-export-wrapper', style: { background: 'white' } },
+                        React.createElement(InvoiceTemplate, {
+                            data: invoice.data,
+                            calculations: calculations,
+                            businessInfo: businessConfig
+                        })
+                    )
+                );
+                setTimeout(resolve, 50);
+            });
+            await new Promise(resolve => setTimeout(resolve, 100)); // Slight delay
+
+            // Generate Blob
+            const pdfBlob = await getInvoicePDFBlob(container, invoice.data.invoiceNumber);
+
+            // Filename: [Invoice#] [Name] [Phone].pdf
+            const safe = (str: string) => (str || '').replace(/[^a-zA-Z0-9- ]/g, '').trim();
+            const invNum = safe(invoice.data.invoiceNumber);
+            const name = safe(invoice.data.soldTo.name);
+            const phone = safe(invoice.data.soldTo.phone);
+
+            const filename = `${invNum} ${name} ${phone}.pdf`;
+
+            // Determine Target Folder
+            let targetHandle = salesHandle;
+            const type = invoice.data.documentType || 'INVOICE';
+            if (type === 'CONSIGNMENT') targetHandle = consignmentHandle;
+            else if (type === 'WASH') targetHandle = washHandle;
+
+            // Write File
+            const fileHandle = await targetHandle!.getFileHandle(filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(pdfBlob);
+            await writable.close();
+        }
+
+        // Cleanup
+        root.unmount();
+        document.body.removeChild(container);
+    }
 
     // Write Master JSONs to root directory
     onProgress?.({ current: total, total, status: 'Saving Master Data Files...', percentage: 95 });

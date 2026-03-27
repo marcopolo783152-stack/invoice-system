@@ -42,21 +42,9 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
         if (!isElectron) {
             // Web Fallback: Use exportToDirectory to save PDFs (Incremental)
             try {
-                if (unbacked.length > 0) {
-                    await exportToDirectory(unbacked, (p) => {
-                        console.log(p.status);
-                    });
-                } else {
-                    // Even if no invoices, we still need to run exportToDirectory for JSONs
-                    // but exportToDirectory throws if invoices array is empty. 
-                    // Wait, let's just pass all invoices if unbacked is empty but we need to backup JSONs
-                    // Actually, modifying exportToDirectory to not throw when invoices=[] is safer.
-                    // For now, let's just use getAllInvoicesSync() if unbacked is empty but totalCount > 0
-                    const { getAllInvoicesSync } = await import('@/lib/invoice-storage');
-                    await exportToDirectory(unbacked.length > 0 ? unbacked : getAllInvoicesSync(), (p) => {
-                        console.log(p.status);
-                    });
-                }
+                await exportToDirectory(unbacked, (p) => {
+                    console.log(p.status);
+                });
                 confirmSmartBackupComplete();
                 setStatus('uptodate');
                 alert(`Sync Complete! ${unbackedData.totalCount} changes saved.`);
@@ -84,19 +72,9 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
             }
 
             // Perform PDF Sync (Incremental)
-            if (unbacked.length > 0) {
-                await exportToDirectory(unbacked, (p) => {
-                    console.log(p.status);
-                });
-            } else {
-                // If only Appraisals/Inventory changed, we still want to save JSONs.
-                // Re-run exportToDirectory to dump JSONs (with at least 1 invoice to prevent throw)
-                const { getAllInvoicesSync } = await import('@/lib/invoice-storage');
-                const all = getAllInvoicesSync();
-                if (all.length > 0) {
-                    await exportToDirectory([all[0]], (p) => console.log(p.status));
-                }
-            }
+            await exportToDirectory(unbacked, (p) => {
+                console.log(p.status);
+            });
 
             // Also Update Master JSON (Full sync is usually fast for JSON)
             const data = exportInvoices();
