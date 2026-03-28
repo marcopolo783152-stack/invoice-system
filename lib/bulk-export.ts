@@ -6,6 +6,10 @@ import { SavedInvoice } from './invoice-storage';
 import { calculateInvoice } from './calculations';
 import { getInvoicePDFBlob } from './pdf-utils';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
+import AppraisalTemplate from '@/components/AppraisalTemplate';
+import InventoryTemplate from '@/components/InventoryTemplate';
+import { Appraisal } from './appraisals-storage';
+import { InventoryItem } from './inventory-storage';
 import { businessConfig } from '@/config/business';
 
 export interface ExportProgress {
@@ -147,11 +151,12 @@ export async function exportSelectedInvoices(
 }
 
 /**
- * Export ALL invoices directly to a selected folder on disk
- * Structure: Root -> Sales/Consignment/Wash -> [Invoice#] [Name] [Phone].pdf
+ * Export ALL data directly to a selected folder on disk
  */
 export async function exportToDirectory(
   invoices: SavedInvoice[] = [],
+  appraisals: Appraisal[] = [],
+  inventoryItems: InventoryItem[] = [],
   onProgress?: ProgressCallback
 ): Promise<void> {
 
@@ -183,7 +188,24 @@ export async function exportToDirectory(
         washHandle = await rootHandle.getDirectoryHandle('Wash_Repair_Services', { create: true });
     }
 
-    if (invoices.length > 0) {
+    let appraisalsHandle, inventoryHandle;
+    if (appraisals.length > 0) {
+        appraisalsHandle = await rootHandle.getDirectoryHandle('Appraisals', { create: true });
+    }
+    if (inventoryItems.length > 0) {
+        inventoryHandle = await rootHandle.getDirectoryHandle('Inventory_Product_Sheets', { create: true });
+    }
+
+    const totalExport = invoices.length + appraisals.length + inventoryItems.length;
+    let currentProcessed = 0;
+
+    // Helper for high-quality PDF generation
+    // We use Scale 4 for "Perfect System" results
+    const generateHighQualityPDF = async (container: HTMLElement, filename: string) => {
+        return await getInvoicePDFBlob(container, filename);
+    };
+
+    if (totalExport > 0) {
         // Container (Hidden)
         const container = document.createElement('div');
         Object.assign(container.style, {
@@ -219,7 +241,7 @@ export async function exportToDirectory(
             await new Promise(resolve => setTimeout(resolve, 100)); // Slight delay
 
             // Generate Blob
-            const pdfBlob = await getInvoicePDFBlob(container, invoice.data.invoiceNumber);
+            const pdfBlob = await generateHighQualityPDF(container, invoice.data.invoiceNumber);
 
             // Filename: [Invoice#] [Name] [Phone].pdf
             const safe = (str: string) => (str || '').replace(/[^a-zA-Z0-9- ]/g, '').trim();
@@ -240,6 +262,76 @@ export async function exportToDirectory(
             const writable = await fileHandle.createWritable();
             await writable.write(pdfBlob);
             await writable.close();
+            
+            currentProcessed++;
+        }
+
+        // --- PROCESS APPRAISALS ---
+        for (let i = 0; i < appraisals.length; i++) {
+            const appraisal = appraisals[i];
+            
+            onProgress?.({
+                current: currentProcessed + 1,
+                total: totalExport,
+                status: `Backing up Appraisal: ${appraisal.rugNumber || appraisal.id}...`,
+                percentage: Math.round(((currentProcessed + 1) / totalExport) * 100),
+            });
+
+            // Render Appraisal
+            await new Promise<void>(resolve => {
+                root.render(
+                    React.createElement('div', { className: 'pdf-export-wrapper', style: { background: 'white' } },
+                        React.createElement(AppraisalTemplate, { appraisal })
+                    )
+                );
+                setTimeout(resolve, 100); // Appraisals have more images
+            });
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            const pdfBlob = await generateHighQualityPDF(container, appraisal.rugNumber || appraisal.id || 'unknown');
+            const safe = (str: string) => (str || '').replace(/[^a-zA-Z0-9- ]/g, '').trim();
+            const filename = `Appraisal_${safe(appraisal.rugNumber || appraisal.id || 'unknown')}_${safe(appraisal.customerName || 'unknown')}.pdf`;
+
+            const fileHandle = await appraisalsHandle!.getFileHandle(filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(pdfBlob);
+            await writable.close();
+
+            currentProcessed++;
+        }
+
+        // --- PROCESS INVENTORY PRODUCT SHEETS ---
+        for (let i = 0; i < inventoryItems.length; i++) {
+            const item = inventoryItems[i];
+            
+            onProgress?.({
+                current: currentProcessed + 1,
+                total: totalExport,
+                status: `Backing up Product Sheet: ${item.sku}...`,
+                percentage: Math.round(((currentProcessed + 1) / totalExport) * 100),
+            });
+
+            // Render Inventory Sheet
+            await new Promise<void>(resolve => {
+                root.render(
+                    React.createElement('div', { className: 'pdf-export-wrapper', style: { background: 'white' } },
+                        React.createElement(InventoryTemplate, { item })
+                    )
+                );
+                setTimeout(resolve, 100);
+            });
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            const pdfBlob = await generateHighQualityPDF(container, item.sku || 'unknown');
+            const safeItem = (str: string) => (str || '').replace(/[^a-zA-Z0-9- ]/g, '').trim();
+            const filename = `ProductSheet_${safeItem(item.sku || 'unknown')}_${safeItem(item.description || item.design || 'item')}.pdf`;
+
+            const fileHandle = await inventoryHandle!.getFileHandle(filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(pdfBlob);
+            await writable.close();
+
+            currentProcessed++;
         }
 
         // Cleanup

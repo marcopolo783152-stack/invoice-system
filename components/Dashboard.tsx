@@ -42,7 +42,7 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
         if (!isElectron) {
             // Web Fallback: Use exportToDirectory to save PDFs (Incremental)
             try {
-                await exportToDirectory(unbacked, (p) => {
+                await (exportToDirectory as any)(unbacked, [], [], (p: any) => {
                     console.log(p.status);
                 });
                 confirmSmartBackupComplete();
@@ -72,9 +72,14 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
             }
 
             // Perform PDF Sync (Incremental)
-            await exportToDirectory(unbacked, (p) => {
-                console.log(p.status);
-            });
+            await exportToDirectory(
+                unbackedData.invoices || [], 
+                unbackedData.appraisals || [], 
+                unbackedData.inventory || [],
+                (p: any) => {
+                    console.log(p.status);
+                }
+            );
 
             // Also Update Master JSON (Full sync is usually fast for JSON)
             const data = exportInvoices();
@@ -244,7 +249,7 @@ export default function Dashboard() {
         if (!confirmBackup) return;
 
         try {
-            await exportToDirectory(invoices, (p) => {
+            await exportToDirectory(invoices, [], [], (p: any) => {
                 console.log(p.status);
             });
             alert('Backup Complete! Saved to your drive.');
