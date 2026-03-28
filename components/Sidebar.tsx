@@ -98,13 +98,17 @@ export default function Sidebar({
                     const { exportToDirectory } = await import('@/lib/bulk-export');
 
                     if (invoicesToBackup.length > 0) {
-                        await exportToDirectory(invoicesToBackup);
+                        await exportToDirectory(
+                            invoicesToBackup, 
+                            mode === 'incremental' ? unbackedData.appraisals : [], 
+                            mode === 'incremental' ? unbackedData.inventory : []
+                        );
                     } else {
                         // If no invoices but there are other changes, still export JSONs
                         const { getAllInvoicesSync } = await import('@/lib/invoice-storage');
                         const allInv = getAllInvoicesSync();
                         if (allInv.length > 0) {
-                            await exportToDirectory([allInv[0]]);
+                            await exportToDirectory([allInv[0]], [], []);
                         } else {
                             alert("System is completely empty.");
                             setIsBackingUp(false);

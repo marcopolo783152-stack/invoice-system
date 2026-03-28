@@ -16,6 +16,8 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [unbackedInvoices, setUnbackedInvoices] = useState<SavedInvoice[]>([]);
+    const [unbackedAppraisals, setUnbackedAppraisals] = useState<any[]>([]);
+    const [unbackedInventory, setUnbackedInventory] = useState<any[]>([]);
     const [unbackedCount, setUnbackedCount] = useState<number>(0);
     const [backupType, setBackupType] = useState<'incremental' | 'full'>('incremental');
 
@@ -31,6 +33,8 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
         const checkUnbacked = async () => {
             const unbackedData = await getUnbackedData();
             setUnbackedInvoices(unbackedData.invoices);
+            setUnbackedAppraisals(unbackedData.appraisals);
+            setUnbackedInventory(unbackedData.inventory);
             setUnbackedCount(unbackedData.totalCount);
             if (unbackedData.totalCount === 0) {
                 setBackupType('full');
@@ -59,23 +63,31 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
 
         try {
             let invoicesToBackup: SavedInvoice[] = [];
+            let appraisalsToBackup: any[] = [];
+            let inventoryToBackup: any[] = [];
 
             if (backupType === 'full') {
                 invoicesToBackup = await getAllInvoices();
+                const { getAppraisals } = await import('@/lib/appraisals-storage');
+                const { getInventoryItems } = await import('@/lib/inventory-storage');
+                appraisalsToBackup = await getAppraisals();
+                inventoryToBackup = await getInventoryItems();
             } else {
                 invoicesToBackup = unbackedInvoices;
+                appraisalsToBackup = unbackedAppraisals;
+                inventoryToBackup = unbackedInventory;
             }
 
-            if (invoicesToBackup.length === 0 && backupType === 'full') {
+            if (invoicesToBackup.length === 0 && appraisalsToBackup.length === 0 && inventoryToBackup.length === 0 && backupType === 'full') {
                 setStatus('error');
-                setMessage('No invoices found to backup.');
+                setMessage('No data found to backup.');
                 setLoading(false);
                 return;
             }
 
             if (isWeb) {
                 // Web Backup: Trigger Download
-                await exportToDirectory(invoicesToBackup, (p) => {
+                await exportToDirectory(invoicesToBackup, appraisalsToBackup, inventoryToBackup, (p: any) => {
                     setMessage(p.status);
                 });
                 if (backupType === 'incremental') confirmSmartBackupComplete();
@@ -90,7 +102,7 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
                     return;
                 }
 
-                await exportToDirectory(invoicesToBackup, (p) => {
+                await exportToDirectory(invoicesToBackup, appraisalsToBackup, inventoryToBackup, (p: any) => {
                     setMessage(p.status);
                 });
 
