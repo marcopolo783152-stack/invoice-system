@@ -392,10 +392,10 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
     console.error('Error auto-updating inventory status:', err)
   );
 
-  // Trigger customer DB update (fire and forget)
-  updateCustomerFromInvoice(savedInvoice.data.soldTo).catch(err =>
-    console.error('Error auto-updating customer DB:', err)
-  );
+  // Dispatch event for UI updates (immediate detection)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('backup-trigger'));
+  }
 
   return savedInvoice;
 }
@@ -537,6 +537,11 @@ export async function updateInvoice(id: string, updates: Partial<InvoiceData>): 
       );
     }
   }
+
+  // Dispatch event for UI updates (immediate detection)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('backup-trigger'));
+  }
 }
 
 /**
@@ -549,6 +554,12 @@ export async function deleteInvoice(id: string): Promise<boolean> {
 
   try {
     await moveToCloudBin(id);
+    
+    // Dispatch event for UI updates (immediate detection)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('backup-trigger'));
+    }
+    
     return true;
   } catch (error) {
     console.error('Cloud move to bin failed:', error);

@@ -397,6 +397,12 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
         items.push(newItem);
     }
     safeLocalStorageSet(STORAGE_KEY, items);
+
+    // Dispatch event for UI updates (immediate detection)
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('backup-trigger'));
+    }
+
     return newItem;
 }
 
@@ -445,6 +451,12 @@ export async function deleteInventoryBatch(ids: string[]): Promise<void> {
     // 2. Cloud update
     if (isFirebaseConfigured() && db) {
         const firestore = db;
+        
+        // Dispatch event for UI updates (immediate detection)
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('backup-trigger'));
+        }
+
         try {
             const batchSize = 500;
             for (let i = 0; i < ids.length; i += batchSize) {

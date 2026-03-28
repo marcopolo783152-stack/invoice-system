@@ -24,9 +24,19 @@ function BackupReminder({ invoices }: { invoices: any[] }) {
             setStatus(needed ? 'needed' : 'uptodate');
         };
         check();
-        // Check every minute
-        const interval = setInterval(check, 60000);
-        return () => clearInterval(interval);
+        
+        // Listen for storage changes in OTHER tabs
+        window.addEventListener('storage', check);
+        // Listen for custom trigger in SAME tab
+        window.addEventListener('backup-trigger', check);
+        
+        // Interval as fallback (every 5 seconds)
+        const interval = setInterval(check, 5000);
+        return () => {
+            window.removeEventListener('storage', check);
+            window.removeEventListener('backup-trigger', check);
+            clearInterval(interval);
+        };
     }, [invoices]);
 
     const handleSmartSync = async () => {

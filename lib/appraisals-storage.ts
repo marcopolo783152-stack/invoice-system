@@ -62,6 +62,9 @@ export async function saveAppraisal(appraisal: Appraisal): Promise<string> {
         if (idx >= 0) local[idx] = data;
         else local.push(data);
         localStorage.setItem(LOCAL_KEY, JSON.stringify(local));
+
+        // Dispatch event for UI updates (immediate detection)
+        window.dispatchEvent(new Event('backup-trigger'));
     }
 
     return id;
@@ -131,5 +134,9 @@ export async function deleteAppraisal(id: string): Promise<void> {
         let local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
         local = local.filter((a: Appraisal) => a.id !== id);
         localStorage.setItem(LOCAL_KEY, JSON.stringify(local));
+        // Dispatch event for UI updates (immediate detection)
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('backup-trigger'));
+        }
     }
 }
