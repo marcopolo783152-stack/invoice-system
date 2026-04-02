@@ -47,10 +47,24 @@ export async function getCustomers(): Promise<Customer[]> {
                 cloudCustomers.push({ ...data, id: doc.id });
             });
 
-            // Basic merge: Cloud wins if same ID, otherwise combine? 
-            // For simplicity in this implementation, if cloud returns data, we overwrite local cache to ensure sync
+            // SMART MERGE: Keep latest data, don't lose local-only additions
             if (cloudCustomers.length > 0) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudCustomers));
+                // Get fresh local data again in case it changed since we started
+                const currentLocalData = localStorage.getItem(STORAGE_KEY);
+                let currentLocal: Customer[] = [];
+                try { currentLocal = JSON.parse(currentLocalData || '[]'); } catch (e) { }
+
+                const merged = [...cloudCustomers];
+                const cloudIds = new Set(cloudCustomers.map(c => c.id));
+
+                // Add local customers that aren't in cloud yet
+                currentLocal.forEach(lc => {
+                    if (!cloudIds.has(lc.id)) {
+                        merged.push(lc);
+                    }
+                });
+
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
             }
         }).catch(err => console.error('Error fetching customers from cloud:', err));
     }

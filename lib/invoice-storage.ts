@@ -392,6 +392,11 @@ export async function saveInvoice(data: InvoiceData, existingId?: string): Promi
     console.error('Error auto-updating inventory status:', err)
   );
 
+  // Trigger customer update (capture new customers)
+  updateCustomerFromInvoice(savedInvoice.data.soldTo).catch(err =>
+    console.error('Error auto-updating customer:', err)
+  );
+
   // Dispatch event for UI updates (immediate detection)
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('backup-trigger'));

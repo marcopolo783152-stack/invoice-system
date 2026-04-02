@@ -1,5 +1,6 @@
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
+import { updateCustomerFromInvoice } from './customer-storage';
 
 export interface Appraisal {
     id: string;
@@ -62,6 +63,16 @@ export async function saveAppraisal(appraisal: Appraisal): Promise<string> {
         if (idx >= 0) local[idx] = data;
         else local.push(data);
         localStorage.setItem(LOCAL_KEY, JSON.stringify(local));
+
+        // Update customer database
+        updateCustomerFromInvoice({
+            name: appraisal.customerName,
+            address: appraisal.customerAddress.split(' ').slice(0, -3).join(' '), // Rough extraction
+            city: appraisal.customerAddress.split(' ').slice(-3, -2)[0] || '',
+            state: appraisal.customerAddress.split(' ').slice(-2, -1)[0] || '',
+            zip: appraisal.customerAddress.split(' ').slice(-1)[0] || '',
+            phone: '' // Appraisals don't have phone in the current schema
+        }).catch(err => console.error('Error updating customer from appraisal:', err));
 
         // Dispatch event for UI updates (immediate detection)
         window.dispatchEvent(new Event('backup-trigger'));
