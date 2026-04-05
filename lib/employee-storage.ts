@@ -321,9 +321,6 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
     return localData ? JSON.parse(localData) : [];
 }
 
-/**
- * Add a manual time log (Admin override)
- */
 export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLog> {
     const data: TimeLog = {
         ...log,
@@ -338,18 +335,11 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
             });
             data.id = logRef.id;
 
-            // If this is the most recent action, we should update employee status
-            const logs = await getTimeLogs(10);
-            const empLogs = logs.filter(l => l.employeeId === data.employeeId).sort((a, b) =>
-                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-
-            if (empLogs.length > 0 && empLogs[0].timestamp === data.timestamp) {
-                await updateDoc(doc(db, EMP_COLLECTION, data.employeeId), {
-                    status: data.type,
-                    lastAction: data.timestamp
-                });
-            }
+            // Admin manual log: Force update the employee status immediately
+            await updateDoc(doc(db, EMP_COLLECTION, data.employeeId), {
+                status: data.type === 'LEAVE' ? 'OUT' : data.type,
+                lastAction: data.timestamp
+            });
         } catch (e) {
             console.error('Error adding manual log:', e);
         }
@@ -359,6 +349,19 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
     const localLogs = JSON.parse(localStorage.getItem(LOCAL_LOG_KEY) || '[]');
     localLogs.unshift(data);
     localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(localLogs.slice(0, 1000)));
+
+    // Update local employee cache
+    try {
+        const localEmployees = JSON.parse(localStorage.getItem(LOCAL_EMP_KEY) || '[]');
+        const idx = localEmployees.findIndex((e: any) => e.id === data.employeeId);
+        if (idx >= 0) {
+            localEmployees[idx].status = data.type === 'LEAVE' ? 'OUT' : data.type;
+            localEmployees[idx].lastAction = data.timestamp;
+            localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(localEmployees));
+        }
+    } catch (e) {
+        console.error('Error updating local employee cache:', e);
+    }
 
     return data;
 }

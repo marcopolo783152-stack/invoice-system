@@ -67,8 +67,49 @@ export default function EmployeesPage() {
     const [viewingPaymentsFor, setViewingPaymentsFor] = useState<{ empId: string, name: string } | null>(null);
     const [employeePaymentsList, setEmployeePaymentsList] = useState<EmployeePayment[]>([]);
 
+    // Multi-Select State
+    const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
+    const [showBulkManualLog, setShowBulkManualLog] = useState(false);
+
     const handlePrintHistory = async (emp: Employee) => {
         window.open(`/employees/print?type=history&id=${emp.id}&range=${reportRange}`, '_blank');
+    };
+
+    const handleBulkManualLog = async () => {
+        if (selectedEmployees.size === 0) return;
+        setIsLoading(true);
+        const timestamp = `${manualDate}T${manualTime}:00`;
+        const selected = employees.filter(e => selectedEmployees.has(e.id));
+        
+        for (const emp of selected) {
+            await addManualTimeLog({
+                employeeId: emp.id,
+                employeeName: emp.name,
+                type: manualType,
+                timestamp,
+                notes: isOvertime ? 'Overtime Work (Bulk Admin Action)' : 'Bulk Added by Administrator'
+            });
+        }
+        
+        setShowBulkManualLog(false);
+        setSelectedEmployees(new Set());
+        setIsOvertime(false);
+        await loadData();
+    };
+
+    const toggleEmployeeSelection = (id: string) => {
+        const next = new Set(selectedEmployees);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        setSelectedEmployees(next);
+    };
+
+    const selectAllFiltered = () => {
+        if (selectedEmployees.size === filteredEmployees.length && filteredEmployees.length > 0) {
+            setSelectedEmployees(new Set());
+        } else {
+            setSelectedEmployees(new Set(filteredEmployees.map(e => e.id)));
+        }
     };
 
     const handleManualLog = async () => {
@@ -383,13 +424,124 @@ export default function EmployeesPage() {
                 </div>
 
                 {activeView === 'STAFF' ? (
+                    <>
+                        {selectedEmployees.size > 0 && (
+                            <div style={{
+                                background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                                padding: '16px 24px', borderRadius: 16, marginBottom: 20,
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                            }}>
+                                <div style={{ color: '#fff', fontWeight: 700 }}>
+                                    <span style={{ background: '#3b82f6', padding: '4px 10px', borderRadius: 20, marginRight: 10 }}>{selectedEmployees.size}</span>
+                                    Employees Selected
+                                </div>
+                                <div style={{ display: 'flex', gap: 12 }}>
+                                    <button 
+                                        onClick={() => setShowBulkManualLog(true)}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        Bulk Clock In / Out
+                                    </button>
+                                    <button 
+                                        onClick={() => setSelectedEmployees(new Set())}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: 'rgba(255,255,255,0.1)', color: '#cbd5e1', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        Clear Selection
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {showBulkManualLog && (
+                            <div className="animate-in fade-in" style={{ padding: '20px', border: '1px solid #e2e8f0', background: '#f8fafc', borderRadius: 16, marginBottom: 20 }}>
+                                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 15, color: '#1e293b' }}>Bulk Update Logs ({selectedEmployees.size} Employees)</h3>
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <input
+                                        type="date"
+                                        value={manualDate}
+                                        onChange={(e) => setManualDate(e.target.value)}
+                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                    />
+                                    <input
+                                        type="time"
+                                        value={manualTime}
+                                        onChange={(e) => setManualTime(e.target.value)}
+                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                    />
+                                    <select
+                                        value={manualType}
+                                        onChange={(e) => setManualType(e.target.value as any)}
+                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                    >
+                                        <option value="IN">Clock In</option>
+                                        <option value="OUT">Clock Out</option>
+                                        <option value="LEAVE">Day Off / Leave</option>
+                                    </select>
+                                    <button
+                                        onClick={handleBulkManualLog}
+                                        disabled={isLoading}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer', opacity: isLoading ? 0.7 : 1 }}
+                                    >
+                                        {isLoading ? 'Processing...' : 'Apply Logs'}
+                                    </button>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+                                        <input
+                                            type="checkbox"
+                                            id="bulk-overtime"
+                                            checked={isOvertime}
+                                            onChange={e => setIsOvertime(e.target.checked)}
+                                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#6366f1' }}
+                                        />
+                                        <label htmlFor="bulk-overtime" style={{ fontSize: 13, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>Overtime Shift</label>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowBulkManualLog(false)}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ marginBottom: 15, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <button 
+                                onClick={selectAllFiltered}
+                                style={{ background: 'transparent', border: 'none', color: '#6366f1', fontWeight: 700, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <div style={{ width: 16, height: 16, border: '2px solid #6366f1', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', background: selectedEmployees.size === filteredEmployees.length && filteredEmployees.length > 0 ? '#6366f1' : 'transparent' }}>
+                                    {selectedEmployees.size === filteredEmployees.length && filteredEmployees.length > 0 && <span style={{ color: '#fff', fontSize: 10 }}>✓</span>}
+                                </div>
+                                {selectedEmployees.size === filteredEmployees.length && filteredEmployees.length > 0 ? 'Deselect All' : 'Select All'}
+                            </button>
+                        </div>
+
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 20 }}>
                         {filteredEmployees.map(emp => (
                             <div key={emp.id} className="luxury-card" style={{
                                 background: '#fff', borderRadius: 16, padding: 24,
-                                border: '1px solid #e2e8f0', position: 'relative',
-                                display: 'flex', gap: 16
+                                border: selectedEmployees.has(emp.id) ? '2px solid #6366f1' : '1px solid #e2e8f0', 
+                                position: 'relative',
+                                display: 'flex', gap: 16,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                boxShadow: selectedEmployees.has(emp.id) ? '0 4px 12px rgba(99, 102, 241, 0.15)' : 'none'
+                            }} onClick={(e) => {
+                                if ((e.target as HTMLElement).closest('button')) return;
+                                toggleEmployeeSelection(emp.id);
                             }}>
+                                <div style={{ position: 'absolute', top: 16, right: 16 }}>
+                                    <div style={{
+                                        width: 20, height: 20, borderRadius: 6,
+                                        border: selectedEmployees.has(emp.id) ? 'none' : '2px solid #cbd5e1',
+                                        background: selectedEmployees.has(emp.id) ? '#6366f1' : 'transparent',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        transition: 'all 0.2s'
+                                    }}>
+                                        {selectedEmployees.has(emp.id) && <span style={{ color: '#fff', fontSize: 12, fontWeight: 900 }}>✓</span>}
+                                    </div>
+                                </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 15 }}>
                                         <div style={{
@@ -483,6 +635,7 @@ export default function EmployeesPage() {
                             </div>
                         )}
                     </div>
+                    </>
                 ) : activeView === 'LOGS' ? (
                     <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                         <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
