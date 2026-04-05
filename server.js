@@ -15,6 +15,25 @@ app.use(express.static(path.join(__dirname, 'out'), {
   index: 'index.html'
 }));
 
+// Fallback for Next.js App Router Static Export (Fix Page Reload Issue)
+const fs = require('fs');
+app.get('*', (req, res) => {
+  const reqPath = req.path === '/' ? '/index' : req.path;
+  
+  // Try exact path + .html
+  if (fs.existsSync(path.join(__dirname, 'out', `${reqPath}.html`))) {
+    return res.sendFile(path.join(__dirname, 'out', `${reqPath}.html`));
+  }
+  
+  // Try path/index.html (since trailingSlash: true is in next.config.js)
+  if (fs.existsSync(path.join(__dirname, 'out', reqPath, 'index.html'))) {
+    return res.sendFile(path.join(__dirname, 'out', reqPath, 'index.html'));
+  }
+
+  // Final fallback to Home index
+  res.sendFile(path.join(__dirname, 'out', 'index.html'));
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`

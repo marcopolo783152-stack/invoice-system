@@ -4,6 +4,40 @@ import { User, DEFAULT_USERS } from '@/components/UserManagement';
 const USERS_STORAGE_KEY = 'mp-invoice-users';
 
 /**
+ * Multi-Tenant Helpers
+ * Retrieve the current store context from session/local storage
+ */
+export function getCurrentStoreId(): string {
+    if (typeof window === 'undefined') return '';
+    const userStr = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
+    if (userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            if (user && user.storeId) return user.storeId;
+        } catch { }
+    }
+    return ''; // Empty signifies root/default tenant for backward compatibility if needed, though we will set it explicitly.
+}
+
+export function getCurrentStoreName(): string {
+    if (typeof window === 'undefined') return 'Store System';
+    const userStr = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
+    if (userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            if (user && user.storeName) return user.storeName;
+        } catch { }
+    }
+    return 'Store System';
+}
+
+export function getStorePrefix(): string {
+    const storeId = getCurrentStoreId();
+    // Use storeId + '_' if exists, else empty so existing main store works
+    return storeId ? `${storeId}_` : '';
+}
+
+/**
  * Get all users (merging Cloud + Local + Defaults)
  */
 export async function getUsers(): Promise<User[]> {
@@ -43,6 +77,12 @@ export async function getUsers(): Promise<User[]> {
             localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mergedUsers));
         }
 
+        // Filter for multi-tenancy: Only return users for the current store context
+        const currentStoreId = getCurrentStoreId();
+        if (currentStoreId) {
+            return mergedUsers.filter(u => !u.storeId || u.storeId === currentStoreId || currentStoreId === 'MNS_MASTER');
+        }
+
         return mergedUsers;
     } catch (error) {
         console.warn('Failed to fetch users from cloud, falling back to local:', error);
@@ -50,7 +90,13 @@ export async function getUsers(): Promise<User[]> {
         const fallbackMap = new Map<string, User>();
         DEFAULT_USERS.forEach(u => fallbackMap.set(u.username, u));
         localUsers.forEach(u => fallbackMap.set(u.username, u));
-        return Array.from(fallbackMap.values());
+        
+        const mergedUsers = Array.from(fallbackMap.values());
+        const currentStoreId = getCurrentStoreId();
+        if (currentStoreId) {
+            return mergedUsers.filter(u => !u.storeId || u.storeId === currentStoreId || currentStoreId === 'MNS_MASTER');
+        }
+        return mergedUsers;
     }
 }
 

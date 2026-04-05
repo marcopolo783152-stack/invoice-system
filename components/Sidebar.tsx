@@ -167,7 +167,7 @@ export default function Sidebar({
                             priority
                         />
                     </div>
-                    <span className={styles.label}>Marco Polo</span>
+                    <span className={styles.label}>{user?.storeName || 'Store System'}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                     {onToggleCollapse && (

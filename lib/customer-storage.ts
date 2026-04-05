@@ -1,8 +1,9 @@
+import { getStorePrefix } from './user-storage';
 import { db, isFirebaseConfigured } from './firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 const STORAGE_KEY = 'customer_db';
-const COLLECTION_NAME = 'customers';
+const getCollectionName = () => getStorePrefix() + 'customers';
 
 export interface Customer {
     id: string;
@@ -40,7 +41,7 @@ export async function getCustomers(): Promise<Customer[]> {
 
     // 2. Refresh from Cloud if configured (Fire & Forget/Background)
     if (isFirebaseConfigured() && db) {
-        getDocs(collection(db, COLLECTION_NAME)).then(snapshot => {
+        getDocs(collection(db, getCollectionName())).then(snapshot => {
             const cloudCustomers: Customer[] = [];
             snapshot.forEach(doc => {
                 const data = doc.data() as Omit<Customer, 'id'>;
@@ -94,7 +95,7 @@ export async function saveCustomer(customerData: Omit<Customer, 'id' | 'createdA
     // 1. Save to Cloud
     if (isFirebaseConfigured() && db) {
         try {
-            await setDoc(doc(db, COLLECTION_NAME, customer.id), customer);
+            await setDoc(doc(db, getCollectionName(), customer.id), customer);
         } catch (error) {
             console.error('Error saving customer to cloud:', error);
         }
@@ -120,7 +121,7 @@ export async function deleteCustomer(id: string): Promise<void> {
     // Cloud
     if (isFirebaseConfigured() && db) {
         try {
-            await deleteDoc(doc(db, COLLECTION_NAME, id));
+            await deleteDoc(doc(db, getCollectionName(), id));
         } catch (e) {
             console.error('Error deleting customer from cloud:', e);
         }

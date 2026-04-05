@@ -1,3 +1,4 @@
+import { getStorePrefix } from './user-storage';
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
 import { updateCustomerFromInvoice } from './customer-storage';
@@ -19,7 +20,7 @@ export interface Appraisal {
     updatedAt?: string;
 }
 
-const COLLECTION_NAME = 'appraisals';
+const getCollectionName = () => getStorePrefix() + 'appraisals';
 const LOCAL_KEY = 'mns_appraisals_local';
 
 /**
@@ -47,7 +48,7 @@ export async function saveAppraisal(appraisal: Appraisal): Promise<string> {
     if (isFirebaseConfigured() && db) {
         try {
             const safeData = sanitizeForFirestore(data);
-            await setDoc(doc(db, COLLECTION_NAME, id), safeData);
+            await setDoc(doc(db, getCollectionName(), id), safeData);
         } catch (e: any) {
             console.error('Error saving appraisal to cloud:', e);
             if (typeof window !== 'undefined') {
@@ -84,7 +85,7 @@ export async function saveAppraisal(appraisal: Appraisal): Promise<string> {
 export async function getAppraisals(): Promise<Appraisal[]> {
     if (isFirebaseConfigured() && db) {
         try {
-            const snapshot = await getDocs(query(collection(db, COLLECTION_NAME), orderBy('date', 'desc')));
+            const snapshot = await getDocs(query(collection(db, getCollectionName()), orderBy('date', 'desc')));
             const cloudData = snapshot.docs.map(doc => doc.data() as Appraisal);
             
             // Merge local and cloud so we don't accidentally erase unsynced local appraisals
@@ -118,7 +119,7 @@ export async function getAppraisals(): Promise<Appraisal[]> {
 export async function getAppraisalById(id: string): Promise<Appraisal | null> {
     if (isFirebaseConfigured() && db) {
         try {
-            const snapshot = await getDoc(doc(db, COLLECTION_NAME, id));
+            const snapshot = await getDoc(doc(db, getCollectionName(), id));
             if (snapshot.exists()) return snapshot.data() as Appraisal;
         } catch (e) {
             console.error('Error fetching appraisal by ID:', e);
@@ -135,7 +136,7 @@ export async function getAppraisalById(id: string): Promise<Appraisal | null> {
 export async function deleteAppraisal(id: string): Promise<void> {
     if (isFirebaseConfigured() && db) {
         try {
-            await deleteDoc(doc(db, COLLECTION_NAME, id));
+            await deleteDoc(doc(db, getCollectionName(), id));
         } catch (e) {
             console.error('Error deleting appraisal from cloud:', e);
         }

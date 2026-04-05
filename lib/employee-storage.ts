@@ -1,3 +1,4 @@
+import { getStorePrefix } from './user-storage';
 /**
  * EMPLOYEE STORAGE SERVICE
  * 

@@ -1,3 +1,4 @@
+import { getStorePrefix } from './user-storage';
 /**
  * SERVICE ORDER STORAGE SERVICE
  * 
@@ -50,7 +51,7 @@ export interface ServiceOrder {
 }
 
 const STORAGE_KEY = 'service_orders';
-const COLLECTION_NAME = 'service_orders';
+const getCollectionName = () => getStorePrefix() + 'service_orders';
 
 function generateId(): string {
     return 'so_' + Math.random().toString(36).substr(2, 9);
@@ -61,7 +62,7 @@ export async function getServiceOrders(): Promise<ServiceOrder[]> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+            const q = query(collection(db, getCollectionName()), orderBy('createdAt', 'desc'));
             const snapshot = await getDocs(q);
             const orders: ServiceOrder[] = [];
             snapshot.forEach(doc => {
@@ -148,7 +149,7 @@ export async function createServiceOrder(order: Partial<ServiceOrder>): Promise<
                 return clean;
             });
             const finalData = { ...orderData, rugs: cleanRugs, updatedAt: Timestamp.now(), createdAt: Timestamp.now() };
-            const docRef = await addDoc(collection(db, COLLECTION_NAME), finalData);
+            const docRef = await addDoc(collection(db, getCollectionName()), finalData);
             return { ...orderData, id: docRef.id, createdAt: now.toISOString() } as ServiceOrder;
         } catch (error) {
             console.error('Error creating service order in cloud:', error);
@@ -176,7 +177,7 @@ export async function updateServiceOrder(id: string, updates: Partial<ServiceOrd
 
     if (isFirebaseConfigured() && db) {
         try {
-            const docRef = doc(db, COLLECTION_NAME, id);
+            const docRef = doc(db, getCollectionName(), id);
             const { id: _, createdAt: __, ...dataToSave } = updatedOrder as any;
             await updateDoc(docRef, { ...dataToSave, updatedAt: Timestamp.now() });
         } catch (error) {
@@ -303,7 +304,7 @@ export async function deleteServiceOrder(id: string): Promise<void> {
     if (isFirebaseConfigured() && db) {
         try {
             const { deleteDoc } = await import('firebase/firestore');
-            await deleteDoc(doc(db, COLLECTION_NAME, id));
+            await deleteDoc(doc(db, getCollectionName(), id));
         } catch (error) {
             console.error('Error deleting service order from cloud:', error);
         }

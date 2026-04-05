@@ -1,3 +1,4 @@
+import { getStorePrefix } from './user-storage';
 /**
  * FIREBASE STORAGE SERVICE
  * 
@@ -33,8 +34,8 @@ export interface SavedInvoice {
   updatedAt: Date;
 }
 
-const COLLECTION_NAME = 'invoices';
-const DELETED_COLLECTION_NAME = 'deletedInvoices';
+const getCollectionName = () => getStorePrefix() + 'invoices';
+const getDeletedCollectionName = () => getStorePrefix() + 'deletedInvoices';
 
 /**
  * Save invoice to Firebase
@@ -51,7 +52,7 @@ export async function saveInvoiceToCloud(
 
   try {
     const now = Timestamp.now();
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+    const docRef = await addDoc(collection(db, getCollectionName()), {
       invoiceNumber,
       customerName,
       date: data.date,
@@ -79,7 +80,7 @@ export async function getNextInvoiceNumber(): Promise<string> {
   try {
     // Query the most recent invoices by invoiceNumber (lexical sort works for fixed format)
     // Actually, sorting by invoiceNumber string desc is safer to find the max number than createdAt
-    const q = query(collection(db, COLLECTION_NAME), orderBy('invoiceNumber', 'desc'), limit(1));
+    const q = query(collection(db, getCollectionName()), orderBy('invoiceNumber', 'desc'), limit(1));
     const querySnapshot = await getDocs(q);
 
     let maxNumber = 0;
@@ -114,7 +115,7 @@ export async function getInvoicesFromCloud(): Promise<SavedInvoice[]> {
   }
 
   try {
-    const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, getCollectionName()), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
 
     const invoices: SavedInvoice[] = [];
@@ -167,7 +168,7 @@ export async function getInvoiceByIdFromCloud(id: string): Promise<SavedInvoice 
   }
 
   try {
-    const docRef = doc(db, COLLECTION_NAME, id);
+    const docRef = doc(db, getCollectionName(), id);
     const snap = await getDoc(docRef);
 
     if (!snap.exists()) {
@@ -222,7 +223,7 @@ export async function updateInvoiceInCloud(
   }
 
   try {
-    const docRef = doc(db, COLLECTION_NAME, id);
+    const docRef = doc(db, getCollectionName(), id);
     await updateDoc(docRef, {
       invoiceNumber,
       customerName,
@@ -247,7 +248,7 @@ export async function deleteInvoiceFromCloud(id: string): Promise<void> {
   }
 
   try {
-    await deleteDoc(doc(db, COLLECTION_NAME, id));
+    await deleteDoc(doc(db, getCollectionName(), id));
   } catch (error) {
     checkFirebaseQuotaError(error);
     console.error('Error deleting invoice from cloud:', error);
@@ -264,7 +265,7 @@ export async function deleteMultipleInvoicesFromCloud(ids: string[]): Promise<vo
   }
 
   try {
-    const deletePromises = ids.map(id => deleteDoc(doc(db!, COLLECTION_NAME, id)));
+    const deletePromises = ids.map(id => deleteDoc(doc(db!, getCollectionName(), id)));
     await Promise.all(deletePromises);
   } catch (error) {
     checkFirebaseQuotaError(error);
@@ -282,7 +283,7 @@ export function subscribeToInvoices(callback: (invoices: SavedInvoice[]) => void
     return () => { };
   }
 
-  const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+  const q = query(collection(db, getCollectionName()), orderBy('createdAt', 'desc'));
 
   return onSnapshot(q, (snapshot) => {
     const invoices: SavedInvoice[] = [];
@@ -317,8 +318,8 @@ export async function moveToCloudBin(id: string): Promise<void> {
   if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
 
   try {
-    const sourceRef = doc(db!, COLLECTION_NAME, id);
-    const sourceSnap = await getDocs(query(collection(db!, COLLECTION_NAME), limit(1))); // Just a check? No, get exact doc
+    const sourceRef = doc(db!, getCollectionName(), id);
+    const sourceSnap = await getDocs(query(collection(db!, getCollectionName()), limit(1))); // Just a check? No, get exact doc
     // Note: getDoc is not imported, let's use getDocs with query or add getDoc to imports? 
     // Wait, getDocs(query(...)) is more complex. Let's just assume we can't easily read-then-write atomically offline.
     // Instead: Read first (if online/cached), then Batch (Create Bin Item, Delete Source).
@@ -337,7 +338,7 @@ export async function moveToCloudBin(id: string): Promise<void> {
     if (!snap.exists()) throw new Error('Invoice not found');
 
     const batch = writeBatch(db!);
-    const targetRef = doc(collection(db!, DELETED_COLLECTION_NAME));
+    const targetRef = doc(collection(db!, getDeletedCollectionName()));
 
     batch.set(targetRef, {
       ...snap.data(),
@@ -366,7 +367,7 @@ export async function restoreFromCloudBin(cloudBinId: string): Promise<void> {
   try {
     const { getDoc, writeBatch } = await import('firebase/firestore');
 
-    const sourceRef = doc(db!, DELETED_COLLECTION_NAME, cloudBinId);
+    const sourceRef = doc(db!, getDeletedCollectionName(), cloudBinId);
     const snap = await getDoc(sourceRef);
 
     if (!snap.exists()) throw new Error('Deleted invoice not found');
@@ -374,7 +375,7 @@ export async function restoreFromCloudBin(cloudBinId: string): Promise<void> {
     const data = snap.data();
     const originalId = data.originalId;
 
-    const targetRef = originalId ? doc(db!, COLLECTION_NAME, originalId) : doc(collection(db!, COLLECTION_NAME));
+    const targetRef = originalId ? doc(db!, getCollectionName(), originalId) : doc(collection(db!, getCollectionName()));
 
     const cleanData = { ...data };
     delete cleanData.deletedAt;
@@ -405,7 +406,7 @@ export async function getBinInvoicesFromCloud(): Promise<SavedInvoice[]> {
   if (!isFirebaseConfigured() || !db) return [];
 
   try {
-    const q = query(collection(db, DELETED_COLLECTION_NAME), orderBy('deletedAt', 'desc'));
+    const q = query(collection(db, getDeletedCollectionName()), orderBy('deletedAt', 'desc'));
     const querySnapshot = await getDocs(q);
 
     const invoices: SavedInvoice[] = [];
@@ -438,7 +439,7 @@ export async function permanentlyDeleteFromCloudBin(ids: string[]): Promise<void
   if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
 
   try {
-    const deletePromises = ids.map(id => deleteDoc(doc(db!, DELETED_COLLECTION_NAME, id)));
+    const deletePromises = ids.map(id => deleteDoc(doc(db!, getDeletedCollectionName(), id)));
     await Promise.all(deletePromises);
   } catch (error) {
     checkFirebaseQuotaError(error);

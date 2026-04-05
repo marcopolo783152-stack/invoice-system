@@ -7,11 +7,13 @@ export interface User {
   fullName: string;
   password: string;
   role: "admin" | "seller" | "manager";
+  storeId?: string;
+  storeName?: string;
 }
 
 export const DEFAULT_USERS: User[] = [
-  { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin" },
-  { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" },
+  { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin", storeId: '', storeName: 'MNS Rugs' },
+  { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager", storeId: '', storeName: 'MNS Rugs' },
 ];
 
 
@@ -30,6 +32,8 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<User["role"]>("seller");
+  const [storeId, setStoreId] = useState("");
+  const [storeName, setStoreName] = useState("");
 
   // Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
@@ -66,7 +70,11 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
         return;
       }
 
-      const updatedUser: User = { username, fullName, password, role };
+      // Inherit the store ID/Name from the current user constructing them if not super admin
+      const storeToSaveId = (currentUser as any)?.storeId || storeId || '';
+      const storeToSaveName = (currentUser as any)?.storeName || storeName || 'MNS Rugs';
+
+      const updatedUser: User = { username, fullName, password, role, storeId: storeToSaveId, storeName: storeToSaveName };
 
       // If username changed, we should delete the old one from storage?
       // saveUser uses username as key.
@@ -91,7 +99,9 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
         setError("User already exists");
         return;
       }
-      const newUser: User = { username, fullName, password, role };
+      const storeToSaveId = (currentUser as any)?.storeId || storeId || '';
+      const storeToSaveName = (currentUser as any)?.storeName || storeName || 'MNS Rugs';
+      const newUser: User = { username, fullName, password, role, storeId: storeToSaveId, storeName: storeToSaveName };
       await saveUser(newUser);
 
       setUsers([...users, newUser]);
@@ -108,6 +118,8 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
     setRole("seller");
     setIsEditing(false);
     setOriginalUsername("");
+    setStoreId("");
+    setStoreName("");
   }
 
   function handleEditClick(u: User) {
@@ -115,6 +127,8 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
     setFullName(u.fullName);
     setPassword(u.password);
     setRole(u.role);
+    setStoreId(u.storeId || "");
+    setStoreName(u.storeName || "");
     setIsEditing(true);
     setOriginalUsername(u.username);
     setError("");

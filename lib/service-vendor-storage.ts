@@ -1,3 +1,4 @@
+import { getStorePrefix } from './user-storage';
 /**
  * SERVICE VENDOR STORAGE SERVICE
  * 
@@ -31,7 +32,7 @@ export interface ServiceVendor {
 }
 
 const STORAGE_KEY = 'service_vendors';
-const COLLECTION_NAME = 'service_vendors';
+const getCollectionName = () => getStorePrefix() + 'service_vendors';
 
 function generateId(): string {
     return 'vend_' + Math.random().toString(36).substr(2, 9);
@@ -42,7 +43,7 @@ export async function getServiceVendors(): Promise<ServiceVendor[]> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            const q = query(collection(db, COLLECTION_NAME), orderBy('name', 'asc'));
+            const q = query(collection(db, getCollectionName()), orderBy('name', 'asc'));
             const snapshot = await getDocs(q);
             const vendors: ServiceVendor[] = [];
             snapshot.forEach(doc => {
@@ -93,11 +94,11 @@ export async function saveServiceVendor(vendor: Partial<ServiceVendor>): Promise
         try {
             const finalData = { ...vendorData, updatedAt: Timestamp.now() };
             if (vendor.id && !vendor.id.startsWith('vend_')) {
-                const docRef = doc(db, COLLECTION_NAME, vendor.id);
+                const docRef = doc(db, getCollectionName(), vendor.id);
                 await updateDoc(docRef, finalData);
                 return { ...vendorData, id: vendor.id, createdAt: vendor.createdAt || now.toISOString() } as ServiceVendor;
             } else {
-                const docRef = await addDoc(collection(db, COLLECTION_NAME), { ...finalData, createdAt: Timestamp.now() });
+                const docRef = await addDoc(collection(db, getCollectionName()), { ...finalData, createdAt: Timestamp.now() });
                 return { ...vendorData, id: docRef.id, createdAt: now.toISOString() } as ServiceVendor;
             }
         } catch (error) {
@@ -131,7 +132,7 @@ export async function deleteServiceVendor(id: string): Promise<void> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            await deleteDoc(doc(db, COLLECTION_NAME, id));
+            await deleteDoc(doc(db, getCollectionName(), id));
         } catch (e) {
             console.error('Error deleting vendor from cloud:', e);
         }

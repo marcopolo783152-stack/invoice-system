@@ -1,3 +1,4 @@
+import { getStorePrefix } from './user-storage';
 /**
  * INVENTORY STORAGE SERVICE
  * 
@@ -59,7 +60,7 @@ export interface InventoryItem {
 }
 
 const STORAGE_KEY = 'inventory_items';
-const COLLECTION_NAME = 'inventory';
+const getCollectionName = () => getStorePrefix() + 'inventory';
 
 /**
  * Mark inventory tags as printed
@@ -89,7 +90,7 @@ export async function markInventoryTagsPrinted(ids: string[]): Promise<void> {
                 const batch = writeBatch(firestore);
 
                 chunk.forEach(id => {
-                    const ref = doc(firestore, COLLECTION_NAME, id);
+                    const ref = doc(firestore, getCollectionName(), id);
                     batch.update(ref, { tagsPrinted: true, updatedAt: Timestamp.now() });
                 });
 
@@ -173,7 +174,7 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
     // Try Firebase first
     if (isFirebaseConfigured() && db) {
         try {
-            const q = query(collection(db, COLLECTION_NAME), orderBy('sku', 'asc'));
+            const q = query(collection(db, getCollectionName()), orderBy('sku', 'asc'));
             const snapshot = await getDocs(q);
             const items: InventoryItem[] = [];
             snapshot.forEach(doc => {
@@ -309,7 +310,7 @@ export async function importInventoryBatch(newItems: Partial<InventoryItem>[]): 
                 const firestore = db;
                 const batch = writeBatch(firestore);
                 chunk.forEach(item => {
-                    const ref = doc(firestore, COLLECTION_NAME, item.id);
+                    const ref = doc(firestore, getCollectionName(), item.id);
                     batch.set(ref, {
                         ...item,
                         createdAt: Timestamp.fromDate(new Date(item.createdAt)),
@@ -361,11 +362,11 @@ export async function saveInventoryItem(item: Partial<InventoryItem>): Promise<I
         try {
             const finalData = { ...itemData, updatedAt: Timestamp.now() };
             if (item.id && !item.id.startsWith('inv_')) {
-                const docRef = doc(db, COLLECTION_NAME, item.id);
+                const docRef = doc(db, getCollectionName(), item.id);
                 await updateDoc(docRef, finalData);
                 return { ...itemData, id: item.id, createdAt: item.createdAt || now.toISOString() } as InventoryItem;
             } else {
-                const docRef = await addDoc(collection(db, COLLECTION_NAME), { ...finalData, createdAt: Timestamp.now() });
+                const docRef = await addDoc(collection(db, getCollectionName()), { ...finalData, createdAt: Timestamp.now() });
                 return { ...itemData, id: docRef.id, createdAt: now.toISOString() } as InventoryItem;
             }
         } catch (error: any) {
@@ -423,7 +424,7 @@ export async function deleteInventoryItem(id: string): Promise<void> {
     // 2. Cloud update
     if (isFirebaseConfigured() && db) {
         try {
-            await deleteDoc(doc(db, COLLECTION_NAME, id));
+            await deleteDoc(doc(db, getCollectionName(), id));
         } catch (e) {
             console.error('Error deleting from cloud:', e);
             throw e; // Reraise to let UI know
@@ -462,7 +463,7 @@ export async function deleteInventoryBatch(ids: string[]): Promise<void> {
             for (let i = 0; i < ids.length; i += batchSize) {
                 const chunk = ids.slice(i, i + batchSize);
                 const batch = writeBatch(firestore);
-                chunk.forEach(id => batch.delete(doc(firestore, COLLECTION_NAME, id)));
+                chunk.forEach(id => batch.delete(doc(firestore, getCollectionName(), id)));
                 await batch.commit();
             }
         } catch (error) {

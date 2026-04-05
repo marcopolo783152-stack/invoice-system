@@ -1,3 +1,4 @@
+import { getStorePrefix } from './user-storage';
 
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';

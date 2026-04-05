@@ -109,8 +109,13 @@ import { isFirebaseConfigured } from './firebase';
 import { updateInventoryStatusFromInvoice } from './inventory-storage';
 import { updateCustomerFromInvoice } from './customer-storage';
 
-const STORAGE_KEY = 'saved_invoices';
-const SMART_BACKUP_KEY = 'last_smart_backup_ts';
+import { getStorePrefix } from './user-storage';
+
+const BASE_STORAGE_KEY = 'saved_invoices';
+const BASE_SMART_BACKUP_KEY = 'last_smart_backup_ts';
+
+export const getStorageKey = () => getStorePrefix() + BASE_STORAGE_KEY;
+export const getSmartBackupKey = () => getStorePrefix() + BASE_SMART_BACKUP_KEY;
 
 /**
  * Check if there are any changes since the last smart backup
@@ -128,7 +133,7 @@ export function confirmSmartBackupComplete(timestamp?: string): void {
   const latestUpdate = timestamp || new Date().toISOString();
 
   if (latestUpdate) {
-    localStorage.setItem(SMART_BACKUP_KEY, latestUpdate);
+    localStorage.setItem(getSmartBackupKey(), latestUpdate);
   }
 }
 
@@ -143,7 +148,7 @@ export async function getUnbackedData() {
   const appraisals = await getAppraisals();
   const inventory = await getInventoryItems();
 
-  const lastBackup = localStorage.getItem(SMART_BACKUP_KEY);
+  const lastBackup = localStorage.getItem(getSmartBackupKey());
 
   if (!lastBackup) {
     return {
@@ -171,7 +176,7 @@ export async function getUnbackedData() {
  */
 export function getUnbackedInvoices(): SavedInvoice[] {
   const invoices = getAllInvoicesSync();
-  const lastBackup = localStorage.getItem(SMART_BACKUP_KEY);
+  const lastBackup = localStorage.getItem(getSmartBackupKey());
 
   if (!lastBackup) return invoices; // First time backup
 
@@ -262,7 +267,7 @@ async function syncMissingInvoices(invoices: SavedInvoice[]) {
 export function getAllInvoicesSync(): SavedInvoice[] {
   if (typeof window === 'undefined') return [];
 
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = localStorage.getItem(getStorageKey());
   if (!stored) return [];
 
   try {
@@ -280,7 +285,7 @@ export function getAllInvoicesSync(): SavedInvoice[] {
  */
 function saveInvoicesSync(invoices: SavedInvoice[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+  localStorage.setItem(getStorageKey(), JSON.stringify(invoices));
 }
 
 /**
@@ -519,7 +524,7 @@ export async function updateInvoice(id: string, updates: Partial<InvoiceData>): 
 
     // Update Local
     invoices[index] = updatedInvoice;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+    localStorage.setItem(getStorageKey(), JSON.stringify(invoices));
 
     // Update Cloud
     if (isFirebaseConfigured()) {
@@ -690,7 +695,7 @@ export function importInvoices(jsonString: string): boolean {
     if (!Array.isArray(invoices)) {
       throw new Error('Invalid format');
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+    localStorage.setItem(getStorageKey(), JSON.stringify(invoices));
     return true;
   } catch (error) {
     console.error('Error importing invoices:', error);
@@ -703,7 +708,7 @@ export function importInvoices(jsonString: string): boolean {
  */
 export function clearAllInvoices(): void {
   if (confirm('Are you sure you want to delete all invoices? This cannot be undone.')) {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(getStorageKey());
   }
 }
 

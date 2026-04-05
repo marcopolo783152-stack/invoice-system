@@ -62,10 +62,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       <form className={styles.loginForm} onSubmit={handleSubmit}>
         <div className={styles.logoWrapper}>
-          <img src="/LOGO.png" alt="Marco Polo Logo" className={styles.logo} />
+          <img src="/LOGO.png" alt="Platform Logo" className={styles.logo} />
         </div>
 
-        <h2>Sign In</h2>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Global Store System</h2>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem', textAlign: 'center' }}>Sign in to manage your store</p>
 
         <input
           type="email"
