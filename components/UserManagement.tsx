@@ -231,7 +231,34 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
+          {/* Super Admin Store Assignment */}
+          {(!currentUser || !(currentUser as any).storeId || (currentUser as any).storeId === '') && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10, borderLeft: '3px solid #f59e0b', paddingLeft: 10 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>System Identifier (e.g. mns_rugs)</label>
+                <input
+                  type="text"
+                  placeholder="Leave blank for root"
+                  value={storeId}
+                  onChange={e => setStoreId(e.target.value)}
+                  style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+                />
+                <span style={{ fontSize: 10, color: '#666' }}>Used for strict database separation</span>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>Store Display Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. MNS Rugs"
+                  value={storeName}
+                  onChange={e => setStoreName(e.target.value)}
+                  style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 15 }}>
             <button type="submit" style={{ padding: '8px 16px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
               {isEditing ? 'Update User' : 'Add User'}
             </button>
