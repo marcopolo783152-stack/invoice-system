@@ -72,6 +72,7 @@ export default function EmployeesPage() {
 
     // Multi-Select State
     const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
+    const [selectedLogs, setSelectedLogs] = useState<Set<string>>(new Set());
     const [showBulkManualLog, setShowBulkManualLog] = useState(false);
 
     const handlePrintHistory = async (emp: Employee) => {
@@ -770,12 +771,30 @@ export default function EmployeesPage() {
                     <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                         <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>Activity Logs</h2>
-                            <button
-                                onClick={() => setShowManualLog({ empId: employees[0]?.id || '', name: employees[0]?.name || '' })}
-                                style={{ padding: '8px 16px', borderRadius: 8, background: '#4f46e5', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-                            >
-                                ➕ Add Manual Log
-                            </button>
+                            <div style={{ display: 'flex', gap: 10 }}>
+                                {selectedLogs.size > 0 && (
+                                    <button
+                                        onClick={async () => {
+                                            if (!confirm(`Are you sure you want to delete ${selectedLogs.size} logs?`)) return;
+                                            setIsLoading(true);
+                                            for (const id of Array.from(selectedLogs)) {
+                                                await deleteTimeLog(id);
+                                            }
+                                            setSelectedLogs(new Set());
+                                            await loadData();
+                                        }}
+                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                    >
+                                        🗑️ Delete {selectedLogs.size} Logs
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setShowManualLog({ empId: employees[0]?.id || '', name: employees[0]?.name || '' })}
+                                    style={{ padding: '8px 16px', borderRadius: 8, background: '#4f46e5', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                    ➕ Add Manual Log
+                                </button>
+                            </div>
                         </div>
 
                         {showManualLog && (
@@ -951,6 +970,20 @@ export default function EmployeesPage() {
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                    <th style={{ padding: '16px 20px', width: 40 }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={filteredLogs.length > 0 && selectedLogs.size === filteredLogs.length}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedLogs(new Set(filteredLogs.map(l => l.id)));
+                                                } else {
+                                                    setSelectedLogs(new Set());
+                                                }
+                                            }}
+                                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#ef4444' }}
+                                        />
+                                    </th>
                                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>PHOTO</th>
                                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>STAFF</th>
                                     <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>ACTION</th>
@@ -964,7 +997,20 @@ export default function EmployeesPage() {
                                 {filteredLogs.map(log => {
                                     const compliance = checkShiftCompliance(log);
                                     return (
-                                        <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                        <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9', background: selectedLogs.has(log.id) ? '#fef2f2' : 'transparent' }}>
+                                            <td style={{ padding: '12px 20px' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedLogs.has(log.id)}
+                                                    onChange={(e) => {
+                                                        const next = new Set(selectedLogs);
+                                                        if (e.target.checked) next.add(log.id);
+                                                        else next.delete(log.id);
+                                                        setSelectedLogs(next);
+                                                    }}
+                                                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#ef4444' }}
+                                                />
+                                            </td>
                                             <td style={{ padding: '12px 20px' }}>
                                                 {log.facePhoto ? (
                                                     <img
