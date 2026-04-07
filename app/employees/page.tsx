@@ -53,7 +53,10 @@ export default function EmployeesPage() {
 
     // Manual Log State
     const [showManualLog, setShowManualLog] = useState<{ empId: string, name: string } | null>(null);
-    const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
+    const [manualDateStart, setManualDateStart] = useState(new Date().toISOString().split('T')[0]);
+    const [manualDateEnd, setManualDateEnd] = useState(new Date().toISOString().split('T')[0]);
+    const [excludedDates, setExcludedDates] = useState<Set<string>>(new Set());
+    const [autoCompleteOut, setAutoCompleteOut] = useState(true);
     const [manualTime, setManualTime] = useState('10:00');
     const [manualType, setManualType] = useState<'IN' | 'OUT' | 'LEAVE'>('IN');
     const [isOvertime, setIsOvertime] = useState(false);
@@ -78,22 +81,39 @@ export default function EmployeesPage() {
     const handleBulkManualLog = async () => {
         if (selectedEmployees.size === 0) return;
         setIsLoading(true);
-        const timestamp = `${manualDate}T${manualTime}:00`;
         const selected = employees.filter(e => selectedEmployees.has(e.id));
+        const dates = getDatesInRange(manualDateStart, manualDateEnd);
         
         for (const emp of selected) {
-            await addManualTimeLog({
-                employeeId: emp.id,
-                employeeName: emp.name,
-                type: manualType,
-                timestamp,
-                notes: isOvertime ? 'Overtime Work (Bulk Admin Action)' : 'Bulk Added by Administrator'
-            });
+            for (const date of dates) {
+                if (excludedDates.has(date)) continue;
+                
+                const timestamp = `${date}T${manualTime}:00`;
+                await addManualTimeLog({
+                    employeeId: emp.id,
+                    employeeName: emp.name,
+                    type: manualType,
+                    timestamp,
+                    notes: isOvertime ? 'Overtime Work (Bulk Admin Action)' : 'Bulk Added by Administrator'
+                });
+
+                if (manualType === 'IN' && autoCompleteOut) {
+                    const outTimestamp = `${date}T18:00:00`;
+                    await addManualTimeLog({
+                        employeeId: emp.id,
+                        employeeName: emp.name,
+                        type: 'OUT',
+                        timestamp: outTimestamp,
+                        notes: 'Auto-completed OUT shift (Bulk Admin Action)'
+                    });
+                }
+            }
         }
         
         setShowBulkManualLog(false);
         setSelectedEmployees(new Set());
         setIsOvertime(false);
+        setExcludedDates(new Set());
         await loadData();
     };
 
@@ -112,18 +132,56 @@ export default function EmployeesPage() {
         }
     };
 
+    // Helper to get dates between start and end
+    const getDatesInRange = (start: string, end: string) => {
+        const dates = [];
+        let curr = new Date(start);
+        const last = new Date(end);
+        
+        // Add 12 hours to avoid timezone shifting issues when adding days
+        curr.setHours(12, 0, 0, 0); 
+        last.setHours(12, 0, 0, 0);
+
+        while (curr <= last) {
+            dates.push(curr.toISOString().split('T')[0]);
+            curr.setDate(curr.getDate() + 1);
+        }
+        return dates;
+    };
+
     const handleManualLog = async () => {
         if (!showManualLog) return;
-        const timestamp = `${manualDate}T${manualTime}:00`;
-        await addManualTimeLog({
-            employeeId: showManualLog.empId,
-            employeeName: showManualLog.name,
-            type: manualType,
-            timestamp,
-            notes: isOvertime ? 'Overtime Work (Added by Admin)' : 'Added by Administrator'
-        });
+        setIsLoading(true);
+        
+        const dates = getDatesInRange(manualDateStart, manualDateEnd);
+        
+        for (const date of dates) {
+            if (excludedDates.has(date)) continue;
+            
+            const timestamp = `${date}T${manualTime}:00`;
+            await addManualTimeLog({
+                employeeId: showManualLog.empId,
+                employeeName: showManualLog.name,
+                type: manualType,
+                timestamp,
+                notes: isOvertime ? 'Overtime Work (Added by Admin)' : 'Added by Administrator'
+            });
+
+            if (manualType === 'IN' && autoCompleteOut) {
+                const outTimestamp = `${date}T18:00:00`;
+                await addManualTimeLog({
+                    employeeId: showManualLog.empId,
+                    employeeName: showManualLog.name,
+                    type: 'OUT',
+                    timestamp: outTimestamp,
+                    notes: 'Auto-completed OUT shift (Added by Admin)'
+                });
+            }
+        }
+        
         setShowManualLog(null);
         setIsOvertime(false);
+        setExcludedDates(new Set());
         loadData();
     };
 
@@ -456,51 +514,123 @@ export default function EmployeesPage() {
                         {showBulkManualLog && (
                             <div className="animate-in fade-in" style={{ padding: '20px', border: '1px solid #e2e8f0', background: '#f8fafc', borderRadius: 16, marginBottom: 20 }}>
                                 <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 15, color: '#1e293b' }}>Bulk Update Logs ({selectedEmployees.size} Employees)</h3>
-                                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                                    <input
-                                        type="date"
-                                        value={manualDate}
-                                        onChange={(e) => setManualDate(e.target.value)}
-                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                    />
-                                    <input
-                                        type="time"
-                                        value={manualTime}
-                                        onChange={(e) => setManualTime(e.target.value)}
-                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                    />
-                                    <select
-                                        value={manualType}
-                                        onChange={(e) => setManualType(e.target.value as any)}
-                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                    >
-                                        <option value="IN">Clock In</option>
-                                        <option value="OUT">Clock Out</option>
-                                        <option value="LEAVE">Day Off / Leave</option>
-                                    </select>
-                                    <button
-                                        onClick={handleBulkManualLog}
-                                        disabled={isLoading}
-                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer', opacity: isLoading ? 0.7 : 1 }}
-                                    >
-                                        {isLoading ? 'Processing...' : 'Apply Logs'}
-                                    </button>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
-                                        <input
-                                            type="checkbox"
-                                            id="bulk-overtime"
-                                            checked={isOvertime}
-                                            onChange={e => setIsOvertime(e.target.checked)}
-                                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#6366f1' }}
-                                        />
-                                        <label htmlFor="bulk-overtime" style={{ fontSize: 13, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>Overtime Shift</label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 15, width: '100%' }}>
+                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>FROM DATE</label>
+                                            <input
+                                                type="date"
+                                                value={manualDateStart}
+                                                onChange={(e) => setManualDateStart(e.target.value)}
+                                                style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>TO DATE (Inclusive)</label>
+                                            <input
+                                                type="date"
+                                                value={manualDateEnd}
+                                                onChange={(e) => setManualDateEnd(e.target.value)}
+                                                style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>TIME</label>
+                                            <input
+                                                type="time"
+                                                value={manualTime}
+                                                onChange={(e) => setManualTime(e.target.value)}
+                                                style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>TYPE</label>
+                                            <select
+                                                value={manualType}
+                                                onChange={(e) => setManualType(e.target.value as any)}
+                                                style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                            >
+                                                <option value="IN">Clock In</option>
+                                                <option value="OUT">Clock Out</option>
+                                                <option value="LEAVE">Day Off / Leave</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => setShowBulkManualLog(false)}
-                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-                                    >
-                                        Cancel
-                                    </button>
+                                    
+                                    {/* Date checklist generator */}
+                                    <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                                        <label style={{ fontSize: 12, fontWeight: 800, color: '#334155', display: 'block', marginBottom: 10 }}>Select Working Days within Range:</label>
+                                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                            {getDatesInRange(manualDateStart, manualDateEnd).map(date => {
+                                                const d = new Date(date + 'T12:00:00');
+                                                const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                                                const isExcluded = excludedDates.has(date);
+                                                return (
+                                                    <div key={date} onClick={() => {
+                                                        const newSet = new Set(excludedDates);
+                                                        if (newSet.has(date)) newSet.delete(date);
+                                                        else newSet.add(date);
+                                                        setExcludedDates(newSet);
+                                                    }} style={{ 
+                                                        display: 'flex', alignItems: 'center', gap: 6, 
+                                                        padding: '6px 12px', background: isExcluded ? '#f1f5f9' : '#ecfdf5',
+                                                        border: isExcluded ? '1px solid #cbd5e1' : '1px solid #10b981',
+                                                        borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                                                        color: isExcluded ? '#64748b' : '#059669', transition: 'all 0.2s'
+                                                    }}>
+                                                        <div style={{ width: 14, height: 14, borderRadius: 3, border: isExcluded ? '2px solid #cbd5e1' : 'none', background: isExcluded ? 'transparent' : '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            {!isExcluded && <span style={{ color: '#fff', fontSize: 9 }}>✓</span>}
+                                                        </div>
+                                                        {label}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 5 }}>
+                                        {manualType === 'IN' && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <input
+                                                    type="checkbox"
+                                                    id="bulk-autoComplete"
+                                                    checked={autoCompleteOut}
+                                                    onChange={e => setAutoCompleteOut(e.target.checked)}
+                                                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                                />
+                                                <label htmlFor="bulk-autoComplete" style={{ fontSize: 13, fontWeight: 700, color: '#4f46e5', cursor: 'pointer' }}>+ Auto-generate 6:00 PM Clock-Out for each day</label>
+                                            </div>
+                                        )}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <input
+                                                type="checkbox"
+                                                id="bulk-overtime"
+                                                checked={isOvertime}
+                                                onChange={e => setIsOvertime(e.target.checked)}
+                                                style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                            />
+                                            <label htmlFor="bulk-overtime" style={{ fontSize: 13, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>Record as Overtime</label>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                                        <button
+                                            onClick={handleBulkManualLog}
+                                            disabled={isLoading}
+                                            style={{ padding: '10px 20px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer', opacity: isLoading ? 0.7 : 1 }}
+                                        >
+                                            {isLoading ? 'Processing...' : `Apply Logs to ${selectedEmployees.size} Staff`}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowBulkManualLog(false);
+                                                setExcludedDates(new Set());
+                                            }}
+                                            style={{ padding: '10px 20px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -664,49 +794,123 @@ export default function EmployeesPage() {
                                             <option key={emp.id} value={emp.id}>{emp.name}</option>
                                         ))}
                                     </select>
-                                    <input
-                                        type="date"
-                                        value={manualDate}
-                                        onChange={(e) => setManualDate(e.target.value)}
-                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                    />
-                                    <input
-                                        type="time"
-                                        value={manualTime}
-                                        onChange={(e) => setManualTime(e.target.value)}
-                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                    />
-                                    <select
-                                        value={manualType}
-                                        onChange={(e) => setManualType(e.target.value as any)}
-                                        style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                    >
-                                        <option value="IN">Clock In</option>
-                                        <option value="OUT">Clock Out</option>
-                                        <option value="LEAVE">Day Off / Leave</option>
-                                    </select>
-                                    <button
-                                        onClick={handleManualLog}
-                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-                                    >
-                                        Add Log
-                                    </button>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
-                                        <input
-                                            type="checkbox"
-                                            id="overtime"
-                                            checked={isOvertime}
-                                            onChange={e => setIsOvertime(e.target.checked)}
-                                            style={{ width: 16, height: 16, cursor: 'pointer' }}
-                                        />
-                                        <label htmlFor="overtime" style={{ fontSize: 13, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>Overtime</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 15, width: '100%' }}>
+                                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>FROM DATE</label>
+                                                <input
+                                                    type="date"
+                                                    value={manualDateStart}
+                                                    onChange={(e) => setManualDateStart(e.target.value)}
+                                                    style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                />
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>TO DATE (Inclusive)</label>
+                                                <input
+                                                    type="date"
+                                                    value={manualDateEnd}
+                                                    onChange={(e) => setManualDateEnd(e.target.value)}
+                                                    style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                />
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>TIME</label>
+                                                <input
+                                                    type="time"
+                                                    value={manualTime}
+                                                    onChange={(e) => setManualTime(e.target.value)}
+                                                    style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                />
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>TYPE</label>
+                                                <select
+                                                    value={manualType}
+                                                    onChange={(e) => setManualType(e.target.value as any)}
+                                                    style={{ padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                >
+                                                    <option value="IN">Clock In</option>
+                                                    <option value="OUT">Clock Out</option>
+                                                    <option value="LEAVE">Day Off / Leave</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Date checklist generator */}
+                                        <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                                            <label style={{ fontSize: 12, fontWeight: 800, color: '#334155', display: 'block', marginBottom: 10 }}>Select Working Days within Range:</label>
+                                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                                {getDatesInRange(manualDateStart, manualDateEnd).map(date => {
+                                                    const d = new Date(date + 'T12:00:00');
+                                                    const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                                                    const isExcluded = excludedDates.has(date);
+                                                    return (
+                                                        <div key={date} onClick={() => {
+                                                            const newSet = new Set(excludedDates);
+                                                            if (newSet.has(date)) newSet.delete(date);
+                                                            else newSet.add(date);
+                                                            setExcludedDates(newSet);
+                                                        }} style={{ 
+                                                            display: 'flex', alignItems: 'center', gap: 6, 
+                                                            padding: '6px 12px', background: isExcluded ? '#f1f5f9' : '#ecfdf5',
+                                                            border: isExcluded ? '1px solid #cbd5e1' : '1px solid #10b981',
+                                                            borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                                                            color: isExcluded ? '#64748b' : '#059669', transition: 'all 0.2s'
+                                                        }}>
+                                                            <div style={{ width: 14, height: 14, borderRadius: 3, border: isExcluded ? '2px solid #cbd5e1' : 'none', background: isExcluded ? 'transparent' : '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                {!isExcluded && <span style={{ color: '#fff', fontSize: 9 }}>✓</span>}
+                                                            </div>
+                                                            {label}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 5 }}>
+                                            {manualType === 'IN' && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        id="autoComplete"
+                                                        checked={autoCompleteOut}
+                                                        onChange={e => setAutoCompleteOut(e.target.checked)}
+                                                        style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                                    />
+                                                    <label htmlFor="autoComplete" style={{ fontSize: 13, fontWeight: 700, color: '#4f46e5', cursor: 'pointer' }}>+ Auto-generate 6:00 PM Clock-Out for each day</label>
+                                                </div>
+                                            )}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <input
+                                                    type="checkbox"
+                                                    id="overtime"
+                                                    checked={isOvertime}
+                                                    onChange={e => setIsOvertime(e.target.checked)}
+                                                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                                />
+                                                <label htmlFor="overtime" style={{ fontSize: 13, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>Record as Overtime</label>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                                            <button
+                                                onClick={handleManualLog}
+                                                style={{ padding: '10px 20px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                            >
+                                                ✅ Bulk Add Logs
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setShowManualLog(null);
+                                                    setExcludedDates(new Set());
+                                                }}
+                                                style={{ padding: '10px 20px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => setShowManualLog(null)}
-                                        style={{ padding: '8px 16px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-                                    >
-                                        Cancel
-                                    </button>
                                 </div>
                             </div>
                         )}
