@@ -52,18 +52,81 @@ export interface TimeLog {
 
 export interface EmployeePayment {
     id: string;
+/**
+ * EMPLOYEE STORAGE SERVICE
+ * 
+ * Manages employee profiles and clock in/out logs.
+ * Hybrid storage: Firebase Cloud (primary) + LocalStorage (fallback)
+ */
+
+import {
+    collection,
+    addDoc,
+    updateDoc,
+    getDocs,
+    doc,
+    query,
+    where,
+    orderBy,
+    limit,
+    Timestamp
+} from 'firebase/firestore';
+import { db, isFirebaseConfigured } from './firebase';
+
+export interface Employee {
+    id: string;
+    name: string;
+    phone: string;
+    email?: string;
+    empId: string;
+    pin?: string;
+    status: 'IN' | 'OUT';
+    joinedDate: string;
+    lastAction?: string;
+    dailyRate?: number; // Salary per day
+    photo?: string; // Profile picture (Base64)
+}
+
+export interface TimeLog {
+    id: string;
+    employeeId: string;
+    employeeName: string;
+    type: 'IN' | 'OUT' | 'LEAVE';
+    timestamp: string;  // ISO
+    notes?: string;
+    device?: string;
+    facePhoto?: string; // Base64 selfie
+    location?: {
+        lat: number;
+        lng: number;
+        accuracy?: number;
+    };
+}
+
+export interface EmployeePayment {
+    id: string;
     employeeId: string;
     amount: number;
     date: string;
     notes?: string;
 }
 
-const EMP_COLLECTION = 'employees';
-const LOG_COLLECTION = 'timelogs';
-const PAY_COLLECTION = 'employeepayments';
-const LOCAL_EMP_KEY = 'mns_employees_local';
-const LOCAL_LOG_KEY = 'mns_timelogs_local';
-const LOCAL_PAY_KEY = 'mns_payments_local';
+const BASE_EMP_COLLECTION = 'employees';
+const BASE_LOG_COLLECTION = 'timelogs';
+const BASE_PAY_COLLECTION = 'employeepayments';
+const BASE_LOCAL_EMP_KEY = 'mns_employees_local';
+const BASE_LOCAL_LOG_KEY = 'mns_timelogs_local';
+const BASE_LOCAL_PAY_KEY = 'mns_payments_local';
+
+export const getCol = (col: string) => {
+    const prefix = getStorePrefix();
+    return prefix ? `${prefix}_${col}` : col;
+};
+
+export const getKey = (key: string) => {
+    const prefix = getStorePrefix();
+    return prefix ? `${prefix}_${key}` : key;
+};
 
 /**
  * Generate unique IDs for local use
@@ -76,21 +139,24 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 export async function getEmployees(): Promise<Employee[]> {
     if (typeof window === 'undefined') return [];
 
+    const colName = getCol(BASE_EMP_COLLECTION);
+    const localKey = getKey(BASE_LOCAL_EMP_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
-            const snapshot = await getDocs(collection(db, EMP_COLLECTION));
+            const snapshot = await getDocs(collection(db, colName));
             const employees: Employee[] = [];
             snapshot.forEach(doc => {
                 employees.push({ id: doc.id, ...doc.data() } as Employee);
             });
-            localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(employees));
+            localStorage.setItem(localKey, JSON.stringify(employees));
             return employees;
         } catch (e) {
             console.error('Error fetching employees from Firebase:', e);
         }
     }
 
-    const localData = localStorage.getItem(LOCAL_EMP_KEY);
+    const localData = localStorage.getItem(localKey);
     return localData ? JSON.parse(localData) : [];
 }
 
@@ -106,13 +172,16 @@ export async function saveEmployee(employee: Partial<Employee>): Promise<Employe
         joinedDate: employee.joinedDate || new Date().toISOString()
     };
 
+    const colName = getCol(BASE_EMP_COLLECTION);
+    const localKey = getKey(BASE_LOCAL_EMP_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
             if (isNew) {
-                const docRef = await addDoc(collection(db, EMP_COLLECTION), data);
+                const docRef = await addDoc(collection(db, colName), data);
                 data.id = docRef.id;
             } else {
-                await updateDoc(doc(db, EMP_COLLECTION, employee.id!), data);
+                await updateDoc(doc(db, colName, employee.id!), data);
             }
         } catch (e) {
             console.error('Error saving employee to Firebase:', e);
@@ -128,7 +197,7 @@ export async function saveEmployee(employee: Partial<Employee>): Promise<Employe
         const idx = employees.findIndex(e => e.id === employee.id);
         if (idx >= 0) employees[idx] = { ...employees[idx], ...data } as Employee;
     }
-    localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(employees));
+    localStorage.setItem(localKey, JSON.stringify(employees));
 
     return data as Employee;
 }
@@ -180,10 +249,15 @@ export async function clockInOut(
         setsPhoto = true;
     }
 
+    const empCol = getCol(BASE_EMP_COLLECTION);
+    const logCol = getCol(BASE_LOG_COLLECTION);
+    const localEmpKey = getKey(BASE_LOCAL_EMP_KEY);
+    const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
             // Log entry
-            const logRef = await addDoc(collection(db, LOG_COLLECTION), {
+            const logRef = await addDoc(collection(db, logCol), {
                 ...log,
                 timestamp: Timestamp.fromDate(new Date())
             });
@@ -196,7 +270,7 @@ export async function clockInOut(
             };
             if (setsPhoto) updateFields.photo = facePhoto;
 
-            await updateDoc(doc(db, EMP_COLLECTION, employee.id), updateFields);
+            await updateDoc(doc(db, empCol, employee.id), updateFields);
         } catch (e) {
             console.error('Firebase clock error:', e);
         }
@@ -204,12 +278,12 @@ export async function clockInOut(
 
     // Update local cache
     const allEmps = employees.map(e => e.id === employee.id ? employee : e);
-    localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(allEmps));
+    localStorage.setItem(localEmpKey, JSON.stringify(allEmps));
 
     // Append to local logs
-    const localLogs = JSON.parse(localStorage.getItem(LOCAL_LOG_KEY) || '[]');
+    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
     localLogs.unshift(log);
-    localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(localLogs.slice(0, 1000)));
+    localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
 
     return { employee, log };
 }
@@ -268,20 +342,39 @@ export async function checkAutoClockOut(): Promise<number> {
         emp.status = 'OUT';
         emp.lastAction = timestamp;
 
+        const empCol = getCol(BASE_EMP_COLLECTION);
+        const logCol = getCol(BASE_LOG_COLLECTION);
+        const localEmpKey = getKey(BASE_LOCAL_EMP_KEY);
+        const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+
         if (isFirebaseConfigured() && db) {
             try {
+                // Determine a safe fallback date to prevent invalid Timestamp errors
+                const safeDate = isNaN(endOfShift.getTime()) ? new Date() : endOfShift;
+
                 // Add log to cloud
-                await addDoc(collection(db, LOG_COLLECTION), {
+                const docRef = await addDoc(collection(db, logCol), {
                     ...log,
-                    timestamp: Timestamp.fromDate(endOfShift)
+                    timestamp: Timestamp.fromDate(safeDate)
                 });
+                log.id = docRef.id;
+                
                 // Update employee in cloud
-                await updateDoc(doc(db, EMP_COLLECTION, emp.id), {
+                await updateDoc(doc(db, empCol, emp.id), {
                     status: 'OUT',
                     lastAction: timestamp
                 });
+
+                 // IMPORTANT: Also update local timelogs cache so the auto-clock out is recorded locally 
+                 const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+                 localLogs.unshift(log);
+                 localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
+
             } catch (e) {
                 console.error(`Auto clock-out error for ${emp.name}:`, e);
+                // If it fails, let's revert memory status so it doesn't wrongly save below
+                emp.status = 'IN';
+                continue; // Skip the count increment to avoid corrupting cache state
             }
         }
         count++;
@@ -289,7 +382,8 @@ export async function checkAutoClockOut(): Promise<number> {
 
     if (count > 0) {
         // Update local storage
-        localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(employees));
+        const localEmpKey = getKey(BASE_LOCAL_EMP_KEY);
+        localStorage.setItem(localEmpKey, JSON.stringify(employees));
     }
 
     return count;
@@ -299,9 +393,12 @@ export async function checkAutoClockOut(): Promise<number> {
  * Get recent time logs
  */
 export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
+    const logCol = getCol(BASE_LOG_COLLECTION);
+    const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
-            const q = query(collection(db, LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount));
+            const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(limitCount));
             const snapshot = await getDocs(q);
             const logs: TimeLog[] = [];
             snapshot.forEach(doc => {
@@ -312,17 +409,24 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                     timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
                 } as TimeLog);
             });
+            // Update local backup cache whenever fetched from firebase
+            localStorage.setItem(localLogKey, JSON.stringify(logs));
             return logs;
         } catch (e) {
             console.error('Error fetching logs:', e);
         }
     }
 
-    const localData = localStorage.getItem(LOCAL_LOG_KEY);
+    const localData = localStorage.getItem(localLogKey);
     return localData ? JSON.parse(localData) : [];
 }
 
 export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLog> {
+    const empCol = getCol(BASE_EMP_COLLECTION);
+    const logCol = getCol(BASE_LOG_COLLECTION);
+    const localEmpKey = getKey(BASE_LOCAL_EMP_KEY);
+    const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+
     const data: TimeLog = {
         ...log,
         id: generateId()
@@ -330,14 +434,14 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
 
     if (isFirebaseConfigured() && db) {
         try {
-            const logRef = await addDoc(collection(db, LOG_COLLECTION), {
+            const logRef = await addDoc(collection(db, logCol), {
                 ...data,
                 timestamp: Timestamp.fromDate(new Date(data.timestamp))
             });
             data.id = logRef.id;
 
             // Admin manual log: Force update the employee status immediately
-            await updateDoc(doc(db, EMP_COLLECTION, data.employeeId), {
+            await updateDoc(doc(db, empCol, data.employeeId), {
                 status: data.type === 'LEAVE' ? 'OUT' : data.type,
                 lastAction: data.timestamp
             });
@@ -347,18 +451,18 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
     }
 
     // Update local logs
-    const localLogs = JSON.parse(localStorage.getItem(LOCAL_LOG_KEY) || '[]');
+    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
     localLogs.unshift(data);
-    localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(localLogs.slice(0, 1000)));
+    localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
 
     // Update local employee cache
     try {
-        const localEmployees = JSON.parse(localStorage.getItem(LOCAL_EMP_KEY) || '[]');
+        const localEmployees = JSON.parse(localStorage.getItem(localEmpKey) || '[]');
         const idx = localEmployees.findIndex((e: any) => e.id === data.employeeId);
         if (idx >= 0) {
             localEmployees[idx].status = data.type === 'LEAVE' ? 'OUT' : data.type;
             localEmployees[idx].lastAction = data.timestamp;
-            localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(localEmployees));
+            localStorage.setItem(localEmpKey, JSON.stringify(localEmployees));
         }
     } catch (e) {
         console.error('Error updating local employee cache:', e);
@@ -371,6 +475,9 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
  * Update an existing time log
  */
 export async function updateTimeLog(logId: string, updates: Partial<TimeLog>): Promise<void> {
+    const logCol = getCol(BASE_LOG_COLLECTION);
+    const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
             const { doc, updateDoc } = await import('firebase/firestore');
@@ -379,15 +486,15 @@ export async function updateTimeLog(logId: string, updates: Partial<TimeLog>): P
             if (updates.timestamp) {
                 data.timestamp = Timestamp.fromDate(new Date(updates.timestamp));
             }
-            await updateDoc(doc(db, LOG_COLLECTION, logId), data);
+            await updateDoc(doc(db, logCol, logId), data);
         } catch (e) { console.error('Error updating log:', e); }
     }
 
-    const localLogs = JSON.parse(localStorage.getItem(LOCAL_LOG_KEY) || '[]');
+    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
     const idx = localLogs.findIndex((l: any) => l.id === logId);
     if (idx >= 0) {
         localLogs[idx] = { ...localLogs[idx], ...updates };
-        localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(localLogs));
+        localStorage.setItem(localLogKey, JSON.stringify(localLogs));
     }
 }
 
@@ -395,34 +502,43 @@ export async function updateTimeLog(logId: string, updates: Partial<TimeLog>): P
  * Delete a time log
  */
 export async function deleteTimeLog(logId: string): Promise<void> {
+    const logCol = getCol(BASE_LOG_COLLECTION);
+    const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
             const { deleteDoc } = await import('firebase/firestore');
-            await deleteDoc(doc(db, LOG_COLLECTION, logId));
+            await deleteDoc(doc(db, logCol, logId));
         } catch (e) { console.error(e); }
     }
 
-    const localLogs = JSON.parse(localStorage.getItem(LOCAL_LOG_KEY) || '[]');
+    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
     const filtered = localLogs.filter((l: any) => l.id !== logId);
-    localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(filtered));
+    localStorage.setItem(localLogKey, JSON.stringify(filtered));
 }
 
 export async function deleteEmployee(id: string): Promise<void> {
+    const empCol = getCol(BASE_EMP_COLLECTION);
+    const localEmpKey = getKey(BASE_LOCAL_EMP_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
             const { deleteDoc } = await import('firebase/firestore');
-            await deleteDoc(doc(db, EMP_COLLECTION, id));
+            await deleteDoc(doc(db, empCol, id));
         } catch (e) { console.error(e); }
     }
     const employees = await getEmployees();
     const filtered = employees.filter(e => e.id !== id);
-    localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(filtered));
+    localStorage.setItem(localEmpKey, JSON.stringify(filtered));
 }
 
 /**
  * Record a salary payment
  */
 export async function recordPayment(payment: Partial<EmployeePayment>): Promise<EmployeePayment> {
+    const payCol = getCol(BASE_PAY_COLLECTION);
+    const localPayKey = getKey(BASE_LOCAL_PAY_KEY);
+
     const data: EmployeePayment = {
         id: generateId(),
         employeeId: payment.employeeId!,
@@ -433,7 +549,7 @@ export async function recordPayment(payment: Partial<EmployeePayment>): Promise<
 
     if (isFirebaseConfigured() && db) {
         try {
-            const docRef = await addDoc(collection(db, PAY_COLLECTION), {
+            const docRef = await addDoc(collection(db, payCol), {
                 ...data,
                 date: Timestamp.fromDate(new Date(data.date))
             });
@@ -444,9 +560,9 @@ export async function recordPayment(payment: Partial<EmployeePayment>): Promise<
     }
 
     // Local cache
-    const localPayments = JSON.parse(localStorage.getItem(LOCAL_PAY_KEY) || '[]');
+    const localPayments = JSON.parse(localStorage.getItem(localPayKey) || '[]');
     localPayments.unshift(data);
-    localStorage.setItem(LOCAL_PAY_KEY, JSON.stringify(localPayments.slice(0, 1000)));
+    localStorage.setItem(localPayKey, JSON.stringify(localPayments.slice(0, 1000)));
 
     return data;
 }
@@ -455,10 +571,13 @@ export async function recordPayment(payment: Partial<EmployeePayment>): Promise<
  * Get payments for an employee
  */
 export async function getEmployeePayments(employeeId: string): Promise<EmployeePayment[]> {
+    const payCol = getCol(BASE_PAY_COLLECTION);
+    const localPayKey = getKey(BASE_LOCAL_PAY_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
             // Remove orderBy to prevent need for composite index in Firebase
-            const q = query(collection(db, PAY_COLLECTION), where('employeeId', '==', employeeId));
+            const q = query(collection(db, payCol), where('employeeId', '==', employeeId));
             const snapshot = await getDocs(q);
             const payments: EmployeePayment[] = [];
             snapshot.forEach(doc => {
@@ -478,7 +597,7 @@ export async function getEmployeePayments(employeeId: string): Promise<EmployeeP
         }
     }
 
-    const localData = localStorage.getItem(LOCAL_PAY_KEY);
+    const localData = localStorage.getItem(localPayKey);
     const allPayments: EmployeePayment[] = localData ? JSON.parse(localData) : [];
     return allPayments.filter(p => p.employeeId === employeeId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
@@ -487,27 +606,33 @@ export async function getEmployeePayments(employeeId: string): Promise<EmployeeP
  * Delete a salary payment
  */
 export async function deleteEmployeePayment(paymentId: string): Promise<void> {
+    const payCol = getCol(BASE_PAY_COLLECTION);
+    const localPayKey = getKey(BASE_LOCAL_PAY_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
             const { deleteDoc } = await import('firebase/firestore');
-            await deleteDoc(doc(db, PAY_COLLECTION, paymentId));
+            await deleteDoc(doc(db, payCol, paymentId));
         } catch (e) { console.error('Error deleting payment:', e); }
     }
 
-    const localPayments = JSON.parse(localStorage.getItem(LOCAL_PAY_KEY) || '[]');
+    const localPayments = JSON.parse(localStorage.getItem(localPayKey) || '[]');
     const filtered = localPayments.filter((p: any) => p.id !== paymentId);
-    localStorage.setItem(LOCAL_PAY_KEY, JSON.stringify(filtered));
+    localStorage.setItem(localPayKey, JSON.stringify(filtered));
 }
 
 /**
  * Count unique work days for an employee
  */
 export async function getWorkDays(employeeId: string): Promise<number> {
+    const logCol = getCol(BASE_LOG_COLLECTION);
+    const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+
     if (isFirebaseConfigured() && db) {
         try {
             // Query Firebase directly for all time logs for this employee
             const q = query(
-                collection(db, LOG_COLLECTION),
+                collection(db, logCol),
                 where('employeeId', '==', employeeId),
                 where('type', '==', 'IN')
             );
@@ -536,7 +661,7 @@ export async function getWorkDays(employeeId: string): Promise<number> {
     }
 
     // Fallback if no Firebase or error
-    const localData = localStorage.getItem(LOCAL_LOG_KEY);
+    const localData = localStorage.getItem(localLogKey);
     const allLogs: TimeLog[] = localData ? JSON.parse(localData) : [];
 
     const employeeLogs = allLogs.filter(l => l.employeeId === employeeId && l.type === 'IN');
