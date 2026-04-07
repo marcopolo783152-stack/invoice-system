@@ -1,4 +1,5 @@
 import { getStorePrefix } from './user-storage';
+
 /**
  * EMPLOYEE STORAGE SERVICE
  * 
@@ -10,6 +11,7 @@ import {
     collection,
     addDoc,
     updateDoc,
+    setDoc,
     getDocs,
     doc,
     query,
@@ -277,9 +279,12 @@ export async function checkAutoClockOut(): Promise<number> {
 
         const timestamp = clockOutTime.toISOString();
 
+        // Use deterministic ID to prevent duplicates if multiple clients trigger this simultaneously
+        const deterministicId = `auto_${emp.id}_${clockOutTime.getTime()}`;
+
         // Create manual-style clock-out log
         const log: TimeLog = {
-            id: 'auto-' + Math.random().toString(36).substr(2, 9),
+            id: deterministicId,
             employeeId: emp.id,
             employeeName: emp.name,
             type: 'OUT',
@@ -295,17 +300,18 @@ export async function checkAutoClockOut(): Promise<number> {
         const localEmpKey = getKey(BASE_LOCAL_EMP_KEY);
         const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
 
+        let localLogPushed = false;
+
         if (isFirebaseConfigured() && db) {
             try {
                 // Determine a safe fallback date to prevent invalid Timestamp errors
                 const safeDate = isNaN(endOfShift.getTime()) ? new Date() : endOfShift;
 
-                // Add log to cloud
-                const docRef = await addDoc(collection(db, logCol), {
+                // Add log to cloud using deterministic setDoc to avoid duplicate records
+                await setDoc(doc(db, logCol, deterministicId), {
                     ...log,
                     timestamp: Timestamp.fromDate(safeDate)
                 });
-                log.id = docRef.id;
                 
                 // Update employee in cloud
                 await updateDoc(doc(db, empCol, emp.id), {
@@ -315,8 +321,11 @@ export async function checkAutoClockOut(): Promise<number> {
 
                  // IMPORTANT: Also update local timelogs cache so the auto-clock out is recorded locally 
                  const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
-                 localLogs.unshift(log);
-                 localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
+                 if (!localLogs.find((l: any) => l.id === deterministicId)) {
+                     localLogs.unshift(log);
+                     localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
+                 }
+                 localLogPushed = true;
 
             } catch (e) {
                 console.error(`Auto clock-out error for ${emp.name}:`, e);
@@ -325,6 +334,15 @@ export async function checkAutoClockOut(): Promise<number> {
                 continue; // Skip the count increment to avoid corrupting cache state
             }
         }
+
+        if (!localLogPushed) {
+            const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+            if (!localLogs.find((l: any) => l.id === deterministicId)) {
+                localLogs.unshift(log);
+                localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
+            }
+        }
+
         count++;
     }
 
