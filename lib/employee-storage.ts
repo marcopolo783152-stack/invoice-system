@@ -68,15 +68,8 @@ const BASE_LOCAL_EMP_KEY = 'mns_employees_local';
 const BASE_LOCAL_LOG_KEY = 'mns_timelogs_local';
 const BASE_LOCAL_PAY_KEY = 'mns_payments_local';
 
-export const getCol = (col: string) => {
-    const prefix = getStorePrefix();
-    return prefix ? `${prefix}_${col}` : col;
-};
-
-export const getKey = (key: string) => {
-    const prefix = getStorePrefix();
-    return prefix ? `${prefix}_${key}` : key;
-};
+export const getCol = (col: string) => col;
+export const getKey = (key: string) => key;
 
 /**
  * Generate unique IDs for local use
