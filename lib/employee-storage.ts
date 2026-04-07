@@ -44,59 +44,7 @@ export interface TimeLog {
     device?: string;
     facePhoto?: string; // Base64 selfie
     location?: {
-        lat: number;
-        lng: number;
-        accuracy?: number;
-    };
-}
 
-export interface EmployeePayment {
-    id: string;
-/**
- * EMPLOYEE STORAGE SERVICE
- * 
- * Manages employee profiles and clock in/out logs.
- * Hybrid storage: Firebase Cloud (primary) + LocalStorage (fallback)
- */
-
-import {
-    collection,
-    addDoc,
-    updateDoc,
-    getDocs,
-    doc,
-    query,
-    where,
-    orderBy,
-    limit,
-    Timestamp
-} from 'firebase/firestore';
-import { db, isFirebaseConfigured } from './firebase';
-
-export interface Employee {
-    id: string;
-    name: string;
-    phone: string;
-    email?: string;
-    empId: string;
-    pin?: string;
-    status: 'IN' | 'OUT';
-    joinedDate: string;
-    lastAction?: string;
-    dailyRate?: number; // Salary per day
-    photo?: string; // Profile picture (Base64)
-}
-
-export interface TimeLog {
-    id: string;
-    employeeId: string;
-    employeeName: string;
-    type: 'IN' | 'OUT' | 'LEAVE';
-    timestamp: string;  // ISO
-    notes?: string;
-    device?: string;
-    facePhoto?: string; // Base64 selfie
-    location?: {
         lat: number;
         lng: number;
         accuracy?: number;
