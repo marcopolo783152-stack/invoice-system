@@ -186,7 +186,15 @@ export async function generateReportPDFBlobUrl(
   const imgWidth = canvas.width;
   const imgHeight = canvas.height;
 
-  const pageHeightPixels = (imgWidth / 8.5) * 11; // Standard Letter aspect ratio pixels
+  // We want to add margins to the PDF.
+  // Letter paper is 8.5 x 11.
+  // We'll leave 0.5 inches margin top and bottom.
+  // So the content height per page is 10 inches instead of 11.
+  const marginInches = 0.5;
+  const contentHeightInches = 11 - (marginInches * 2);
+  
+  // Calculate how many pixels correspond to the available content height
+  const pageHeightPixels = (imgWidth / 8.5) * contentHeightInches;
   const totalPages = Math.ceil(imgHeight / pageHeightPixels);
 
   const pdf = new jsPDF({
@@ -203,7 +211,7 @@ export async function generateReportPDFBlobUrl(
     // Create a temporary canvas for this specific page slice
     const pageCanvas = document.createElement('canvas');
     pageCanvas.width = sWidth;
-    pageCanvas.height = pageHeightPixels; // Always use full page height for consistency
+    pageCanvas.height = pageHeightPixels; // Always use fixed height to prevent distortion
 
     const ctx = pageCanvas.getContext('2d');
     if (ctx) {
@@ -216,10 +224,16 @@ export async function generateReportPDFBlobUrl(
       );
     }
 
-    const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.8);
+    const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.9);
 
     if (i > 0) pdf.addPage();
-    pdf.addImage(pageImgData, 'JPEG', 0, 0, 8.5, 11);
+    // Paste the image slice offset by our top margin, with the height restricted to the safe zone
+    pdf.addImage(pageImgData, 'JPEG', 0, marginInches, 8.5, contentHeightInches);
+    
+    // Optional: Add a simple page number footer
+    pdf.setFontSize(8);
+    pdf.setTextColor(150);
+    pdf.text(`Page ${i + 1} of ${totalPages}`, 4.25, 10.7, { align: 'center' });
   }
 
   const blob = pdf.output('blob');
