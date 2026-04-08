@@ -68,8 +68,10 @@ function AppraisalFormContent() {
         img.onload = () => {
             try {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1200;
-                const MAX_HEIGHT = 1200;
+                // Extremely aggressive scaling down to 600px to guarantee the detailed rug image 
+                // base64 footprint fits well underneath the 1MB Firestore document payload limit
+                const MAX_WIDTH = 600;
+                const MAX_HEIGHT = 600;
                 let width = img.width;
                 let height = img.height;
 
@@ -90,7 +92,8 @@ function AppraisalFormContent() {
                 const ctx = canvas.getContext('2d');
                 ctx?.drawImage(img, 0, 0, width, height);
 
-                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                // Use 0.6 quality for aggressive WebP or JPEG compression to crush payload size
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
                 setAppraisal(prev => ({ ...prev, rugImage: compressedBase64 }));
             } catch (err) {
                 // If canvas fails (e.g. strict HEIC on some browsers), fallback to raw file
@@ -121,6 +124,7 @@ function AppraisalFormContent() {
 
         setSaving(true);
         try {
+            console.log("Submitting payload...", appraisal.rugImage?.length);
             const id = await saveAppraisal({
                 ...appraisal,
                 id: editId || `APP-${Date.now()}`,
@@ -128,9 +132,11 @@ function AppraisalFormContent() {
             } as Appraisal);
             
             router.push(`/appraisals/print?id=${id}`);
+            // Let the UI clean up state visually if the router takes a few seconds to redirect
+            setTimeout(() => setSaving(false), 3000);
         } catch (error) {
             console.error(error);
-            alert('Failed to save appraisal');
+            alert('Failed to save appraisal locally or remotely. Please try again.');
             setSaving(false);
         }
     };
@@ -308,7 +314,7 @@ function AppraisalFormContent() {
                                         <Upload size={48} color="#94a3b8" style={{ marginBottom: '16px' }} />
                                         <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>Upload Rug Image</span>
                                         <span style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>Click to browse or drag and drop a photo of the rug here.</span>
-                                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                                        <input type="file" accept="image/jpeg, image/jpg, image/png, .jpeg, .jpg, .png" style={{ display: 'none' }} onChange={handleImageUpload} />
                                     </label>
                                 )}
                             </div>
