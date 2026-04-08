@@ -1,7 +1,6 @@
 import { getStorePrefix } from './user-storage';
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
-import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { db, app, isFirebaseConfigured } from './firebase';
+import { db, isFirebaseConfigured } from './firebase';
 import { updateCustomerFromInvoice } from './customer-storage';
 
 export interface Appraisal {
@@ -44,25 +43,7 @@ const sanitizeForFirestore = (obj: any): any => {
 
 export async function saveAppraisal(appraisal: Appraisal): Promise<string> {
     const id = appraisal.id || `APP-${Date.now()}`;
-    
-    let rugImageUrl = appraisal.rugImage;
-    let uploadSuccess = false;
-
-    // Fix Firestore 1MB "Payload too large" error by offloading base64 to Storage
-    if (isFirebaseConfigured() && app && rugImageUrl?.startsWith('data:image')) {
-        try {
-            const storage = getStorage(app);
-            const imageRef = ref(storage, `appraisals/${id}_${Date.now()}.jpg`);
-            await uploadString(imageRef, rugImageUrl, 'data_url');
-            rugImageUrl = await getDownloadURL(imageRef);
-            uploadSuccess = true;
-        } catch (e) {
-            console.error('Error uploading appraisal image to Storage:', e);
-            // Will fallback to attempting base64 save or local only
-        }
-    }
-
-    const data = { ...appraisal, rugImage: rugImageUrl, id, updatedAt: new Date().toISOString() };
+    const data = { ...appraisal, id, updatedAt: new Date().toISOString() };
 
     if (isFirebaseConfigured() && db) {
         try {
