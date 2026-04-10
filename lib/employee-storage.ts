@@ -357,17 +357,18 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(limitCount));
+            // REMOVE orderBy: This prevents "Missing Index" errors in the browser which cause 0 results.
+            // We instead fetch the most recent docs and sort them in-memory.
+            const q = query(collection(db, logCol), limit(limitCount));
             const snapshot = await getDocs(q);
             const logs: TimeLog[] = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Robust timestamp conversion: check for .toDate() function which is more reliable than instanceof in some envs
+                // Robust timestamp conversion
                 let timestamp = data.timestamp;
                 if (data.timestamp && typeof data.timestamp.toDate === 'function') {
                     timestamp = data.timestamp.toDate().toISOString();
                 } else if (data.timestamp && data.timestamp.seconds) {
-                    // Fallback for raw timestamp objects
                     timestamp = new Date(data.timestamp.seconds * 1000).toISOString();
                 }
 
@@ -377,6 +378,7 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                     timestamp: timestamp
                 } as TimeLog);
             });
+
             // Update local backup cache whenever fetched from firebase
             if (typeof window !== 'undefined') {
                 const local = JSON.parse(localStorage.getItem(localLogKey) || '[]');
@@ -387,10 +389,10 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                     }
                 }
                 
-                // Safer sorting with fallback for invalid dates
+                // MANUAL SORTING: This replaces the Firestore orderBy and is 100% reliable.
                 logs.sort((a, b) => {
-                    const dateA = new Date(a.timestamp).getTime();
-                    const dateB = new Date(b.timestamp).getTime();
+                    const dateA = new Date(a.timestamp || 0).getTime();
+                    const dateB = new Date(b.timestamp || 0).getTime();
                     if (isNaN(dateA)) return 1;
                     if (isNaN(dateB)) return -1;
                     return dateB - dateA;
