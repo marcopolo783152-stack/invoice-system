@@ -362,10 +362,19 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
             const logs: TimeLog[] = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
+                // Robust timestamp conversion: check for .toDate() function which is more reliable than instanceof in some envs
+                let timestamp = data.timestamp;
+                if (data.timestamp && typeof data.timestamp.toDate === 'function') {
+                    timestamp = data.timestamp.toDate().toISOString();
+                } else if (data.timestamp && data.timestamp.seconds) {
+                    // Fallback for raw timestamp objects
+                    timestamp = new Date(data.timestamp.seconds * 1000).toISOString();
+                }
+
                 logs.push({
                     ...data,
                     id: doc.id,
-                    timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
+                    timestamp: timestamp
                 } as TimeLog);
             });
             // Update local backup cache whenever fetched from firebase
@@ -377,7 +386,16 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                         logs.push(l); // Keep orphaned local timelogs visible
                     }
                 }
-                logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                
+                // Safer sorting with fallback for invalid dates
+                logs.sort((a, b) => {
+                    const dateA = new Date(a.timestamp).getTime();
+                    const dateB = new Date(b.timestamp).getTime();
+                    if (isNaN(dateA)) return 1;
+                    if (isNaN(dateB)) return -1;
+                    return dateB - dateA;
+                });
+
                 localStorage.setItem(localLogKey, JSON.stringify(logs.slice(0, 1000)));
             }
             return logs;
