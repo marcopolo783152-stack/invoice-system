@@ -369,7 +369,17 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 } as TimeLog);
             });
             // Update local backup cache whenever fetched from firebase
-            localStorage.setItem(localLogKey, JSON.stringify(logs));
+            if (typeof window !== 'undefined') {
+                const local = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+                const cloudMap = new Map(logs.map(l => [l.id, l]));
+                for (const l of local) {
+                    if (!cloudMap.has(l.id)) {
+                        logs.push(l); // Keep orphaned local timelogs visible
+                    }
+                }
+                logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                localStorage.setItem(localLogKey, JSON.stringify(logs.slice(0, 1000)));
+            }
             return logs;
         } catch (e) {
             console.error('Error fetching logs:', e);

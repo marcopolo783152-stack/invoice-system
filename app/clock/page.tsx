@@ -88,9 +88,27 @@ export default function ClockPage() {
             if (videoRef.current && canvasRef.current) {
                 const video = videoRef.current;
                 const canvas = canvasRef.current;
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d')?.drawImage(video, 0, 0);
+                
+                // SCALE IMAGE DOWN to prevent Firestore 1MB payload limits
+                const MAX_SIZE = 600;
+                let width = video.videoWidth;
+                let height = video.videoHeight;
+
+                if (width > height) {
+                    if (width > MAX_SIZE) {
+                        height *= MAX_SIZE / width;
+                        width = MAX_SIZE;
+                    }
+                } else {
+                    if (height > MAX_SIZE) {
+                        width *= MAX_SIZE / height;
+                        height = MAX_SIZE;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d')?.drawImage(video, 0, 0, width, height);
                 facePhoto = canvas.toDataURL('image/jpeg', 0.5);
             }
 

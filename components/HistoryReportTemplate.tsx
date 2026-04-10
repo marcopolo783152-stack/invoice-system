@@ -39,6 +39,7 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
     return (
         <div ref={ref} style={{
             padding: '0.6in',
+            paddingBottom: '1.2in', // Ensures footer clear room
             fontFamily: 'sans-serif',
             color: '#1e293b',
             width: '8.5in',
@@ -116,7 +117,7 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
 
             {/* Logs */}
             {Object.entries(groupedLogs).map(([month, monthLogs]) => (
-                <div key={month} style={{ marginBottom: 30 }}>
+                <div key={month} style={{ marginBottom: 30, pageBreakInside: 'avoid' }}>
                     <h3 style={{ fontSize: 14, fontWeight: 700, borderBottom: '2px solid #e2e8f0', paddingBottom: 8, color: '#475569', textTransform: 'uppercase' }}>
                         {month}
                     </h3>
@@ -160,7 +161,7 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
 
             {/* Payments History */}
             {payments.length > 0 && (
-                <div style={{ marginTop: 40 }}>
+                <div style={{ marginTop: 40, pageBreakInside: 'avoid' }}>
                     <h3 style={{ fontSize: 14, fontWeight: 700, borderBottom: '2px solid #e2e8f0', paddingBottom: 8, color: '#10b981', textTransform: 'uppercase' }}>
                         Payment History
                     </h3>
