@@ -142,7 +142,7 @@ export default function NewServiceOrderPage() {
                             sku: item.sku,
                             description: item.description || '',
                             size: formatSize(item),
-                            customerName: inv.data.soldTo?.name || 'Marco Polo',
+                            customerName: inv.data.soldTo?.name || 'Ariana',
                             source: 'invoice' as const,
                             invoiceId: inv.id,
                             defaultServiceType: defaultService,
@@ -163,7 +163,7 @@ export default function NewServiceOrderPage() {
                 sku: item.sku,
                 description: item.description || '',
                 size: formatSize(item),
-                customerName: 'Marco Polo',
+                customerName: 'Ariana',
                 source: 'inventory' as const,
                 isAlreadyAtService: currentlyAtServiceSkus.has(item.sku)
             })));
@@ -229,7 +229,7 @@ export default function NewServiceOrderPage() {
             sku: newUnlistedRug.sku,
             description: newUnlistedRug.description,
             size: newUnlistedRug.size,
-            customerName: 'Marco Polo',
+            customerName: 'Ariana',
             source: 'unlisted',
             defaultServiceType: 'Wash'
         };
@@ -273,7 +273,7 @@ export default function NewServiceOrderPage() {
                 sku: sku,
                 description: item?.description || 'Unknown Item',
                 size: item?.size || '',
-                customerName: item?.customerName || 'Marco Polo',
+                customerName: item?.customerName || 'Ariana',
                 invoiceId: item?.invoiceId,
                 serviceType: selectedRugsMap[sku],
                 returned: false

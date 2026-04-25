@@ -378,7 +378,7 @@ function InvoicesListContent() {
         if (selectedIds.length === 0) return;
 
         const adminKey = prompt('Please enter the Admin Key to permanently delete these items:');
-        if (adminKey !== 'Marcopolo$') {
+        if (adminKey !== 'Ariana$') {
             alert('Incorrect Admin Key. Permanent deletion aborted.');
             return;
         }

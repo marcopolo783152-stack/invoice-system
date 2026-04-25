@@ -27,7 +27,7 @@ const DEFAULT_CONFIG: EmailConfig = {
 };
 
 // Admin email for security confirmations
-const ADMIN_EMAIL = 'marcopolorugs@aol.com';
+const ADMIN_EMAIL = 'arianaorientalrugs@gmail.com';
 
 /**
  * Get email configuration from local storage
@@ -101,10 +101,10 @@ export async function sendInvoiceEmail(
     const templateParams: Record<string, any> = {
       to_email: customerEmail,
       to_name: customerName,
-      from_name: 'Marco Polo Oriental Rugs',
+      from_name: 'Ariana Oriental Rugs',
       invoice_number: invoiceNumber,
       // Updated message with Direct Link
-      message: `Dear ${customerName},\n\nYou can view and download your invoice #${invoiceNumber} at the link below:\n\n${invoiceLink}\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
+      message: `Dear ${customerName},\n\nYou can view and download your invoice #${invoiceNumber} at the link below:\n\n${invoiceLink}\n\nThank you for your business!\n\nBest regards,\nAriana Oriental Rugs\n+1 (703) 801 1640`,
       invoice_link: invoiceLink, // Sending as separate param too just in case template uses it
       // invoice_html: removed to save size
     };
@@ -155,10 +155,10 @@ export async function sendInvoiceEmailServer(
           template_params: {
             to_email: customerEmail,
             to_name: customerName,
-            from_name: 'Marco Polo Oriental Rugs',
+            from_name: 'Ariana Oriental Rugs',
             invoice_number: invoiceNumber,
             // Removed invoice_html to avoid 50kb EmailJS variable limit
-            message: `Dear ${customerName},\n\nPlease find attached your invoice ${invoiceNumber} (PDF).\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
+            message: `Dear ${customerName},\n\nPlease find attached your invoice ${invoiceNumber} (PDF).\n\nThank you for your business!\n\nBest regards,\nAriana Oriental Rugs\n+1 (703) 801 1640`,
           },
           attachment_data: {
             name: `Invoice_${invoiceNumber}.pdf`,

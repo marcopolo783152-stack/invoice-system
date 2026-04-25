@@ -11,15 +11,15 @@ export function ReturnedReceipt({ receiptData }: { receiptData: any }) {
     return <div style={{ color: 'red', textAlign: 'center' }}>Invalid or incomplete receipt data.</div>;
   }
   const businessInfo = {
-    name: 'MARCO POLO ORIENTAL RUGS, INC.',
+    name: 'ARIANA ORIENTAL RUGS INC',
     address: '3260 DUKE ST',
     city: 'ALEXANDRIA',
     state: 'VA',
     zip: '22314',
-    phone: '703-461-0207',
+    phone: '+1 (703) 801 1640',
     fax: '703-461-0208',
-    website: 'www.marcopolorugs.com',
-    email: 'marcopolorugs@aol.com',
+    website: '',
+    email: 'arianaorientalrugs@gmail.com',
   };
   return (
     <div className="print-receipt-center" style={{ fontFamily: 'Arial, sans-serif', background: '#fff', color: '#222', padding: 24, maxWidth: 480, margin: '0 auto' }}>
@@ -186,7 +186,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
 
     // Require security key before deletion
     const key = prompt('Enter security key to delete invoice:');
-    if (key !== 'Marcopolo$') {
+    if (key !== 'Ariana$') {
       alert('Incorrect security key. Deletion cancelled.');
       return;
     }
@@ -219,7 +219,7 @@ export default function InvoiceSearch({ onSelectInvoice, onClose }: InvoiceSearc
 
     // Require security key before bulk deletion
     const key = prompt('Enter security key to delete selected invoices:');
-    if (key !== 'Marcopolo$') {
+    if (key !== 'Ariana$') {
       alert('Incorrect security key. Bulk deletion cancelled.');
       return;
     }

@@ -171,7 +171,7 @@ function SignatureContent() {
                 </div>
 
                 <div style={{ marginTop: 24, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
-                    <p>&copy; {new Date().getFullYear()} Marco Polo Oriental Rugs. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Ariana Oriental Rugs. All rights reserved.</p>
                 </div>
             </div>
 

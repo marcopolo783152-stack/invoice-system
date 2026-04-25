@@ -2,7 +2,7 @@
  * INVOICE NUMBER GENERATOR
  * 
  * Generates unique invoice numbers in format: MP########
- * MP = Marco Polo
+ * AR = Ariana
  * ######## = 8-digit number
  */
 

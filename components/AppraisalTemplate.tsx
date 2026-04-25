@@ -205,7 +205,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                 <div style={{ marginTop: '20px', paddingTop: '10px', paddingBottom: '20px', color: '#000' }}>
                     {/* Signature Area */}
                     <div style={{ marginBottom: '10px' }}>
-                        <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Marco Polo Oriental Rugs</div>
+                        <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Ariana Oriental Rugs</div>
                         <div style={{ fontSize: '12pt', marginBottom: '25px' }}>Certified Oriental Rug Appraiser</div>
                         
                         {/* Signature Line */}
@@ -214,7 +214,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
 
                     {/* Footer */}
                     <div style={{ textAlign: 'left', fontWeight: 'bold', fontStyle: 'italic', fontSize: '10pt', marginTop: '15px' }}>
-                        MARCO POLO ORIENTAL RUGS | 3260 DUKE STREET, ALEXANDRIA, VA 22314 | (703) 461-0207
+                        ARIANA ORIENTAL RUGS INC | 3210 DUKE ST, ALEXANDRIA, VA 22314 | +1 (703) 801 1640
                     </div>
                 </div>
             </div>

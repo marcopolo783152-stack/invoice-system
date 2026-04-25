@@ -24,7 +24,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
     const handleRevealContact = () => {
         const key = prompt('Please enter Admin Key to view support contacts:');
-        if (key === 'Marcopolo$') {
+        if (key === 'Ariana$') {
             setShowAdminContact(true);
         } else {
             alert('Incorrect Admin Key');
