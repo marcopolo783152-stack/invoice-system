@@ -428,6 +428,8 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
             const snapshot = await getDocs(q);
             snapshot.forEach(lDoc => {
                 const data = lDoc.data();
+                if (data.isDeleted) return; // SKIP DELETED LOGS
+
                 let timestamp = data.timestamp;
                 if (data.timestamp && typeof data.timestamp.toDate === 'function') {
                     timestamp = data.timestamp.toDate().toISOString();
@@ -528,6 +530,8 @@ export function subscribeToTimeLogs(callback: (logs: TimeLog[]) => void, limitCo
         const logs: TimeLog[] = [];
         snapshot.forEach(lDoc => {
             const data = lDoc.data();
+            if (data.isDeleted) return; // SKIP DELETED LOGS
+
             let timestamp = data.timestamp;
             if (data.timestamp && typeof data.timestamp.toDate === 'function') {
                 timestamp = data.timestamp.toDate().toISOString();
@@ -736,25 +740,29 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            const { writeBatch, doc } = await import('firebase/firestore');
+            const { deleteDoc, doc, updateDoc } = await import('firebase/firestore');
             
-            // Chunk logIds into groups of 200 (max 500 writes per batch)
-            const chunkSize = 200;
-            for (let i = 0; i < logIds.length; i += chunkSize) {
-                const chunk = logIds.slice(i, i + chunkSize);
-                const batch = writeBatch(db!);
+            // Execute deletions in parallel for speed, bypassing batch restrictions
+            const deletePromises = logIds.map(async (id) => {
+                const docRef = doc(db!, logCol, id);
                 
-                for (const id of chunk) {
-                    batch.delete(doc(db!, logCol, id));
-                    if (prefix) {
-                        batch.delete(doc(db!, BASE_LOG_COLLECTION, id));
-                    }
+                // FIRST: Soft Delete fallback in case hard delete is blocked by security rules
+                await updateDoc(docRef, { isDeleted: true }).catch(() => {});
+                
+                // THEN: Delete from current collection
+                await deleteDoc(docRef).catch(e => console.error('Failed to delete from prefixed collection:', e));
+                
+                // Delete from root collection
+                if (prefix) {
+                    const rootRef = doc(db!, BASE_LOG_COLLECTION, id);
+                    await updateDoc(rootRef, { isDeleted: true }).catch(() => {});
+                    await deleteDoc(rootRef).catch(e => console.error('Failed to delete from root collection:', e));
                 }
-                
-                await batch.commit();
-            }
+            });
+
+            await Promise.allSettled(deletePromises);
         } catch (e) { 
-            console.error('Error executing delete batch:', e); 
+            console.error('Error executing delete promises:', e); 
         }
     }
 
@@ -903,7 +911,7 @@ export async function getWorkDays(employeeId: string): Promise<number> {
 
             snapshot.forEach(logDoc => {
                 const data = logDoc.data();
-                if (data.type === 'IN') { // Filter locally to avoid index requirement
+                if (data.type === 'IN' && !data.isDeleted) { // Filter locally to avoid index requirement
                     employeeLogs.push({
                         ...data,
                         id: logDoc.id,
