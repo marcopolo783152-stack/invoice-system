@@ -323,7 +323,7 @@ export default function EmployeesPage() {
         });
 
         const unsubLogs = subscribeToTimeLogs((data) => {
-            setTimeLogs(data);
+            setLogs(data);
         }, 100);
 
         return () => {
