@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search, Calculator } from 'lucide-react';
-import { clockInOut, checkAutoClockOut, getEmployees, Employee } from '@/lib/employee-storage';
+import { clockInOut, checkAutoClockOut, getEmployees, subscribeToEmployees, Employee } from '@/lib/employee-storage';
 import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync, getUnbackedData } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import Link from 'next/link';
@@ -219,14 +219,16 @@ export default function Dashboard() {
                 console.error("Local load error", e);
             }
 
+            // Real-time Staff Status
+            const unsub = subscribeToEmployees((data) => {
+                setEmployees(data);
+            });
+
             // Background / Full Load (Cloud Sync - Graceful)
             async function loadData() {
                 try {
                     const data = await getAllInvoices();
                     setInvoices(data);
-                    
-                    const empData = await getEmployees();
-                    setEmployees(empData);
                 } catch (err) {
                     console.error("Failed to load dashboard data", err);
                 } finally {

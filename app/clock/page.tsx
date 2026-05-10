@@ -286,15 +286,6 @@ export default function ClockPage() {
                 )}
             </div>
 
-            {/* Admin Bypass Link - Top Right */}
-            <div style={{ position: 'absolute', top: 20, right: 20 }}>
-                <Link href="/employees" style={{
-                    color: 'rgba(255,255,255,0.2)', fontSize: 12, textDecoration: 'none',
-                    padding: '8px 16px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)'
-                }}>
-                    Admin Login
-                </Link>
-            </div>
         </div>
     );
 }

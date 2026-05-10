@@ -17,7 +17,9 @@ import {
     deleteTimeLog,
     checkAutoClockOut,
     updateTimeLog,
-    deleteEmployeePayment
+    deleteEmployeePayment,
+    subscribeToEmployees,
+    subscribeToTimeLogs
 } from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
@@ -311,13 +313,23 @@ export default function EmployeesPage() {
     useEffect(() => {
         const init = async () => {
             await checkAutoClockOut();
-            loadData();
         };
         init();
 
-        // Polling for real-time updates (every 30 seconds)
-        const interval = setInterval(loadData, 30000);
-        return () => clearInterval(interval);
+        // Real-time subscriptions
+        const unsubEmps = subscribeToEmployees((data) => {
+            setEmployees(data);
+            setIsLoading(false);
+        });
+
+        const unsubLogs = subscribeToTimeLogs((data) => {
+            setTimeLogs(data);
+        }, 100);
+
+        return () => {
+            if (unsubEmps) unsubEmps();
+            if (unsubLogs) unsubLogs();
+        };
     }, []);
 
     const handlePrintBadge = (emp: Employee) => {

@@ -18,7 +18,9 @@ import {
     where,
     orderBy,
     limit,
-    Timestamp
+    Timestamp,
+    onSnapshot,
+    Unsubscribe
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
 
@@ -123,6 +125,30 @@ export async function getEmployees(): Promise<Employee[]> {
 
     const localData = localStorage.getItem(localKey);
     return localData ? JSON.parse(localData) : [];
+}
+
+/**
+ * Subscribe to employee updates (Real-time)
+ */
+export function subscribeToEmployees(callback: (employees: Employee[]) => void): Unsubscribe | null {
+    if (!isFirebaseConfigured() || !db) return null;
+    const colName = getCol(BASE_EMP_COLLECTION);
+    const q = query(collection(db, colName), orderBy('name', 'asc'));
+
+    return onSnapshot(q, (snapshot) => {
+        const employees: Employee[] = [];
+        snapshot.forEach(doc => {
+            employees.push({ id: doc.id, ...doc.data() } as Employee);
+        });
+        
+        // Update local cache
+        const localKey = getKey(BASE_LOCAL_EMP_KEY);
+        localStorage.setItem(localKey, JSON.stringify(employees));
+        
+        callback(employees);
+    }, (error) => {
+        console.error("Employee subscription error:", error);
+    });
 }
 
 /**
@@ -494,6 +520,42 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
         return localData ? JSON.parse(localData) : [];
     }
     return [];
+}
+
+/**
+ * Subscribe to time logs (Real-time)
+ */
+export function subscribeToTimeLogs(callback: (logs: TimeLog[]) => void, limitCount = 50): Unsubscribe | null {
+    if (!isFirebaseConfigured() || !db) return null;
+    const logCol = getCol(BASE_LOG_COLLECTION);
+    const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(limitCount));
+
+    return onSnapshot(q, (snapshot) => {
+        const logs: TimeLog[] = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            let timestamp = data.timestamp;
+            if (data.timestamp && typeof data.timestamp.toDate === 'function') {
+                timestamp = data.timestamp.toDate().toISOString();
+            } else if (data.timestamp && data.timestamp.seconds) {
+                timestamp = new Date(data.timestamp.seconds * 1000).toISOString();
+            }
+
+            logs.push({
+                id: doc.id,
+                ...data,
+                timestamp: timestamp
+            } as TimeLog);
+        });
+        
+        // Update local cache
+        const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+        localStorage.setItem(localLogKey, JSON.stringify(logs.slice(0, 1000)));
+
+        callback(logs);
+    }, (error) => {
+        console.error("Logs subscription error:", error);
+    });
 }
 
 export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLog> {
