@@ -892,37 +892,39 @@ export async function getWorkDays(employeeId: string): Promise<number> {
         try {
             // Query Firebase directly for all time logs for this employee
             const q = query(
-                collection(db, logCol),
-                where('employeeId', '==', employeeId),
-                where('type', '==', 'IN')
+                collection(db!, logCol),
+                where('employeeId', '==', employeeId)
             );
             const snapshot = await getDocs(q);
             const employeeLogs: TimeLog[] = [];
 
             snapshot.forEach(logDoc => {
                 const data = logDoc.data();
-                employeeLogs.push({
-                    ...data,
-                    id: logDoc.id,
-                    timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
-                } as TimeLog);
+                if (data.type === 'IN') { // Filter locally to avoid index requirement
+                    employeeLogs.push({
+                        ...data,
+                        id: logDoc.id,
+                        timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
+                    } as TimeLog);
+                }
             });
 
             // FALLBACK: If no logs in prefixed collection, check the root collection
             if (employeeLogs.length === 0 && prefix) {
                 const rootQ = query(
                     collection(db!, BASE_LOG_COLLECTION),
-                    where('employeeId', '==', employeeId),
-                    where('type', '==', 'IN')
+                    where('employeeId', '==', employeeId)
                 );
                 const rootSnapshot = await getDocs(rootQ);
                 rootSnapshot.forEach(logDoc => {
                     const data = logDoc.data();
-                    employeeLogs.push({
-                        ...data,
-                        id: logDoc.id,
-                        timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
-                    } as TimeLog);
+                    if (data.type === 'IN') { // Filter locally
+                        employeeLogs.push({
+                            ...data,
+                            id: logDoc.id,
+                            timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
+                        } as TimeLog);
+                    }
                 });
             }
 
