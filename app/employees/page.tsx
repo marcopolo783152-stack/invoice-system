@@ -10,6 +10,8 @@ import {
     getEmployees,
     getTimeLogs,
     deleteEmployee,
+    getWorkDays,
+    migrateLegacyLogs,
     EmployeePayment,
     recordPayment,
     getEmployeePayments,
@@ -247,6 +249,9 @@ export default function EmployeesPage() {
     const loadData = async () => {
         setIsLoading(true);
         try {
+            // Ensure all legacy logs are migrated to the current store collection
+            await migrateLegacyLogs();
+
             const [empList, logList] = await Promise.all([
                 getEmployees(),
                 getTimeLogs(2000) // Fetch more for day counting and complete visibility

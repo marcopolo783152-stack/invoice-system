@@ -444,51 +444,9 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
                 } as TimeLog);
             });
 
-            // Root fallback removed completely to prevent ghost records
-
-            // Update local backup cache whenever fetched from firebase
-            if (typeof window !== 'undefined' && isFirebaseConfigured() && db) {
-                // Fetch the last few cloud logs to avoid duplicating very recent syncs
-                const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(10));
-                const snapshot = await getDocs(q);
-                const cloudIds = new Set(snapshot.docs.map(doc => doc.id));
-
-                const localLogs: TimeLog[] = JSON.parse(localStorage.getItem(localLogKey) || '[]');
-                let hasSyncChanges = false;
-
-                // Optimization: Only scan the most recent 20 local logs to avoid lag on mobile
-                const recentLogs = localLogs.slice(0, 20);
-                const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-                
-                for (const l of recentLogs) {
-                    // Only auto-sync true orphaned offline logs (short IDs) 
-                    // that were created recently (last 24h) and aren't marked synced.
-                    const logTime = new Date(l.timestamp).getTime();
-                    if (l.id && l.id.length < 15 && !l.synced && logTime > oneDayAgo) {
-                        try {
-                            const { setDoc: syncSetDoc, doc: syncDoc } = require('firebase/firestore');
-                            await syncSetDoc(syncDoc(db!, logCol, l.id), {
-                                ...l,
-                                synced: true, 
-                                timestamp: l.timestamp ? new Date(l.timestamp).toISOString() : new Date().toISOString()
-                            }, { merge: true });
-                            
-                            console.log(`Synced orphaned log ${l.id} to cloud.`);
-                            l.synced = true;
-                            hasSyncChanges = true;
-                        } catch (err: any) {
-                            console.warn('Background sync failed for log:', l.id, err);
-                        }
-                    }
-                }
-                
-                if (hasSyncChanges) {
-                    localStorage.setItem(localLogKey, JSON.stringify(localLogs));
-                    await getEmployees();
-                }
-            }
-                
-            // MANUAL SORTING: This replaces the Firestore orderBy and is 100% reliable.
+            // Note: Auto-migration handles pulling from root. We only fetch prefixed logs here.
+            
+            // MANUAL SORTING
             logs.sort((a, b) => {
                 const dateA = new Date(a.timestamp || 0).getTime();
                 const dateB = new Date(b.timestamp || 0).getTime();
@@ -890,6 +848,55 @@ export async function deleteEmployeePayment(paymentId: string): Promise<void> {
     const localPayments = JSON.parse(localStorage.getItem(localPayKey) || '[]');
     const filtered = localPayments.filter((p: any) => p.id !== paymentId);
     localStorage.setItem(localPayKey, JSON.stringify(filtered));
+}
+
+export async function migrateLegacyLogs(): Promise<void> {
+    const prefix = getStorePrefix();
+    if (!prefix || !isFirebaseConfigured() || !db) return;
+
+    const migrationKey = `has_migrated_logs_${prefix}`;
+    if (typeof window !== 'undefined' && localStorage.getItem(migrationKey)) {
+        return; // Already migrated
+    }
+
+    try {
+        const { collection, getDocs, writeBatch, doc } = await import('firebase/firestore');
+        const logCol = getCol(BASE_LOG_COLLECTION);
+
+        console.log('Starting legacy log migration...');
+        const rootSnapshot = await getDocs(collection(db!, BASE_LOG_COLLECTION));
+        
+        if (rootSnapshot.empty) {
+            if (typeof window !== 'undefined') localStorage.setItem(migrationKey, 'true');
+            return;
+        }
+
+        const logsToMigrate: any[] = [];
+        rootSnapshot.forEach(logDoc => {
+            const data = logDoc.data();
+            if (!data.isDeleted) {
+                logsToMigrate.push({ id: logDoc.id, ...data });
+            }
+        });
+
+        // Chunk migration to bypass 500 write limit
+        const chunkSize = 250;
+        for (let i = 0; i < logsToMigrate.length; i += chunkSize) {
+            const chunk = logsToMigrate.slice(i, i + chunkSize);
+            const batch = writeBatch(db!);
+            
+            for (const log of chunk) {
+                batch.set(doc(db!, logCol, log.id), log, { merge: true });
+            }
+            
+            await batch.commit();
+        }
+
+        console.log(`Successfully migrated ${logsToMigrate.length} legacy logs.`);
+        if (typeof window !== 'undefined') localStorage.setItem(migrationKey, 'true');
+    } catch (e) {
+        console.error('Migration failed:', e);
+    }
 }
 
 /**
