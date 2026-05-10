@@ -249,7 +249,7 @@ export default function EmployeesPage() {
         try {
             const [empList, logList] = await Promise.all([
                 getEmployees(),
-                getTimeLogs(1000) // Fetch more for day counting
+                getTimeLogs(2000) // Fetch more for day counting and complete visibility
             ]);
             setEmployees(empList);
             setLogs(logList);
@@ -341,7 +341,7 @@ export default function EmployeesPage() {
 
         const unsubLogs = subscribeToTimeLogs((data) => {
             setLogs(data);
-        }, 100);
+        }, 2000);
 
         return () => {
             if (unsubEmps) unsubEmps();

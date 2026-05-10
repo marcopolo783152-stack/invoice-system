@@ -736,22 +736,25 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            const { deleteDoc, doc } = await import('firebase/firestore');
+            const { writeBatch, doc } = await import('firebase/firestore');
             
-            // Execute deletions in parallel for speed, bypassing batch restrictions
-            const deletePromises = logIds.map(async (id) => {
-                // Delete from current collection
-                await deleteDoc(doc(db!, logCol, id)).catch(e => console.error('Failed to delete from prefixed collection:', e));
+            // Chunk logIds into groups of 200 (max 500 writes per batch)
+            const chunkSize = 200;
+            for (let i = 0; i < logIds.length; i += chunkSize) {
+                const chunk = logIds.slice(i, i + chunkSize);
+                const batch = writeBatch(db!);
                 
-                // Delete from root collection
-                if (prefix) {
-                    await deleteDoc(doc(db!, BASE_LOG_COLLECTION, id)).catch(e => console.error('Failed to delete from root collection:', e));
+                for (const id of chunk) {
+                    batch.delete(doc(db!, logCol, id));
+                    if (prefix) {
+                        batch.delete(doc(db!, BASE_LOG_COLLECTION, id));
+                    }
                 }
-            });
-
-            await Promise.allSettled(deletePromises);
+                
+                await batch.commit();
+            }
         } catch (e) { 
-            console.error('Error executing delete promises:', e); 
+            console.error('Error executing delete batch:', e); 
         }
     }
 
