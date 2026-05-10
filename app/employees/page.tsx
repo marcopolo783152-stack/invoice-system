@@ -146,15 +146,19 @@ export default function EmployeesPage() {
     // Helper to get dates between start and end
     const getDatesInRange = (start: string, end: string) => {
         const dates = [];
-        let curr = new Date(start);
-        const last = new Date(end);
+        if (!start || !end) return dates;
         
-        // Add 12 hours to avoid timezone shifting issues when adding days
-        curr.setHours(12, 0, 0, 0); 
-        last.setHours(12, 0, 0, 0);
+        const [sYear, sMonth, sDay] = start.split('-').map(Number);
+        const [eYear, eMonth, eDay] = end.split('-').map(Number);
+        
+        let curr = new Date(sYear, sMonth - 1, sDay, 12, 0, 0);
+        const last = new Date(eYear, eMonth - 1, eDay, 12, 0, 0);
 
         while (curr <= last) {
-            dates.push(curr.toISOString().split('T')[0]);
+            const y = curr.getFullYear();
+            const m = String(curr.getMonth() + 1).padStart(2, '0');
+            const d = String(curr.getDate()).padStart(2, '0');
+            dates.push(`${y}-${m}-${d}`);
             curr.setDate(curr.getDate() + 1);
         }
         return dates;

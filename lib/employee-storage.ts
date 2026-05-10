@@ -663,31 +663,46 @@ export async function addManualTimeLogsBulk(logs: Omit<TimeLog, 'id'>[]): Promis
     if (isFirebaseConfigured() && db) {
         try {
             const { writeBatch, doc, collection, Timestamp } = await import('firebase/firestore');
-            const batch = writeBatch(db!);
             
-            for (const log of logs) {
-                const id = generateId();
-                const data: TimeLog = { ...log, id, synced: true };
-                processedLogs.push(data);
+            // Group employee updates to avoid multiple writes to the same doc in a batch
+            const empUpdates = new Map<string, any>();
+            
+            // Chunk logs into groups of 200 to stay well below the 500 write limit
+            const chunkSize = 200;
+            for (let i = 0; i < logs.length; i += chunkSize) {
+                const chunk = logs.slice(i, i + chunkSize);
+                const batch = writeBatch(db!);
+                
+                for (const log of chunk) {
+                    const id = generateId();
+                    const data: TimeLog = { ...log, id, synced: true };
+                    processedLogs.push(data);
 
-                // Log entry
-                const logRef = doc(collection(db!, logCol));
-                batch.set(logRef, {
-                    ...data,
-                    timestamp: Timestamp.fromDate(new Date(data.timestamp))
-                });
-                data.id = logRef.id;
+                    // Log entry
+                    const logRef = doc(collection(db!, logCol));
+                    batch.set(logRef, {
+                        ...data,
+                        timestamp: Timestamp.fromDate(new Date(data.timestamp))
+                    });
+                    data.id = logRef.id;
 
-                // Update employee status
-                batch.update(doc(db!, empCol, data.employeeId), {
-                    status: data.type === 'LEAVE' ? 'OUT' : data.type,
-                    lastAction: data.timestamp
+                    empUpdates.set(data.employeeId, {
+                        status: data.type === 'LEAVE' ? 'OUT' : data.type,
+                        lastAction: data.timestamp
+                    });
+                }
+                
+                // Add employee updates to this batch (unique per employee)
+                empUpdates.forEach((updateData, empId) => {
+                    batch.update(doc(db!, empCol, empId), updateData);
                 });
+                
+                await batch.commit();
+                empUpdates.clear(); // Clear for next chunk
             }
-            
-            await batch.commit();
         } catch (e) {
             console.error('Error in bulk manual logs:', e);
+            throw e; // Re-throw to prevent local cache update on failure
         }
     }
 
@@ -730,19 +745,25 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
     if (isFirebaseConfigured() && db) {
         try {
             const { writeBatch, doc } = await import('firebase/firestore');
-            const batch = writeBatch(db!);
             
-            for (const id of logIds) {
-                // 1. Delete from current (prefixed) collection
-                batch.delete(doc(db!, logCol, id));
+            // Chunk logIds into groups of 150 (each log deletes up to 2 docs = 300 writes)
+            const chunkSize = 150;
+            for (let i = 0; i < logIds.length; i += chunkSize) {
+                const chunk = logIds.slice(i, i + chunkSize);
+                const batch = writeBatch(db!);
                 
-                // 2. If we have a prefix, also try to delete from the root collection
-                if (prefix) {
-                    batch.delete(doc(db!, BASE_LOG_COLLECTION, id));
+                for (const id of chunk) {
+                    // 1. Delete from current (prefixed) collection
+                    batch.delete(doc(db!, logCol, id));
+                    
+                    // 2. If we have a prefix, also try to delete from the root collection
+                    if (prefix) {
+                        batch.delete(doc(db!, BASE_LOG_COLLECTION, id));
+                    }
                 }
+                
+                await batch.commit();
             }
-            
-            await batch.commit();
         } catch (e) { 
             console.error('Error in bulk deletion:', e); 
             // Fallback: If batch fails, try individual deletes as last resort
