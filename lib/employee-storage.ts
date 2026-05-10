@@ -101,8 +101,8 @@ export async function getEmployees(): Promise<Employee[]> {
         try {
             // Check prefixed collection
             const snapshot = await getDocs(query(collection(db, colName), orderBy('name', 'asc')));
-            snapshot.forEach(doc => {
-                employees.push({ id: doc.id, ...doc.data() } as Employee);
+            snapshot.forEach(eDoc => {
+                employees.push({ id: eDoc.id, ...eDoc.data() } as Employee);
             });
 
             // FALLBACK & AUTO-MIGRATION (Runs if current view is empty)
@@ -256,7 +256,7 @@ export async function clockInOut(
     if (isFirebaseConfigured() && db) {
         try {
             // Log entry
-            const logRef = await addDoc(collection(db, logCol), {
+            const logRef = await addDoc(collection(db!, logCol), {
                 ...log,
                 timestamp: Timestamp.fromDate(new Date())
             });
@@ -269,7 +269,7 @@ export async function clockInOut(
             };
             if (setsPhoto) updateFields.photo = facePhoto;
 
-            await updateDoc(doc(db, empCol, employee.id), updateFields);
+            await updateDoc(doc(db!, empCol, employee.id), updateFields);
         } catch (e) {
             console.error('Firebase clock error:', e);
         }
@@ -425,8 +425,8 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
             // Check prefixed collection
             const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(limitCount));
             const snapshot = await getDocs(q);
-            snapshot.forEach(doc => {
-                const data = doc.data();
+            snapshot.forEach(lDoc => {
+                const data = lDoc.data();
                 let timestamp = data.timestamp;
                 if (data.timestamp && typeof data.timestamp.toDate === 'function') {
                     timestamp = data.timestamp.toDate().toISOString();
@@ -435,7 +435,7 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 }
 
                 logs.push({
-                    id: doc.id,
+                    id: lDoc.id,
                     ...data,
                     timestamp: timestamp
                 } as TimeLog);
@@ -474,10 +474,10 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                     // Only auto-sync true orphaned offline logs (9 chars) that haven't been marked as synced yet.
                     if (l.id && l.id.length < 15 && !l.synced) {
                         try {
-                            const { setDoc, doc, Timestamp } = require('firebase/firestore');
-                            await setDoc(doc(db, logCol, l.id), {
+                            const { setDoc: syncSetDoc, doc: syncDoc, Timestamp: syncTimestamp } = require('firebase/firestore');
+                            await syncSetDoc(syncDoc(db!, logCol, l.id), {
                                 ...l,
-                                timestamp: l.timestamp ? Timestamp.fromDate(new Date(l.timestamp)) : Timestamp.now()
+                                timestamp: l.timestamp ? syncTimestamp.fromDate(new Date(l.timestamp)) : syncTimestamp.now()
                             }, { merge: true });
                             
                             console.log(`Synced orphaned log ${l.id} to cloud.`);
@@ -535,8 +535,8 @@ export function subscribeToTimeLogs(callback: (logs: TimeLog[]) => void, limitCo
 
     return onSnapshot(q, (snapshot) => {
         const logs: TimeLog[] = [];
-        snapshot.forEach(doc => {
-            const data = doc.data();
+        snapshot.forEach(lDoc => {
+            const data = lDoc.data();
             let timestamp = data.timestamp;
             if (data.timestamp && typeof data.timestamp.toDate === 'function') {
                 timestamp = data.timestamp.toDate().toISOString();
@@ -545,7 +545,7 @@ export function subscribeToTimeLogs(callback: (logs: TimeLog[]) => void, limitCo
             }
 
             logs.push({
-                id: doc.id,
+                id: lDoc.id,
                 ...data,
                 timestamp: timestamp
             } as TimeLog);
@@ -574,14 +574,14 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
 
     if (isFirebaseConfigured() && db) {
         try {
-            const logRef = await addDoc(collection(db, logCol), {
+            const logRef = await addDoc(collection(db!, logCol), {
                 ...data,
                 timestamp: Timestamp.fromDate(new Date(data.timestamp))
             });
             data.id = logRef.id;
 
             // Admin manual log: Force update the employee status immediately
-            await updateDoc(doc(db, empCol, data.employeeId), {
+            await updateDoc(doc(db!, empCol, data.employeeId), {
                 status: data.type === 'LEAVE' ? 'OUT' : data.type,
                 lastAction: data.timestamp
             });
