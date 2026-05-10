@@ -5,7 +5,7 @@
  */
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 
 // Firebase configuration - hardcoded for static export compatibility
 // These values are safe to expose publicly (they're client-side credentials)
@@ -47,6 +47,12 @@ try {
   if (isFirebaseConfigured() && typeof window !== 'undefined') {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     db = getFirestore(app);
+    
+    // Enable offline persistence (IndexedDB) to ensure it works without Chrome localStorage and while offline
+    enableIndexedDbPersistence(db).catch((err) => {
+      console.warn("Firestore offline persistence error:", err);
+    });
+
     console.log('Firebase initialized successfully');
   } else {
     // For SSR or if not configured, initialize a dummy app (for type safety)

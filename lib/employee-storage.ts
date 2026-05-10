@@ -357,9 +357,9 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            // REMOVE orderBy: This prevents "Missing Index" errors in the browser which cause 0 results.
-            // We instead fetch the most recent docs and sort them in-memory.
-            const q = query(collection(db, logCol), limit(limitCount));
+            // ADDED orderBy: Without it, limit() returns an arbitrary subset, not the newest logs!
+            // This is a simple query (no 'where' clauses), so it does NOT require a composite index.
+            const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(limitCount));
             const snapshot = await getDocs(q);
             const logs: TimeLog[] = [];
             snapshot.forEach(doc => {
