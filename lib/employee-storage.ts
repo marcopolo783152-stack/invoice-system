@@ -53,6 +53,7 @@ export interface TimeLog {
         lng: number;
         accuracy?: number;
     };
+    synced?: boolean;
 }
 
 export interface EmployeePayment {
