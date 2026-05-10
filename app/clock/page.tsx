@@ -16,6 +16,18 @@ export default function ClockPage() {
     const SHOP_LNG = -77.087056;
     const MAX_DISTANCE_FT = 1500;
 
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
+    const checkPendingSyncs = () => {
+        if (typeof window === 'undefined') return;
+        // We use a prefix-aware key if we can, but employee-storage handles the key logic.
+        // For simplicity, we just check if getTimeLogs(1) finds any orphans.
+        const localLogs = JSON.parse(localStorage.getItem('mns_timelogs_local') || '[]');
+        const orphans = localLogs.filter((l: any) => l.id && l.id.length < 15);
+        setPendingSyncCount(orphans.length);
+    };
+
     const speak = (text: string) => {
         if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance(text);
@@ -47,12 +59,24 @@ export default function ClockPage() {
         checkAutoClockOut();
 
         // Check and sync any orphaned offline logs from this device
-        getTimeLogs(1).catch(err => console.error("Auto-sync failed", err));
+        const runSync = async () => {
+            setIsSyncing(true);
+            try {
+                await getTimeLogs(1);
+                checkPendingSyncs();
+            } catch (e) {
+                console.error("Auto-sync failed", e);
+            } finally {
+                setIsSyncing(false);
+            }
+        };
+        runSync();
 
-        // Continuous Audit (Check every 5 minutes)
+        // Continuous Audit & Sync (Check every 2 minutes)
         const auditInterval = setInterval(() => {
             checkAutoClockOut();
-        }, 5 * 60 * 1000);
+            runSync();
+        }, 2 * 60 * 1000);
 
         return () => clearInterval(auditInterval);
     }, []);
@@ -140,6 +164,8 @@ export default function ClockPage() {
                 setStatus('IDLE');
                 setLastAction(null);
                 setCapturedPhoto(null);
+                // Trigger sync check after success
+                getTimeLogs(1).then(() => checkPendingSyncs()).catch(() => {});
             }, 5000);
 
         } catch (error: any) {
@@ -184,6 +210,11 @@ export default function ClockPage() {
                             <strong style={{ color: '#fff' }}>{lastAction?.name}</strong>,<br />
                             Clock {lastAction?.type} verified at shop.
                         </p>
+                        {pendingSyncCount > 0 && (
+                            <div style={{ marginTop: 20, fontSize: 12, color: '#fbbf24', background: 'rgba(251, 191, 36, 0.1)', padding: '8px 12px', borderRadius: 12, display: 'inline-block' }}>
+                                ☁️ Syncing to cloud...
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <>
@@ -236,6 +267,15 @@ export default function ClockPage() {
                                 {status === 'LOADING' ? 'VERIFYING...' : 'VERIFY & CLOCK'}
                             </button>
                         </form>
+
+                        {pendingSyncCount > 0 && (
+                            <div style={{ marginTop: 24, padding: '12px', borderRadius: 12, background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', animation: 'pulse 2s infinite' }} />
+                                <span style={{ fontSize: 12, color: '#60a5fa', fontWeight: 600 }}>
+                                    {isSyncing ? 'Synchronizing logs...' : `${pendingSyncCount} log${pendingSyncCount > 1 ? 's' : ''} waiting to upload`}
+                                </span>
+                            </div>
+                        )}
                     </>
                 )}
             </div>

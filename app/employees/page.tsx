@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HistoryReportTemplate } from '@/components/HistoryReportTemplate';
 import { generateReportPDFBlobUrl } from '@/lib/pdf-utils';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import {
     Employee,
     TimeLog,
@@ -314,6 +314,10 @@ export default function EmployeesPage() {
             loadData();
         };
         init();
+
+        // Polling for real-time updates (every 30 seconds)
+        const interval = setInterval(loadData, 30000);
+        return () => clearInterval(interval);
     }, []);
 
     const handlePrintBadge = (emp: Employee) => {

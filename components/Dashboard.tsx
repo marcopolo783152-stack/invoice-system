@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search, Calculator } from 'lucide-react';
-import { clockInOut, checkAutoClockOut } from '@/lib/employee-storage';
+import { clockInOut, checkAutoClockOut, getEmployees, Employee } from '@/lib/employee-storage';
 import { getAllInvoices, SavedInvoice, hasUnbackedChanges, confirmSmartBackupComplete, exportInvoices, getAllInvoicesSync, getUnbackedData } from '@/lib/invoice-storage';
 import { calculateInvoice, formatCurrency } from '@/lib/calculations';
 import Link from 'next/link';
@@ -192,6 +192,9 @@ export default function Dashboard() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [isRugCalcOpen, setIsRugCalcOpen] = useState(false);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+
+    const activeStaffCount = employees.filter(e => e.status === 'IN').length;
 
     useEffect(() => {
         // Authenticate
@@ -221,8 +224,11 @@ export default function Dashboard() {
                 try {
                     const data = await getAllInvoices();
                     setInvoices(data);
+                    
+                    const empData = await getEmployees();
+                    setEmployees(empData);
                 } catch (err) {
-                    console.error("Failed to load invoices", err);
+                    console.error("Failed to load dashboard data", err);
                 } finally {
                     setLoading(false);
                 }
@@ -576,13 +582,21 @@ export default function Dashboard() {
             </div>
 
             {/* KPI Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, marginBottom: 32 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 24, marginBottom: 32 }}>
                 <KpiCard
                     title="Current Balance"
                     value={`$${totalNetRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<DollarSign size={22} />}
                     color="#1e50ff"
                     bg="rgba(30, 80, 255, 0.08)"
+                />
+                <KpiCard
+                    title="Active Staff"
+                    value={`${activeStaffCount} IN`}
+                    icon={<Users size={22} />}
+                    color={activeStaffCount > 0 ? '#10b981' : '#64748b'}
+                    bg={activeStaffCount > 0 ? 'rgba(16, 185, 129, 0.08)' : 'rgba(100, 116, 139, 0.08)'}
+                    link="/employees"
                 />
                 <KpiCard
                     title="Total Profit"
@@ -787,9 +801,9 @@ export default function Dashboard() {
     );
 }
 
-function KpiCard({ title, value, icon, color, bg }: any) {
-    return (
-        <div className="luxury-card" style={{ display: 'flex', alignItems: 'center', padding: '24px', gap: 20 }}>
+function KpiCard({ title, value, icon, color, bg, link }: any) {
+    const content = (
+        <div className="luxury-card" style={{ display: 'flex', alignItems: 'center', padding: '24px', gap: 20, cursor: link ? 'pointer' : 'default' }}>
             <div style={{
                 width: 48,
                 height: 48,
@@ -798,15 +812,19 @@ function KpiCard({ title, value, icon, color, bg }: any) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: color,
-                flexShrink: 0
+                color: color
             }}>
                 {icon}
             </div>
             <div>
-                <div style={{ color: 'var(--text-dim)', fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{title}</div>
-                <div style={{ color: 'var(--text-main)', fontSize: 20, fontWeight: 700 }}>{value}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{title}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-main)' }}>{value}</div>
             </div>
         </div>
     );
+
+    if (link) {
+        return <Link href={link} style={{ textDecoration: 'none' }}>{content}</Link>;
+    }
+    return content;
 }

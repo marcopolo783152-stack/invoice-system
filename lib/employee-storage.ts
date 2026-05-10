@@ -68,8 +68,15 @@ const BASE_LOCAL_EMP_KEY = 'mns_employees_local';
 const BASE_LOCAL_LOG_KEY = 'mns_timelogs_local';
 const BASE_LOCAL_PAY_KEY = 'mns_payments_local';
 
-export const getCol = (col: string) => col;
-export const getKey = (key: string) => key;
+export const getCol = (col: string) => {
+    const prefix = getStorePrefix();
+    return prefix + col;
+};
+
+export const getKey = (key: string) => {
+    const prefix = getStorePrefix();
+    return prefix + key;
+};
 
 /**
  * Generate unique IDs for local use
@@ -388,28 +395,36 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
 
             // Update local backup cache whenever fetched from firebase
             if (typeof window !== 'undefined') {
-                const local = JSON.parse(localStorage.getItem(localLogKey) || '[]');
-                const cloudMap = new Map(logs.map(l => [l.id, l]));
-                let syncedOrphans = false;
-                
-                for (const l of local) {
-                    // Local IDs are 9 characters, Firebase IDs are 20. 
-                    // Only auto-sync true orphaned offline logs, not just old logs that weren't in the top 50.
-                    if (!cloudMap.has(l.id) && l.id.length < 15) {
-                        logs.push(l); // Keep orphaned local timelogs visible
-                        // AUTO-SYNC TO FIREBASE: If it's local only, force push it to the cloud now
-                        try {
-                            const { setDoc, doc } = require('firebase/firestore');
-                            setDoc(doc(db, logCol, l.id), {
-                                ...l,
-                                timestamp: l.timestamp ? new Date(l.timestamp) : new Date()
-                            }, { merge: true }).catch((err: any) => console.warn('Background sync failed', err));
-                            syncedOrphans = true;
-                        } catch (e) {
-                            console.warn('Could not auto-sync orphaned log', e);
+                if (isFirebaseConfigured() && db) {
+                    // Fetch the last few cloud logs to avoid duplicating very recent syncs
+                    const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(10));
+                    const snapshot = await getDocs(q);
+                    const cloudIds = new Set(snapshot.docs.map(doc => doc.id));
+
+                    const localLogs: TimeLog[] = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+                    let hasSyncChanges = false;
+
+                    for (const l of localLogs) {
+                        // Local IDs are 9 characters, Firebase IDs are 20.
+                        // Only auto-sync true orphaned offline logs (9 chars) that aren't already in the cloud.
+                        if (l.id && l.id.length < 15 && !cloudIds.has(l.id)) {
+                            try {
+                                const { setDoc, doc, Timestamp } = require('firebase/firestore');
+                                await setDoc(doc(db, logCol, l.id), {
+                                    ...l,
+                                    timestamp: l.timestamp ? Timestamp.fromDate(new Date(l.timestamp)) : Timestamp.now()
+                                }, { merge: true });
+                                
+                                // Once synced, we should ideally mark it as synced or update its ID, 
+                                // but for simplicity and robustness against race conditions, 
+                                // we just let it exist as a 9-char ID in the cloud which is fine.
+                                console.log(`Synced orphaned log ${l.id} to cloud.`);
+                                hasSyncChanges = true;
+                            } catch (err: any) {
+                                console.warn('Background sync failed for log:', l.id, err);
+                            }
                         }
                     }
-                }
                 
                 // MANUAL SORTING: This replaces the Firestore orderBy and is 100% reliable.
                 logs.sort((a, b) => {
