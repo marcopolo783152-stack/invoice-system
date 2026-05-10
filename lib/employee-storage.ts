@@ -666,11 +666,15 @@ export async function addManualTimeLogsBulk(logs: Omit<TimeLog, 'id'>[]): Promis
                     const data: TimeLog = { ...log, id, synced: true };
                     processedLogs.push(data);
 
+                    // Ensure valid date
+                    const parsedDate = new Date(data.timestamp);
+                    const validTimestamp = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+
                     // Log entry
                     const logRef = doc(collection(db!, logCol));
                     batch.set(logRef, {
                         ...data,
-                        timestamp: new Date(data.timestamp).toISOString() // Save as string
+                        timestamp: validTimestamp // Save as string
                     });
                     data.id = logRef.id;
 
@@ -732,36 +736,22 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            const { writeBatch, doc } = await import('firebase/firestore');
+            const { deleteDoc, doc } = await import('firebase/firestore');
             
-            // Chunk logIds into groups of 150 (each log deletes up to 2 docs = 300 writes)
-            const chunkSize = 150;
-            for (let i = 0; i < logIds.length; i += chunkSize) {
-                const chunk = logIds.slice(i, i + chunkSize);
-                const batch = writeBatch(db!);
+            // Execute deletions in parallel for speed, bypassing batch restrictions
+            const deletePromises = logIds.map(async (id) => {
+                // Delete from current collection
+                await deleteDoc(doc(db!, logCol, id)).catch(e => console.error('Failed to delete from prefixed collection:', e));
                 
-                for (const id of chunk) {
-                    // 1. Delete from current (prefixed) collection
-                    batch.delete(doc(db!, logCol, id));
-                    
-                    // 2. If we have a prefix, also try to delete from the root collection
-                    if (prefix) {
-                        batch.delete(doc(db!, BASE_LOG_COLLECTION, id));
-                    }
+                // Delete from root collection
+                if (prefix) {
+                    await deleteDoc(doc(db!, BASE_LOG_COLLECTION, id)).catch(e => console.error('Failed to delete from root collection:', e));
                 }
-                
-                await batch.commit();
-            }
+            });
+
+            await Promise.allSettled(deletePromises);
         } catch (e) { 
-            console.error('Error in bulk deletion, falling back to individual:', e); 
-            // Fallback: If batch fails, try individual deletes to bypass rules or limits
-            try {
-                const { deleteDoc, doc } = await import('firebase/firestore');
-                for (const id of logIds) {
-                    await deleteDoc(doc(db!, logCol, id)).catch(() => {});
-                    if (prefix) await deleteDoc(doc(db!, BASE_LOG_COLLECTION, id)).catch(() => {});
-                }
-            } catch (err) { console.error('Individual delete fallback failed:', err); }
+            console.error('Error executing delete promises:', e); 
         }
     }
 
