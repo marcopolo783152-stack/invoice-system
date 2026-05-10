@@ -105,7 +105,18 @@ export async function getEmployees(): Promise<Employee[]> {
                 employees.push({ id: doc.id, ...doc.data() } as Employee);
             });
 
-            // NOTE: Automatic fallback disabled
+            // FALLBACK: If no employees found in prefixed collection, check the root collection
+            // to prevent "loss" of data for users transitioning to multi-tenant
+            if (employees.length === 0 && prefix) {
+                const rootSnapshot = await getDocs(query(collection(db, BASE_EMP_COLLECTION), orderBy('name', 'asc')));
+                rootSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Only pull if it doesn't have a storeId or matches (safety)
+                    if (!data.storeId || data.storeId === getCurrentStoreId()) {
+                        employees.push({ id: doc.id, ...data } as Employee);
+                    }
+                });
+            }
             localStorage.setItem(localKey, JSON.stringify(employees));
             return employees;
         } catch (e) {
@@ -430,8 +441,20 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 } as TimeLog);
             });
 
-            // NOTE: Automatic fallback disabled to prevent deleted records from "reappearing"
-            // Legacy data should be migrated once using the migration tool if needed.
+            // FALLBACK: Only check root collection for legacy logs if the NEW collection is TOTALLY EMPTY
+            // This prevents "loss of data" while allowing for clean deletions once the new system is in use.
+            if (prefix && logs.length === 0) {
+                const rootQ = query(collection(db, BASE_LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount));
+                const rootSnapshot = await getDocs(rootQ);
+                rootSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    let timestamp = data.timestamp;
+                    if (data.timestamp && typeof data.timestamp.toDate === 'function') {
+                        timestamp = data.timestamp.toDate().toISOString();
+                    }
+                    logs.push({ id: doc.id, ...data, timestamp } as TimeLog);
+                });
+            }
 
             // Update local backup cache whenever fetched from firebase
             if (typeof window !== 'undefined' && isFirebaseConfigured() && db) {
