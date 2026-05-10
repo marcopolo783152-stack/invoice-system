@@ -105,18 +105,7 @@ export async function getEmployees(): Promise<Employee[]> {
                 employees.push({ id: doc.id, ...doc.data() } as Employee);
             });
 
-            // FALLBACK: If no employees found in prefixed collection, check the root collection
-            // to prevent "loss" of data for users transitioning to multi-tenant
-            if (employees.length === 0 && prefix) {
-                const rootSnapshot = await getDocs(query(collection(db, BASE_EMP_COLLECTION), orderBy('name', 'asc')));
-                rootSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    // Only pull if it doesn't have a storeId or matches (safety)
-                    if (!data.storeId || data.storeId === getCurrentStoreId()) {
-                        employees.push({ id: doc.id, ...data } as Employee);
-                    }
-                });
-            }
+            // NOTE: Automatic fallback disabled
             localStorage.setItem(localKey, JSON.stringify(employees));
             return employees;
         } catch (e) {
@@ -441,23 +430,8 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 } as TimeLog);
             });
 
-            // FALLBACK: Also check root collection for legacy logs if we have a prefix
-            if (prefix && logs.length < limitCount) {
-                const rootQ = query(collection(db, BASE_LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount - logs.length));
-                const rootSnapshot = await getDocs(rootQ);
-                rootSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    // Check for duplicates (by employee and timestamp)
-                    const exists = logs.some(l => l.employeeId === data.employeeId && l.timestamp === data.timestamp);
-                    if (!exists) {
-                        let timestamp = data.timestamp;
-                        if (data.timestamp && typeof data.timestamp.toDate === 'function') {
-                            timestamp = data.timestamp.toDate().toISOString();
-                        }
-                        logs.push({ id: doc.id, ...data, timestamp } as TimeLog);
-                    }
-                });
-            }
+            // NOTE: Automatic fallback disabled to prevent deleted records from "reappearing"
+            // Legacy data should be migrated once using the migration tool if needed.
 
             // Update local backup cache whenever fetched from firebase
             if (typeof window !== 'undefined' && isFirebaseConfigured() && db) {
@@ -839,4 +813,41 @@ export async function getWorkDays(employeeId: string): Promise<number> {
     }));
 
     return uniqueDays.size;
+}
+
+/**
+ * MIGRATE LEGACY DATA (One-time tool)
+ * Moves employees and logs from root to the current store prefix
+ */
+export async function migrateLegacyData(): Promise<{ employees: number, logs: number }> {
+    if (!isFirebaseConfigured() || !db) return { employees: 0, logs: 0 };
+    
+    const prefix = getStorePrefix();
+    if (!prefix) return { employees: 0, logs: 0 }; // Cannot migrate to root
+
+    let empCount = 0;
+    let logCount = 0;
+
+    try {
+        // 1. Migrate Employees
+        const empSnapshot = await getDocs(collection(db, BASE_EMP_COLLECTION));
+        for (const empDoc of empSnapshot.docs) {
+            const data = empDoc.data();
+            if (!data.storeId || data.storeId === getCurrentStoreId()) {
+                await setDoc(doc(db, getCol(BASE_EMP_COLLECTION), empDoc.id), data, { merge: true });
+                empCount++;
+            }
+        }
+
+        // 2. Migrate Logs
+        const logSnapshot = await getDocs(query(collection(db, BASE_LOG_COLLECTION), limit(200)));
+        for (const logDoc of logSnapshot.docs) {
+            await setDoc(doc(db, getCol(BASE_LOG_COLLECTION), logDoc.id), logDoc.data(), { merge: true });
+            logCount++;
+        }
+    } catch (e) {
+        console.error('Migration error:', e);
+    }
+
+    return { employees: empCount, logs: logCount };
 }
