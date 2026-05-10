@@ -105,8 +105,8 @@ export async function getEmployees(): Promise<Employee[]> {
                 employees.push({ id: doc.id, ...doc.data() } as Employee);
             });
 
-            // FALLBACK & AUTO-MIGRATION
-            if (employees.length === 0 && prefix) {
+            // FALLBACK & AUTO-MIGRATION (Runs if current view is empty)
+            if (employees.length === 0) {
                 const rootSnapshot = await getDocs(query(collection(db, BASE_EMP_COLLECTION), orderBy('name', 'asc')));
                 rootSnapshot.forEach(empDoc => {
                     const data = empDoc.data();
@@ -441,8 +441,8 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 } as TimeLog);
             });
 
-            // FALLBACK & AUTO-MIGRATION for logs
-            if (prefix && logs.length === 0) {
+            // FALLBACK & AUTO-MIGRATION for logs (Runs if current view is empty)
+            if (logs.length === 0) {
                 const rootQ = query(collection(db, BASE_LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount));
                 const rootSnapshot = await getDocs(rootQ);
                 rootSnapshot.forEach(logDoc => {
