@@ -113,7 +113,7 @@ export async function getEmployees(): Promise<Employee[]> {
                     if (!data.storeId || data.storeId === getCurrentStoreId()) {
                         employees.push({ id: empDoc.id, ...data } as Employee);
                         // AUTO-MIGRATE: Save to new collection so listeners can see it
-                        setDoc(doc(db, colName, empDoc.id), data, { merge: true }).catch(() => {});
+                        setDoc(doc(db!, colName, empDoc.id), data, { merge: true }).catch(() => {});
                     }
                 });
             }
@@ -454,7 +454,7 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                     logs.push({ id: logDoc.id, ...data, timestamp } as TimeLog);
                     
                     // AUTO-MIGRATE: Save to new collection so listeners can see it
-                    setDoc(doc(db, getCol(BASE_LOG_COLLECTION), logDoc.id), logDoc.data(), { merge: true }).catch(() => {});
+                    setDoc(doc(db!, getCol(BASE_LOG_COLLECTION), logDoc.id), logDoc.data(), { merge: true }).catch(() => {});
                 });
             }
 
