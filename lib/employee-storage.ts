@@ -258,6 +258,7 @@ export async function clockInOut(
             // Log entry
             const logRef = await addDoc(collection(db!, logCol), {
                 ...log,
+                synced: true, // Permanent flag: once synced, never re-upload
                 timestamp: Timestamp.fromDate(new Date())
             });
             log.id = logRef.id;
@@ -576,6 +577,7 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
         try {
             const logRef = await addDoc(collection(db!, logCol), {
                 ...data,
+                synced: true, // Permanent flag
                 timestamp: Timestamp.fromDate(new Date(data.timestamp))
             });
             data.id = logRef.id;
@@ -805,11 +807,11 @@ export async function getWorkDays(employeeId: string): Promise<number> {
             const snapshot = await getDocs(q);
             const employeeLogs: TimeLog[] = [];
 
-            snapshot.forEach(doc => {
-                const data = doc.data();
+            snapshot.forEach(logDoc => {
+                const data = logDoc.data();
                 employeeLogs.push({
                     ...data,
-                    id: doc.id,
+                    id: logDoc.id,
                     timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
                 } as TimeLog);
             });
