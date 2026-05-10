@@ -232,7 +232,7 @@ export default function EmployeesPage() {
         try {
             const [empList, logList] = await Promise.all([
                 getEmployees(),
-                getTimeLogs(500) // Fetch more for day counting
+                getTimeLogs(1000) // Fetch more for day counting
             ]);
             setEmployees(empList);
             setLogs(logList);

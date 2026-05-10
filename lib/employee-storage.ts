@@ -285,7 +285,7 @@ export async function clockInOut(
     // Mark as synced if we successfully wrote to Firebase above
     const logToSave = { ...log, synced: !!(isFirebaseConfigured() && db) };
     localLogs.unshift(logToSave);
-    localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
+    localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 2000)));
 
     // Trigger immediate sync pass to ensure cloud visibility
     if (typeof window !== 'undefined') {
@@ -380,7 +380,7 @@ export async function checkAutoClockOut(): Promise<number> {
                  const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
                  if (!localLogs.find((l: any) => l.id === deterministicId)) {
                      localLogs.unshift(log);
-                     localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
+                     localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 2000)));
                  }
                  localLogPushed = true;
 
@@ -396,7 +396,7 @@ export async function checkAutoClockOut(): Promise<number> {
             const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
             if (!localLogs.find((l: any) => l.id === deterministicId)) {
                 localLogs.unshift(log);
-                localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
+                localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 2000)));
             }
         }
 
@@ -415,7 +415,7 @@ export async function checkAutoClockOut(): Promise<number> {
 /**
  * Get recent time logs
  */
-export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
+export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
     const logCol = getCol(BASE_LOG_COLLECTION);
     const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
     const prefix = getStorePrefix();
@@ -534,7 +534,7 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
 /**
  * Subscribe to time logs (Real-time)
  */
-export function subscribeToTimeLogs(callback: (logs: TimeLog[]) => void, limitCount = 50): Unsubscribe | null {
+export function subscribeToTimeLogs(callback: (logs: TimeLog[]) => void, limitCount = 1000): Unsubscribe | null {
     if (!isFirebaseConfigured() || !db) return null;
     const logCol = getCol(BASE_LOG_COLLECTION);
     const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(limitCount));
