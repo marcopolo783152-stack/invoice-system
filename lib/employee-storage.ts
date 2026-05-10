@@ -280,7 +280,9 @@ export async function clockInOut(
 
     // Append to local logs
     const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
-    localLogs.unshift(log);
+    // Mark as synced if we successfully wrote to Firebase above
+    const logToSave = { ...log, synced: !!(isFirebaseConfigured() && db) };
+    localLogs.unshift(logToSave);
     localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
 
     // Trigger immediate sync pass to ensure cloud visibility
@@ -469,9 +471,8 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 // Optimization: Only scan the most recent 20 local logs to avoid lag on mobile
                 const recentLogs = localLogs.slice(0, 20);
                 for (const l of recentLogs) {
-                    // Local IDs are 9 characters, Firebase IDs are 20.
-                    // Only auto-sync true orphaned offline logs (9 chars) that aren't already in the cloud.
-                    if (l.id && l.id.length < 15 && !cloudIds.has(l.id)) {
+                    // Only auto-sync true orphaned offline logs (9 chars) that haven't been marked as synced yet.
+                    if (l.id && l.id.length < 15 && !l.synced) {
                         try {
                             const { setDoc, doc, Timestamp } = require('firebase/firestore');
                             await setDoc(doc(db, logCol, l.id), {
@@ -480,6 +481,7 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                             }, { merge: true });
                             
                             console.log(`Synced orphaned log ${l.id} to cloud.`);
+                            l.synced = true;
                             hasSyncChanges = true;
                         } catch (err: any) {
                             console.warn('Background sync failed for log:', l.id, err);
@@ -488,6 +490,7 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 }
                 
                 if (hasSyncChanges) {
+                    localStorage.setItem(localLogKey, JSON.stringify(localLogs));
                     await getEmployees();
                 }
             }
