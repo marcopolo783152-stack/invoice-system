@@ -800,6 +800,7 @@ export async function deleteEmployeePayment(paymentId: string): Promise<void> {
 export async function getWorkDays(employeeId: string): Promise<number> {
     const logCol = getCol(BASE_LOG_COLLECTION);
     const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+    const prefix = getStorePrefix();
 
     if (isFirebaseConfigured() && db) {
         try {
