@@ -91,14 +91,29 @@ export async function getEmployees(): Promise<Employee[]> {
 
     const colName = getCol(BASE_EMP_COLLECTION);
     const localKey = getKey(BASE_LOCAL_EMP_KEY);
+    const prefix = getStorePrefix();
+    const employees: Employee[] = [];
 
     if (isFirebaseConfigured() && db) {
         try {
-            const snapshot = await getDocs(collection(db, colName));
-            const employees: Employee[] = [];
+            // Check prefixed collection
+            const snapshot = await getDocs(query(collection(db, colName), orderBy('name', 'asc')));
             snapshot.forEach(doc => {
                 employees.push({ id: doc.id, ...doc.data() } as Employee);
             });
+
+            // FALLBACK: If no employees found in prefixed collection, check the root collection
+            // to prevent "loss" of data for users transitioning to multi-tenant
+            if (employees.length === 0 && prefix) {
+                const rootSnapshot = await getDocs(query(collection(db, BASE_EMP_COLLECTION), orderBy('name', 'asc')));
+                rootSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Only pull if it doesn't have a storeId or matches (safety)
+                    if (!data.storeId || data.storeId === getCurrentStoreId()) {
+                        employees.push({ id: doc.id, ...data } as Employee);
+                    }
+                });
+            }
             localStorage.setItem(localKey, JSON.stringify(employees));
             return employees;
         } catch (e) {
@@ -368,17 +383,16 @@ export async function checkAutoClockOut(): Promise<number> {
 export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
     const logCol = getCol(BASE_LOG_COLLECTION);
     const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+    const prefix = getStorePrefix();
+    const logs: TimeLog[] = [];
 
     if (isFirebaseConfigured() && db) {
         try {
-            // ADDED orderBy: Without it, limit() returns an arbitrary subset, not the newest logs!
-            // This is a simple query (no 'where' clauses), so it does NOT require a composite index.
+            // Check prefixed collection
             const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(limitCount));
             const snapshot = await getDocs(q);
-            const logs: TimeLog[] = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Robust timestamp conversion
                 let timestamp = data.timestamp;
                 if (data.timestamp && typeof data.timestamp.toDate === 'function') {
                     timestamp = data.timestamp.toDate().toISOString();
@@ -387,11 +401,29 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 }
 
                 logs.push({
-                    ...data,
                     id: doc.id,
+                    ...data,
                     timestamp: timestamp
                 } as TimeLog);
             });
+
+            // FALLBACK: Also check root collection for legacy logs if we have a prefix
+            if (prefix && logs.length < limitCount) {
+                const rootQ = query(collection(db, BASE_LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount - logs.length));
+                const rootSnapshot = await getDocs(rootQ);
+                rootSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Check for duplicates (by employee and timestamp)
+                    const exists = logs.some(l => l.employeeId === data.employeeId && l.timestamp === data.timestamp);
+                    if (!exists) {
+                        let timestamp = data.timestamp;
+                        if (data.timestamp && typeof data.timestamp.toDate === 'function') {
+                            timestamp = data.timestamp.toDate().toISOString();
+                        }
+                        logs.push({ id: doc.id, ...data, timestamp } as TimeLog);
+                    }
+                });
+            }
 
             // Update local backup cache whenever fetched from firebase
             if (typeof window !== 'undefined') {
