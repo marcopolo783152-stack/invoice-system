@@ -341,7 +341,13 @@ export default function EmployeesPage() {
     const filteredLogs = logs.filter(log =>
         log.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         employees.find(e => e.id === log.employeeId)?.empId.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ).sort((a, b) => {
+        const dateA = new Date(a.timestamp || 0).getTime();
+        const dateB = new Date(b.timestamp || 0).getTime();
+        if (isNaN(dateA)) return 1;
+        if (isNaN(dateB)) return -1;
+        return dateB - dateA; // Newest first
+    });
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '20px' }}>
