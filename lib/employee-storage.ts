@@ -442,19 +442,7 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
                 } as TimeLog);
             });
 
-            // FALLBACK ONLY: If no logs in prefixed collection, show root logs (but DON'T auto-migrate/re-upload)
-            if (logs.length === 0) {
-                const rootQ = query(collection(db!, BASE_LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount));
-                const rootSnapshot = await getDocs(rootQ);
-                rootSnapshot.forEach(logDoc => {
-                    const data = logDoc.data();
-                    let timestamp = data.timestamp;
-                    if (data.timestamp && typeof data.timestamp.toDate === 'function') {
-                        timestamp = data.timestamp.toDate().toISOString();
-                    }
-                    logs.push({ id: logDoc.id, ...data, timestamp } as TimeLog);
-                });
-            }
+            // Root fallback removed completely to prevent ghost records
 
             // Update local backup cache whenever fetched from firebase
             if (typeof window !== 'undefined' && isFirebaseConfigured() && db) {
@@ -476,11 +464,11 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
                     const logTime = new Date(l.timestamp).getTime();
                     if (l.id && l.id.length < 15 && !l.synced && logTime > oneDayAgo) {
                         try {
-                            const { setDoc: syncSetDoc, doc: syncDoc, Timestamp: syncTimestamp } = require('firebase/firestore');
+                            const { setDoc: syncSetDoc, doc: syncDoc } = require('firebase/firestore');
                             await syncSetDoc(syncDoc(db!, logCol, l.id), {
                                 ...l,
                                 synced: true, 
-                                timestamp: l.timestamp ? syncTimestamp.fromDate(new Date(l.timestamp)) : syncTimestamp.now()
+                                timestamp: l.timestamp ? new Date(l.timestamp).toISOString() : new Date().toISOString()
                             }, { merge: true });
                             
                             console.log(`Synced orphaned log ${l.id} to cloud.`);
@@ -682,7 +670,7 @@ export async function addManualTimeLogsBulk(logs: Omit<TimeLog, 'id'>[]): Promis
                     const logRef = doc(collection(db!, logCol));
                     batch.set(logRef, {
                         ...data,
-                        timestamp: Timestamp.fromDate(new Date(data.timestamp))
+                        timestamp: new Date(data.timestamp).toISOString() // Save as string
                     });
                     data.id = logRef.id;
 
@@ -765,14 +753,15 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
                 await batch.commit();
             }
         } catch (e) { 
-            console.error('Error in bulk deletion:', e); 
-            // Fallback: If batch fails, try individual deletes as last resort
-            if (logIds.length === 1) {
-                try {
-                    const { deleteDoc, doc } = await import('firebase/firestore');
-                    await deleteDoc(doc(db!, logCol, logIds[0]));
-                } catch (err) { console.error('Individual delete fallback failed:', err); }
-            }
+            console.error('Error in bulk deletion, falling back to individual:', e); 
+            // Fallback: If batch fails, try individual deletes to bypass rules or limits
+            try {
+                const { deleteDoc, doc } = await import('firebase/firestore');
+                for (const id of logIds) {
+                    await deleteDoc(doc(db!, logCol, id)).catch(() => {});
+                    if (prefix) await deleteDoc(doc(db!, BASE_LOG_COLLECTION, id)).catch(() => {});
+                }
+            } catch (err) { console.error('Individual delete fallback failed:', err); }
         }
     }
 
@@ -930,24 +919,7 @@ export async function getWorkDays(employeeId: string): Promise<number> {
                 }
             });
 
-            // FALLBACK: If no logs in prefixed collection, check the root collection
-            if (employeeLogs.length === 0 && prefix) {
-                const rootQ = query(
-                    collection(db!, BASE_LOG_COLLECTION),
-                    where('employeeId', '==', employeeId)
-                );
-                const rootSnapshot = await getDocs(rootQ);
-                rootSnapshot.forEach(logDoc => {
-                    const data = logDoc.data();
-                    if (data.type === 'IN') { // Filter locally
-                        employeeLogs.push({
-                            ...data,
-                            id: logDoc.id,
-                            timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
-                        } as TimeLog);
-                    }
-                });
-            }
+            // Root fallback removed completely to ensure payroll matches visible logs
 
             const uniqueDays = new Set(employeeLogs.map(l => {
                 const date = new Date(l.timestamp);
