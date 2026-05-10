@@ -52,7 +52,7 @@ export const generateInventoryTagsPDF = (items: InventoryItem[]) => {
         // LEFT SIDE
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text('ARIANA RUGS', leftX, y + 0.25);
+        doc.text('MARCO POLO RUGS', leftX, y + 0.25);
 
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
@@ -105,7 +105,7 @@ export const generateInventoryTagsPDF = (items: InventoryItem[]) => {
         doc.setFontSize(5); // Smaller to not interfere
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(150);
-        doc.text('Ariana', rightX, y + 0.92, { align: 'right' });
+        doc.text('MarcoPolo', rightX, y + 0.92, { align: 'right' });
         doc.setTextColor(0);
     });
 

@@ -7,15 +7,15 @@
 
 export const businessConfig = {
   // Your Business Information
-  name: 'ARIANA ORIENTAL RUGS INC',
-  address: '3210 DUKE ST',
+  name: 'MARCO POLO ORIENTAL RUGS, INC.',
+  address: '3260 DUKE ST',
   city: 'ALEXANDRIA',
   state: 'VA',
   zip: '22314',
-  phone: '+1 (703) 801 1640',
+  phone: '703-461-0207',
   fax: '703-461-0208',
-  website: '',
-  email: 'arianaorientalrugs@gmail.com',
+  website: 'www.marcopolorugs.com',
+  email: 'marcopolorugs@aol.com',
   
   // Invoice Settings
   defaultTerms: 'Due on Receipt',

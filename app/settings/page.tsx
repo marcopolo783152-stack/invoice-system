@@ -314,33 +314,6 @@ export default function SettingsPage() {
             )}
 
 
-            {/* Danger Zone Section */}
-            {user?.role === 'admin' && (
-                <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', marginBottom: 32 }}>
-                    <h2 style={{ fontSize: 20, fontWeight: 700, color: '#be123c', marginBottom: 8 }}>Danger Zone</h2>
-                    <p style={{ fontSize: 14, color: '#9f1239', marginBottom: 24 }}>Irreversible and destructive actions.</p>
-                    <div style={{ display: 'flex', gap: 24, alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#be123c', marginBottom: 4 }}>Factory Reset / Wipe All Data</h3>
-                            <p style={{ fontSize: 14, color: '#9f1239', margin: 0 }}>Completely erase all invoices, appraisals, and settings from this browser.</p>
-                        </div>
-                        <button
-                            onClick={() => {
-                                if (prompt('WARNING: This will delete ALL data. Type "DELETE" to confirm:') === 'DELETE') {
-                                    localStorage.clear();
-                                    sessionStorage.clear();
-                                    window.location.href = '/';
-                                }
-                            }}
-                            style={{ background: '#e11d48', color: 'white', padding: '10px 24px', borderRadius: 8, fontWeight: 600, border: 'none', cursor: 'pointer' }}
-                        >
-                            Wipe Everything
-                        </button>
-                    </div>
-                </div>
-            )}
-
-
             {user?.role === 'admin' && Array.isArray(users) && (
                 <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
                     <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1f3c', marginBottom: 24 }}>User Management</h2>

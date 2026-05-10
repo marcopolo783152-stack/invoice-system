@@ -612,9 +612,9 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                         {/* Branding Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #333', paddingBottom: '20px', marginBottom: '30px' }}>
                             <div style={{ flex: 1 }}>
-                                <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0 0 5px 0' }}>ARIANA ORIENTAL RUGS INC</h1>
-                                <p style={{ margin: '1px 0', fontSize: '11px' }}>3210 DUKE ST, ALEXANDRIA, VA 22314</p>
-                                <p style={{ margin: '1px 0', fontSize: '11px' }}>Phone: +1 (703) 801 1640</p>
+                                <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0 0 5px 0' }}>MARCO POLO ORIENTAL RUGS, INC.</h1>
+                                <p style={{ margin: '1px 0', fontSize: '11px' }}>3260 DUKE ST, ALEXANDRIA, VA 22314</p>
+                                <p style={{ margin: '1px 0', fontSize: '11px' }}>Phone: 703-461-0207</p>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                                 <img

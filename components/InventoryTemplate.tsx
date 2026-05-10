@@ -36,7 +36,7 @@ export default function InventoryTemplate({ item }: Props) {
             }}>
                 <div>
                     <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>
-                        ARIANA
+                        MARCO POLO
                     </h1>
                     <p style={{ margin: '4px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                         Oriental Rugs & Textiles
@@ -140,7 +140,7 @@ export default function InventoryTemplate({ item }: Props) {
                             textTransform: 'uppercase',
                             letterSpacing: '0.1em'
                         }}>
-                            ARIANA Certified Authentic
+                            MP Certified Authentic
                         </div>
                     </div>
                 </div>
@@ -157,8 +157,8 @@ export default function InventoryTemplate({ item }: Props) {
                 color: '#94a3b8',
                 fontWeight: 600
             }}>
-                <div>ARIANA ORIENTAL RUGS INC | 3210 DUKE ST, ALEXANDRIA, VA 22314</div>
-                <div>+1 (703) 801 1640</div>
+                <div>MARCO POLO ORIENTAL RUGS | 3260 DUKE STREET, ALEXANDRIA, VA 22314</div>
+                <div>(703) 461-0207 | WWW.MARCOPOLORUGS.COM</div>
             </div>
 
             <style dangerouslySetInnerHTML={{ __html: `

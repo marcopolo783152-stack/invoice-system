@@ -489,7 +489,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             setDocumentType(value);
             // Autofill consignment terms if selected
             if (value === 'CONSIGNMENT') {
-              setTerms('Consignment: All items remain property of Ariana Oriental Rugs until sold. Payment due upon sale or return. Items not sold within 90 days may be returned.');
+              setTerms('Consignment: All items remain property of Marco Polo Oriental Rugs until sold. Payment due upon sale or return. Items not sold within 90 days may be returned.');
             } else if (value === 'WASH') {
               setMode('wash');
               setTerms('Due on Receipt');

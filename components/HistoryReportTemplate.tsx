@@ -52,10 +52,10 @@ export const HistoryReportTemplate = forwardRef<HTMLDivElement, HistoryReportTem
             {/* Company Branding Row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                 <div style={{ flex: 1 }}>
-                    <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0, color: '#0f172a' }}>ARIANA ORIENTAL RUGS INC</h2>
+                    <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0, color: '#0f172a' }}>MARCO POLO ORIENTAL RUGS, INC.</h2>
                     <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>
-                        3210 DUKE ST • ALEXANDRIA, VA 22314<br />
-                        Phone: +1 (703) 801 1640 • Email: arianaorientalrugs@gmail.com
+                        3260 DUKE ST • ALEXANDRIA, VA 22314<br />
+                        Phone: 703-461-0207 • Email: marcopolorugs@aol.com
                     </div>
                 </div>
                 <div style={{ width: 120 }}>

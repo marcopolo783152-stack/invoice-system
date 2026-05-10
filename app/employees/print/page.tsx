@@ -136,8 +136,8 @@ function EmployeePrintContent() {
                         background: '#fff', boxSizing: 'border-box'
                     }}>
                         <div style={{ marginBottom: 40 }}>
-                            <div style={{ fontSize: 24, fontWeight: 900, color: '#1e293b', letterSpacing: 8, marginBottom: 10 }}>ARIANA</div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#64748b' }}>ORIENTAL RUGS INC</div>
+                            <div style={{ fontSize: 24, fontWeight: 900, color: '#1e293b', letterSpacing: 8, marginBottom: 10 }}>MARCO POLO</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#64748b' }}>ORIENTAL RUGS INC.</div>
                         </div>
 
                         <div style={{ height: 2, width: 100, background: '#e2e8f0', marginBottom: 40 }}></div>
@@ -197,13 +197,13 @@ function EmployeePrintContent() {
                                 position: 'absolute', right: -20, bottom: -20, opacity: 0.03,
                                 fontSize: 100, fontWeight: 900, pointerEvents: 'none', transform: 'rotate(-15deg)'
                             }}>
-                                AOR
+                                MP
                             </div>
 
                             {/* Top Header Section */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                                 <div>
-                                    <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', letterSpacing: 0.5 }}>ARIANA</div>
+                                    <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', letterSpacing: 0.5 }}>MARCO POLO</div>
                                     <div style={{ fontSize: 7, fontWeight: 700, color: '#c5a059', textTransform: 'uppercase', letterSpacing: 2 }}>Oriental Rugs</div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
@@ -248,7 +248,7 @@ function EmployeePrintContent() {
                                 marginTop: 'auto', borderTop: '0.5px solid #f1f5f9', paddingTop: 8,
                                 fontSize: 6, color: '#94a3b8', fontWeight: 600
                             }}>
-                                +1 (703) 801 1640 • Alexandria, VA
+                                (703) 461-0207 • Alexandria, VA
                             </div>
                         </div>
 

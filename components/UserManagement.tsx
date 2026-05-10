@@ -12,8 +12,8 @@ export interface User {
 }
 
 export const DEFAULT_USERS: User[] = [
-  { username: "admin@ariana.com", fullName: "Nazif", password: "Ariana$", role: "admin", storeId: '', storeName: 'Ariana Oriental Rugs' },
-  { username: "manager@ariana.com", fullName: "Farid", password: "manager", role: "manager", storeId: '', storeName: 'Ariana Oriental Rugs' },
+  { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin", storeId: '', storeName: 'MNS Rugs' },
+  { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager", storeId: '', storeName: 'MNS Rugs' },
 ];
 
 
@@ -72,7 +72,7 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
 
       // Inherit the store ID/Name from the current user constructing them if not super admin
       const storeToSaveId = (currentUser as any)?.storeId || storeId || '';
-      const storeToSaveName = (currentUser as any)?.storeName || storeName || 'Ariana Oriental Rugs';
+      const storeToSaveName = (currentUser as any)?.storeName || storeName || 'MNS Rugs';
 
       const updatedUser: User = { username, fullName, password, role, storeId: storeToSaveId, storeName: storeToSaveName };
 
@@ -100,7 +100,7 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
         return;
       }
       const storeToSaveId = (currentUser as any)?.storeId || storeId || '';
-      const storeToSaveName = (currentUser as any)?.storeName || storeName || 'Ariana Oriental Rugs';
+      const storeToSaveName = (currentUser as any)?.storeName || storeName || 'MNS Rugs';
       const newUser: User = { username, fullName, password, role, storeId: storeToSaveId, storeName: storeToSaveName };
       await saveUser(newUser);
 
@@ -249,7 +249,7 @@ export default function UserManagement({ users, setUsers, currentUser, onClose }
                 <label style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>Store Display Name</label>
                 <input
                   type="text"
-                  placeholder="e.g. Ariana Oriental Rugs"
+                  placeholder="e.g. MNS Rugs"
                   value={storeName}
                   onChange={e => setStoreName(e.target.value)}
                   style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}

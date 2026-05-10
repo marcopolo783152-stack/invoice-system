@@ -1,7 +1,7 @@
 import OutstandingPageClient from './OutstandingPageClient';
 
 export const metadata = {
-    title: 'Outstanding Balances | Ariana',
+    title: 'Outstanding Balances | Marco Polo',
 };
 
 export default function OutstandingPage() {

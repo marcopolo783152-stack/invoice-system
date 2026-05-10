@@ -37,15 +37,15 @@ export default function InvoiceTemplate({
   data,
   calculations,
   businessInfo = {
-    name: 'ARIANA ORIENTAL RUGS INC',
-    address: '3210 DUKE ST',
+    name: 'MARCO POLO ORIENTAL RUGS, INC.',
+    address: '3260 DUKE ST',
     city: 'ALEXANDRIA',
     state: 'VA',
     zip: '22314',
-    phone: '+1 (703) 801 1640',
+    phone: '703-461-0207',
     fax: '703-461-0208',
-    website: '',
-    email: 'arianaorientalrugs@gmail.com',
+    website: 'www.marcopolorugs.com',
+    email: 'marcopolorugs@aol.com',
   },
   onDeletePayment,
 }: InvoiceTemplateProps) {
@@ -144,7 +144,7 @@ export default function InvoiceTemplate({
               <div className={`${styles.logoSection} email-logo-section`}>
                 <img
                   src="/LOGO.png"
-                  alt="Ariana Oriental Rugs"
+                  alt="Marco Polo Oriental Rugs"
                   className={`${styles.logoImage} email-logo invoice-logo`}
                   onError={e => {
                     const target = e.target as HTMLImageElement;
@@ -334,7 +334,7 @@ export default function InvoiceTemplate({
                   <div className={`${styles.salesTerms} email-sales-terms`}>
                     <h4>Terms & Conditions:</h4>
                     {data.documentType === 'CONSIGNMENT' ? (
-                      <p>All items remain property of Ariana Oriental Rugs until sold. Payment due upon sale or return. Items not sold within 90 days may be returned.</p>
+                      <p>All items remain property of Marco Polo Oriental Rugs until sold. Payment due upon sale or return. Items not sold within 90 days may be returned.</p>
                     ) : (
                       <>
                         <p>1. All Sales are final</p>

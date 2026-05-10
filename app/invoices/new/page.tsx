@@ -74,8 +74,8 @@ function InvoicePageContent() {
     password: string;
     role: "admin" | "seller" | "manager";
   }[]>([
-    { username: "admin@ariana.com", fullName: "Nazif", password: "Ariana$", role: "admin" },
-    { username: "manager@ariana.com", fullName: "Farid", password: "manager", role: "manager" }
+    { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin" },
+    { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" }
   ]);
   const [currentUser, setCurrentUser] = useState<{ username: string; fullName: string; role: string } | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
