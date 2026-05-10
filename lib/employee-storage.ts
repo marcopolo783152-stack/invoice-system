@@ -577,10 +577,11 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
             data.id = logRef.id;
 
             // Admin manual log: Force update the employee status immediately
-            await updateDoc(doc(db!, empCol, data.employeeId), {
+            const { setDoc, doc } = await import('firebase/firestore');
+            await setDoc(doc(db!, empCol, data.employeeId), {
                 status: data.type === 'LEAVE' ? 'OUT' : data.type,
                 lastAction: data.timestamp
-            });
+            }, { merge: true });
         } catch (e) {
             console.error('Error adding manual log:', e);
         }
@@ -690,7 +691,7 @@ export async function addManualTimeLogsBulk(logs: Omit<TimeLog, 'id'>[]): Promis
                 
                 // Add employee updates to this batch (unique per employee)
                 empUpdates.forEach((updateData, empId) => {
-                    batch.update(doc(db!, empCol, empId), updateData);
+                    batch.set(doc(db!, empCol, empId), updateData, { merge: true });
                 });
                 
                 await batch.commit();
@@ -780,7 +781,7 @@ export async function deleteEmployee(id: string): Promise<void> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            const { deleteDoc } = await import('firebase/firestore');
+            const { deleteDoc, doc } = await import('firebase/firestore');
             // 1. Delete from current (prefixed) collection
             await deleteDoc(doc(db, empCol, id));
             
