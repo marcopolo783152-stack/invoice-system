@@ -257,6 +257,11 @@ export async function clockInOut(
     localLogs.unshift(log);
     localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
 
+    // Trigger immediate sync pass to ensure cloud visibility
+    if (typeof window !== 'undefined') {
+        getTimeLogs(1).catch(() => {});
+    }
+
     return { employee, log };
 }
 
@@ -426,57 +431,69 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
             }
 
             // Update local backup cache whenever fetched from firebase
-            if (typeof window !== 'undefined') {
-                if (isFirebaseConfigured() && db) {
-                    // Fetch the last few cloud logs to avoid duplicating very recent syncs
-                    const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(10));
-                    const snapshot = await getDocs(q);
-                    const cloudIds = new Set(snapshot.docs.map(doc => doc.id));
+            if (typeof window !== 'undefined' && isFirebaseConfigured() && db) {
+                // Fetch the last few cloud logs to avoid duplicating very recent syncs
+                const q = query(collection(db, logCol), orderBy('timestamp', 'desc'), limit(10));
+                const snapshot = await getDocs(q);
+                const cloudIds = new Set(snapshot.docs.map(doc => doc.id));
 
-                    const localLogs: TimeLog[] = JSON.parse(localStorage.getItem(localLogKey) || '[]');
-                    let hasSyncChanges = false;
+                const localLogs: TimeLog[] = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+                let hasSyncChanges = false;
 
-                    for (const l of localLogs) {
-                        // Local IDs are 9 characters, Firebase IDs are 20.
-                        // Only auto-sync true orphaned offline logs (9 chars) that aren't already in the cloud.
-                        if (l.id && l.id.length < 15 && !cloudIds.has(l.id)) {
-                            try {
-                                const { setDoc, doc, Timestamp } = require('firebase/firestore');
-                                await setDoc(doc(db, logCol, l.id), {
-                                    ...l,
-                                    timestamp: l.timestamp ? Timestamp.fromDate(new Date(l.timestamp)) : Timestamp.now()
-                                }, { merge: true });
-                                
-                                // Once synced, we should ideally mark it as synced or update its ID, 
-                                // but for simplicity and robustness against race conditions, 
-                                // we just let it exist as a 9-char ID in the cloud which is fine.
-                                console.log(`Synced orphaned log ${l.id} to cloud.`);
-                                hasSyncChanges = true;
-                            } catch (err: any) {
-                                console.warn('Background sync failed for log:', l.id, err);
-                            }
+                // Optimization: Only scan the most recent 20 local logs to avoid lag on mobile
+                const recentLogs = localLogs.slice(0, 20);
+                for (const l of recentLogs) {
+                    // Local IDs are 9 characters, Firebase IDs are 20.
+                    // Only auto-sync true orphaned offline logs (9 chars) that aren't already in the cloud.
+                    if (l.id && l.id.length < 15 && !cloudIds.has(l.id)) {
+                        try {
+                            const { setDoc, doc, Timestamp } = require('firebase/firestore');
+                            await setDoc(doc(db, logCol, l.id), {
+                                ...l,
+                                timestamp: l.timestamp ? Timestamp.fromDate(new Date(l.timestamp)) : Timestamp.now()
+                            }, { merge: true });
+                            
+                            console.log(`Synced orphaned log ${l.id} to cloud.`);
+                            hasSyncChanges = true;
+                        } catch (err: any) {
+                            console.warn('Background sync failed for log:', l.id, err);
                         }
                     }
+                }
                 
-                // MANUAL SORTING: This replaces the Firestore orderBy and is 100% reliable.
-                logs.sort((a, b) => {
-                    const dateA = new Date(a.timestamp || 0).getTime();
-                    const dateB = new Date(b.timestamp || 0).getTime();
-                    if (isNaN(dateA)) return 1;
-                    if (isNaN(dateB)) return -1;
-                    return dateB - dateA;
-                });
+                if (hasSyncChanges) {
+                    await getEmployees();
+                }
+            }
+                
+            // MANUAL SORTING: This replaces the Firestore orderBy and is 100% reliable.
+            logs.sort((a, b) => {
+                const dateA = new Date(a.timestamp || 0).getTime();
+                const dateB = new Date(b.timestamp || 0).getTime();
+                if (isNaN(dateA)) return 1;
+                if (isNaN(dateB)) return -1;
+                return dateB - dateA;
+            });
 
+            if (typeof window !== 'undefined') {
                 localStorage.setItem(localLogKey, JSON.stringify(logs.slice(0, 1000)));
             }
+
             return logs;
         } catch (e) {
-            console.error('Error fetching logs:', e);
+            console.error('Error in getTimeLogs:', e);
+            if (typeof window !== 'undefined') {
+                return JSON.parse(localStorage.getItem(localLogKey) || '[]');
+            }
+            return [];
         }
     }
 
-    const localData = localStorage.getItem(localLogKey);
-    return localData ? JSON.parse(localData) : [];
+    if (typeof window !== 'undefined') {
+        const localData = localStorage.getItem(localLogKey);
+        return localData ? JSON.parse(localData) : [];
+    }
+    return [];
 }
 
 export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLog> {
