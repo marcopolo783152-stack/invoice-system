@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { clockInOut, Employee, checkAutoClockOut } from '@/lib/employee-storage';
+import { clockInOut, Employee, checkAutoClockOut, getTimeLogs } from '@/lib/employee-storage';
 import Link from 'next/link';
 
 export default function ClockPage() {
@@ -14,7 +14,14 @@ export default function ClockPage() {
     // Geofencing coordinates (Precision Shop Location)
     const SHOP_LAT = 38.808028;
     const SHOP_LNG = -77.087056;
-    const MAX_DISTANCE_FT = 700;
+    const MAX_DISTANCE_FT = 1500;
+
+    const speak = (text: string) => {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(utterance);
+        }
+    };
 
     const videoRef = React.useRef<HTMLVideoElement>(null);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -38,6 +45,9 @@ export default function ClockPage() {
 
         // Auto-cleanup if visiting after hours
         checkAutoClockOut();
+
+        // Check and sync any orphaned offline logs from this device
+        getTimeLogs(1).catch(err => console.error("Auto-sync failed", err));
 
         // Continuous Audit (Check every 5 minutes)
         const auditInterval = setInterval(() => {
@@ -124,6 +134,7 @@ export default function ClockPage() {
             setLastAction({ type: log.type, name: employee.name });
             setStatus('SUCCESS');
             setIdentifier('');
+            speak("Thank you, you're all set");
 
             setTimeout(() => {
                 setStatus('IDLE');
@@ -135,6 +146,7 @@ export default function ClockPage() {
             console.error(error);
             setStatus('ERROR');
             setMessage(error.message || 'Identity verification failed. Please check ID/GPS/Camera.');
+            speak("Sorry, please try again");
             setTimeout(() => setStatus('IDLE'), 5000);
         }
     };

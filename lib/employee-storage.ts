@@ -393,7 +393,9 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 let syncedOrphans = false;
                 
                 for (const l of local) {
-                    if (!cloudMap.has(l.id)) {
+                    // Local IDs are 9 characters, Firebase IDs are 20. 
+                    // Only auto-sync true orphaned offline logs, not just old logs that weren't in the top 50.
+                    if (!cloudMap.has(l.id) && l.id.length < 15) {
                         logs.push(l); // Keep orphaned local timelogs visible
                         // AUTO-SYNC TO FIREBASE: If it's local only, force push it to the cloud now
                         try {
