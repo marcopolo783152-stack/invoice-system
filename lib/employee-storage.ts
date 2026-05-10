@@ -816,6 +816,24 @@ export async function getWorkDays(employeeId: string): Promise<number> {
                 } as TimeLog);
             });
 
+            // FALLBACK: If no logs in prefixed collection, check the root collection
+            if (employeeLogs.length === 0 && prefix) {
+                const rootQ = query(
+                    collection(db!, BASE_LOG_COLLECTION),
+                    where('employeeId', '==', employeeId),
+                    where('type', '==', 'IN')
+                );
+                const rootSnapshot = await getDocs(rootQ);
+                rootSnapshot.forEach(logDoc => {
+                    const data = logDoc.data();
+                    employeeLogs.push({
+                        ...data,
+                        id: logDoc.id,
+                        timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
+                    } as TimeLog);
+                });
+            }
+
             const uniqueDays = new Set(employeeLogs.map(l => {
                 const date = new Date(l.timestamp);
                 return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
