@@ -159,11 +159,18 @@ export async function clockInOut(
 
     const employees = await getEmployees();
     const employee = employees.find(e => {
-        const cleanId = identifier.trim();
-        return e.empId === cleanId ||
-            e.empId === `EMP${cleanId}` ||
+        const cleanId = identifier.trim().toLowerCase();
+        const empIdStr = (e.empId || '').toLowerCase();
+        
+        const numericId = empIdStr.replace(/\D/g, '');
+        const cleanNumeric = cleanId.replace(/\D/g, '');
+
+        return empIdStr === cleanId ||
+            empIdStr === `emp${cleanId}` ||
+            empIdStr === `emp-${cleanId}` ||
+            (numericId !== '' && cleanNumeric !== '' && numericId === cleanNumeric && cleanNumeric === cleanId) || 
             e.phone === cleanId ||
-            e.email === cleanId;
+            (e.email || '').toLowerCase() === cleanId;
     });
 
     if (!employee) throw new Error('Employee not found');
