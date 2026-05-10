@@ -646,12 +646,19 @@ export async function updateTimeLog(logId: string, updates: Partial<TimeLog>): P
 export async function deleteTimeLog(logId: string): Promise<void> {
     const logCol = getCol(BASE_LOG_COLLECTION);
     const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+    const prefix = getStorePrefix();
 
     if (isFirebaseConfigured() && db) {
         try {
             const { deleteDoc } = await import('firebase/firestore');
+            // 1. Delete from current (prefixed) collection
             await deleteDoc(doc(db, logCol, logId));
-        } catch (e) { console.error(e); }
+            
+            // 2. If we have a prefix, also try to delete from the root collection (fallback safety)
+            if (prefix) {
+                await deleteDoc(doc(db, BASE_LOG_COLLECTION, logId)).catch(() => {});
+            }
+        } catch (e) { console.error('Error deleting time log:', e); }
     }
 
     const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
@@ -662,12 +669,19 @@ export async function deleteTimeLog(logId: string): Promise<void> {
 export async function deleteEmployee(id: string): Promise<void> {
     const empCol = getCol(BASE_EMP_COLLECTION);
     const localEmpKey = getKey(BASE_LOCAL_EMP_KEY);
+    const prefix = getStorePrefix();
 
     if (isFirebaseConfigured() && db) {
         try {
             const { deleteDoc } = await import('firebase/firestore');
+            // 1. Delete from current (prefixed) collection
             await deleteDoc(doc(db, empCol, id));
-        } catch (e) { console.error(e); }
+            
+            // 2. Fallback safety
+            if (prefix) {
+                await deleteDoc(doc(db, BASE_EMP_COLLECTION, id)).catch(() => {});
+            }
+        } catch (e) { console.error('Error deleting employee:', e); }
     }
     const employees = await getEmployees();
     const filtered = employees.filter(e => e.id !== id);
@@ -750,11 +764,18 @@ export async function getEmployeePayments(employeeId: string): Promise<EmployeeP
 export async function deleteEmployeePayment(paymentId: string): Promise<void> {
     const payCol = getCol(BASE_PAY_COLLECTION);
     const localPayKey = getKey(BASE_LOCAL_PAY_KEY);
+    const prefix = getStorePrefix();
 
     if (isFirebaseConfigured() && db) {
         try {
             const { deleteDoc } = await import('firebase/firestore');
+            // 1. Current
             await deleteDoc(doc(db, payCol, paymentId));
+            
+            // 2. Legacy root
+            if (prefix) {
+                await deleteDoc(doc(db, BASE_PAY_COLLECTION, paymentId)).catch(() => {});
+            }
         } catch (e) { console.error('Error deleting payment:', e); }
     }
 
