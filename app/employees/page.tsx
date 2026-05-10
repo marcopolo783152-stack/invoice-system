@@ -15,6 +15,7 @@ import {
     getEmployeePayments,
     addManualTimeLog,
     deleteTimeLog,
+    deleteTimeLogsBulk,
     checkAutoClockOut,
     updateTimeLog,
     deleteEmployeePayment,
@@ -799,9 +800,7 @@ export default function EmployeesPage() {
                                         onClick={async () => {
                                             if (!confirm(`Are you sure you want to delete ${selectedLogs.size} logs?`)) return;
                                             setIsLoading(true);
-                                            for (const id of Array.from(selectedLogs)) {
-                                                await deleteTimeLog(id);
-                                            }
+                                            await deleteTimeLogsBulk(Array.from(selectedLogs));
                                             setSelectedLogs(new Set());
                                             await loadData();
                                         }}

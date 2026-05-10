@@ -651,25 +651,51 @@ export async function updateTimeLog(logId: string, updates: Partial<TimeLog>): P
  * Delete a time log
  */
 export async function deleteTimeLog(logId: string): Promise<void> {
+    await deleteTimeLogsBulk([logId]);
+}
+
+/**
+ * Bulk delete time logs (Optimized for performance)
+ */
+export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
+    if (logIds.length === 0) return;
+
     const logCol = getCol(BASE_LOG_COLLECTION);
     const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
     const prefix = getStorePrefix();
 
     if (isFirebaseConfigured() && db) {
         try {
-            const { deleteDoc } = await import('firebase/firestore');
-            // 1. Delete from current (prefixed) collection
-            await deleteDoc(doc(db!, logCol, logId));
+            const { writeBatch, doc } = await import('firebase/firestore');
+            const batch = writeBatch(db!);
             
-            // 2. If we have a prefix, also try to delete from the root collection (fallback safety)
-            if (prefix) {
-                await deleteDoc(doc(db!, BASE_LOG_COLLECTION, logId)).catch(() => {});
+            for (const id of logIds) {
+                // 1. Delete from current (prefixed) collection
+                batch.delete(doc(db!, logCol, id));
+                
+                // 2. If we have a prefix, also try to delete from the root collection
+                if (prefix) {
+                    batch.delete(doc(db!, BASE_LOG_COLLECTION, id));
+                }
             }
-        } catch (e) { console.error('Error deleting time log:', e); }
+            
+            await batch.commit();
+        } catch (e) { 
+            console.error('Error in bulk deletion:', e); 
+            // Fallback: If batch fails, try individual deletes as last resort
+            if (logIds.length === 1) {
+                try {
+                    const { deleteDoc, doc } = await import('firebase/firestore');
+                    await deleteDoc(doc(db!, logCol, logIds[0]));
+                } catch (err) { console.error('Individual delete fallback failed:', err); }
+            }
+        }
     }
 
+    // Update local logs cache
     const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
-    const filtered = localLogs.filter((l: any) => l.id !== logId);
+    const idSet = new Set(logIds);
+    const filtered = localLogs.filter((l: any) => !idSet.has(l.id));
     localStorage.setItem(localLogKey, JSON.stringify(filtered));
 }
 
