@@ -390,9 +390,22 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
             if (typeof window !== 'undefined') {
                 const local = JSON.parse(localStorage.getItem(localLogKey) || '[]');
                 const cloudMap = new Map(logs.map(l => [l.id, l]));
+                let syncedOrphans = false;
+                
                 for (const l of local) {
                     if (!cloudMap.has(l.id)) {
                         logs.push(l); // Keep orphaned local timelogs visible
+                        // AUTO-SYNC TO FIREBASE: If it's local only, force push it to the cloud now
+                        try {
+                            const { setDoc, doc } = require('firebase/firestore');
+                            setDoc(doc(db, logCol, l.id), {
+                                ...l,
+                                timestamp: l.timestamp ? new Date(l.timestamp) : new Date()
+                            }, { merge: true }).catch((err: any) => console.warn('Background sync failed', err));
+                            syncedOrphans = true;
+                        } catch (e) {
+                            console.warn('Could not auto-sync orphaned log', e);
+                        }
                     }
                 }
                 
