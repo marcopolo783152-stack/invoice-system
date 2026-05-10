@@ -1,4 +1,4 @@
-import { getStorePrefix } from './user-storage';
+import { getStorePrefix, getCurrentStoreId } from './user-storage';
 
 /**
  * EMPLOYEE STORAGE SERVICE
@@ -541,6 +541,11 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
         }
     } catch (e) {
         console.error('Error updating local employee cache:', e);
+    }
+
+    // Trigger immediate sync pass to ensure cloud visibility
+    if (typeof window !== 'undefined') {
+        getTimeLogs(1).catch(() => {});
     }
 
     return data;
