@@ -105,15 +105,15 @@ export async function getEmployees(): Promise<Employee[]> {
                 employees.push({ id: doc.id, ...doc.data() } as Employee);
             });
 
-            // FALLBACK: If no employees found in prefixed collection, check the root collection
-            // to prevent "loss" of data for users transitioning to multi-tenant
+            // FALLBACK & AUTO-MIGRATION
             if (employees.length === 0 && prefix) {
                 const rootSnapshot = await getDocs(query(collection(db, BASE_EMP_COLLECTION), orderBy('name', 'asc')));
                 rootSnapshot.forEach(doc => {
                     const data = doc.data();
-                    // Only pull if it doesn't have a storeId or matches (safety)
                     if (!data.storeId || data.storeId === getCurrentStoreId()) {
                         employees.push({ id: doc.id, ...data } as Employee);
+                        // AUTO-MIGRATE: Save to new collection so listeners can see it
+                        setDoc(doc(db, colName, doc.id), data, { merge: true }).catch(() => {});
                     }
                 });
             }
@@ -441,8 +441,7 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                 } as TimeLog);
             });
 
-            // FALLBACK: Only check root collection for legacy logs if the NEW collection is TOTALLY EMPTY
-            // This prevents "loss of data" while allowing for clean deletions once the new system is in use.
+            // FALLBACK & AUTO-MIGRATION for logs
             if (prefix && logs.length === 0) {
                 const rootQ = query(collection(db, BASE_LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount));
                 const rootSnapshot = await getDocs(rootQ);
@@ -453,6 +452,9 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
                         timestamp = data.timestamp.toDate().toISOString();
                     }
                     logs.push({ id: doc.id, ...data, timestamp } as TimeLog);
+                    
+                    // AUTO-MIGRATE: Save to new collection so listeners can see it
+                    setDoc(doc(db, getCol(BASE_LOG_COLLECTION), doc.id), doc.data(), { merge: true }).catch(() => {});
                 });
             }
 
