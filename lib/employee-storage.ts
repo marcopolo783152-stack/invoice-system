@@ -648,6 +648,69 @@ export async function updateTimeLog(logId: string, updates: Partial<TimeLog>): P
 }
 
 /**
+ * Bulk add manual time logs
+ */
+export async function addManualTimeLogsBulk(logs: Omit<TimeLog, 'id'>[]): Promise<void> {
+    if (logs.length === 0) return;
+
+    const empCol = getCol(BASE_EMP_COLLECTION);
+    const logCol = getCol(BASE_LOG_COLLECTION);
+    const localEmpKey = getKey(BASE_LOCAL_EMP_KEY);
+    const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+
+    const processedLogs: TimeLog[] = [];
+
+    if (isFirebaseConfigured() && db) {
+        try {
+            const { writeBatch, doc, collection, Timestamp } = await import('firebase/firestore');
+            const batch = writeBatch(db!);
+            
+            for (const log of logs) {
+                const id = generateId();
+                const data: TimeLog = { ...log, id, synced: true };
+                processedLogs.push(data);
+
+                // Log entry
+                const logRef = doc(collection(db!, logCol));
+                batch.set(logRef, {
+                    ...data,
+                    timestamp: Timestamp.fromDate(new Date(data.timestamp))
+                });
+                data.id = logRef.id;
+
+                // Update employee status
+                batch.update(doc(db!, empCol, data.employeeId), {
+                    status: data.type === 'LEAVE' ? 'OUT' : data.type,
+                    lastAction: data.timestamp
+                });
+            }
+            
+            await batch.commit();
+        } catch (e) {
+            console.error('Error in bulk manual logs:', e);
+        }
+    }
+
+    // Update local logs cache
+    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+    processedLogs.forEach(l => localLogs.unshift(l));
+    localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 2000)));
+
+    // Update local employees cache
+    try {
+        const localEmployees = JSON.parse(localStorage.getItem(localEmpKey) || '[]');
+        processedLogs.forEach(log => {
+            const idx = localEmployees.findIndex((e: any) => e.id === log.employeeId);
+            if (idx >= 0) {
+                localEmployees[idx].status = log.type === 'LEAVE' ? 'OUT' : log.type;
+                localEmployees[idx].lastAction = log.timestamp;
+            }
+        });
+        localStorage.setItem(localEmpKey, JSON.stringify(localEmployees));
+    } catch (e) { console.error(e); }
+}
+
+/**
  * Delete a time log
  */
 export async function deleteTimeLog(logId: string): Promise<void> {

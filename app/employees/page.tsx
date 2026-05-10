@@ -14,6 +14,7 @@ import {
     recordPayment,
     getEmployeePayments,
     addManualTimeLog,
+    addManualTimeLogsBulk,
     deleteTimeLog,
     deleteTimeLogsBulk,
     checkAutoClockOut,
@@ -88,12 +89,14 @@ export default function EmployeesPage() {
         const selected = employees.filter(e => selectedEmployees.has(e.id));
         const dates = getDatesInRange(manualDateStart, manualDateEnd);
         
+        const logsToAdd: any[] = [];
+
         for (const emp of selected) {
             for (const date of dates) {
                 if (excludedDates.has(date)) continue;
                 
                 const timestamp = `${date}T${manualTime}:00`;
-                await addManualTimeLog({
+                logsToAdd.push({
                     employeeId: emp.id,
                     employeeName: emp.name,
                     type: manualType,
@@ -103,7 +106,7 @@ export default function EmployeesPage() {
 
                 if (manualType === 'IN' && autoCompleteOut) {
                     const outTimestamp = `${date}T18:00:00`;
-                    await addManualTimeLog({
+                    logsToAdd.push({
                         employeeId: emp.id,
                         employeeName: emp.name,
                         type: 'OUT',
@@ -114,6 +117,10 @@ export default function EmployeesPage() {
             }
         }
         
+        if (logsToAdd.length > 0) {
+            await addManualTimeLogsBulk(logsToAdd);
+        }
+
         setShowBulkManualLog(false);
         setSelectedEmployees(new Set());
         setIsOvertime(false);
@@ -158,12 +165,13 @@ export default function EmployeesPage() {
         setIsLoading(true);
         
         const dates = getDatesInRange(manualDateStart, manualDateEnd);
-        
+        const logsToAdd: any[] = [];
+
         for (const date of dates) {
             if (excludedDates.has(date)) continue;
             
             const timestamp = `${date}T${manualTime}:00`;
-            await addManualTimeLog({
+            logsToAdd.push({
                 employeeId: showManualLog.empId,
                 employeeName: showManualLog.name,
                 type: manualType,
@@ -173,7 +181,7 @@ export default function EmployeesPage() {
 
             if (manualType === 'IN' && autoCompleteOut) {
                 const outTimestamp = `${date}T18:00:00`;
-                await addManualTimeLog({
+                logsToAdd.push({
                     employeeId: showManualLog.empId,
                     employeeName: showManualLog.name,
                     type: 'OUT',
@@ -183,6 +191,10 @@ export default function EmployeesPage() {
             }
         }
         
+        if (logsToAdd.length > 0) {
+            await addManualTimeLogsBulk(logsToAdd);
+        }
+
         setShowManualLog(null);
         setIsOvertime(false);
         setExcludedDates(new Set());
