@@ -471,13 +471,18 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
 
                 // Optimization: Only scan the most recent 20 local logs to avoid lag on mobile
                 const recentLogs = localLogs.slice(0, 20);
+                const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+                
                 for (const l of recentLogs) {
-                    // Only auto-sync true orphaned offline logs (9 chars) that haven't been marked as synced yet.
-                    if (l.id && l.id.length < 15 && !l.synced) {
+                    // Only auto-sync true orphaned offline logs (short IDs) 
+                    // that were created recently (last 24h) and aren't marked synced.
+                    const logTime = new Date(l.timestamp).getTime();
+                    if (l.id && l.id.length < 15 && !l.synced && logTime > oneDayAgo) {
                         try {
                             const { setDoc: syncSetDoc, doc: syncDoc, Timestamp: syncTimestamp } = require('firebase/firestore');
                             await syncSetDoc(syncDoc(db!, logCol, l.id), {
                                 ...l,
+                                synced: true, 
                                 timestamp: l.timestamp ? syncTimestamp.fromDate(new Date(l.timestamp)) : syncTimestamp.now()
                             }, { merge: true });
                             
