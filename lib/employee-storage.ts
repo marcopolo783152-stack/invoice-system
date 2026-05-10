@@ -108,12 +108,12 @@ export async function getEmployees(): Promise<Employee[]> {
             // FALLBACK & AUTO-MIGRATION
             if (employees.length === 0 && prefix) {
                 const rootSnapshot = await getDocs(query(collection(db, BASE_EMP_COLLECTION), orderBy('name', 'asc')));
-                rootSnapshot.forEach(doc => {
-                    const data = doc.data();
+                rootSnapshot.forEach(empDoc => {
+                    const data = empDoc.data();
                     if (!data.storeId || data.storeId === getCurrentStoreId()) {
-                        employees.push({ id: doc.id, ...data } as Employee);
+                        employees.push({ id: empDoc.id, ...data } as Employee);
                         // AUTO-MIGRATE: Save to new collection so listeners can see it
-                        setDoc(doc(db, colName, doc.id), data, { merge: true }).catch(() => {});
+                        setDoc(doc(db, colName, empDoc.id), data, { merge: true }).catch(() => {});
                     }
                 });
             }
@@ -445,16 +445,16 @@ export async function getTimeLogs(limitCount = 50): Promise<TimeLog[]> {
             if (prefix && logs.length === 0) {
                 const rootQ = query(collection(db, BASE_LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount));
                 const rootSnapshot = await getDocs(rootQ);
-                rootSnapshot.forEach(doc => {
-                    const data = doc.data();
+                rootSnapshot.forEach(logDoc => {
+                    const data = logDoc.data();
                     let timestamp = data.timestamp;
                     if (data.timestamp && typeof data.timestamp.toDate === 'function') {
                         timestamp = data.timestamp.toDate().toISOString();
                     }
-                    logs.push({ id: doc.id, ...data, timestamp } as TimeLog);
+                    logs.push({ id: logDoc.id, ...data, timestamp } as TimeLog);
                     
                     // AUTO-MIGRATE: Save to new collection so listeners can see it
-                    setDoc(doc(db, getCol(BASE_LOG_COLLECTION), doc.id), doc.data(), { merge: true }).catch(() => {});
+                    setDoc(doc(db, getCol(BASE_LOG_COLLECTION), logDoc.id), logDoc.data(), { merge: true }).catch(() => {});
                 });
             }
 
