@@ -158,7 +158,13 @@ export default function ClockPage() {
             setLastAction({ type: log.type, name: employee.name });
             setStatus('SUCCESS');
             setIdentifier('');
-            speak("Thank you, you're all set");
+            
+            // Personalized voice feedback
+            const firstName = employee.name.split(' ')[0];
+            const greeting = log.type === 'IN' 
+                ? `Welcome back ${firstName}, you are now clocked in.` 
+                : `Goodbye ${firstName}, you are now clocked out. Have a great day!`;
+            speak(greeting);
 
             setTimeout(() => {
                 setStatus('IDLE');
