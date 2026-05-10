@@ -442,9 +442,9 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
                 } as TimeLog);
             });
 
-            // FALLBACK & AUTO-MIGRATION for logs (Runs if current view is empty)
+            // FALLBACK ONLY: If no logs in prefixed collection, show root logs (but DON'T auto-migrate/re-upload)
             if (logs.length === 0) {
-                const rootQ = query(collection(db, BASE_LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount));
+                const rootQ = query(collection(db!, BASE_LOG_COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount));
                 const rootSnapshot = await getDocs(rootQ);
                 rootSnapshot.forEach(logDoc => {
                     const data = logDoc.data();
@@ -453,9 +453,6 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
                         timestamp = data.timestamp.toDate().toISOString();
                     }
                     logs.push({ id: logDoc.id, ...data, timestamp } as TimeLog);
-                    
-                    // AUTO-MIGRATE: Save to new collection so listeners can see it
-                    setDoc(doc(db!, getCol(BASE_LOG_COLLECTION), logDoc.id), logDoc.data(), { merge: true }).catch(() => {});
                 });
             }
 
@@ -662,11 +659,11 @@ export async function deleteTimeLog(logId: string): Promise<void> {
         try {
             const { deleteDoc } = await import('firebase/firestore');
             // 1. Delete from current (prefixed) collection
-            await deleteDoc(doc(db, logCol, logId));
+            await deleteDoc(doc(db!, logCol, logId));
             
             // 2. If we have a prefix, also try to delete from the root collection (fallback safety)
             if (prefix) {
-                await deleteDoc(doc(db, BASE_LOG_COLLECTION, logId)).catch(() => {});
+                await deleteDoc(doc(db!, BASE_LOG_COLLECTION, logId)).catch(() => {});
             }
         } catch (e) { console.error('Error deleting time log:', e); }
     }
