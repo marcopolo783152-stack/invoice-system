@@ -145,7 +145,7 @@ export default function EmployeesPage() {
 
     // Helper to get dates between start and end
     const getDatesInRange = (start: string, end: string) => {
-        const dates = [];
+        const dates: string[] = [];
         if (!start || !end) return dates;
         
         const [sYear, sMonth, sDay] = start.split('-').map(Number);
