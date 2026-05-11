@@ -48,12 +48,15 @@ try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     db = getFirestore(app);
     
-    // Enable offline persistence (IndexedDB) to ensure it works without Chrome localStorage and while offline
+    // Disable offline persistence to force a 100% live online connection 
+    // This prevents data from being "hidden" in the local cache if the cloud rejects it.
+    /*
     enableIndexedDbPersistence(db).catch((err) => {
       console.warn("Firestore offline persistence error:", err);
     });
+    */
 
-    console.log('Firebase initialized successfully');
+    console.log('Firebase initialized successfully (LIVE ONLY)');
   } else {
     // For SSR or if not configured, initialize a dummy app (for type safety)
     if (getApps().length === 0) {

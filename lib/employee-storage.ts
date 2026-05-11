@@ -466,13 +466,14 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
             if (errorString.includes('quota') || errorString.includes('resource-exhausted') || e.code === 'resource-exhausted') {
                 const projectId = (db as any)?._databaseId?.projectId || 'unknown';
                 if (typeof window !== 'undefined') {
-                    alert(`Firebase Database Quota Exceeded!\n\nProject: ${projectId}\n\nYour free daily limit is reached. Please verify you upgraded THIS specific project to Blaze. The app will work offline but data may be lost if you clear your cache.`);
+                    alert(`Firebase Database Quota Exceeded!\n\nProject: ${projectId}\n\nYour free daily limit is reached. Please verify you upgraded THIS specific project to Blaze.`);
                 }
+            } else if (errorString.includes('permission-denied') || e.code === 'permission-denied') {
+                if (typeof window !== 'undefined') alert('Database Error: Permission Denied! Please check your Firestore Security Rules in the Firebase console.');
+            } else {
+                if (typeof window !== 'undefined') alert('Database Connection Error: ' + e.message);
             }
-            if (typeof window !== 'undefined') {
-                return JSON.parse(localStorage.getItem(localLogKey) || '[]');
-            }
-            return [];
+            return []; // Do not return local storage fallback
         }
     }
 
