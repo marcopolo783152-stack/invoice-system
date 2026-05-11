@@ -22,7 +22,7 @@ import {
     onSnapshot,
     Unsubscribe
 } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from './firebase';
+import { db, app, isFirebaseConfigured } from './firebase';
 
 export interface Employee {
     id: string;
