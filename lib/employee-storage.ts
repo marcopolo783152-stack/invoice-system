@@ -938,10 +938,23 @@ export async function migrateLegacyLogs(): Promise<void> {
 /**
  * Count unique work days for an employee
  */
-export async function getWorkDays(employeeId: string): Promise<number> {
+export async function getWorkDays(employeeId: string, preFetchedLogs?: TimeLog[]): Promise<number> {
     const logCol = getCol(BASE_LOG_COLLECTION);
     const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
     const prefix = getStorePrefix();
+
+    if (preFetchedLogs) {
+        const employeeLogs = preFetchedLogs.filter(l => 
+            l.employeeId === employeeId && 
+            l.type === 'IN' && 
+            !l.isDeleted
+        );
+        const uniqueDays = new Set(employeeLogs.map(l => {
+            const date = new Date(l.timestamp);
+            return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+        }));
+        return uniqueDays.size;
+    }
 
     if (isFirebaseConfigured() && db) {
         try {

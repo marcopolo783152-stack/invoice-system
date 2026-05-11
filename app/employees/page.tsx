@@ -255,7 +255,7 @@ export default function EmployeesPage() {
 
             const [empList, logList] = await Promise.all([
                 getEmployees(),
-                getTimeLogs(2000) // Fetch more for day counting and complete visibility
+                getTimeLogs(1000) // Fetch enough for payroll and visibility
             ]);
             setEmployees(empList);
             setLogs(logList);
@@ -264,12 +264,8 @@ export default function EmployeesPage() {
             const summaryMap: Record<string, PayrollSummary> = {};
 
             for (const emp of empList) {
-                // 1. Count unique work days from logs
-                const empLogs = logList.filter(l => l.employeeId === emp.id && l.type === 'IN');
-                const uniqueDays = new Set(empLogs.map(l => {
-                    const date = new Date(l.timestamp);
-                    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-                })).size;
+                // 1. Count unique work days from the ALREADY fetched logs
+                const uniqueDays = await getWorkDays(emp.id, logList);
 
                 // 2. Fetch payments
                 const payments = await getEmployeePayments(emp.id);
