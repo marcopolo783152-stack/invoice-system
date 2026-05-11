@@ -24,15 +24,17 @@ function EmployeePrintContent() {
         const load = async () => {
             const baseUrl = window.location.origin;
             if (type === 'poster') {
-                const clockUrl = `${baseUrl}/clock`;
+                const storeId = localStorage.getItem('currentStoreId') || '';
+                const clockUrl = `${baseUrl}/clock${storeId ? `?storeId=${storeId}` : ''}`;
                 setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(clockUrl)}`);
                 setIsLoading(false);
             } else if (type === 'badge' && id) {
+                const storeId = localStorage.getItem('currentStoreId') || '';
                 const emps = await getEmployees();
                 const emp = emps.find(e => e.empId === id);
                 if (emp) {
                     setEmployee(emp);
-                    const clockUrl = `${baseUrl}/clock?id=${emp.empId}`;
+                    const clockUrl = `${baseUrl}/clock?id=${emp.empId}${storeId ? `&storeId=${storeId}` : ''}`;
                     setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(clockUrl)}`);
                 }
                 setIsLoading(false);

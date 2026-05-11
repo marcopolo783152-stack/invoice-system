@@ -48,11 +48,18 @@ export default function ClockPage() {
                 .catch(err => console.error('Camera access denied:', err));
         }
 
-        // Handle scannable QR parameter
+        // Handle storeId and employee id from URL
         const params = new URLSearchParams(window.location.search);
-        const id = params.get('id');
-        if (id) {
-            setIdentifier(id);
+        const storeId = params.get('storeId');
+        const empId = params.get('id');
+        
+        if (storeId) {
+            localStorage.setItem('currentStoreId', storeId);
+            console.log('Switching to store:', storeId);
+        }
+
+        if (empId) {
+            setIdentifier(empId);
         }
 
         // Auto-cleanup if visiting after hours
