@@ -464,7 +464,10 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
             console.error('Error in getTimeLogs:', e);
             const errorString = (e.message || e.code || e.toString()).toLowerCase();
             if (errorString.includes('quota') || errorString.includes('resource-exhausted') || e.code === 'resource-exhausted') {
-                if (typeof window !== 'undefined') alert('Firebase Database Quota Exceeded! Your free daily limit is reached. Please upgrade your plan or wait until tomorrow. The app will work offline but data may be lost if you clear your browser cache.');
+                const projectId = (db as any)?._databaseId?.projectId || 'unknown';
+                if (typeof window !== 'undefined') {
+                    alert(`Firebase Database Quota Exceeded!\n\nProject: ${projectId}\n\nYour free daily limit is reached. Please verify you upgraded THIS specific project to Blaze. The app will work offline but data may be lost if you clear your cache.`);
+                }
             }
             if (typeof window !== 'undefined') {
                 return JSON.parse(localStorage.getItem(localLogKey) || '[]');
@@ -859,8 +862,13 @@ export async function migrateLegacyLogs(): Promise<void> {
     if (!prefix || !isFirebaseConfigured() || !db) return;
 
     const migrationKey = `has_migrated_logs_${prefix}`;
-    if (typeof window !== 'undefined' && localStorage.getItem(migrationKey)) {
-        return; // Already migrated
+    const sessionKey = `migration_attempted_${prefix}`;
+    
+    if (typeof window !== 'undefined') {
+        if (localStorage.getItem(migrationKey) || (window as any)[sessionKey]) {
+            return; // Already migrated or tried this session
+        }
+        (window as any)[sessionKey] = true;
     }
 
     try {
