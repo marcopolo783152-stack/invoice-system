@@ -460,8 +460,12 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
             }
 
             return logs;
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error in getTimeLogs:', e);
+            const errorString = (e.message || e.code || e.toString()).toLowerCase();
+            if (errorString.includes('quota') || errorString.includes('resource-exhausted') || e.code === 'resource-exhausted') {
+                if (typeof window !== 'undefined') alert('Firebase Database Quota Exceeded! Your free daily limit is reached. Please upgrade your plan or wait until tomorrow. The app will work offline but data may be lost if you clear your browser cache.');
+            }
             if (typeof window !== 'undefined') {
                 return JSON.parse(localStorage.getItem(localLogKey) || '[]');
             }
@@ -879,17 +883,34 @@ export async function migrateLegacyLogs(): Promise<void> {
             }
         });
 
+        // Optimization to prevent Quota Exhaustion: 
+        // Only migrate logs that DO NOT already exist in the new collection
+        const existingQ = await getDocs(collection(db!, logCol));
+        const existingIds = new Set(existingQ.docs.map(d => d.id));
+        const filteredLogsToMigrate = logsToMigrate.filter(l => !existingIds.has(l.id));
+
+        if (filteredLogsToMigrate.length === 0) {
+            console.log('No new legacy logs to migrate. Skipping writes.');
+            if (typeof window !== 'undefined') localStorage.setItem(migrationKey, 'true');
+            return;
+        }
+
         // Chunk migration to bypass 500 write limit
         const chunkSize = 250;
-        for (let i = 0; i < logsToMigrate.length; i += chunkSize) {
-            const chunk = logsToMigrate.slice(i, i + chunkSize);
+        for (let i = 0; i < filteredLogsToMigrate.length; i += chunkSize) {
+            const chunk = filteredLogsToMigrate.slice(i, i + chunkSize);
             const batch = writeBatch(db!);
             
             for (const log of chunk) {
-                batch.set(doc(db!, logCol, log.id), log, { merge: true });
+                batch.set(doc(db!, logCol, log.id), log);
             }
             
-            await batch.commit();
+            try {
+                await batch.commit();
+            } catch (e: any) {
+                console.error('Migration batch failed:', e);
+                if (typeof window !== 'undefined') alert("Migration Error: " + e.message);
+            }
         }
 
         console.log(`Successfully migrated ${logsToMigrate.length} legacy logs.`);
