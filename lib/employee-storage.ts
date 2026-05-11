@@ -1021,3 +1021,19 @@ export async function migrateLegacyData(): Promise<{ employees: number, logs: nu
 
     return { employees: empCount, logs: logCount };
 }
+
+export async function clearDatabaseCache(): Promise<void> {
+    if (typeof window !== 'undefined' && db) {
+        try {
+            const { terminate, clearIndexedDbPersistence } = await import('firebase/firestore');
+            await terminate(db);
+            await clearIndexedDbPersistence(db);
+            window.location.reload();
+        } catch (e) {
+            console.error('Failed to clear cache:', e);
+            window.location.reload();
+        }
+    } else {
+        if (typeof window !== 'undefined') window.location.reload();
+    }
+}
