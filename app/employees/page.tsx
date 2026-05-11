@@ -12,6 +12,7 @@ import {
     deleteEmployee,
     getWorkDays,
     migrateLegacyLogs,
+    clearDatabaseCache,
     EmployeePayment,
     recordPayment,
     getEmployeePayments,
@@ -425,6 +426,16 @@ export default function EmployeesPage() {
                         style={{ padding: '12px 24px', borderRadius: 12, border: '1px solid #6366f1', background: 'rgba(99, 102, 241, 0.05)', color: '#6366f1', fontWeight: 700, cursor: 'pointer' }}
                     >
                         🖨️ Print Shop QR
+                    </button>
+                    <button
+                        onClick={async () => {
+                            if (confirm("This will refresh your connection to the database. Continue?")) {
+                                await clearDatabaseCache();
+                            }
+                        }}
+                        style={{ padding: '12px 24px', borderRadius: 12, border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                        🔄 Reset Connection
                     </button>
                 </div>
             </div>
