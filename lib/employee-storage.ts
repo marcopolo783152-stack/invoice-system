@@ -463,17 +463,23 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
         } catch (e: any) {
             console.error('Error in getTimeLogs:', e);
             const errorString = (e.message || e.code || e.toString()).toLowerCase();
+            const projectId = (db as any)?._databaseId?.projectId || 'unknown';
+            const apiKey = (app?.options as any)?.apiKey || 'unknown';
+            
             if (errorString.includes('quota') || errorString.includes('resource-exhausted') || e.code === 'resource-exhausted') {
-                const projectId = (db as any)?._databaseId?.projectId || 'unknown';
                 if (typeof window !== 'undefined') {
-                    alert(`Firebase Database Quota Exceeded!\n\nProject: ${projectId}\n\nYour free daily limit is reached. Please verify you upgraded THIS specific project to Blaze.`);
+                    alert(`FIREBASE QUOTA ERROR\n\nProject: ${projectId}\nAPI Key: ${apiKey.substring(0, 10)}...\n\nReason: ${e.message}\n\nYour database is still reporting that the limit is reached. Please verify your Blaze upgrade and check for any Spending Limits in the Google Cloud Console.`);
                 }
             } else if (errorString.includes('permission-denied') || e.code === 'permission-denied') {
-                if (typeof window !== 'undefined') alert('Database Error: Permission Denied! Please check your Firestore Security Rules in the Firebase console.');
+                if (typeof window !== 'undefined') {
+                    alert(`FIREBASE PERMISSION ERROR\n\nProject: ${projectId}\n\nReason: Your Security Rules are rejecting this request. Please paste the "Allow All" rules I gave you into the Firebase Console.`);
+                }
             } else {
-                if (typeof window !== 'undefined') alert('Database Connection Error: ' + e.message);
+                if (typeof window !== 'undefined') {
+                    alert(`FIREBASE CONNECTION ERROR\n\nProject: ${projectId}\n\nError: ${e.message}`);
+                }
             }
-            return []; // Do not return local storage fallback
+            return [];
         }
     }
 
