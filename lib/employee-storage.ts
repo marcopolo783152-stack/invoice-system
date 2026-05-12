@@ -516,10 +516,7 @@ export function subscribeToTimeLogs(callback: (logs: TimeLog[]) => void, limitCo
             } as TimeLog);
         });
         
-        // Update local cache
-        const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
-        localStorage.setItem(localLogKey, JSON.stringify(logs.slice(0, 1000)));
-
+        // Removed localStorage caching to prevent browser quota errors
         callback(logs);
     }, (error) => {
         console.error("Logs subscription error:", error);
