@@ -35,7 +35,8 @@ function EmployeePrintContent() {
                 if (emp) {
                     setEmployee(emp);
                     const clockUrl = `${baseUrl}/clock?id=${emp.empId}${storeId ? `&storeId=${storeId}` : ''}`;
-                    setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(clockUrl)}`);
+                    // Higher resolution and error correction (ecc=H) for better scan-ability
+                    setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(clockUrl)}&ecc=H&margin=0`);
                 }
                 setIsLoading(false);
             } else if (type === 'history' && id) {
@@ -228,7 +229,15 @@ function EmployeePrintContent() {
                                     )}
                                 </div>
                                 <div>
-                                    <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0', lineHeight: 1.1 }}>
+                                    <h2 style={{ 
+                                        fontSize: employee.name.length > 15 ? (employee.name.length > 20 ? 12 : 15) : 20, 
+                                        fontWeight: 900, 
+                                        color: '#0f172a', 
+                                        margin: '0 0 4px 0', 
+                                        lineHeight: 1.1,
+                                        wordBreak: 'break-word',
+                                        maxWidth: 150
+                                    }}>
                                         {employee.name}
                                     </h2>
                                     <div style={{
