@@ -456,10 +456,7 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
                 return dateB - dateA;
             });
 
-            if (typeof window !== 'undefined') {
-                localStorage.setItem(localLogKey, JSON.stringify(logs.slice(0, 1000)));
-            }
-
+            // Removed localStorage caching to prevent browser quota errors
             return logs;
         } catch (e: any) {
             console.error('Error in getTimeLogs:', e);
@@ -1044,17 +1041,27 @@ export async function migrateLegacyData(): Promise<{ employees: number, logs: nu
 }
 
 export async function clearDatabaseCache(): Promise<void> {
-    if (typeof window !== 'undefined' && db) {
+    if (typeof window !== 'undefined') {
         try {
-            const { terminate, clearIndexedDbPersistence } = await import('firebase/firestore');
-            await terminate(db);
-            await clearIndexedDbPersistence(db);
+            // 1. Wipe all local storage keys related to the system to clear the quota clog
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.includes('mns_') || key.includes('has_migrated_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+
+            // 2. Clear Firestore IndexedDB if it exists
+            if (db) {
+                const { terminate, clearIndexedDbPersistence } = await import('firebase/firestore');
+                await terminate(db);
+                await clearIndexedDbPersistence(db);
+            }
+            
             window.location.reload();
         } catch (e) {
             console.error('Failed to clear cache:', e);
             window.location.reload();
         }
-    } else {
-        if (typeof window !== 'undefined') window.location.reload();
     }
 }
