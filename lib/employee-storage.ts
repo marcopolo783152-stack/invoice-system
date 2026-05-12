@@ -693,17 +693,42 @@ export async function addManualTimeLogsBulk(logs: Omit<TimeLog, 'id'>[]): Promis
  * Delete a time log
  */
 export async function deleteTimeLog(logId: string): Promise<void> {
-    await deleteTimeLogsBulk([logId]);
+    const { doc, updateDoc } = await import('firebase/firestore');
+    const logCol = getCol(BASE_LOG_COLLECTION);
+    if (isFirebaseConfigured() && db) {
+        try {
+            // 1. Try deleting from the current store-specific collection
+            try {
+                await updateDoc(doc(db, logCol, logId), {
+                    isDeleted: true
+                });
+            } catch (e) {
+                // 2. Fallback: Try deleting from root collection if it was a legacy log
+                await updateDoc(doc(db, BASE_LOG_COLLECTION, logId), {
+                    isDeleted: true
+                });
+            }
+            
+            // Clean up local if it exists
+            const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
+            const localData = localStorage.getItem(localLogKey);
+            if (localData) {
+                const logs: TimeLog[] = JSON.parse(localData);
+                const filtered = logs.filter(l => l.id !== logId);
+                localStorage.setItem(localLogKey, JSON.stringify(filtered));
+            }
+        } catch (e: any) {
+            console.error('Error deleting log:', e);
+            if (typeof window !== 'undefined') {
+                alert('Failed to delete log! Error: ' + (e.message || 'Unknown error'));
+            }
+        }
+    }
 }
 
-/**
- * Bulk delete time logs (Optimized for performance)
- */
 export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
     if (logIds.length === 0) return;
-
     const logCol = getCol(BASE_LOG_COLLECTION);
-    const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
     const prefix = getStorePrefix();
 
     if (isFirebaseConfigured() && db) {
@@ -729,10 +754,12 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
             });
 
             await Promise.allSettled(deletePromises);
-        } catch (e) { 
-            console.error('Error executing delete promises:', e); 
+        } catch (e) {
+            console.error('Bulk delete error:', e);
         }
     }
+}
+
 
     // Update local logs cache
     const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
