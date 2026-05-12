@@ -733,28 +733,31 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
 
     if (isFirebaseConfigured() && db) {
         try {
-            const { deleteDoc, doc, updateDoc } = await import('firebase/firestore');
+            const { deleteDoc, doc } = await import('firebase/firestore');
             
-            // Process in chunks of 25 to prevent network/browser timeouts
-            const CHUNK_SIZE = 25;
+            let deletedCount = 0;
+            const CHUNK_SIZE = 50;
             for (let i = 0; i < logIds.length; i += CHUNK_SIZE) {
                 const chunk = logIds.slice(i, i + CHUNK_SIZE);
                 const deletePromises = chunk.map(async (id) => {
-                    const docRef = doc(db!, logCol, id);
-                    await updateDoc(docRef, { isDeleted: true }).catch(() => {});
-                    await deleteDoc(docRef).catch(() => {});
+                    // Direct hard delete from store collection
+                    await deleteDoc(doc(db!, logCol, id)).catch(() => {});
                     
+                    // Direct hard delete from root collection
                     if (prefix) {
-                        const rootRef = doc(db!, BASE_LOG_COLLECTION, id);
-                        await updateDoc(rootRef, { isDeleted: true }).catch(() => {});
-                        await deleteDoc(rootRef).catch(() => {});
+                        await deleteDoc(doc(db!, BASE_LOG_COLLECTION, id)).catch(() => {});
                     }
+                    deletedCount++;
                 });
                 await Promise.allSettled(deletePromises);
-                console.log(`Deleted chunk ${i/CHUNK_SIZE + 1} of ${Math.ceil(logIds.length/CHUNK_SIZE)}`);
             }
-        } catch (e) {
+            
+            if (typeof window !== 'undefined') {
+                alert(`Successfully deleted ${logIds.length} logs forever from cloud storage.`);
+            }
+        } catch (e: any) {
             console.error('Bulk delete error:', e);
+            if (typeof window !== 'undefined') alert('Delete Error: ' + e.message);
         }
     }
 }
