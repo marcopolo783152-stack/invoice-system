@@ -54,6 +54,7 @@ export interface TimeLog {
         accuracy?: number;
     };
     synced?: boolean;
+    isDeleted?: boolean;
 }
 
 export interface EmployeePayment {
