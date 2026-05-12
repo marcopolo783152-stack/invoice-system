@@ -761,12 +761,6 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
 }
 
 
-    // Update local logs cache
-    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
-    const idSet = new Set(logIds);
-    const filtered = localLogs.filter((l: any) => !idSet.has(l.id));
-    localStorage.setItem(localLogKey, JSON.stringify(filtered));
-}
 
 export async function deleteEmployee(id: string): Promise<void> {
     const empCol = getCol(BASE_EMP_COLLECTION);
