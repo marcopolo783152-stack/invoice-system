@@ -250,6 +250,9 @@ export default function EmployeesPage() {
     const loadData = async () => {
         setIsLoading(true);
         try {
+            const storeId = localStorage.getItem('mns_current_store_id') || '';
+            setPrefix(storeId);
+            
             // Ensure all legacy logs are migrated to the current store collection
             await migrateLegacyLogs();
 
@@ -332,6 +335,7 @@ export default function EmployeesPage() {
     useEffect(() => {
         const init = async () => {
             await checkAutoClockOut();
+            await loadData();
         };
         init();
 
@@ -392,10 +396,16 @@ export default function EmployeesPage() {
                 justifyContent: 'space-between', alignItems: 'center', marginBottom: 30
             }}>
                 <div>
-                    <Link href="/" style={{ color: '#6366f1', fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                    <button 
+                        onClick={() => window.history.back()}
+                        style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 10 }}
+                    >
                         ← Back to Dashboard
-                    </Link>
-                    <h1 style={{ fontSize: 28, fontWeight: 900, color: '#0f172a' }}>HR Management</h1>
+                    </button>
+                    <h1 style={{ fontSize: 32, fontWeight: 800, color: '#1e293b', margin: 0 }}>HR Management</h1>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, fontWeight: 500 }}>
+                        📂 Current Store: <span style={{ color: '#6366f1' }}>{prefix || 'Default / Public'}</span>
+                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
                     <button
@@ -427,6 +437,7 @@ export default function EmployeesPage() {
                         onClick={async () => {
                             if (confirm("This will refresh your connection to the database. Continue?")) {
                                 await clearDatabaseCache();
+                                window.location.reload();
                             }
                         }}
                         style={{ padding: '12px 24px', borderRadius: 12, border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', fontWeight: 700, cursor: 'pointer' }}

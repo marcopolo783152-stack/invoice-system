@@ -1063,10 +1063,11 @@ export async function migrateLegacyData(): Promise<{ employees: number, logs: nu
 export async function clearDatabaseCache(): Promise<void> {
     if (typeof window !== 'undefined') {
         try {
-            // 1. Wipe all local storage keys related to the system to clear the quota clog
+            // 1. Wipe ONLY log and temporary data, NOT the store identity
             const keys = Object.keys(localStorage);
             keys.forEach(key => {
-                if (key.includes('mns_') || key.includes('has_migrated_')) {
+                const isIdentityKey = key.includes('store_id') || key.includes('user_role') || key.includes('pin') || key.includes('auth');
+                if ((key.includes('mns_') || key.includes('has_migrated_')) && !isIdentityKey) {
                     localStorage.removeItem(key);
                 }
             });
