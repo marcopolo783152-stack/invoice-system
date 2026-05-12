@@ -265,7 +265,7 @@ export default function EmployeesPage() {
 
             for (const emp of empList) {
                 // 1. Count unique work days from the ALREADY fetched logs
-                const uniqueDays = await getWorkDays(emp.id, logList);
+                const uniqueDays = await getWorkDays(emp.id, logList, emp.name);
 
                 // 2. Fetch payments
                 const payments = await getEmployeePayments(emp.id);

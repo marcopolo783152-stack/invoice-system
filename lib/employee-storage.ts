@@ -735,25 +735,24 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
         try {
             const { deleteDoc, doc, updateDoc } = await import('firebase/firestore');
             
-            // Execute deletions in parallel for speed, bypassing batch restrictions
-            const deletePromises = logIds.map(async (id) => {
-                const docRef = doc(db!, logCol, id);
-                
-                // FIRST: Soft Delete fallback in case hard delete is blocked by security rules
-                await updateDoc(docRef, { isDeleted: true }).catch(() => {});
-                
-                // THEN: Delete from current collection
-                await deleteDoc(docRef).catch(e => console.error('Failed to delete from prefixed collection:', e));
-                
-                // Delete from root collection
-                if (prefix) {
-                    const rootRef = doc(db!, BASE_LOG_COLLECTION, id);
-                    await updateDoc(rootRef, { isDeleted: true }).catch(() => {});
-                    await deleteDoc(rootRef).catch(e => console.error('Failed to delete from root collection:', e));
-                }
-            });
-
-            await Promise.allSettled(deletePromises);
+            // Process in chunks of 25 to prevent network/browser timeouts
+            const CHUNK_SIZE = 25;
+            for (let i = 0; i < logIds.length; i += CHUNK_SIZE) {
+                const chunk = logIds.slice(i, i + CHUNK_SIZE);
+                const deletePromises = chunk.map(async (id) => {
+                    const docRef = doc(db!, logCol, id);
+                    await updateDoc(docRef, { isDeleted: true }).catch(() => {});
+                    await deleteDoc(docRef).catch(() => {});
+                    
+                    if (prefix) {
+                        const rootRef = doc(db!, BASE_LOG_COLLECTION, id);
+                        await updateDoc(rootRef, { isDeleted: true }).catch(() => {});
+                        await deleteDoc(rootRef).catch(() => {});
+                    }
+                });
+                await Promise.allSettled(deletePromises);
+                console.log(`Deleted chunk ${i/CHUNK_SIZE + 1} of ${Math.ceil(logIds.length/CHUNK_SIZE)}`);
+            }
         } catch (e) {
             console.error('Bulk delete error:', e);
         }
@@ -954,14 +953,14 @@ export async function migrateLegacyLogs(): Promise<void> {
 /**
  * Count unique work days for an employee
  */
-export async function getWorkDays(employeeId: string, preFetchedLogs?: TimeLog[]): Promise<number> {
+export async function getWorkDays(employeeId: string, preFetchedLogs?: TimeLog[], employeeName?: string): Promise<number> {
     const logCol = getCol(BASE_LOG_COLLECTION);
     const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
     const prefix = getStorePrefix();
 
     if (preFetchedLogs) {
         const employeeLogs = preFetchedLogs.filter(l => 
-            l.employeeId === employeeId && 
+            (l.employeeId === employeeId || (employeeName && l.employeeName === employeeName)) && 
             l.type === 'IN' && 
             !l.isDeleted
         );
