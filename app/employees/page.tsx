@@ -39,6 +39,7 @@ interface PayrollSummary {
 
 export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
+    const [prefix, setPrefix] = useState('');
     const [logs, setLogs] = useState<TimeLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
