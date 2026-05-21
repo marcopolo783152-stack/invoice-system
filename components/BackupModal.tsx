@@ -104,7 +104,7 @@ export function BackupModal({ onClose, isWeb = false }: BackupModalProps) {
 
                 await exportToDirectory(invoicesToBackup, appraisalsToBackup, inventoryToBackup, (p: any) => {
                     setMessage(p.status);
-                });
+                }, backupPath);
 
                 const now = new Date().toISOString();
 

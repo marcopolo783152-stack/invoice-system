@@ -78,7 +78,11 @@ ipcMain.handle('save-backup', async (event, filePath, data) => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(filePath, data, 'utf8');
+    if (typeof data === 'string') {
+      fs.writeFileSync(filePath, data, 'utf8');
+    } else {
+      fs.writeFileSync(filePath, Buffer.from(data));
+    }
     return { success: true };
   } catch (error) {
     console.error('Backup save failed:', error);

@@ -157,17 +157,22 @@ export async function exportToDirectory(
   invoices: SavedInvoice[] = [],
   appraisals: Appraisal[] = [],
   inventoryItems: InventoryItem[] = [],
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  desktopBackupPath?: string
 ): Promise<void> {
+
+  const isDesktop = !!desktopBackupPath && typeof window !== 'undefined' && !!(window as any).electron;
 
   // 1. Request Directory Handle
   let rootHandle: any;
-  try {
-    // @ts-ignore - showDirectoryPicker is not yet in standard TS lib
-    rootHandle = await window.showDirectoryPicker();
-  } catch (e) {
-    // User cancelled
-    return;
+  if (!isDesktop) {
+    try {
+      // @ts-ignore - showDirectoryPicker is not yet in standard TS lib
+      rootHandle = await window.showDirectoryPicker();
+    } catch (e) {
+      // User cancelled
+      return;
+    }
   }
 
   const total = invoices.length;
@@ -182,17 +187,17 @@ export async function exportToDirectory(
 
     // 2. Create Subdirectories (Only if we have invoices to process)
     let salesHandle, consignmentHandle, washHandle;
-    if (invoices.length > 0) {
+    if (!isDesktop && invoices.length > 0) {
         salesHandle = await rootHandle.getDirectoryHandle('Sales', { create: true });
         consignmentHandle = await rootHandle.getDirectoryHandle('Consignment', { create: true });
         washHandle = await rootHandle.getDirectoryHandle('Wash_Repair_Services', { create: true });
     }
 
     let appraisalsHandle, inventoryHandle;
-    if (appraisals.length > 0) {
+    if (!isDesktop && appraisals.length > 0) {
         appraisalsHandle = await rootHandle.getDirectoryHandle('Appraisals', { create: true });
     }
-    if (inventoryItems.length > 0) {
+    if (!isDesktop && inventoryItems.length > 0) {
         inventoryHandle = await rootHandle.getDirectoryHandle('Inventory_Product_Sheets', { create: true });
     }
 
@@ -252,16 +257,23 @@ export async function exportToDirectory(
             const filename = `${invNum} ${name} ${phone}.pdf`;
 
             // Determine Target Folder
-            let targetHandle = salesHandle;
             const type = invoice.data.documentType || 'INVOICE';
-            if (type === 'CONSIGNMENT') targetHandle = consignmentHandle;
-            else if (type === 'WASH') targetHandle = washHandle;
+            const subDir = type === 'CONSIGNMENT' ? 'Consignment' : type === 'WASH' ? 'Wash_Repair_Services' : 'Sales';
 
-            // Write File
-            const fileHandle = await targetHandle!.getFileHandle(filename, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(pdfBlob);
-            await writable.close();
+            if (isDesktop) {
+                const arrayBuffer = await pdfBlob.arrayBuffer();
+                await (window as any).electron.saveBackup(`${desktopBackupPath}/${subDir}/${filename}`, arrayBuffer);
+            } else {
+                let targetHandle = salesHandle;
+                if (type === 'CONSIGNMENT') targetHandle = consignmentHandle;
+                else if (type === 'WASH') targetHandle = washHandle;
+
+                // Write File
+                const fileHandle = await targetHandle!.getFileHandle(filename, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(pdfBlob);
+                await writable.close();
+            }
             
             currentProcessed++;
         }
@@ -292,10 +304,15 @@ export async function exportToDirectory(
             const safe = (str: string) => (str || '').replace(/[^a-zA-Z0-9- ]/g, '').trim();
             const filename = `Appraisal_${safe(appraisal.rugNumber || appraisal.id || 'unknown')}_${safe(appraisal.customerName || 'unknown')}.pdf`;
 
-            const fileHandle = await appraisalsHandle!.getFileHandle(filename, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(pdfBlob);
-            await writable.close();
+            if (isDesktop) {
+                const arrayBuffer = await pdfBlob.arrayBuffer();
+                await (window as any).electron.saveBackup(`${desktopBackupPath}/Appraisals/${filename}`, arrayBuffer);
+            } else {
+                const fileHandle = await appraisalsHandle!.getFileHandle(filename, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(pdfBlob);
+                await writable.close();
+            }
 
             currentProcessed++;
         }
@@ -326,10 +343,15 @@ export async function exportToDirectory(
             const safeItem = (str: string) => (str || '').replace(/[^a-zA-Z0-9- ]/g, '').trim();
             const filename = `ProductSheet_${safeItem(item.sku || 'unknown')}_${safeItem(item.description || item.design || 'item')}.pdf`;
 
-            const fileHandle = await inventoryHandle!.getFileHandle(filename, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(pdfBlob);
-            await writable.close();
+            if (isDesktop) {
+                const arrayBuffer = await pdfBlob.arrayBuffer();
+                await (window as any).electron.saveBackup(`${desktopBackupPath}/Inventory_Product_Sheets/${filename}`, arrayBuffer);
+            } else {
+                const fileHandle = await inventoryHandle!.getFileHandle(filename, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(pdfBlob);
+                await writable.close();
+            }
 
             currentProcessed++;
         }
@@ -348,20 +370,26 @@ export async function exportToDirectory(
     const { getInventoryItems } = await import('./inventory-storage');
 
     try {
-      const invoicesJsonHandle = await rootHandle.getFileHandle('Invoices_Master.json', { create: true });
-      const writableInv = await invoicesJsonHandle.createWritable();
-      await writableInv.write(exportInvoices());
-      await writableInv.close();
+      if (isDesktop) {
+        await (window as any).electron.saveBackup(`${desktopBackupPath}/Invoices_Master.json`, exportInvoices());
+        await (window as any).electron.saveBackup(`${desktopBackupPath}/Appraisals_Master.json`, JSON.stringify(await getAppraisals(), null, 2));
+        await (window as any).electron.saveBackup(`${desktopBackupPath}/Inventory_Master.json`, JSON.stringify(await getInventoryItems(), null, 2));
+      } else {
+        const invoicesJsonHandle = await rootHandle.getFileHandle('Invoices_Master.json', { create: true });
+        const writableInv = await invoicesJsonHandle.createWritable();
+        await writableInv.write(exportInvoices());
+        await writableInv.close();
 
-      const appraisalsJsonHandle = await rootHandle.getFileHandle('Appraisals_Master.json', { create: true });
-      const writableApp = await appraisalsJsonHandle.createWritable();
-      await writableApp.write(JSON.stringify(await getAppraisals(), null, 2));
-      await writableApp.close();
+        const appraisalsJsonHandle = await rootHandle.getFileHandle('Appraisals_Master.json', { create: true });
+        const writableApp = await appraisalsJsonHandle.createWritable();
+        await writableApp.write(JSON.stringify(await getAppraisals(), null, 2));
+        await writableApp.close();
 
-      const inventoryJsonHandle = await rootHandle.getFileHandle('Inventory_Master.json', { create: true });
-      const writableInventory = await inventoryJsonHandle.createWritable();
-      await writableInventory.write(JSON.stringify(await getInventoryItems(), null, 2));
-      await writableInventory.close();
+        const inventoryJsonHandle = await rootHandle.getFileHandle('Inventory_Master.json', { create: true });
+        const writableInventory = await inventoryJsonHandle.createWritable();
+        await writableInventory.write(JSON.stringify(await getInventoryItems(), null, 2));
+        await writableInventory.close();
+      }
     } catch (e) {
       console.warn('Could not save one or more JSON Master files', e);
     }
