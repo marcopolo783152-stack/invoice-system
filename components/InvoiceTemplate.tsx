@@ -308,12 +308,13 @@ export default function InvoiceTemplate({
                       </td>
                       <td className={styles.numeric}>{formatSquareFoot(item.squareFoot)}</td>
                       <td className={styles.numeric}>
-                        {item.pricingMethod === 'sqft'
-                          ? (item.pricePerSqFt ? `${formatCurrency(item.pricePerSqFt)}/sf` : '-')
-                          : (item.fixedPrice ? formatCurrency(item.fixedPrice) : '-')
-                        }
+                        {data.isLumpSum ? '-' : (
+                          item.pricingMethod === 'sqft'
+                            ? (item.pricePerSqFt ? `${formatCurrency(item.pricePerSqFt)}/sf` : '-')
+                            : (item.fixedPrice ? formatCurrency(item.fixedPrice) : '-')
+                        )}
                       </td>
-                      <td className={styles.numeric}>{formatCurrency(item.amount)}</td>
+                      <td className={styles.numeric}>{data.isLumpSum ? 'Included' : formatCurrency(item.amount)}</td>
                     </tr>
                   ))}
                   {/* Fill empty rows if needed for consistent height? No, user just wants 20 per page. */}

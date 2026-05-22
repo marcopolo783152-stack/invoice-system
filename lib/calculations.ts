@@ -113,6 +113,8 @@ export interface InvoiceData {
   downpayment?: number; // Optional downpayment for consignment
   payments?: Payment[]; // New: Track multiple payments
   images?: string[]; // Global invoice images if needed
+  isLumpSum?: boolean; // New: Flag for combined lump sum pricing
+  lumpSumAmount?: number; // New: Combined lump sum total
 }
 
 export interface CalculatedItem extends InvoiceItem {
@@ -243,12 +245,22 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   });
 
   // Calculate subtotal
-  const subtotal = calculatedItems.reduce((sum, item) => sum + item.amount, 0);
+  const itemsSubtotal = calculatedItems.reduce((sum, item) => sum + item.amount, 0);
+  const subtotal = data.isLumpSum ? (data.lumpSumAmount || 0) : itemsSubtotal;
 
   // Calculate net subtotal (excluding returned items)
-  const netSubtotal = calculatedItems
+  const itemsNetSubtotal = calculatedItems
     .filter(item => !item.returned)
     .reduce((sum, item) => sum + item.amount, 0);
+    
+  let netSubtotal = itemsNetSubtotal;
+  if (data.isLumpSum) {
+    if (itemsSubtotal === 0) {
+      netSubtotal = data.lumpSumAmount || 0;
+    } else {
+      netSubtotal = (data.lumpSumAmount || 0) * (itemsNetSubtotal / itemsSubtotal);
+    }
+  }
 
   const returnedAmount = subtotal - netSubtotal;
   const isWash = data.documentType === 'WASH' || data.mode === 'wash'; 
@@ -298,9 +310,18 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   const netTotalDue = netSubtotalAfterDiscount + netSalesTax + totalAdditionalCharges;
 
   // Calculate sold amount (specifically for consignments)
-  const soldAmount = calculatedItems
+  const itemsSoldAmount = calculatedItems
     .filter(item => item.sold && !item.returned)
     .reduce((sum, item) => sum + item.amount, 0);
+    
+  let soldAmount = itemsSoldAmount;
+  if (data.isLumpSum) {
+    if (itemsSubtotal === 0) {
+      soldAmount = 0;
+    } else {
+      soldAmount = (data.lumpSumAmount || 0) * (itemsSoldAmount / itemsSubtotal);
+    }
+  }
 
   // For Consignments, the "Revenue" or "Paid" part is the soldAmount
   // For standard Sales, it's the netTotalDue

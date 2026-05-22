@@ -147,6 +147,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [additionalCharges, setAdditionalCharges] = useState<{ id: string; amount: number; description: string }[]>(
     initialData?.additionalCharges || []
   );
+  const [isLumpSum, setIsLumpSum] = useState(initialData?.isLumpSum || false);
+  const [lumpSumAmount, setLumpSumAmount] = useState(initialData?.lumpSumAmount || 0);
 
   // Auto-switch to Wholesale for Consignment
   useEffect(() => {
@@ -208,6 +210,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         discountType,
         additionalCharges,
         downpayment,
+        isLumpSum,
+        lumpSumAmount,
         payments: initialData?.payments || [] // Use existing payments from editing
       });
 
@@ -462,6 +466,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       signature,
       discountType,
       discountValue,
+      isLumpSum,
+      lumpSumAmount,
       servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
       pickupDate: documentType === 'WASH' ? pickupDate : undefined,
       // Auto-calculate status if it's currently 'washing' or 'repairing' (initial states)
@@ -1179,10 +1185,37 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
             <table style={{ borderCollapse: 'collapse' }}>
               <tbody>
                 <tr>
+                  <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={isLumpSum} 
+                        onChange={e => setIsLumpSum(e.target.checked)} 
+                      />
+                      Use Combined/Lump Sum Price
+                    </label>
+                  </td>
+                  <td style={{ padding: '8px 0', textAlign: 'right', minWidth: 100 }}>
+                    {isLumpSum && (
+                      <input
+                        type="number"
+                        value={lumpSumAmount || ''}
+                        onChange={(e) => setLumpSumAmount(Number(e.target.value))}
+                        onFocus={(e) => e.target.select()}
+                        min="0"
+                        step="0.01"
+                        className={styles.input}
+                        placeholder="0.00"
+                        style={{ width: 100, textAlign: 'right', marginBottom: 4 }}
+                      />
+                    )}
+                  </td>
+                </tr>
+                <tr>
                   <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Subtotal:</td>
                   <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
                     {(() => {
-                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
+                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
                       return formatCurrency(calc.subtotal);
                     })()}
                   </td>
