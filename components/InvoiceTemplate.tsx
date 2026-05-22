@@ -343,7 +343,7 @@ export default function InvoiceTemplate({
                         <p>3- Rugs left unclaimed for more than ninety (90) days may be considered abandoned and subject to disposal or resale to recover unpaid balances and storage charges, where permitted by law.</p>
                         <p>4- Marco Polo Oriental Rugs is not responsible for pre-existing damage, weak foundation, dry rot, color bleeding, wear due to age, moth damage, pet damage, or hidden defects that may become visible during the cleaning or repair process.</p>
                         <p>5- Estimated completion dates are approximate and may change depending on the condition of the rug and the scope of work required.</p>
-                        <p>6- Full payment is due upon completion of services and before pickup or delivery.</p>
+                        <p>6- A 50% deposit is required before any wash or repair services begin. The remaining balance is due upon completion of services and before pickup or delivery.</p>
                         <p style={{ marginTop: '8px' }}>By leaving rugs for cleaning or repair, the customer agrees to these terms and conditions.</p>
                       </>
                     ) : (
