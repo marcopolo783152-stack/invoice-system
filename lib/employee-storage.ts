@@ -812,15 +812,15 @@ export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
                 const chunk = logIds.slice(i, i + CHUNK_SIZE);
                 const deletePromises = chunk.map(async (id) => {
                     // Direct hard delete from store collection
-                    await deleteDoc(doc(db!, logCol, id)).catch(() => {});
+                    await deleteDoc(doc(db!, logCol, id));
                     
                     // Direct hard delete from root collection
                     if (prefix) {
-                        await deleteDoc(doc(db!, BASE_LOG_COLLECTION, id)).catch(() => {});
+                        await deleteDoc(doc(db!, BASE_LOG_COLLECTION, id));
                     }
                     deletedCount++;
                 });
-                await Promise.allSettled(deletePromises);
+                await Promise.all(deletePromises);
             }
             
             if (typeof window !== 'undefined') {
