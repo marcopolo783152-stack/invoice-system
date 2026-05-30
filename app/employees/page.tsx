@@ -267,6 +267,7 @@ export default function EmployeesPage() {
                             await setDoc(doc(db!, getCol('employees'), e.id), e, { merge: true });
                         } catch(err){}
                     }
+                    localStorage.removeItem('mns_emp_main');
                 }
                 const localLogData = localStorage.getItem('mns_logs_main');
                 if (localLogData) {
@@ -280,6 +281,7 @@ export default function EmployeesPage() {
                             await setDoc(doc(db!, getCol('employees_logs'), l.id), l, { merge: true });
                         } catch(err){}
                     }
+                    localStorage.removeItem('mns_logs_main');
                 }
             }
             
