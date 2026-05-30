@@ -130,8 +130,11 @@ export async function getEmployees(): Promise<Employee[]> {
             }
             localStorage.setItem(localKey, JSON.stringify(employees));
             return employees;
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error fetching employees from Firebase:', e);
+            if (typeof window !== 'undefined') {
+                alert('DATABASE ERROR: Could not read employees from Firebase. Check your Firebase Security Rules! ' + (e.message || ''));
+            }
         }
     }
 
@@ -186,8 +189,12 @@ export async function saveEmployee(employee: Partial<Employee>): Promise<Employe
             } else {
                 await updateDoc(doc(db, colName, employee.id!), data);
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error saving employee to Firebase:', e);
+            if (typeof window !== 'undefined') {
+                alert('DATABASE ERROR: Could not save employee to Firebase! ' + (e.message || 'Check your internet connection or Firebase Rules.'));
+            }
+            throw e; // Rethrow so the UI knows it failed
         }
     }
 
@@ -256,7 +263,7 @@ export async function clockInOut(
             const { collection, getDocs } = await import('firebase/firestore');
             
             // 1. Get all known store IDs from users
-            const usersSnapshot = await getDocs(collection(db, 'invoice_users')).catch(() => null);
+            const usersSnapshot = await getDocs(collection(db, 'users'));
             if (usersSnapshot) {
                 const storeIds = new Set<string>();
                 usersSnapshot.forEach(doc => {
@@ -267,7 +274,7 @@ export async function clockInOut(
                 // 2. Search each store's employee collection
                 for (const storeId of storeIds) {
                     const colName = `${storeId}_employees`;
-                    const empSnapshot = await getDocs(collection(db, colName)).catch(() => null);
+                    const empSnapshot = await getDocs(collection(db, colName));
                     
                     if (empSnapshot && !empSnapshot.empty) {
                         const storeEmployees: Employee[] = [];
@@ -286,8 +293,9 @@ export async function clockInOut(
                     }
                 }
             }
-        } catch(e) {
+        } catch(e: any) {
             console.error('Cross-store search failed:', e);
+            throw new Error('DATABASE ERROR: ' + (e.message || 'Check your internet connection or Firebase Rules.'));
         }
     }
 
