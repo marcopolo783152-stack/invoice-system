@@ -128,17 +128,18 @@ export async function getEmployees(): Promise<Employee[]> {
                     }
                 });
             }
-            localStorage.setItem(localKey, JSON.stringify(employees));
+            // LocalStorage caching removed to enforce direct Firebase usage
             return employees;
         } catch (e: any) {
             console.error('Error fetching employees from Firebase:', e);
             if (typeof window !== 'undefined') {
                 alert('DATABASE ERROR: Could not read employees from Firebase. Check your Firebase Security Rules! ' + (e.message || ''));
             }
+            throw e;
         }
     }
 
-    const localData = localStorage.getItem(localKey);
+    const localData = null;
     return localData ? JSON.parse(localData) : [];
 }
 
@@ -156,9 +157,7 @@ export function subscribeToEmployees(callback: (employees: Employee[]) => void):
             employees.push({ id: doc.id, ...doc.data() } as Employee);
         });
         
-        // Update local cache
-        const localKey = getKey(BASE_LOCAL_EMP_KEY);
-        localStorage.setItem(localKey, JSON.stringify(employees));
+        // Local cache removed
         
         callback(employees);
     }, (error) => {
@@ -198,16 +197,7 @@ export async function saveEmployee(employee: Partial<Employee>): Promise<Employe
         }
     }
 
-    // Always update local cache
-    const employees = await getEmployees();
-    if (isNew) {
-        if (!data.id) data.id = generateId(); // Fallback ID
-        employees.push(data as Employee);
-    } else {
-        const idx = employees.findIndex(e => e.id === employee.id);
-        if (idx >= 0) employees[idx] = { ...employees[idx], ...data } as Employee;
-    }
-    localStorage.setItem(localKey, JSON.stringify(employees));
+    // Local cache updates removed. We rely strictly on Firebase data streams.
 
     return data as Employee;
 }
@@ -355,14 +345,14 @@ export async function clockInOut(
 
     // Update local cache
     const allEmps = employees.map(e => e.id === employee.id ? employee : e);
-    localStorage.setItem(localEmpKey, JSON.stringify(allEmps));
+    // localStorage.setItem(, JSON.stringify(allEmps));
 
     // Append to local logs
-    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+    const localLogs = JSON.parse(null || '[]');
     // Mark as synced if we successfully wrote to Firebase above
     const logToSave = { ...log, synced: !!(isFirebaseConfigured() && db) };
     localLogs.unshift(logToSave);
-    localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 2000)));
+    // localStorage.setItem(, JSON.stringify(localLogs.slice(0, 2000)));
 
     // Trigger immediate sync pass to ensure cloud visibility
     if (typeof window !== 'undefined') {
@@ -454,10 +444,10 @@ export async function checkAutoClockOut(): Promise<number> {
                 });
 
                  // IMPORTANT: Also update local timelogs cache so the auto-clock out is recorded locally 
-                 const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+                 const localLogs = JSON.parse(null || '[]');
                  if (!localLogs.find((l: any) => l.id === deterministicId)) {
                      localLogs.unshift(log);
-                     localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 2000)));
+                     // localStorage.setItem(, JSON.stringify(localLogs.slice(0, 2000)));
                  }
                  localLogPushed = true;
 
@@ -470,10 +460,10 @@ export async function checkAutoClockOut(): Promise<number> {
         }
 
         if (!localLogPushed) {
-            const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+            const localLogs = JSON.parse(null || '[]');
             if (!localLogs.find((l: any) => l.id === deterministicId)) {
                 localLogs.unshift(log);
-                localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 2000)));
+                // localStorage.setItem(, JSON.stringify(localLogs.slice(0, 2000)));
             }
         }
 
@@ -483,7 +473,7 @@ export async function checkAutoClockOut(): Promise<number> {
     if (count > 0) {
         // Update local storage
         const localEmpKey = getKey(BASE_LOCAL_EMP_KEY);
-        localStorage.setItem(localEmpKey, JSON.stringify(employees));
+        // localStorage.setItem(, JSON.stringify(employees));
     }
 
     return count;
@@ -558,7 +548,7 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
     }
 
     if (typeof window !== 'undefined') {
-        const localData = localStorage.getItem(localLogKey);
+        const localData = null;
         return localData ? JSON.parse(localData) : [];
     }
     return [];
@@ -631,18 +621,18 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
     }
 
     // Update local logs
-    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+    const localLogs = JSON.parse(null || '[]');
     localLogs.unshift(data);
-    localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 1000)));
+    // localStorage.setItem(, JSON.stringify(localLogs.slice(0, 1000)));
 
     // Update local employee cache
     try {
-        const localEmployees = JSON.parse(localStorage.getItem(localEmpKey) || '[]');
+        const localEmployees = JSON.parse(null || '[]');
         const idx = localEmployees.findIndex((e: any) => e.id === data.employeeId);
         if (idx >= 0) {
             localEmployees[idx].status = data.type === 'LEAVE' ? 'OUT' : data.type;
             localEmployees[idx].lastAction = data.timestamp;
-            localStorage.setItem(localEmpKey, JSON.stringify(localEmployees));
+            // localStorage.setItem(, JSON.stringify(localEmployees));
         }
     } catch (e) {
         console.error('Error updating local employee cache:', e);
@@ -675,11 +665,11 @@ export async function updateTimeLog(logId: string, updates: Partial<TimeLog>): P
         } catch (e) { console.error('Error updating log:', e); }
     }
 
-    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+    const localLogs = JSON.parse(null || '[]');
     const idx = localLogs.findIndex((l: any) => l.id === logId);
     if (idx >= 0) {
         localLogs[idx] = { ...localLogs[idx], ...updates };
-        localStorage.setItem(localLogKey, JSON.stringify(localLogs));
+        // localStorage.setItem(, JSON.stringify(localLogs));
     }
 }
 
@@ -747,13 +737,13 @@ export async function addManualTimeLogsBulk(logs: Omit<TimeLog, 'id'>[]): Promis
     }
 
     // Update local logs cache
-    const localLogs = JSON.parse(localStorage.getItem(localLogKey) || '[]');
+    const localLogs = JSON.parse(null || '[]');
     processedLogs.forEach(l => localLogs.unshift(l));
-    localStorage.setItem(localLogKey, JSON.stringify(localLogs.slice(0, 2000)));
+    // localStorage.setItem(, JSON.stringify(localLogs.slice(0, 2000)));
 
     // Update local employees cache
     try {
-        const localEmployees = JSON.parse(localStorage.getItem(localEmpKey) || '[]');
+        const localEmployees = JSON.parse(null || '[]');
         processedLogs.forEach(log => {
             const idx = localEmployees.findIndex((e: any) => e.id === log.employeeId);
             if (idx >= 0) {
@@ -761,7 +751,7 @@ export async function addManualTimeLogsBulk(logs: Omit<TimeLog, 'id'>[]): Promis
                 localEmployees[idx].lastAction = log.timestamp;
             }
         });
-        localStorage.setItem(localEmpKey, JSON.stringify(localEmployees));
+        // localStorage.setItem(, JSON.stringify(localEmployees));
     } catch (e) { console.error(e); }
 }
 
@@ -785,11 +775,15 @@ export async function deleteTimeLog(logId: string): Promise<void> {
             
             // Clean up local if it exists
             const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
-            const localData = localStorage.getItem(localLogKey);
+            const localData = null;
             if (localData) {
                 const logs: TimeLog[] = JSON.parse(localData);
                 const filtered = logs.filter(l => l.id !== logId);
-                localStorage.setItem(localLogKey, JSON.stringify(filtered));
+                try {
+                    // localStorage.setItem(, JSON.stringify(filtered));
+                } catch (e) {
+                    console.warn('LocalStorage full, skipped local cleanup');
+                }
             }
             
             // If the user's internet is slow or Firebase rules fail, we want them to know immediately!
@@ -860,7 +854,7 @@ export async function deleteEmployee(id: string): Promise<void> {
     }
     const employees = await getEmployees();
     const filtered = employees.filter(e => e.id !== id);
-    localStorage.setItem(localEmpKey, JSON.stringify(filtered));
+    // localStorage.setItem(, JSON.stringify(filtered));
 }
 
 /**
@@ -891,9 +885,9 @@ export async function recordPayment(payment: Partial<EmployeePayment>): Promise<
     }
 
     // Local cache
-    const localPayments = JSON.parse(localStorage.getItem(localPayKey) || '[]');
+    const localPayments = JSON.parse(null || '[]');
     localPayments.unshift(data);
-    localStorage.setItem(localPayKey, JSON.stringify(localPayments.slice(0, 1000)));
+    // localStorage.setItem(, JSON.stringify(localPayments.slice(0, 1000)));
 
     return data;
 }
@@ -928,7 +922,7 @@ export async function getEmployeePayments(employeeId: string): Promise<EmployeeP
         }
     }
 
-    const localData = localStorage.getItem(localPayKey);
+    const localData = null;
     const allPayments: EmployeePayment[] = localData ? JSON.parse(localData) : [];
     return allPayments.filter(p => p.employeeId === employeeId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
@@ -954,9 +948,9 @@ export async function deleteEmployeePayment(paymentId: string): Promise<void> {
         } catch (e) { console.error('Error deleting payment:', e); }
     }
 
-    const localPayments = JSON.parse(localStorage.getItem(localPayKey) || '[]');
+    const localPayments = JSON.parse(null || '[]');
     const filtered = localPayments.filter((p: any) => p.id !== paymentId);
-    localStorage.setItem(localPayKey, JSON.stringify(filtered));
+    // localStorage.setItem(, JSON.stringify(filtered));
 }
 
 export async function migrateLegacyLogs(): Promise<void> {
@@ -1087,7 +1081,7 @@ export async function getWorkDays(employeeId: string, preFetchedLogs?: TimeLog[]
     }
 
     // Fallback if no Firebase or error
-    const localData = localStorage.getItem(localLogKey);
+    const localData = null;
     const allLogs: TimeLog[] = localData ? JSON.parse(localData) : [];
 
     const employeeLogs = allLogs.filter(l => l.employeeId === employeeId && l.type === 'IN');
