@@ -220,7 +220,8 @@ export async function clockInOut(
             empIdStr === `emp-${cleanId}` ||
             (numericId !== '' && cleanNumeric !== '' && numericId === cleanNumeric && cleanNumeric === cleanId) || 
             e.phone === cleanId ||
-            (e.email || '').toLowerCase() === cleanId;
+            (e.email || '').toLowerCase() === cleanId ||
+            (e.name || '').toLowerCase() === cleanId;
     });
 
     if (!employee) throw new Error('Employee not found');
