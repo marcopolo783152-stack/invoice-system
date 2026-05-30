@@ -210,9 +210,9 @@ export async function clockInOut(
     let cleanIdentifier = identifier.trim();
     
     // Extract ID if a full QR Code URL was scanned into the input field
-    if (cleanIdentifier.includes('?id=')) {
+    if (cleanIdentifier.includes('id=')) {
         try {
-            const urlMatch = cleanIdentifier.match(/[?&]id=([^&]+)/);
+            const urlMatch = cleanIdentifier.match(/(?:\?|&|^)id=([^&]+)/);
             if (urlMatch && urlMatch[1]) {
                 cleanIdentifier = decodeURIComponent(urlMatch[1]);
             }
@@ -221,23 +221,23 @@ export async function clockInOut(
 
     const employees = await getEmployees();
     const employee = employees.find(e => {
-        const cleanId = cleanIdentifier.toLowerCase();
-        const empIdStr = (e.empId || '').toLowerCase();
+        const cleanId = cleanIdentifier.toLowerCase().replace(/\/$/, '');
+        const empIdStr = (e.empId || '').trim().toLowerCase();
         
         const numericId = empIdStr.replace(/\D/g, '');
         const cleanNumeric = cleanId.replace(/\D/g, '');
 
         return empIdStr === cleanId ||
-            e.id === cleanIdentifier ||
+            (e.id || '').trim().toLowerCase() === cleanId ||
             empIdStr === `emp${cleanId}` ||
             empIdStr === `emp-${cleanId}` ||
             (numericId !== '' && cleanNumeric !== '' && numericId === cleanNumeric && cleanNumeric === cleanId) || 
-            (e.phone || '') === cleanId ||
-            (e.email || '').toLowerCase() === cleanId ||
-            (e.name || '').toLowerCase() === cleanId;
+            (e.phone || '').trim() === cleanId ||
+            (e.email || '').trim().toLowerCase() === cleanId ||
+            (e.name || '').trim().toLowerCase() === cleanId;
     });
 
-    if (!employee) throw new Error('Employee not found');
+    if (!employee) throw new Error(`Employee not found for ID: ${cleanIdentifier}`);
 
     const nextType = type || (employee.status === 'IN' ? 'OUT' : 'IN');
     const now = new Date().toISOString();
