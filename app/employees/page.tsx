@@ -253,11 +253,38 @@ export default function EmployeesPage() {
         try {
             const storeId = localStorage.getItem('mns_current_store_id') || '';
             setPrefix(storeId);
-
-            // Removing migrateLegacyLogs() because reading all documents every page load exhausts Firebase Free Tier quota!
+            // EMERGENCY DATA RECOVERY
+            if (typeof window !== 'undefined') {
+                const localEmpData = localStorage.getItem('mns_emp_main');
+                if (localEmpData) {
+                    const emps = JSON.parse(localEmpData);
+                    for (const e of emps) {
+                        if (!e.id) continue;
+                        try {
+                            const { doc, setDoc } = await import('firebase/firestore');
+                            const { db } = await import('@/lib/firebase');
+                            const { getCol } = await import('@/lib/employee-storage');
+                            await setDoc(doc(db!, getCol('employees'), e.id), e, { merge: true });
+                        } catch(err){}
+                    }
+                }
+                const localLogData = localStorage.getItem('mns_logs_main');
+                if (localLogData) {
+                    const logs = JSON.parse(localLogData);
+                    for (const l of logs) {
+                        if (!l.id) continue;
+                        try {
+                            const { doc, setDoc } = await import('firebase/firestore');
+                            const { db } = await import('@/lib/firebase');
+                            const { getCol } = await import('@/lib/employee-storage');
+                            await setDoc(doc(db!, getCol('employees_logs'), l.id), l, { merge: true });
+                        } catch(err){}
+                    }
+                }
+            }
             
             const empList = await getEmployees();
-            const logList = await getTimeLogs(100); // Reduce from 1000 to 100 to save quota
+            const logList = await getTimeLogs(2000); // Restored to 2000 so payroll history is fully loaded
             
             setEmployees(empList);
             setLogs(logList);
@@ -344,10 +371,10 @@ export default function EmployeesPage() {
             setIsLoading(false);
         });
 
-        // Reduced limit to 200 to prevent draining Firebase Free Tier quota!
+        // Restored limit to 2000 to ensure payroll calculations have enough history
         const unsubLogs = subscribeToTimeLogs((data) => {
             setLogs(data);
-        }, 200);
+        }, 2000);
 
         return () => {
             if (unsubEmps) unsubEmps();
