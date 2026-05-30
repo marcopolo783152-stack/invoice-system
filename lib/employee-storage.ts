@@ -217,9 +217,11 @@ export async function clockInOut(
     // Ensure anyone left IN from previous shifts or past 6PM is auto-clocked out before creating new logs.
     await checkAutoClockOut();
 
+    let employees = await getEmployees();
+
     let cleanIdentifier = identifier.trim();
-    
-    // Extract ID if a full QR Code URL was scanned into the input field
+
+    // Check if it's a URL
     if (cleanIdentifier.includes('id=')) {
         try {
             const urlMatch = cleanIdentifier.match(/(?:\?|&|^)id=([^&]+)/);
@@ -229,13 +231,12 @@ export async function clockInOut(
         } catch(e) {}
     }
 
-    const employees = await getEmployees();
-    const employee = employees.find(e => {
-        const cleanId = cleanIdentifier.toLowerCase().replace(/\/$/, '');
-        const empIdStr = (e.empId || '').trim().toLowerCase();
-        
-        const numericId = empIdStr.replace(/\D/g, '');
-        const cleanNumeric = cleanId.replace(/\D/g, '');
+    let cleanId = cleanIdentifier.toLowerCase().replace(/[^a-z0-9-]/g, '').trim();
+
+    const findEmployee = (emps: Employee[]) => emps.find(e => {
+        const numericId = (e.empId || '').replace(/[^0-9]/g, '');
+        const cleanNumeric = cleanId.replace(/[^0-9]/g, '');
+        const empIdStr = (e.empId || '').toLowerCase().trim();
 
         return empIdStr === cleanId ||
             (e.id || '').trim().toLowerCase() === cleanId ||
@@ -246,6 +247,49 @@ export async function clockInOut(
             (e.email || '').trim().toLowerCase() === cleanId ||
             (e.name || '').trim().toLowerCase() === cleanId;
     });
+
+    let employee = findEmployee(employees);
+
+    // Cross-store fallback search if not found
+    if (!employee && isFirebaseConfigured() && db) {
+        try {
+            const { collection, getDocs } = await import('firebase/firestore');
+            
+            // 1. Get all known store IDs from users
+            const usersSnapshot = await getDocs(collection(db, 'invoice_users')).catch(() => null);
+            if (usersSnapshot) {
+                const storeIds = new Set<string>();
+                usersSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.storeId) storeIds.add(data.storeId);
+                });
+                
+                // 2. Search each store's employee collection
+                for (const storeId of storeIds) {
+                    const colName = `${storeId}_employees`;
+                    const empSnapshot = await getDocs(collection(db, colName)).catch(() => null);
+                    
+                    if (empSnapshot && !empSnapshot.empty) {
+                        const storeEmployees: Employee[] = [];
+                        empSnapshot.forEach(eDoc => {
+                            storeEmployees.push({ id: eDoc.id, ...eDoc.data() } as Employee);
+                        });
+                        
+                        employee = findEmployee(storeEmployees);
+                        if (employee) {
+                            // Found! Set storeId locally so future operations map correctly
+                            if (typeof window !== 'undefined') {
+                                localStorage.setItem('currentStoreId', storeId);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch(e) {
+            console.error('Cross-store search failed:', e);
+        }
+    }
 
     if (!employee) throw new Error(`Employee not found for ID: ${cleanIdentifier}`);
 

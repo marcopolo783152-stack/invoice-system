@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getEmployees, getTimeLogs, getEmployeePayments, Employee, TimeLog, EmployeePayment } from '@/lib/employee-storage';
+import { getCurrentStoreId } from '@/lib/user-storage';
 import { Loader2 } from 'lucide-react';
 import { generatePDFBlobUrl, generateReportPDFBlobUrl } from '@/lib/pdf-utils';
 import { HistoryReportTemplate } from '@/components/HistoryReportTemplate';
@@ -24,12 +25,12 @@ function EmployeePrintContent() {
         const load = async () => {
             const baseUrl = window.location.origin;
             if (type === 'poster') {
-                const storeId = localStorage.getItem('currentStoreId') || '';
+                const storeId = getCurrentStoreId() || '';
                 const clockUrl = `${baseUrl}/clock${storeId ? `?storeId=${storeId}` : ''}`;
                 setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(clockUrl)}`);
                 setIsLoading(false);
             } else if (type === 'badge' && id) {
-                const storeId = localStorage.getItem('currentStoreId') || '';
+                const storeId = getCurrentStoreId() || '';
                 const emps = await getEmployees();
                 const emp = emps.find(e => e.empId === id);
                 if (emp) {
