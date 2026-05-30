@@ -253,14 +253,12 @@ export default function EmployeesPage() {
         try {
             const storeId = localStorage.getItem('mns_current_store_id') || '';
             setPrefix(storeId);
-            
-            // Ensure all legacy logs are migrated to the current store collection
-            await migrateLegacyLogs();
 
-            const [empList, logList] = await Promise.all([
-                getEmployees(),
-                getTimeLogs(1000) // Fetch enough for payroll and visibility
-            ]);
+            // Removing migrateLegacyLogs() because reading all documents every page load exhausts Firebase Free Tier quota!
+            
+            const empList = await getEmployees();
+            const logList = await getTimeLogs(100); // Reduce from 1000 to 100 to save quota
+            
             setEmployees(empList);
             setLogs(logList);
 
@@ -346,9 +344,10 @@ export default function EmployeesPage() {
             setIsLoading(false);
         });
 
+        // Reduced limit to 200 to prevent draining Firebase Free Tier quota!
         const unsubLogs = subscribeToTimeLogs((data) => {
             setLogs(data);
-        }, 2000);
+        }, 200);
 
         return () => {
             if (unsubEmps) unsubEmps();
