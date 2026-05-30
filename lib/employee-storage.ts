@@ -348,7 +348,7 @@ export async function clockInOut(
     // localStorage.setItem(, JSON.stringify(allEmps));
 
     // Append to local logs
-    const localLogs = JSON.parse(null || '[]');
+    const localLogs: any[] = [];
     // Mark as synced if we successfully wrote to Firebase above
     const logToSave = { ...log, synced: !!(isFirebaseConfigured() && db) };
     localLogs.unshift(logToSave);
@@ -444,7 +444,7 @@ export async function checkAutoClockOut(): Promise<number> {
                 });
 
                  // IMPORTANT: Also update local timelogs cache so the auto-clock out is recorded locally 
-                 const localLogs = JSON.parse(null || '[]');
+                 const localLogs: any[] = [];
                  if (!localLogs.find((l: any) => l.id === deterministicId)) {
                      localLogs.unshift(log);
                      // localStorage.setItem(, JSON.stringify(localLogs.slice(0, 2000)));
@@ -460,7 +460,7 @@ export async function checkAutoClockOut(): Promise<number> {
         }
 
         if (!localLogPushed) {
-            const localLogs = JSON.parse(null || '[]');
+            const localLogs: any[] = [];
             if (!localLogs.find((l: any) => l.id === deterministicId)) {
                 localLogs.unshift(log);
                 // localStorage.setItem(, JSON.stringify(localLogs.slice(0, 2000)));
@@ -621,13 +621,13 @@ export async function addManualTimeLog(log: Omit<TimeLog, 'id'>): Promise<TimeLo
     }
 
     // Update local logs
-    const localLogs = JSON.parse(null || '[]');
+    const localLogs: any[] = [];
     localLogs.unshift(data);
     // localStorage.setItem(, JSON.stringify(localLogs.slice(0, 1000)));
 
     // Update local employee cache
     try {
-        const localEmployees = JSON.parse(null || '[]');
+        const localEmployees: any[] = [];
         const idx = localEmployees.findIndex((e: any) => e.id === data.employeeId);
         if (idx >= 0) {
             localEmployees[idx].status = data.type === 'LEAVE' ? 'OUT' : data.type;
@@ -665,7 +665,7 @@ export async function updateTimeLog(logId: string, updates: Partial<TimeLog>): P
         } catch (e) { console.error('Error updating log:', e); }
     }
 
-    const localLogs = JSON.parse(null || '[]');
+    const localLogs: any[] = [];
     const idx = localLogs.findIndex((l: any) => l.id === logId);
     if (idx >= 0) {
         localLogs[idx] = { ...localLogs[idx], ...updates };
@@ -737,13 +737,13 @@ export async function addManualTimeLogsBulk(logs: Omit<TimeLog, 'id'>[]): Promis
     }
 
     // Update local logs cache
-    const localLogs = JSON.parse(null || '[]');
+    const localLogs: any[] = [];
     processedLogs.forEach(l => localLogs.unshift(l));
     // localStorage.setItem(, JSON.stringify(localLogs.slice(0, 2000)));
 
     // Update local employees cache
     try {
-        const localEmployees = JSON.parse(null || '[]');
+        const localEmployees: any[] = [];
         processedLogs.forEach(log => {
             const idx = localEmployees.findIndex((e: any) => e.id === log.employeeId);
             if (idx >= 0) {
@@ -885,7 +885,7 @@ export async function recordPayment(payment: Partial<EmployeePayment>): Promise<
     }
 
     // Local cache
-    const localPayments = JSON.parse(null || '[]');
+    const localPayments: any[] = [];
     localPayments.unshift(data);
     // localStorage.setItem(, JSON.stringify(localPayments.slice(0, 1000)));
 
@@ -948,7 +948,7 @@ export async function deleteEmployeePayment(paymentId: string): Promise<void> {
         } catch (e) { console.error('Error deleting payment:', e); }
     }
 
-    const localPayments = JSON.parse(null || '[]');
+    const localPayments: any[] = [];
     const filtered = localPayments.filter((p: any) => p.id !== paymentId);
     // localStorage.setItem(, JSON.stringify(filtered));
 }
