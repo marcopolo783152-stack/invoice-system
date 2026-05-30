@@ -103,7 +103,15 @@ export async function getEmployees(): Promise<Employee[]> {
             // Check prefixed collection
             const snapshot = await getDocs(query(collection(db, colName), orderBy('name', 'asc')));
             snapshot.forEach(eDoc => {
-                employees.push({ id: eDoc.id, ...eDoc.data() } as Employee);
+                const data = eDoc.data();
+                employees.push({ id: eDoc.id, ...data } as Employee);
+
+                // AUTO-SYNC TO ROOT COLLECTION FOR KIOSK/PHONE FALLBACK
+                // This ensures that phones scanning old QR codes (which lack the storeId parameter)
+                // can still find the employee in the root fallback collection.
+                if (colName !== BASE_EMP_COLLECTION) {
+                    setDoc(doc(db!, BASE_EMP_COLLECTION, eDoc.id), data, { merge: true }).catch(() => {});
+                }
             });
 
             // FALLBACK & AUTO-MIGRATION (Runs if current view is empty)
