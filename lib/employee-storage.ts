@@ -719,16 +719,14 @@ export async function deleteTimeLog(logId: string): Promise<void> {
     const logCol = getCol(BASE_LOG_COLLECTION);
     if (isFirebaseConfigured() && db) {
         try {
-            // 1. Try deleting from the current store-specific collection
-            try {
-                await updateDoc(doc(db, logCol, logId), {
-                    isDeleted: true
-                });
-            } catch (e) {
-                // 2. Fallback: Try deleting from root collection if it was a legacy log
-                await updateDoc(doc(db, BASE_LOG_COLLECTION, logId), {
-                    isDeleted: true
-                });
+            const { deleteDoc, doc } = await import('firebase/firestore');
+            // Hard delete from the current store-specific collection
+            await deleteDoc(doc(db, logCol, logId)).catch(() => {});
+            
+            // Hard delete from root collection to ensure it doesn't get auto-migrated back
+            const prefix = getStorePrefix();
+            if (prefix) {
+                await deleteDoc(doc(db, BASE_LOG_COLLECTION, logId)).catch(() => {});
             }
             
             // Clean up local if it exists
