@@ -110,7 +110,9 @@ export async function getEmployees(): Promise<Employee[]> {
                 // This ensures that phones scanning old QR codes (which lack the storeId parameter)
                 // can still find the employee in the root fallback collection.
                 if (colName !== BASE_EMP_COLLECTION) {
-                    setDoc(doc(db!, BASE_EMP_COLLECTION, eDoc.id), data, { merge: true }).catch(() => {});
+                    setDoc(doc(db!, BASE_EMP_COLLECTION, eDoc.id), data, { merge: true }).catch((e) => {
+                        console.error("Employee auto-sync to root collection failed! Check Firebase Rules.", e);
+                    });
                 }
             });
 
@@ -721,12 +723,12 @@ export async function deleteTimeLog(logId: string): Promise<void> {
         try {
             const { deleteDoc, doc } = await import('firebase/firestore');
             // Hard delete from the current store-specific collection
-            await deleteDoc(doc(db, logCol, logId)).catch(() => {});
+            await deleteDoc(doc(db, logCol, logId));
             
             // Hard delete from root collection to ensure it doesn't get auto-migrated back
             const prefix = getStorePrefix();
             if (prefix) {
-                await deleteDoc(doc(db, BASE_LOG_COLLECTION, logId)).catch(() => {});
+                await deleteDoc(doc(db, BASE_LOG_COLLECTION, logId));
             }
             
             // Clean up local if it exists
@@ -737,11 +739,14 @@ export async function deleteTimeLog(logId: string): Promise<void> {
                 const filtered = logs.filter(l => l.id !== logId);
                 localStorage.setItem(localLogKey, JSON.stringify(filtered));
             }
+            
+            // If the user's internet is slow or Firebase rules fail, we want them to know immediately!
         } catch (e: any) {
             console.error('Error deleting log:', e);
             if (typeof window !== 'undefined') {
-                alert('Failed to delete log! Error: ' + (e.message || 'Unknown error'));
+                alert('Failed to delete log from Database! ' + (e.message || 'Check your internet connection or Firebase Rules.'));
             }
+            throw e; // Rethrow to prevent loadData from masking the failure
         }
     }
 }
