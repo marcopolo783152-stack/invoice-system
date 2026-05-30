@@ -207,19 +207,32 @@ export async function clockInOut(
     // Ensure anyone left IN from previous shifts or past 6PM is auto-clocked out before creating new logs.
     await checkAutoClockOut();
 
+    let cleanIdentifier = identifier.trim();
+    
+    // Extract ID if a full QR Code URL was scanned into the input field
+    if (cleanIdentifier.includes('?id=')) {
+        try {
+            const urlMatch = cleanIdentifier.match(/[?&]id=([^&]+)/);
+            if (urlMatch && urlMatch[1]) {
+                cleanIdentifier = decodeURIComponent(urlMatch[1]);
+            }
+        } catch(e) {}
+    }
+
     const employees = await getEmployees();
     const employee = employees.find(e => {
-        const cleanId = identifier.trim().toLowerCase();
+        const cleanId = cleanIdentifier.toLowerCase();
         const empIdStr = (e.empId || '').toLowerCase();
         
         const numericId = empIdStr.replace(/\D/g, '');
         const cleanNumeric = cleanId.replace(/\D/g, '');
 
         return empIdStr === cleanId ||
+            e.id === cleanIdentifier ||
             empIdStr === `emp${cleanId}` ||
             empIdStr === `emp-${cleanId}` ||
             (numericId !== '' && cleanNumeric !== '' && numericId === cleanNumeric && cleanNumeric === cleanId) || 
-            e.phone === cleanId ||
+            (e.phone || '') === cleanId ||
             (e.email || '').toLowerCase() === cleanId ||
             (e.name || '').toLowerCase() === cleanId;
     });
