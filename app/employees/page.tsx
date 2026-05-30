@@ -253,38 +253,6 @@ export default function EmployeesPage() {
         try {
             const storeId = localStorage.getItem('mns_current_store_id') || '';
             setPrefix(storeId);
-            // EMERGENCY DATA RECOVERY
-            if (typeof window !== 'undefined') {
-                const localEmpData = localStorage.getItem('mns_emp_main');
-                if (localEmpData) {
-                    const emps = JSON.parse(localEmpData);
-                    for (const e of emps) {
-                        if (!e.id) continue;
-                        try {
-                            const { doc, setDoc } = await import('firebase/firestore');
-                            const { db } = await import('@/lib/firebase');
-                            const { getCol } = await import('@/lib/employee-storage');
-                            await setDoc(doc(db!, getCol('employees'), e.id), e, { merge: true });
-                        } catch(err){}
-                    }
-                    localStorage.removeItem('mns_emp_main');
-                }
-                const localLogData = localStorage.getItem('mns_logs_main');
-                if (localLogData) {
-                    const logs = JSON.parse(localLogData);
-                    for (const l of logs) {
-                        if (!l.id) continue;
-                        try {
-                            const { doc, setDoc } = await import('firebase/firestore');
-                            const { db } = await import('@/lib/firebase');
-                            const { getCol } = await import('@/lib/employee-storage');
-                            await setDoc(doc(db!, getCol('employees_logs'), l.id), l, { merge: true });
-                        } catch(err){}
-                    }
-                    localStorage.removeItem('mns_logs_main');
-                }
-            }
-            
             const empList = await getEmployees();
             const logList = await getTimeLogs(2000); // Restored to 2000 so payroll history is fully loaded
             
