@@ -12,6 +12,7 @@ export default function AppraisalsPage() {
     const [appraisals, setAppraisals] = useState<Appraisal[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         loadData();
@@ -43,6 +44,49 @@ export default function AppraisalsPage() {
         app.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const toggleSelect = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedIds(newSet);
+    };
+
+    const handleBulkInvoice = () => {
+        const selectedAppraisals = appraisals.filter(app => selectedIds.has(app.id));
+        if (selectedAppraisals.length === 0) return;
+
+        const feeStr = prompt(`Enter the appraisal fee amount to charge PER APPRAISAL (e.g. 150):`, "150");
+        if (feeStr === null) return;
+        const fee = parseFloat(feeStr) || 0;
+
+        const primaryCustomer = selectedAppraisals[0];
+
+        const invoiceData = {
+            documentType: 'APPRAISAL_RECEIPT',
+            soldTo: {
+                name: primaryCustomer.customerName,
+                address: primaryCustomer.customerAddress,
+                email: '',
+                phone: ''
+            },
+            items: selectedAppraisals.map((appraisal, idx) => ({
+                id: `item-${Date.now()}-${idx}`,
+                sku: 'APPRAISAL',
+                description: `Appraisal Services (Ref: ${appraisal.id}) - Rug #${appraisal.rugNumber}`,
+                shape: 'rectangle',
+                widthFeet: 0,
+                widthInches: 0,
+                lengthFeet: 0,
+                lengthInches: 0,
+                fixedPrice: fee,
+                pricingMethod: 'piece'
+            }))
+        };
+        sessionStorage.setItem('convert_invoice_data', JSON.stringify(invoiceData));
+        window.location.href = '/invoices/new';
+    };
+
     return (
         <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
@@ -52,17 +96,33 @@ export default function AppraisalsPage() {
                     </Link>
                     <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Certificates & Appraisals</h1>
                 </div>
-                <Link 
-                    href="/appraisals/new" 
-                    style={{ 
-                        background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', color: 'white', 
-                        padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
-                        textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
-                    }}
-                >
-                    <Plus size={20} /> New Appraisal
-                </Link>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    {selectedIds.size > 0 && (
+                        <button 
+                            onClick={handleBulkInvoice}
+                            style={{ 
+                                background: '#f59e0b', color: 'white', 
+                                padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
+                                border: 'none', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                boxShadow: '0 4px 6px -1px rgba(245, 158, 11, 0.2)'
+                            }}
+                        >
+                            🧾 Invoice Selected ({selectedIds.size})
+                        </button>
+                    )}
+                    <Link 
+                        href="/appraisals/new" 
+                        style={{ 
+                            background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', color: 'white', 
+                            padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
+                            textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
+                        }}
+                    >
+                        <Plus size={20} /> New Appraisal
+                    </Link>
+                </div>
             </div>
 
             <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
@@ -94,6 +154,7 @@ export default function AppraisalsPage() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead style={{ background: '#f1f5f9', color: '#475569', fontSize: '12px', textTransform: 'uppercase' }}>
                             <tr>
+                                <th style={{ padding: '16px 20px', width: '40px' }}></th>
                                 <th style={{ padding: '16px 20px', fontWeight: 'bold' }}>Date</th>
                                 <th style={{ padding: '16px 20px', fontWeight: 'bold' }}>Appraisal ID</th>
                                 <th style={{ padding: '16px 20px', fontWeight: 'bold' }}>Customer</th>
@@ -111,6 +172,15 @@ export default function AppraisalsPage() {
                                     onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
                                     onMouseOut={(e) => e.currentTarget.style.background = 'white'}
                                 >
+                                    <td style={{ padding: '16px 20px' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={selectedIds.has(app.id)}
+                                            onChange={(e) => toggleSelect(app.id, e as any)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                        />
+                                    </td>
                                     <td style={{ padding: '16px 20px', fontSize: '14px', color: '#475569' }}>
                                         {formatDateMMDDYYYY(app.date)}
                                     </td>

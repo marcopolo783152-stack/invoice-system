@@ -64,6 +64,7 @@ export default function InvoiceTemplate({
     return `${mm}/${dd}/${yyyy}`;
   }
   const isRetail = data.mode.startsWith('retail');
+  const isAppraisal = data.documentType === 'APPRAISAL_RECEIPT';
   // We no longer rely on a global isPerSqFt flag for the whole invoice
 
   // PAGINATION LOGIC
@@ -299,15 +300,15 @@ export default function InvoiceTemplate({
                       <td className={styles.shape}>
                         {item.shape === 'round' ? 'Round' : 'Rect'}
                       </td>
-                      <td className={styles.numeric}>{item.widthFeet}</td>
-                      <td className={styles.numeric}>{item.widthInches}</td>
+                      <td className={styles.numeric}>{isAppraisal ? '-' : item.widthFeet}</td>
+                      <td className={styles.numeric}>{isAppraisal ? '-' : item.widthInches}</td>
                       <td className={styles.numeric}>
-                        {item.shape === 'rectangle' ? item.lengthFeet : '-'}
+                        {isAppraisal ? '-' : (item.shape === 'rectangle' ? item.lengthFeet : '-')}
                       </td>
                       <td className={styles.numeric}>
-                        {item.shape === 'rectangle' ? item.lengthInches : '-'}
+                        {isAppraisal ? '-' : (item.shape === 'rectangle' ? item.lengthInches : '-')}
                       </td>
-                      <td className={styles.numeric}>{formatSquareFoot(item.squareFoot)}</td>
+                      <td className={styles.numeric}>{isAppraisal ? '-' : formatSquareFoot(item.squareFoot)}</td>
                       <td className={styles.numeric}>
                         {data.isLumpSum ? '-' : (
                           item.pricingMethod === 'sqft'

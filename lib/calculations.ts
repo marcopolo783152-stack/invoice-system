@@ -264,6 +264,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
 
   const returnedAmount = subtotal - netSubtotal;
   const isWash = data.documentType === 'WASH' || data.mode === 'wash'; 
+  const isAppraisal = data.documentType === 'APPRAISAL_RECEIPT';
 
   // Calculate discount (Now for ALL modes)
   let discount = 0;
@@ -290,14 +291,14 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   const subtotalAfterDiscount = Math.max(0, subtotal - discount);
   const netSubtotalAfterDiscount = Math.max(0, netSubtotal - netDiscount);
 
-  // Calculate sales tax (only for retail, applied after discount, but not for consignments or wash)
+  // Calculate sales tax (only for retail, applied after discount, but not for consignments, wash, or appraisals)
   let salesTax = 0;
-  if (isRetail && !isConsignment && !isWash) {
+  if (isRetail && !isConsignment && !isWash && !isAppraisal) {
     salesTax = subtotalAfterDiscount * SALES_TAX_RATE;
   }
 
   let netSalesTax = 0;
-  if (isRetail && !isConsignment && !isWash) {
+  if (isRetail && !isConsignment && !isWash && !isAppraisal) {
     netSalesTax = netSubtotalAfterDiscount * SALES_TAX_RATE;
   }
 
