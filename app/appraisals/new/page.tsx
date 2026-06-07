@@ -60,57 +60,31 @@ function AppraisalFormContent() {
         setShowSuggestions(false);
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const img = new Image();
-        img.onload = () => {
-            try {
-                const canvas = document.createElement('canvas');
-                // Extremely aggressive scaling down to 600px to guarantee the detailed rug image 
-                // base64 footprint fits well underneath the 1MB Firestore document payload limit
-                const MAX_WIDTH = 600;
-                const MAX_HEIGHT = 600;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx?.drawImage(img, 0, 0, width, height);
-
-                // Use 0.6 quality for aggressive WebP or JPEG compression to crush payload size
-                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
-                setAppraisal(prev => ({ ...prev, rugImage: compressedBase64 }));
-            } catch (err) {
-                // If canvas fails (e.g. strict HEIC on some browsers), fallback to raw file
-                const reader = new FileReader();
-                reader.onload = (ev) => setAppraisal(prev => ({ ...prev, rugImage: ev.target?.result as string }));
-                reader.readAsDataURL(file);
-            }
-        };
-        img.onerror = () => {
-            // If image fails to load entirely, use raw FileReader fallback
+        try {
+            // Use browser-image-compression to safely compress ALL image types (including HEIC from iOS)
+            const imageCompression = (await import('browser-image-compression')).default;
+            const options = {
+                maxSizeMB: 0.3, // Maximum 300KB to easily fit within Firestore 1MB limits
+                maxWidthOrHeight: 800,
+                useWebWorker: true,
+                initialQuality: 0.7
+            };
+            
+            const compressedFile = await imageCompression(file, options);
             const reader = new FileReader();
-            reader.onload = (ev) => setAppraisal(prev => ({ ...prev, rugImage: ev.target?.result as string }));
-            reader.readAsDataURL(file);
-        };
-        
-        img.src = URL.createObjectURL(file);
-        
+            reader.onload = (ev) => {
+                setAppraisal(prev => ({ ...prev, rugImage: ev.target?.result as string }));
+            };
+            reader.readAsDataURL(compressedFile);
+        } catch (err) {
+            console.error('Image compression failed', err);
+            alert('Failed to process image. Please try a different photo.');
+        }
+
         // Clear input so the user can select the same file again if they remove it
         e.target.value = '';
     };

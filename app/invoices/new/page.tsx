@@ -181,7 +181,22 @@ function InvoicePageContent() {
     // Check for converted items from Consignment (Sold Workflow)
     if (typeof window !== 'undefined') {
       const convertItemsStr = sessionStorage.getItem('convert_items');
-      if (convertItemsStr) {
+      const convertInvoiceDataStr = sessionStorage.getItem('convert_invoice_data');
+      
+      if (convertInvoiceDataStr) {
+        try {
+          const data = JSON.parse(convertInvoiceDataStr);
+          setFormInitialData({
+            documentType: 'INVOICE',
+            ...data,
+            date: new Date().toISOString().split('T')[0],
+            terms: 'Due on Receipt'
+          });
+          sessionStorage.removeItem('convert_invoice_data');
+        } catch (e) {
+          console.error('Error parsing converted invoice data', e);
+        }
+      } else if (convertItemsStr) {
         try {
           const items = JSON.parse(convertItemsStr);
           setFormInitialData({

@@ -91,6 +91,46 @@ function PrintContent() {
                 >
                     {isPrinting ? '⏳ Preparing...' : '📄 Download PDF'}
                 </button>
+                <button 
+                    onClick={() => {
+                        const feeStr = prompt("Enter the appraisal fee amount to charge (e.g. 150):", "150");
+                        if (feeStr === null) return;
+                        const fee = parseFloat(feeStr) || 0;
+                        const invoiceData = {
+                            soldTo: {
+                                name: appraisal.customerName,
+                                address: appraisal.customerAddress,
+                                email: '',
+                                phone: ''
+                            },
+                            items: [
+                                {
+                                    id: `item-${Date.now()}`,
+                                    description: `Appraisal Services (Ref: ${appraisal.id}) - Rug #${appraisal.rugNumber}`,
+                                    quantity: 1,
+                                    price: fee,
+                                    isTaxable: true,
+                                    isConsignment: false
+                                }
+                            ]
+                        };
+                        sessionStorage.setItem('convert_invoice_data', JSON.stringify(invoiceData));
+                        window.location.href = '/invoices/new';
+                    }}
+                    style={{ 
+                        padding: '12px 24px', 
+                        fontSize: '16px', 
+                        fontWeight: 'bold', 
+                        background: '#f59e0b', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    🧾 Generate Invoice / Receipt
+                </button>
             </div>
 
             {/* The A4/Letter Sized Document Container */}

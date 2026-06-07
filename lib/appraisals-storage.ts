@@ -92,14 +92,32 @@ export async function getAppraisals(): Promise<Appraisal[]> {
             if (typeof window !== 'undefined') {
                 const local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
                 const cloudMap = new Map(cloudData.map(a => [a.id, a]));
+                let needsSync = false;
                 for (const l of local) {
                     if (!cloudMap.has(l.id)) {
                         cloudData.push(l); // Keep orphaned local appraisals visible
+                        needsSync = true;
+                        
+                        // EMERGENCY AUTO-SYNC: Push stranded local appraisals to Firebase!
+                        try {
+                            const safeData = sanitizeForFirestore(l);
+                            setDoc(doc(db, getCollectionName(), l.id), safeData).catch(console.error);
+                        } catch (err) {}
                     }
                 }
-                cloudData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                localStorage.setItem(LOCAL_KEY, JSON.stringify(cloudData));
+                
+                // Clear the local cache entirely if we are fully synced so it doesn't stay as a zombie
+                if (!needsSync) {
+                    localStorage.removeItem(LOCAL_KEY);
+                } else {
+                    cloudData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    localStorage.setItem(LOCAL_KEY, JSON.stringify(cloudData));
+                }
             }
+            
+            // Sort final merged data
+            cloudData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            
             return cloudData;
         } catch (e: any) {
             console.error('Error fetching appraisals from cloud:', e);
