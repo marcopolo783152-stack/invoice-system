@@ -237,22 +237,30 @@ export default function InvoiceTemplate({
                   <tr>
                     <th>SKU</th>
                     <th>Description</th>
-                    <th>Shape</th>
-                    <th colSpan={2}>Width/Diameter</th>
-                    <th colSpan={2}>Length</th>
-                    <th>Sq.Ft</th>
+                    {!isAppraisal && (
+                      <>
+                        <th>Shape</th>
+                        <th colSpan={2}>Width/Diameter</th>
+                        <th colSpan={2}>Length</th>
+                        <th>Sq.Ft</th>
+                      </>
+                    )}
                     <th>Price</th>
                     <th>Amount</th>
                   </tr>
                   <tr className={`${styles.subheader} email-subheader`}>
                     <th></th>
                     <th></th>
-                    <th></th>
-                    <th className={styles.smallCol}>Ft</th>
-                    <th className={styles.smallCol}>In</th>
-                    <th className={styles.smallCol}>Ft</th>
-                    <th className={styles.smallCol}>In</th>
-                    <th></th>
+                    {!isAppraisal && (
+                      <>
+                        <th></th>
+                        <th className={styles.smallCol}>Ft</th>
+                        <th className={styles.smallCol}>In</th>
+                        <th className={styles.smallCol}>Ft</th>
+                        <th className={styles.smallCol}>In</th>
+                        <th></th>
+                      </>
+                    )}
                     <th></th>
                     <th></th>
                   </tr>
@@ -297,18 +305,22 @@ export default function InvoiceTemplate({
                           </div>
                         )}
                       </td>
-                      <td className={styles.shape}>
-                        {item.shape === 'round' ? 'Round' : 'Rect'}
-                      </td>
-                      <td className={styles.numeric}>{isAppraisal ? '-' : item.widthFeet}</td>
-                      <td className={styles.numeric}>{isAppraisal ? '-' : item.widthInches}</td>
-                      <td className={styles.numeric}>
-                        {isAppraisal ? '-' : (item.shape === 'rectangle' ? item.lengthFeet : '-')}
-                      </td>
-                      <td className={styles.numeric}>
-                        {isAppraisal ? '-' : (item.shape === 'rectangle' ? item.lengthInches : '-')}
-                      </td>
-                      <td className={styles.numeric}>{isAppraisal ? '-' : formatSquareFoot(item.squareFoot)}</td>
+                      {!isAppraisal && (
+                        <>
+                          <td className={styles.shape}>
+                            {item.shape === 'round' ? 'Round' : 'Rect'}
+                          </td>
+                          <td className={styles.numeric}>{item.widthFeet}</td>
+                          <td className={styles.numeric}>{item.widthInches}</td>
+                          <td className={styles.numeric}>
+                            {item.shape === 'rectangle' ? item.lengthFeet : '-'}
+                          </td>
+                          <td className={styles.numeric}>
+                            {item.shape === 'rectangle' ? item.lengthInches : '-'}
+                          </td>
+                          <td className={styles.numeric}>{formatSquareFoot(item.squareFoot)}</td>
+                        </>
+                      )}
                       <td className={styles.numeric}>
                         {data.isLumpSum ? '-' : (
                           item.pricingMethod === 'sqft'
@@ -382,8 +394,8 @@ export default function InvoiceTemplate({
                         </tr>
                       )}
 
-                      {/* Sales Tax - Retail Only (Never for Wash) */}
-                      {isRetail && data.mode !== 'wash' && (
+                      {/* Sales Tax - Retail Only (Never for Wash or Appraisals) */}
+                      {isRetail && data.mode !== 'wash' && !isAppraisal && (
                         <tr>
                           <td className={styles.totalLabel}>Sales Tax (6%):</td>
                           <td className={styles.totalValue}>{formatCurrency(calculations.salesTax)}</td>

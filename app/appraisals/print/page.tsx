@@ -109,7 +109,8 @@ function PrintContent() {
                                     id: `item-${Date.now()}`,
                                     description: `Appraisal Services (Ref: ${appraisal.id}) - Rug #${appraisal.rugNumber}`,
                                     quantity: 1,
-                                    price: fee,
+                                    fixedPrice: fee,
+                                    pricingMethod: 'piece',
                                     isTaxable: true,
                                     isConsignment: false
                                 }
