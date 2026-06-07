@@ -187,7 +187,7 @@ function InvoicePageContent() {
         try {
           const data = JSON.parse(convertInvoiceDataStr);
           setFormInitialData({
-            documentType: 'INVOICE',
+            documentType: data.documentType || 'INVOICE',
             ...data,
             date: new Date().toISOString().split('T')[0],
             terms: 'Due on Receipt'

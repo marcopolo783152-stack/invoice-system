@@ -171,8 +171,9 @@ export default function InvoiceTemplate({
               <h2 style={{ textAlign: 'center', margin: '10px 0 5px 0', letterSpacing: 2 }}>
                 {data.documentType === 'CONSIGNMENT' ? 'CONSIGNMENT OUT' :
                   (data.documentType === 'WASH' || data.mode === 'wash') ? 'WASH/REPAIR SERVICE' :
-                    data.mode.startsWith('retail') ? 'RETAIL' :
-                      data.mode.startsWith('wholesale') ? 'WHOLESALE' : 'INVOICE'}
+                  data.documentType === 'APPRAISAL_RECEIPT' ? 'APPRAISAL RECEIPT' :
+                  data.mode.startsWith('retail') ? 'RETAIL' :
+                  data.mode.startsWith('wholesale') ? 'WHOLESALE' : 'INVOICE'}
               </h2>
               {totalPages > 1 && (
                 <div style={{ textAlign: 'center', fontSize: '9pt', color: '#666', marginBottom: 15 }}>

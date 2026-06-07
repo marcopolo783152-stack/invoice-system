@@ -68,7 +68,7 @@ export interface InvoiceItem {
   zone?: string;       // Warehouse Zone
 }
 
-export type DocumentType = 'INVOICE' | 'CONSIGNMENT' | 'WASH';
+export type DocumentType = 'INVOICE' | 'CONSIGNMENT' | 'WASH' | 'APPRAISAL_RECEIPT';
 
 export interface Payment {
   id: string;

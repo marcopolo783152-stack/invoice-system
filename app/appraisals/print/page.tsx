@@ -97,6 +97,7 @@ function PrintContent() {
                         if (feeStr === null) return;
                         const fee = parseFloat(feeStr) || 0;
                         const invoiceData = {
+                            documentType: 'APPRAISAL_RECEIPT',
                             soldTo: {
                                 name: appraisal.customerName,
                                 address: appraisal.customerAddress,

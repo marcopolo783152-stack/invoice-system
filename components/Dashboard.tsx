@@ -627,7 +627,7 @@ export default function Dashboard() {
             <div className="no-print" style={{ marginBottom: 40 }}>
                 {invoices.filter(inv => {
                     // 1. Must be a Sales Invoice (not consignment/wash)
-                    if (inv.data.documentType !== 'INVOICE') return false;
+                    if (inv.data.documentType !== 'INVOICE' && inv.data.documentType !== 'APPRAISAL_RECEIPT') return false;
                     // 2. Must not be explicitly marked 'Paid'
                     if (inv.data.terms === 'Paid') return false;
                     // 3. Must have balance due > 0
@@ -654,7 +654,7 @@ export default function Dashboard() {
                                     <tbody>
                                         {invoices
                                             .filter(inv => {
-                                                if (inv.data.documentType !== 'INVOICE') return false;
+                                                if (inv.data.documentType !== 'INVOICE' && inv.data.documentType !== 'APPRAISAL_RECEIPT') return false;
                                                 if (inv.data.terms === 'Paid') return false;
                                                 const calcs = calculateInvoice(inv.data);
                                                 return calcs.balanceDue > 0;
@@ -725,7 +725,7 @@ export default function Dashboard() {
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 14 }}>{inv.data.soldTo.name || 'Anonymous Counterparty'}</div>
-                                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{inv.data.documentType === 'INVOICE' ? 'Technology' : 'Acquisition'}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{inv.data.documentType === 'APPRAISAL_RECEIPT' ? 'Appraisal Receipt' : inv.data.documentType === 'CONSIGNMENT' ? 'Consignment Out' : inv.data.documentType === 'WASH' ? 'Wash / Repair' : 'Sales Invoice'}</div>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
                                             <div style={{ fontWeight: 700, color: calcs.totalDue >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)', fontSize: 15 }}>
@@ -764,7 +764,7 @@ export default function Dashboard() {
                         <div style={{ display: 'flex', gap: 12, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
                             {Array.from(new Set(
                                 invoices
-                                    .filter(inv => inv.data.documentType === 'INVOICE' && inv.data.soldTo?.name)
+                                    .filter(inv => (inv.data.documentType === 'INVOICE' || inv.data.documentType === 'APPRAISAL_RECEIPT') && inv.data.soldTo?.name)
                                     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                                     .map(inv => inv.data.soldTo.name)
                             )).slice(0, 5).map((name, i) => (

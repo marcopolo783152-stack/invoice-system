@@ -506,6 +506,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           className={styles.select}
         >
           <option value="INVOICE">Invoice</option>
+          <option value="APPRAISAL_RECEIPT">Appraisal Receipt</option>
           <option value="CONSIGNMENT">Consignment</option>
           <option value="WASH">Wash/Repair</option>
         </select>
