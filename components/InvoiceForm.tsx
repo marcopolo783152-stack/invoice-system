@@ -189,6 +189,57 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [skuSuggestions, setSkuSuggestions] = useState<{ [itemId: string]: InventoryItem[] }>({});
   const [showSkuSuggestions, setShowSkuSuggestions] = useState<{ [itemId: string]: boolean }>({});
 
+  // DRAFT RESTORATION & AUTO-SAVE
+  useEffect(() => {
+    // Only attempt to restore if this is a fresh invoice (not editing)
+    if (!initialData && typeof window !== 'undefined') {
+      const draftJson = localStorage.getItem('mp_invoice_draft');
+      if (draftJson) {
+        try {
+          const draft = JSON.parse(draftJson);
+          if (draft && draft.items && draft.items.length > 0) {
+            const restore = window.confirm("You have an unsaved invoice draft. Would you like to restore it?");
+            if (restore) {
+              if (draft.documentType) setDocumentType(draft.documentType);
+              if (draft.mode) setMode(draft.mode);
+              if (draft.soldTo) setSoldTo(draft.soldTo);
+              if (draft.items) setItems(draft.items);
+              if (draft.terms) setTerms(draft.terms);
+              if (draft.additionalCharges) setAdditionalCharges(draft.additionalCharges);
+              if (draft.discountValue) setDiscountValue(draft.discountValue);
+              if (draft.discountType) setDiscountType(draft.discountType);
+              if (draft.notes) setNotes(draft.notes);
+            } else {
+              localStorage.removeItem('mp_invoice_draft');
+            }
+          }
+        } catch (e) {
+          localStorage.removeItem('mp_invoice_draft');
+        }
+      }
+    }
+  }, [initialData]);
+
+  useEffect(() => {
+    // Auto-save draft on changes (only if it's a new invoice and has some data)
+    if (typeof window !== 'undefined' && !initialData) {
+      const hasContent = soldTo.name || (items.length > 0 && items[0].description);
+      if (hasContent) {
+        const draft = {
+          documentType,
+          mode,
+          soldTo,
+          items,
+          terms,
+          additionalCharges,
+          discountValue,
+          discountType,
+          notes
+        };
+        localStorage.setItem('mp_invoice_draft', JSON.stringify(draft));
+      }
+    }
+  }, [documentType, mode, soldTo, items, terms, additionalCharges, discountValue, discountType, notes, initialData]);
 
   // AUTOMATIC TERMS UPDATE BASED ON BALANCE
   useEffect(() => {
@@ -479,6 +530,9 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     };
 
     onSubmit(invoiceData);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('mp_invoice_draft'); // Clear draft on successful submit
+    }
     logActivity('Invoice Saved', `${documentType} #${invoiceNumber} for ${soldTo.name} has been processed.`);
   };
 
