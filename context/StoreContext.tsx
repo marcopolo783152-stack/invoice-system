@@ -21,6 +21,21 @@ import {
 } from "@/types";
 import { INITIAL_RUGS } from "@/data/rugs";
 import { INITIAL_BLOGS } from "@/data/blogs";
+import { 
+  seedShowroomDataIfEmpty, 
+  subscribeToCollection, 
+  subscribeToSettings, 
+  addShowroomDoc, 
+  updateShowroomDoc, 
+  deleteShowroomDoc, 
+  updateSettingDoc,
+  SHOWROOM_RUGS,
+  SHOWROOM_BLOGS,
+  SHOWROOM_ORDERS,
+  SHOWROOM_REVIEWS,
+  SHOWROOM_CHAT,
+  SHOWROOM_CLEANING
+} from "@/lib/showroom-firebase";
 
 interface StoreContextType {
   rugs: Rug[];
@@ -178,114 +193,74 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return local ? JSON.parse(local) : [];
   });
 
-  // Core collections synced to localStorage
-  const [rugs, setRugs] = useState<Rug[]>(() => {
-    const local = safeGetItem("marcopolo_rugs");
-    return local ? JSON.parse(local) : INITIAL_RUGS;
-  });
-
-  const [blogs, setBlogs] = useState<BlogPost[]>(() => {
-    const local = safeGetItem("marcopolo_blogs");
-    return local ? JSON.parse(local) : INITIAL_BLOGS;
-  });
-
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const local = safeGetItem("marcopolo_orders");
-    return local ? JSON.parse(local) : [];
-  });
-
-  const [reviews, setReviews] = useState<Review[]>(() => {
-    const local = safeGetItem("marcopolo_reviews");
-    return local ? JSON.parse(local) : INITIAL_REVIEWS;
-  });
-
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
-    const local = safeGetItem("marcopolo_chat");
-    if (local) return JSON.parse(local);
-    // Initial welcome message
-    return [
-      {
-        id: "chat-welcome",
-        sender: "admin",
-        text: "Welcome to Marco Polo Oriental Rugs! I am Nazif, your personal concierge. How may I assist you with our luxury hand-knotted collection or tracking an active order today?",
-        timestamp: new Date().toISOString(),
-        sessionId: "default",
-        customerName: "Guest Customer"
-      }
-    ];
-  });
-
+  // Core collections synced to Firebase
+  const [rugs, setRugs] = useState<Rug[]>([]);
+  const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  
   const [cart, setCart] = useState<CartItem[]>(() => {
     const local = safeGetItem("marcopolo_cart");
     return local ? JSON.parse(local) : [];
   });
 
-  const [heroCoverPhoto, setHeroCoverPhotoState] = useState<string>(() => {
-    return safeGetItem("marcopolo_hero_cover") || "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600";
-  });
+  const [heroCoverPhoto, setHeroCoverPhotoState] = useState<string>("https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600");
+  const [showroomAnnouncement, setShowroomAnnouncementState] = useState<string>("🏛️ SHOWROOM SPECIAL: Free premium felt underlays with any 8x10 or larger antique Persian collection purchase this week.");
+  const [logoUrl, setLogoUrlState] = useState<string>("");
+  const [socialLinks, setSocialLinksState] = useState<SocialMediaLink[]>([
+    { platform: "instagram", url: "https://instagram.com/marcopolorugs" },
+    { platform: "pinterest", url: "https://pinterest.com/marcopolorugs" },
+    { platform: "facebook", url: "https://facebook.com/marcopolorugs" },
+    { platform: "tiktok", url: "https://tiktok.com/@marcopolorugs" },
+    { platform: "youtube", url: "https://youtube.com/c/marcopolorugs" },
+    { platform: "twitter", url: "https://twitter.com/marcopolorugs" }
+  ]);
 
-  const [showroomAnnouncement, setShowroomAnnouncementState] = useState<string>(() => {
-    return safeGetItem("marcopolo_announcement") || "🏛️ SHOWROOM SPECIAL: Free premium felt underlays with any 8x10 or larger antique Persian collection purchase this week.";
-  });
+  // Seed and Subscribe on mount
+  useEffect(() => {
+    let unsubs: (() => void)[] = [];
+    
+    seedShowroomDataIfEmpty().then(() => {
+      unsubs.push(subscribeToCollection<Rug>(SHOWROOM_RUGS, setRugs));
+      unsubs.push(subscribeToCollection<BlogPost>(SHOWROOM_BLOGS, setBlogs));
+      unsubs.push(subscribeToCollection<Order>(SHOWROOM_ORDERS, setOrders));
+      unsubs.push(subscribeToCollection<Review>(SHOWROOM_REVIEWS, setReviews));
+      unsubs.push(subscribeToCollection<ChatMessage>(SHOWROOM_CHAT, setChatMessages));
+      unsubs.push(subscribeToCollection<CleaningBooking>(SHOWROOM_CLEANING, setCleaningBookings));
+      
+      unsubs.push(subscribeToSettings({
+        onHero: setHeroCoverPhotoState,
+        onAnnouncement: setShowroomAnnouncementState,
+        onLogo: setLogoUrlState,
+        onSocial: setSocialLinksState
+      }));
+    });
 
-  const [logoUrl, setLogoUrlState] = useState<string>(() => {
-    return safeGetItem("marcopolo_logo") || "";
-  });
-
-  const [socialLinks, setSocialLinksState] = useState<SocialMediaLink[]>(() => {
-    const local = safeGetItem("marcopolo_social_links");
-    if (local) return JSON.parse(local);
-    return [
-      { platform: "instagram", url: "https://instagram.com/marcopolorugs" },
-      { platform: "pinterest", url: "https://pinterest.com/marcopolorugs" },
-      { platform: "facebook", url: "https://facebook.com/marcopolorugs" },
-      { platform: "tiktok", url: "https://tiktok.com/@marcopolorugs" },
-      { platform: "youtube", url: "https://youtube.com/c/marcopolorugs" },
-      { platform: "twitter", url: "https://twitter.com/marcopolorugs" }
-    ];
-  });
+    return () => unsubs.forEach(unsub => unsub());
+  }, []);
 
   const setHeroCoverPhoto = (url: string) => {
     setHeroCoverPhotoState(url);
-    safeSetItem("marcopolo_hero_cover", url);
+    updateSettingDoc("hero", { url });
   };
 
   const setShowroomAnnouncement = (text: string) => {
     setShowroomAnnouncementState(text);
-    safeSetItem("marcopolo_announcement", text);
+    updateSettingDoc("announcement", { text });
   };
 
   const setLogoUrl = (url: string) => {
     setLogoUrlState(url);
-    safeSetItem("marcopolo_logo", url);
+    updateSettingDoc("logo", { url });
   };
 
   const setSocialLinks = (links: SocialMediaLink[]) => {
     setSocialLinksState(links);
-    safeSetItem("marcopolo_social_links", JSON.stringify(links));
+    updateSettingDoc("social", { links });
   };
 
-  // Local Storage synchronizers
-  useEffect(() => {
-    safeSetItem("marcopolo_rugs", JSON.stringify(rugs));
-  }, [rugs]);
-
-  useEffect(() => {
-    safeSetItem("marcopolo_blogs", JSON.stringify(blogs));
-  }, [blogs]);
-
-  useEffect(() => {
-    safeSetItem("marcopolo_orders", JSON.stringify(orders));
-  }, [orders]);
-
-  useEffect(() => {
-    safeSetItem("marcopolo_reviews", JSON.stringify(reviews));
-  }, [reviews]);
-
-  useEffect(() => {
-    safeSetItem("marcopolo_chat", JSON.stringify(chatMessages));
-  }, [chatMessages]);
-
+  // Local Storage synchronizers for local-only state
   useEffect(() => {
     safeSetItem("marcopolo_cart", JSON.stringify(cart));
   }, [cart]);
@@ -298,9 +273,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     safeSetItem("marcopolo_users_db", JSON.stringify(registeredUsers));
   }, [registeredUsers]);
 
-  useEffect(() => {
-    safeSetItem("marcopolo_cleaning_bookings", JSON.stringify(cleaningBookings));
-  }, [cleaningBookings]);
+
 
   // Auto-delete chats older than 24 hours on mount and periodically
   useEffect(() => {
@@ -384,16 +357,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString()
     };
 
-    // Append new order
-    setOrders((prev) => [newOrder, ...prev]);
+    // Add new order to Firebase
+    addShowroomDoc(SHOWROOM_ORDERS, newOrder);
     
-    // Mark checked out rugs as "Reserved" (pending confirmation)
-    const orderRugIds = cart.map(item => item.rug.id);
-    setRugs(prevRugs =>
-      prevRugs.map(rug =>
-        orderRugIds.includes(rug.id) ? { ...rug, availability: "Reserved" } : rug
-      )
-    );
+    // Mark checked out rugs as "Reserved" (pending confirmation) in Firebase
+    cart.forEach(item => {
+      updateShowroomDoc(SHOWROOM_RUGS, item.rug.id, { availability: "Reserved" });
+    });
 
     // Empty the cart
     clearCart();
@@ -408,17 +378,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       id,
       rating: 5.0
     };
-    setRugs((prev) => [rug, ...prev]);
+    addShowroomDoc(SHOWROOM_RUGS, rug);
   };
 
   const updateRug = (id: string, updatedFields: Partial<Rug>) => {
-    setRugs((prev) =>
-      prev.map((rug) => (rug.id === id ? { ...rug, ...updatedFields } : rug))
-    );
+    updateShowroomDoc(SHOWROOM_RUGS, id, updatedFields);
   };
 
   const deleteRug = (id: string) => {
-    setRugs((prev) => prev.filter((rug) => rug.id !== id));
+    deleteShowroomDoc(SHOWROOM_RUGS, id);
   };
 
   // --- Order Status Management ---
@@ -427,39 +395,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     status: OrderStatus,
     shipping?: ShippingDetails
   ) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) => {
-        if (order.id !== orderId) return order;
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
 
-        // If the order status changes to "Cancelled", mark rugs back to "In Stock"
-        // If "Confirmed", mark rugs as "Sold"
-        if (status === "Cancelled") {
-          const rugIdsToStock = order.cartItems.map((item) => item.rug.id);
-          setRugs((prevRugs) =>
-            prevRugs.map((rug) =>
-              rugIdsToStock.includes(rug.id) ? { ...rug, availability: "In Stock" } : rug
-            )
-          );
-        } else if (status === "Confirmed") {
-          const rugIdsToSold = order.cartItems.map((item) => item.rug.id);
-          setRugs((prevRugs) =>
-            prevRugs.map((rug) =>
-              rugIdsToSold.includes(rug.id) ? { ...rug, availability: "Sold" } : rug
-            )
-          );
-        }
+    if (status === "Cancelled") {
+      order.cartItems.forEach(item => {
+        updateShowroomDoc(SHOWROOM_RUGS, item.rug.id, { availability: "In Stock" });
+      });
+    } else if (status === "Confirmed") {
+      order.cartItems.forEach(item => {
+        updateShowroomDoc(SHOWROOM_RUGS, item.rug.id, { availability: "Sold" });
+      });
+    }
 
-        const updatedOrder: Order = { ...order, status };
-        if (shipping) {
-          updatedOrder.shippingDetails = {
-            ...order.shippingDetails,
-            ...shipping,
-            shippedAt: shipping.shippedAt || new Date().toISOString()
-          };
-        }
-        return updatedOrder;
-      })
-    );
+    const updatedFields: any = { status };
+    if (shipping) {
+      updatedFields.shippingDetails = {
+        ...order.shippingDetails,
+        ...shipping,
+        shippedAt: shipping.shippedAt || new Date().toISOString()
+      };
+    }
+    
+    updateShowroomDoc(SHOWROOM_ORDERS, orderId, updatedFields);
   };
 
   // --- Customer Reviews ---
@@ -480,34 +438,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isApproved: false, // Admin must approve before publishing!
       createdAt: new Date().toISOString()
     };
-    setReviews((prev) => [newReview, ...prev]);
+    addShowroomDoc(SHOWROOM_REVIEWS, newReview);
   };
 
   const approveReview = (reviewId: string) => {
-    setReviews((prev) =>
-      prev.map((rev) => (rev.id === reviewId ? { ...rev, isApproved: true } : rev))
-    );
+    updateShowroomDoc(SHOWROOM_REVIEWS, reviewId, { isApproved: true });
   };
 
   const deleteReview = (reviewId: string) => {
-    setReviews((prev) => prev.filter((rev) => rev.id !== reviewId));
+    deleteShowroomDoc(SHOWROOM_REVIEWS, reviewId);
   };
 
   // --- Blog Operations ---
   const addBlogPost = (post: Omit<BlogPost, "id">) => {
     const id = `blog-${Date.now()}`;
     const newPost: BlogPost = { ...post, id };
-    setBlogs((prev) => [newPost, ...prev]);
+    addShowroomDoc(SHOWROOM_BLOGS, newPost);
   };
 
   const updateBlogPost = (id: string, updatedPost: Partial<BlogPost>) => {
-    setBlogs((prev) =>
-      prev.map((post) => (post.id === id ? { ...post, ...updatedPost } : post))
-    );
+    updateShowroomDoc(SHOWROOM_BLOGS, id, updatedPost);
   };
 
   const deleteBlogPost = (id: string) => {
-    setBlogs((prev) => prev.filter((post) => post.id !== id));
+    deleteShowroomDoc(SHOWROOM_BLOGS, id);
   };
 
   // --- Chat / Concierge Support ---
@@ -526,23 +480,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       sender,
       text,
       timestamp: new Date().toISOString(),
-      orderId,
       sessionId: sId,
+      orderId,
       customerName: cName
     };
 
-    setChatMessages((prev) => [...prev, newMessage]);
+    addShowroomDoc(SHOWROOM_CHAT, newMessage);
 
-    // Simple real-time reply simulation! If customer is texting, let's trigger a elegant, contextual auto-concierge response after 1.5s
-    // unless admin is replying. This helps the app feel alive and interactive instantly!
+    // Simulate concierge response ONLY for customer messages
     if (sender === "customer") {
       setTimeout(() => {
-        let replyText = "Thank you for reaching out. A master rug advisor has been notified of your message. We will respond with detailed expertise shortly. Feel free to also reach us directly at marcopolorugs@aol.com or call our showroom.";
-        
+        let replyText = "I have received your message. I am currently consulting our inventory and will assist you shortly.";
         const lowerText = text.toLowerCase();
-        if (lowerText.includes("track") || lowerText.includes("order") || lowerText.includes("mpr-")) {
-          replyText = "To track your handmade rug delivery, please visit the 'Track Order' portal in the header menu and input your order tracking ID (e.g. MPR-XXXXXX). You can also view shipping documents and live tracking statuses there in real-time.";
-        } else if (lowerText.includes("price") || lowerText.includes("cost") || lowerText.includes("discount")) {
+        
+        if (lowerText.includes("order") || lowerText.includes("track") || lowerText.includes("shipping")) {
+          replyText = "I see you are asking about an order. All our hand-knotted pieces are carefully rolled and packed in moisture-resistant sleeves. Standard insured shipping takes 3-5 business days. Please provide your order number (e.g., MPR-123456) so I can check its exact location.";
+        } else if (lowerText.includes("custom") || lowerText.includes("size") || lowerText.includes("designer")) {
           replyText = "For our elite collections, we offer competitive trade programs for interior designers and seasonal curation discounts. Please let us know which specific SKU you are evaluating so we can prepare a tailored luxury quote for you.";
         } else if (lowerText.includes("clean") || lowerText.includes("wash") || lowerText.includes("repair")) {
           replyText = "Marco Polo offers organic full-submersion cold water washes and master weaving restoration services. Our specialized team handles delicate silk, wool, and antique dyes. Let us know your location to schedule a white-glove pickup!";
@@ -556,30 +509,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           sessionId: sId,
           customerName: cName
         };
-        setChatMessages((prev) => [...prev, simulatedReply]);
+        addShowroomDoc(SHOWROOM_CHAT, simulatedReply);
       }, 1500);
     }
   };
 
   const clearChat = (sessionId?: string) => {
     if (sessionId) {
-      setChatMessages((prev) => prev.filter((msg) => msg.sessionId !== sessionId));
+      const messagesToDelete = chatMessages.filter((msg) => msg.sessionId === sessionId);
+      messagesToDelete.forEach(msg => deleteShowroomDoc(SHOWROOM_CHAT, msg.id));
     } else {
-      setChatMessages([
-        {
-          id: "chat-welcome",
-          sender: "admin",
-          text: "Welcome to Marco Polo Oriental Rugs! I am Nazif, your personal concierge. How may I assist you with our luxury hand-knotted collection or tracking an active order today?",
-          timestamp: new Date().toISOString(),
-          sessionId: "default",
-          customerName: "Guest Customer"
-        }
-      ]);
+      chatMessages.forEach(msg => deleteShowroomDoc(SHOWROOM_CHAT, msg.id));
     }
   };
 
   const deleteChatSession = (sessionId: string) => {
-    setChatMessages((prev) => prev.filter((msg) => (msg.sessionId || "default") !== sessionId));
+    const messagesToDelete = chatMessages.filter((msg) => (msg.sessionId || "default") === sessionId);
+    messagesToDelete.forEach(msg => deleteShowroomDoc(SHOWROOM_CHAT, msg.id));
   };
 
   // --- Authentication Actions ---
@@ -715,14 +661,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       status: "Pending",
       createdAt: new Date().toISOString()
     };
-    setCleaningBookings((prev) => [newBooking, ...prev]);
+    addShowroomDoc(SHOWROOM_CLEANING, newBooking);
     return newBooking;
   };
 
   const updateCleaningBookingStatus = (id: string, status: CleaningBooking["status"]) => {
-    setCleaningBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status } : b))
-    );
+    updateShowroomDoc(SHOWROOM_CLEANING, id, { status });
   };
 
   const [isHydrated, setIsHydrated] = useState(false);
