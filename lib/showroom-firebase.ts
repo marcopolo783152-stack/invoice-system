@@ -21,6 +21,7 @@ export const SHOWROOM_REVIEWS = "showroom_reviews";
 export const SHOWROOM_CHAT = "showroom_chat";
 export const SHOWROOM_SETTINGS = "showroom_settings";
 export const SHOWROOM_CLEANING = "showroom_cleaning_bookings";
+export const SHOWROOM_PROMOCODES = "showroom_promocodes";
 
 // -- Seeding Initial Data --
 

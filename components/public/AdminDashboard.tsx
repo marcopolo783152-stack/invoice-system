@@ -51,7 +51,11 @@ export const AdminDashboard: React.FC = () => {
     updateOrderStatus, 
     updateCleaningBookingStatus,
     approveReview, 
-    deleteReview, 
+    deleteReview,
+    promoCodes,
+    addPromoCode,
+    deletePromoCode,
+    deleteOrder, 
     sendChatMessage,
     addBlogPost,
     deleteBlogPost,
@@ -67,7 +71,7 @@ export const AdminDashboard: React.FC = () => {
     addAdminUser
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<"analytics" | "inventory" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "settings">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "inventory" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
 
   // Showroom cover photo & announcement settings inputs
   const [coverPhotoInput, setCoverPhotoInput] = useState(heroCoverPhoto);
@@ -138,6 +142,16 @@ export const AdminDashboard: React.FC = () => {
   const [passwordPromptOrderId, setPasswordPromptOrderId] = useState<string | null>(null);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [passwordAction, setPasswordAction] = useState<"decrypt" | "delete" | null>(null);
+  
+  // Bulk select and promotions
+  const [selectedRugIds, setSelectedRugIds] = useState<Set<string>>(new Set());
+  const [promoModalOpen, setPromoModalOpen] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoType, setPromoType] = useState<"percentage" | "fixed">("percentage");
+  const [promoValue, setPromoValue] = useState(10);
+  const [promoOneTime, setPromoOneTime] = useState(false);
+
 
   // Reusable custom confirmation modal state
   const [confirmModal, setConfirmModal] = useState<{

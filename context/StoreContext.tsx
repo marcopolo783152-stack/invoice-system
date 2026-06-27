@@ -17,7 +17,7 @@ import {
   ShippingDetails,
   User,
   CleaningBooking,
-  SocialMediaLink
+  SocialMediaLink, PromoCode
 } from "@/types";
 import { INITIAL_RUGS } from "@/data/rugs";
 import { INITIAL_BLOGS } from "@/data/blogs";
@@ -33,7 +33,7 @@ import {
   SHOWROOM_BLOGS,
   SHOWROOM_ORDERS,
   SHOWROOM_REVIEWS,
-  SHOWROOM_CHAT,
+  SHOWROOM_CHAT, SHOWROOM_PROMOCODES,
   SHOWROOM_CLEANING
 } from "@/lib/showroom-firebase";
 
@@ -102,6 +102,12 @@ interface StoreContextType {
   // Social media links customizable by admin
   socialLinks: SocialMediaLink[];
   setSocialLinks: (links: SocialMediaLink[]) => void;
+
+  // Promo Codes
+  promoCodes: PromoCode[];
+  addPromoCode: (promo: Omit<PromoCode, "id" | "usedCount">) => void;
+  deletePromoCode: (id: string) => void;
+  deleteOrder: (id: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -188,6 +194,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     ];
   });
 
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [cleaningBookings, setCleaningBookings] = useState<CleaningBooking[]>(() => {
     const local = safeGetItem("marcopolo_cleaning_bookings");
     return local ? JSON.parse(local) : [];
@@ -228,6 +235,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubs.push(subscribeToCollection<Review>(SHOWROOM_REVIEWS, setReviews));
       unsubs.push(subscribeToCollection<ChatMessage>(SHOWROOM_CHAT, setChatMessages));
       unsubs.push(subscribeToCollection<CleaningBooking>(SHOWROOM_CLEANING, setCleaningBookings));
+      unsubs.push(subscribeToCollection<PromoCode>(SHOWROOM_PROMOCODES, setPromoCodes));
       
       unsubs.push(subscribeToSettings({
         onHero: setHeroCoverPhotoState,
@@ -378,14 +386,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       id,
       rating: 5.0
     };
+    setRugs(prev => [rug, ...prev]); // Optimistic UI
     addShowroomDoc(SHOWROOM_RUGS, rug);
   };
 
   const updateRug = (id: string, updatedFields: Partial<Rug>) => {
+    setRugs(prev => prev.map(r => r.id === id ? { ...r, ...updatedFields } : r)); // Optimistic UI
     updateShowroomDoc(SHOWROOM_RUGS, id, updatedFields);
   };
 
   const deleteRug = (id: string) => {
+    setRugs(prev => prev.filter(r => r.id !== id)); // Optimistic UI
     deleteShowroomDoc(SHOWROOM_RUGS, id);
   };
 
@@ -417,7 +428,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
     }
     
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updatedFields } : o)); // Optimistic UI
     updateShowroomDoc(SHOWROOM_ORDERS, orderId, updatedFields);
+  };
+
+  const deleteOrder = (orderId: string) => {
+    setOrders(prev => prev.filter(o => o.id !== orderId)); // Optimistic UI
+    deleteShowroomDoc(SHOWROOM_ORDERS, orderId);
   };
 
   // --- Customer Reviews ---
@@ -453,15 +470,34 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addBlogPost = (post: Omit<BlogPost, "id">) => {
     const id = `blog-${Date.now()}`;
     const newPost: BlogPost = { ...post, id };
+    setBlogs(prev => [newPost, ...prev]); // Optimistic UI
     addShowroomDoc(SHOWROOM_BLOGS, newPost);
   };
 
   const updateBlogPost = (id: string, updatedPost: Partial<BlogPost>) => {
+    setBlogs(prev => prev.map(b => b.id === id ? { ...b, ...updatedPost } : b)); // Optimistic UI
     updateShowroomDoc(SHOWROOM_BLOGS, id, updatedPost);
   };
 
   const deleteBlogPost = (id: string) => {
+    setBlogs(prev => prev.filter(b => b.id !== id)); // Optimistic UI
     deleteShowroomDoc(SHOWROOM_BLOGS, id);
+  };
+
+  // --- Promo Codes ---
+  const addPromoCode = (promo: Omit<PromoCode, "id" | "usedCount">) => {
+    const newPromo: PromoCode = {
+      ...promo,
+      id: `promo-${Date.now()}`,
+      usedCount: 0
+    };
+    setPromoCodes(prev => [newPromo, ...prev]); // Optimistic UI
+    addShowroomDoc(SHOWROOM_PROMOCODES, newPromo);
+  };
+
+  const deletePromoCode = (id: string) => {
+    setPromoCodes(prev => prev.filter(p => p.id !== id)); // Optimistic UI
+    deleteShowroomDoc(SHOWROOM_PROMOCODES, id);
   };
 
   // --- Chat / Concierge Support ---
@@ -736,7 +772,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         logoUrl,
         setLogoUrl,
         socialLinks,
-        setSocialLinks
+        setSocialLinks,
+        promoCodes,
+        addPromoCode,
+        deletePromoCode,
+        deleteOrder
       }}
     >
       {isHydrated ? children : null}

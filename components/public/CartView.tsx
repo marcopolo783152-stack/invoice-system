@@ -15,11 +15,17 @@ export const CartView: React.FC = () => {
     setCartOpen, 
     removeFromCart, 
     updateCartQuantity, 
-    checkout 
+    checkout,
+    promoCodes
   } = useStore();
 
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "shipping" | "payment" | "success">("cart");
   const [createdOrder, setCreatedOrder] = useState<any>(null);
+
+  // Promo Code State
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  const [promoError, setPromoError] = useState("");
 
   // Form Fields
   const [name, setName] = useState("");
@@ -236,7 +242,18 @@ export const CartView: React.FC = () => {
 
   if (!cartOpen) return null;
 
-  const subtotal = cart.reduce((sum, item) => sum + item.rug.price * item.quantity, 0);
+  const rawSubtotal = cart.reduce((sum, item) => sum + item.rug.price * item.quantity, 0);
+  
+  let discount = 0;
+  if (appliedPromo) {
+    if (appliedPromo.discountType === "percentage") {
+      discount = rawSubtotal * (appliedPromo.discountValue / 100);
+    } else {
+      discount = appliedPromo.discountValue;
+    }
+  }
+  
+  const subtotal = Math.max(0, rawSubtotal - discount);
   
   // Calculate total weight in lbs
   const totalWeightLbs = cart.reduce((sum, item) => {
@@ -773,8 +790,14 @@ export const CartView: React.FC = () => {
               <div className="space-y-2 text-xs text-gray-500 font-sans font-light">
                 <div className="flex justify-between">
                   <span>Showroom Subtotal:</span>
-                  <span className="font-serif font-light text-editorial-text">${subtotal.toLocaleString()}</span>
+                  <span className="font-serif font-light text-editorial-text">${rawSubtotal.toLocaleString()}</span>
                 </div>
+                {appliedPromo && (
+                  <div className="flex justify-between text-[#A68B67] font-bold">
+                    <span>Promo ({appliedPromo.code}):</span>
+                    <span>-${discount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>Sales Tax (6%):</span>
                   <span className="font-serif font-light text-editorial-text">${tax.toFixed(2)}</span>
@@ -797,6 +820,36 @@ export const CartView: React.FC = () => {
                   <span className="font-serif text-base text-editorial-text">${total.toLocaleString()}</span>
                 </div>
               </div>
+
+              {checkoutStep === "cart" && (
+                <div className="border-t border-editorial-border pt-4 pb-2">
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Promo code" 
+                      value={promoInput} 
+                      onChange={e => setPromoInput(e.target.value.toUpperCase())}
+                      className="w-full bg-white border border-editorial-border py-2 px-3 text-xs outline-none focus:border-editorial-accent uppercase"
+                    />
+                    <button 
+                      onClick={() => {
+                        const promo = promoCodes?.find(p => p.code === promoInput && p.isActive);
+                        if (promo) {
+                          setAppliedPromo(promo);
+                          setPromoError("");
+                        } else {
+                          setPromoError("Invalid or expired promo code");
+                        }
+                      }}
+                      className="bg-[#1A1A1A] text-white px-4 text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-[#333]"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  {promoError && <div className="text-red-500 text-[10px] mt-1">{promoError}</div>}
+                  {appliedPromo && <div className="text-green-600 text-[10px] mt-1">Promo applied successfully!</div>}
+                </div>
+              )}
 
               {checkoutStep === "cart" && (
                 <button

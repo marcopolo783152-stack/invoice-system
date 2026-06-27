@@ -17,7 +17,8 @@ import {
   ShoppingBag, 
   Eye, 
   Info,
-  Compass
+  Compass,
+  Sparkles
 } from "lucide-react";
 
 interface ShopViewProps {
@@ -469,6 +470,11 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                         <span className="px-2 py-0.5 bg-editorial-aside text-[8px] text-editorial-text font-bold uppercase tracking-wider rounded-none border border-editorial-border shadow-sm">
                           {rug.style}
                         </span>
+                        {rug.isSpecialSale && (
+                          <span className="px-2 py-0.5 bg-[#A68B67] text-[8px] text-white font-bold uppercase tracking-wider rounded-none shadow-sm flex items-center gap-1">
+                            <Sparkles size={10} /> SPECIAL SALE
+                          </span>
+                        )}
                       </div>
 
                       <span className={`absolute top-3 right-3 px-2 py-0.5 text-[8px] tracking-wider font-extrabold uppercase rounded-none shadow-sm ${

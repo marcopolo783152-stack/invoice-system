@@ -23,6 +23,7 @@ export interface Rug {
   images: string[]; // list of image URLs (up to 15)
   rating: number; // average rating
   weightLbs?: number; // shipping weight in pounds
+  isSpecialSale?: boolean;
 }
 
 export const ALL_SIZES = Array.from(new Set([
@@ -97,6 +98,17 @@ export interface PaymentDetails {
   cardNumber?: string;
   cardExpiry?: string;
   cardCVC?: string;
+}
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  validUntil?: string; // ISO date string
+  isActive: boolean;
+  oneTimeUse: boolean;
+  usedCount: number;
 }
 
 export interface ShippingDetails {
