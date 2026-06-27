@@ -10,16 +10,9 @@ export default function TopAdminBar() {
   useEffect(() => {
     const checkAuth = () => {
       const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
-      const activeView = localStorage.getItem('marcopolo_active_view');
       
-      if (auth === '1') {
-        if (pathname?.startsWith('/admin')) {
-          setIsAdmin(true);
-        } else if (activeView === 'admin') {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
+      if (auth === '1' && pathname?.startsWith('/admin')) {
+        setIsAdmin(true);
       } else {
         setIsAdmin(false);
       }
@@ -46,11 +39,6 @@ export default function TopAdminBar() {
     window.location.href = '/';
   };
 
-  const setCustomerView = (e: React.MouseEvent) => {
-    e.preventDefault();
-    localStorage.setItem('marcopolo_active_view', 'customer');
-    window.location.href = '/';
-  };
 
   const linkStyle = (isActive: boolean) => ({
     fontWeight: 'bold',
@@ -105,15 +93,7 @@ export default function TopAdminBar() {
         >
           Invoice System
         </a>
-        <a 
-          href="/" 
-          onClick={setCustomerView}
-          style={linkStyle(false)}
-          onMouseOver={(e) => (e.currentTarget.style.color = 'white')}
-          onMouseOut={(e) => (e.currentTarget.style.color = '#9ca3af')}
-        >
-          Customer Page
-        </a>
+
       </div>
       <div>
         <button 
