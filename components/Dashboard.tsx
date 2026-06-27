@@ -463,7 +463,7 @@ export default function Dashboard() {
                     </button>
 
                     <Link
-                        href="/appraisals"
+                        href="/admin/invoices/appraisals"
                         className="luxury-button"
                         style={{ padding: '10px 20px', background: 'var(--bg-nebula)', color: 'var(--text-main)', border: '1px solid var(--surface-border)', marginLeft: 'auto' }}
                     >
@@ -471,7 +471,7 @@ export default function Dashboard() {
                     </Link>
 
                     <Link
-                        href="/inventory"
+                        href="/admin/invoices/inventory"
                         className="luxury-button"
                         style={{ padding: '10px 20px', marginLeft: 12 }}
                     >
@@ -573,7 +573,7 @@ export default function Dashboard() {
                                             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>ID: {inv.data.invoiceNumber}</div>
                                             <div style={{ fontSize: 12, color: 'var(--accent-rose)', marginTop: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Due: {formatDateMMDDYYYY(inv.data.pickupDate)}</div>
                                         </div>
-                                        <Link href={`/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '8px 16px', fontSize: 11 }}>
+                                        <Link href={`/admin/invoices/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '8px 16px', fontSize: 11 }}>
                                             REVIEW
                                         </Link>
                                     </div>
@@ -598,7 +598,7 @@ export default function Dashboard() {
                     icon={<Users size={22} />}
                     color={activeStaffCount > 0 ? '#10b981' : '#64748b'}
                     bg={activeStaffCount > 0 ? 'rgba(16, 185, 129, 0.08)' : 'rgba(100, 116, 139, 0.08)'}
-                    link="/employees"
+                    link="/admin/invoices/employees"
                 />
                 <KpiCard
                     title="Total Profit"
@@ -669,7 +669,7 @@ export default function Dashboard() {
                                                         <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{formatDateMMDDYYYY(inv.data.date)}</td>
                                                         <td style={{ padding: '12px 16px', textAlign: 'right', color: '#dc2626', fontWeight: 700 }}>{formatCurrency(calcs.balanceDue)}</td>
                                                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                                                            <Link href={`/invoices/view?id=${inv.id}`} style={{
+                                                            <Link href={`/admin/invoices/invoices/view?id=${inv.id}`} style={{
                                                                 display: 'inline-block',
                                                                 padding: '6px 12px',
                                                                 background: 'var(--primary)',
@@ -713,7 +713,7 @@ export default function Dashboard() {
                     <div className="luxury-card" style={{ padding: 0, overflow: 'hidden' }}>
                         <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--surface-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Latest Transaction</h2>
-                            <Link href="/invoices" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>View all</Link>
+                            <Link href="/admin/invoices/invoices" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>View all</Link>
                         </div>
                         <div style={{ padding: '12px 32px' }}>
                             {filteredInvoices.slice(0, 5).map((inv) => {
@@ -789,7 +789,7 @@ export default function Dashboard() {
                                 </Link>
                             ))}
                         </div>
-                        <Link href="/invoices/new" className="luxury-button" style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
+                        <Link href="/admin/invoices/invoices/new" className="luxury-button" style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
                             Start New Invoice
                         </Link>
                     </div>

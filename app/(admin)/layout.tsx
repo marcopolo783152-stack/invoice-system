@@ -2,9 +2,10 @@
 
 import { Inter, Cinzel, Cinzel_Decorative } from 'next/font/google';
 import { usePathname } from 'next/navigation';
-import './globals.css';
-import './print.css';
+import '../globals.css';
+import '../print.css';
 import Sidebar from '@/components/Sidebar';
+import TopAdminBar from '@/components/TopAdminBar';
 import AddressBookModal from '@/components/AddressBookModal';
 import ExportPreviewModal from '@/components/ExportPreviewModal';
 import HelpModal from '@/components/HelpModal';
@@ -115,7 +116,8 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className={inter.className}>
-        <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', width: '100%' }}>
+        <TopAdminBar />
+        <div className="admin-layout-wrapper" style={{ display: 'flex', minHeight: '100vh', position: 'relative', width: '100%' }}>
           {/* Global Modals */}
           {isAuthenticated && !isPublicPage && (
             <>

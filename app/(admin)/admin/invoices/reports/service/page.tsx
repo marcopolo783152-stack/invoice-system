@@ -54,7 +54,7 @@ export default function ServiceReportsPage() {
         <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <Link href="/service-tracking" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', textDecoration: 'none', marginBottom: '0.5rem' }}>
+                    <Link href="/admin/invoices/service-tracking" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', textDecoration: 'none', marginBottom: '0.5rem' }}>
                         <ArrowLeft size={18} /> Back to Tracking
                     </Link>
                     <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)' }}>Service Reports</h1>

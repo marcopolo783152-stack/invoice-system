@@ -105,7 +105,7 @@ function AppraisalFormContent() {
                 createdAt: appraisal.createdAt || new Date().toISOString()
             } as Appraisal);
             
-            router.push(`/appraisals/print?id=${id}`);
+            router.push(`/admin/invoices/appraisals/print?id=${id}`);
             // Let the UI clean up state visually if the router takes a few seconds to redirect
             setTimeout(() => setSaving(false), 3000);
         } catch (error) {
@@ -136,7 +136,7 @@ function AppraisalFormContent() {
 
     return (
         <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
-            <Link href="/appraisals" style={{ color: '#6366f1', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '20px' }}>
+            <Link href="/admin/invoices/appraisals" style={{ color: '#6366f1', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '20px' }}>
                 <ArrowLeft size={16} /> Back to Appraisals
             </Link>
             
@@ -298,7 +298,7 @@ function AppraisalFormContent() {
 
                     <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
                         <Link 
-                            href="/appraisals"
+                            href="/admin/invoices/appraisals"
                             style={{ padding: '14px 24px', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 'bold', textDecoration: 'none' }}
                         >
                             Cancel

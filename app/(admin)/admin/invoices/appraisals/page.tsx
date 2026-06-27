@@ -202,7 +202,7 @@ export default function AppraisalsPage() {
                                             <button 
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    router.push(`/appraisals/new?edit=${app.id}`);
+                                                    router.push(`/admin/invoices/appraisals/new?edit=${app.id}`);
                                                 }}
                                                 style={{ border: 'none', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
                                                 title="Edit"

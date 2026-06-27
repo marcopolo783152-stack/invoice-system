@@ -43,7 +43,7 @@ export default function Sidebar({
         return pathname.startsWith(path);
     };
 
-    const isRecycleBin = pathname === '/invoices' && searchParams?.get('view') === 'bin';
+    const isRecycleBin = pathname === '/admin/invoices/invoices' && searchParams?.get('view') === 'bin';
 
 
 
@@ -136,22 +136,22 @@ export default function Sidebar({
     };
 
     const navItems = [
-        { label: 'Dashboard', href: '/', icon: LayoutDashboard, exact: true },
-        { label: 'Invoices', href: '/invoices', icon: FileText, activeCondition: pathname === '/invoices' && !isRecycleBin },
-        { label: 'New Invoice', href: '/invoices/new', icon: PlusCircle },
-        { label: 'Inventory DB', href: '/inventory', icon: Package },
+        { label: 'Dashboard', href: '/admin/invoices', icon: LayoutDashboard, exact: true },
+        { label: 'Invoices', href: '/admin/invoices/invoices', icon: FileText, activeCondition: pathname === '/admin/invoices/invoices' && !isRecycleBin },
+        { label: 'New Invoice', href: '/admin/invoices/invoices/new', icon: PlusCircle },
+        { label: 'Inventory DB', href: '/admin/invoices/inventory', icon: Package },
         { label: 'Address Book', icon: Users, type: 'button' as const, onClick: onShowAddressBook },
         { label: 'Backup', icon: isBackingUp ? RefreshCw : DatabaseBackup, type: 'button' as const, onClick: handleBackupClick, className: isBackingUp ? styles.spin : '' },
         { label: 'Export PDFs', icon: FileDown, type: 'button' as const, onClick: onShowExportPreview },
         { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
-        { label: 'Outstanding', href: '/outstanding', icon: DollarSign, badge: outstandingBalances.length > 0 ? outstandingBalances.length : undefined },
-        { label: 'Reports', href: '/reports', icon: BarChart },
-        { label: 'HR Management', href: '/employees', icon: Clock },
-        { label: 'Recycle Bin', href: '/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
-        { label: 'Service Tracking', href: '/service-tracking', icon: Truck },
-        { label: 'Service Vendors', href: '/service-vendors', icon: Wrench },
-        { label: 'Settings', href: '/settings', icon: Settings },
-        { label: 'Audit Log', href: '/audit-log', icon: History }
+        { label: 'Outstanding', href: '/admin/invoices/outstanding', icon: DollarSign, badge: outstandingBalances.length > 0 ? outstandingBalances.length : undefined },
+        { label: 'Reports', href: '/admin/invoices/reports', icon: BarChart },
+        { label: 'HR Management', href: '/admin/invoices/employees', icon: Clock },
+        { label: 'Recycle Bin', href: '/admin/invoices/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
+        { label: 'Service Tracking', href: '/admin/invoices/service-tracking', icon: Truck },
+        { label: 'Service Vendors', href: '/admin/invoices/service-vendors', icon: Wrench },
+        { label: 'Settings', href: '/admin/invoices/settings', icon: Settings },
+        { label: 'Audit Log', href: '/admin/invoices/audit-log', icon: History }
     ];
 
     return (

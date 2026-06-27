@@ -303,7 +303,7 @@ export default function CustomerHistoryModal({ isOpen, onClose, customer }: Cust
                                                     {item.description}
                                                     {item.invoiceId && (
                                                         <Link
-                                                            href={`/invoices/view?id=${item.invoiceId}`}
+                                                            href={`/admin/invoices/invoices/view?id=${item.invoiceId}`}
                                                             target="_blank"
                                                             className="print-hide"
                                                             style={{ marginLeft: 8, color: '#3b82f6', textDecoration: 'none', fontSize: 11, fontWeight: 600 }}

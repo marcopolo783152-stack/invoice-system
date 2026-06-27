@@ -27,7 +27,8 @@
 
 	/* 3. Handle standard printing (when NO print portal is present) */
 	/* Hide elements marked with no-print */
-	.no-print {
+	.no-print,
+	.print-hide {
 		display: none !important;
 	}
 
@@ -38,12 +39,22 @@
 		display: none !important;
 	}
 
+	/* Reset flex wrappers to fix blank/clipped print output */
+	.admin-layout-wrapper {
+		display: block !important;
+		min-height: auto !important;
+		height: auto !important;
+	}
+
 	/* Reset main content for printing */
 	.main-content {
+		display: block !important;
 		margin: 0 !important;
 		padding: 0 !important;
 		width: 100% !important;
 		background: white !important;
+		min-height: auto !important;
+		height: auto !important;
 	}
 
 	/* Ensure visible content is actually visible */

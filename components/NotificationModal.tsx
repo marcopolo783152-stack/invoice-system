@@ -157,7 +157,7 @@ export default function NotificationModal({ isOpen, onClose }: NotificationModal
                                         </div>
                                     </div>
                                     <Link
-                                        href={`/invoices/view?id=${inv.id}`}
+                                        href={`/admin/invoices/invoices/view?id=${inv.id}`}
                                         onClick={onClose}
                                         style={{
                                             padding: '10px 16px',

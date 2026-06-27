@@ -162,7 +162,7 @@ export default function OutstandingPageClient() {
                                                                 <td style={{ padding: '14px 16px', color: '#dc2626', fontWeight: 700, textAlign: 'right' }}>{formatCurrency(inv.balanceDue)}</td>
                                                                 <td style={{ padding: '14px 16px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                                                     <Link
-                                                                        href={`/invoices/view?id=${inv.id}`}
+                                                                        href={`/admin/invoices/invoices/view?id=${inv.id}`}
                                                                         style={{
                                                                             display: 'inline-flex',
                                                                             alignItems: 'center',

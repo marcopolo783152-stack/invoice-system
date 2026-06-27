@@ -67,7 +67,7 @@ function InvoicesListContent() {
         if (mode === 'bin') params.set('view', 'bin');
         else if (mode === 'drafts') params.set('view', 'drafts');
         else params.delete('view');
-        router.push(`/invoices?${params.toString()}`);
+        router.push(`/admin/invoices/invoices?${params.toString()}`);
     };
 
     useEffect(() => {
@@ -566,7 +566,7 @@ function InvoicesListContent() {
                             <FileDown size={18} style={{ marginRight: 8 }} />
                             {isExporting ? `Exporting...` : 'Export PDFs'}
                         </button>
-                        <Link href="/invoices/new" className="luxury-button" style={{ background: 'var(--primary)', color: 'white', border: 'none' }}>
+                        <Link href="/admin/invoices/invoices/new" className="luxury-button" style={{ background: 'var(--primary)', color: 'white', border: 'none' }}>
                             <Plus size={20} style={{ marginRight: 8 }} /> New Document
                         </Link>
                     </div>
@@ -613,7 +613,7 @@ function InvoicesListContent() {
                                         />
                                     </td>
                                     <td style={{ padding: '20px 24px' }}>
-                                        <Link href={`/invoices/view?id=${inv.id}`} style={{ textDecoration: 'none' }}>
+                                        <Link href={`/admin/invoices/invoices/view?id=${inv.id}`} style={{ textDecoration: 'none' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                                 <div style={{ padding: 8, background: 'var(--glass-bg)', borderRadius: 10, color: 'var(--primary)', border: '1px solid var(--glass-border)' }}>
                                                     <FileText size={16} />
@@ -667,7 +667,7 @@ function InvoicesListContent() {
                                             >
                                                 <Printer size={18} />
                                             </button>
-                                            <Link href={`/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center' }} title="View Details">
+                                            <Link href={`/admin/invoices/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center' }} title="View Details">
                                                 <FileText size={18} />
                                             </Link>
                                             {(viewMode === 'active' || viewMode === 'drafts') && (
@@ -707,7 +707,7 @@ function InvoicesListContent() {
                     const calcs = calculateInvoice(inv.data || {} as any);
                     return (
                         <div key={inv.id}
-                            onClick={() => router.push(`/invoices/view?id=${inv.id}`)}
+                            onClick={() => router.push(`/admin/invoices/invoices/view?id=${inv.id}`)}
                             className="luxury-card"
                             style={{ padding: 20, cursor: 'pointer' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>

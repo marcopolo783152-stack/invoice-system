@@ -276,7 +276,7 @@ function ServiceOrderDetailContent() {
                         <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Quick Actions</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             <button
-                                onClick={() => router.push('/service-tracking')}
+                                onClick={() => router.push('/admin/invoices/service-tracking')}
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg-void)', fontWeight: 600, cursor: 'pointer' }}
                             >
                                 View All Orders

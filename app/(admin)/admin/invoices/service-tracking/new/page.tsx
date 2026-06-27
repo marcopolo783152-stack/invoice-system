@@ -295,7 +295,7 @@ export default function NewServiceOrderPage() {
                 orderNumber,
                 rugs: selectedRugs
             });
-            router.push('/service-tracking');
+            router.push('/admin/invoices/service-tracking');
         } catch (error) {
             console.error('Error creating service order:', error);
             alert('Failed to create service order. Please check all fields and try again.');

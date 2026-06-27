@@ -283,7 +283,7 @@ function InvoiceViewContent() {
 
     const handleEdit = () => {
         if (invoice) {
-            router.push(`/invoices/new?edit=${invoice.id}`);
+            router.push(`/admin/invoices/invoices/new?edit=${invoice.id}`);
         }
     };
 
@@ -394,7 +394,7 @@ function InvoiceViewContent() {
 
                 sessionStorage.setItem('convert_items', JSON.stringify(itemsForNewInvoice));
                 // Redirect
-                router.push('/invoices/new');
+                router.push('/admin/invoices/invoices/new');
                 return true;
                 */
 
@@ -588,7 +588,7 @@ function InvoiceViewContent() {
     if (!invoice || !calculations) {
         return (
             <div style={{ padding: 40, fontFamily: 'sans-serif' }}>
-                <Link href="/invoices" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20, textDecoration: 'none', color: '#666' }}>
+                <Link href="/admin/invoices/invoices" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20, textDecoration: 'none', color: '#666' }}>
                     <ArrowLeft size={16} /> Back to Invoices
                 </Link>
                 <div style={{ textAlign: 'center', marginTop: 40 }}>
@@ -605,7 +605,7 @@ function InvoiceViewContent() {
                 <div style={{ padding: '40px 20px', maxWidth: 1000, margin: '0 auto' }}>
                     <div className="no-print">
                         <Link
-                            href="/invoices"
+                            href="/admin/invoices/invoices"
                             style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
