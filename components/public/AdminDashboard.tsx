@@ -2377,8 +2377,43 @@ export const AdminDashboard: React.FC = () => {
                     type="button"
                     onClick={() => {
                       const ageText = rugAge.includes('Vintage') ? 'vintage' : rugAge.includes('Antique') ? 'antique' : 'contemporary';
-                      const desc = `This exquisite ${ageText} ${rugStyle} rug, masterfully hand-crafted in ${rugOrigin}, brings timeless elegance to any interior space. Measuring ${rugDimensions}, this piece features a breathtaking palette of ${rugColors}. Woven from ${rugMaterial.toLowerCase()}, its ${rugCondition.toLowerCase()} condition speaks to its enduring quality and expert craftsmanship. Perfect for elevating your living space with its unique character and undeniable charm.`;
-                      setRugDescription(desc);
+                      
+                      const openings = [
+                        `This exquisite ${ageText} ${rugStyle} rug, masterfully hand-crafted in ${rugOrigin}, brings timeless elegance to any interior space.`,
+                        `Presenting a remarkable ${ageText} ${rugStyle} masterpiece originating from ${rugOrigin}, showcasing true artisanal heritage.`,
+                        `Discover the charm of this authentic ${ageText} ${rugStyle} rug, a beautiful testament to the weaving traditions of ${rugOrigin}.`,
+                        `An exceptional piece of history, this ${ageText} ${rugStyle} rug from ${rugOrigin} offers unparalleled aesthetic appeal.`
+                      ];
+                      
+                      const bodies = [
+                        `Measuring ${rugDimensions}, this piece features a breathtaking palette of ${rugColors}. Woven from ${rugMaterial.toLowerCase()}, its ${rugCondition.toLowerCase()} condition speaks to its enduring quality and expert craftsmanship.`,
+                        `With dimensions of ${rugDimensions}, it boasts a striking array of ${rugColors}. The premium ${rugMaterial.toLowerCase()} construction and ${rugCondition.toLowerCase()} condition ensure it remains a focal point for generations.`,
+                        `Its generous ${rugDimensions} size perfectly frames the brilliant ${rugColors} tones. Carefully knotted using ${rugMaterial.toLowerCase()}, the rug survives in ${rugCondition.toLowerCase()} condition, preserving its original glory.`
+                      ];
+
+                      const closings = [
+                        `Perfect for elevating your living space with its unique character and undeniable charm.`,
+                        `A brilliant investment piece that harmonizes traditional artistry with modern home decor.`,
+                        `An ideal foundational piece to anchor your room with warmth, texture, and historic beauty.`,
+                        `Sure to be a conversation starter, it brings a sophisticated, worldly touch to any curated interior.`
+                      ];
+
+                      // Randomly select one from each array
+                      const opening = openings[Math.floor(Math.random() * openings.length)];
+                      const body = bodies[Math.floor(Math.random() * bodies.length)];
+                      const closing = closings[Math.floor(Math.random() * closings.length)];
+
+                      // If the user already wrote some notes, incorporate them!
+                      const userNotes = rugDescription.trim();
+                      
+                      let finalDesc = "";
+                      if (userNotes.length > 0) {
+                        finalDesc = `${userNotes}\n\n${opening} ${body} ${closing}`;
+                      } else {
+                        finalDesc = `${opening} ${body} ${closing}`;
+                      }
+                      
+                      setRugDescription(finalDesc);
                     }}
                     className="flex items-center text-[10px] text-editorial-accent hover:text-amber-600 font-bold transition"
                   >
