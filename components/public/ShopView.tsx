@@ -158,7 +158,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
         {activeFiltersCount > 0 && (
           <button
             onClick={clearAllFilters}
-            className="text-[10px] text-editorial-accent font-bold uppercase hover:underline"
+            className="text-xs text-editorial-accent font-bold uppercase hover:underline"
           >
             Clear ({activeFiltersCount})
           </button>
@@ -168,7 +168,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
       {/* Price filter slider */}
       <div className="space-y-2">
         <div className="flex justify-between font-bold text-editorial-text">
-          <span className="uppercase tracking-wider text-[10px]">Maximum Value</span>
+          <span className="uppercase tracking-wider text-xs">Maximum Value</span>
           <span>${maxPrice.toLocaleString()}</span>
         </div>
         <input
@@ -180,7 +180,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
           onChange={(e) => setMaxPrice(Number(e.target.value))}
           className="w-full accent-editorial-accent cursor-pointer h-1 bg-gray-200"
         />
-        <div className="flex justify-between text-[9px] text-gray-400">
+        <div className="flex justify-between text-sm text-gray-400">
           <span>$1,000</span>
           <span>$200,000</span>
         </div>
@@ -188,13 +188,13 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
 
       {/* Size Categories */}
       <div className="space-y-2 border-t border-editorial-border pt-4">
-        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-[10px]">Rug Size Class</h4>
+        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-xs">Rug Size Class</h4>
         <div className="flex flex-wrap gap-1">
           {sizeCategories.map((size) => (
             <button
               key={size}
               onClick={() => toggleFilter(selectedSizes, setSelectedSizes, size)}
-              className={`px-2.5 py-1.5 rounded-none border text-[10px] transition ${
+              className={`px-2.5 py-1.5 rounded-none border text-xs transition ${
                 selectedSizes.includes(size)
                   ? "border-editorial-accent bg-editorial-aside text-editorial-accent font-bold"
                   : "border-editorial-border bg-white hover:border-gray-300 text-gray-600"
@@ -208,7 +208,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
 
       {/* Specific Dimensions Filter */}
       <div className="space-y-2 border-t border-editorial-border pt-4">
-        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-[10px]">Specific Dimensions</h4>
+        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-xs">Specific Dimensions</h4>
         <div className="relative">
           <select
             value={selectedSpecificSizes[0] || ""}
@@ -216,7 +216,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
               const val = e.target.value;
               setSelectedSpecificSizes(val ? [val] : []);
             }}
-            className="w-full bg-white border border-editorial-border rounded-none py-1.5 px-2 text-[10px] text-gray-600 outline-none focus:border-editorial-accent"
+            className="w-full bg-white border border-editorial-border rounded-none py-1.5 px-2 text-xs text-gray-600 outline-none focus:border-editorial-accent"
           >
             <option value="">All Specific Sizes</option>
             {ALL_SIZES.map((sz) => (
@@ -227,12 +227,12 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
         {selectedSpecificSizes.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {selectedSpecificSizes.map((sz) => (
-              <span key={sz} className="inline-flex items-center gap-1 bg-stone-100 text-[9px] font-semibold text-editorial-text py-0.5 px-2 border border-stone-200">
+              <span key={sz} className="inline-flex items-center gap-1 bg-stone-100 text-sm font-semibold text-editorial-text py-0.5 px-2 border border-stone-200">
                 {sz}
                 <button
                   type="button"
                   onClick={() => setSelectedSpecificSizes([])}
-                  className="hover:text-red-500 font-bold ml-0.5 text-[9px] cursor-pointer"
+                  className="hover:text-red-500 font-bold ml-0.5 text-sm cursor-pointer"
                 >
                   ×
                 </button>
@@ -244,7 +244,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
 
       {/* Country of Origin */}
       <div className="space-y-2 border-t border-editorial-border pt-4">
-        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-[10px]">Geographic Origin</h4>
+        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-xs">Geographic Origin</h4>
         <div className="space-y-1.5">
           {origins.map((origin) => (
             <label key={origin} className="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-editorial-text">
@@ -262,7 +262,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
 
       {/* Style Theme */}
       <div className="space-y-2 border-t border-editorial-border pt-4">
-        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-[10px]">Styling & Aesthetics</h4>
+        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-xs">Styling & Aesthetics</h4>
         <div className="space-y-1.5">
           {styles.map((style) => (
             <label key={style} className="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-editorial-text">
@@ -280,13 +280,13 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
 
       {/* Shape Categories */}
       <div className="space-y-2 border-t border-editorial-border pt-4">
-        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-[10px]">Rug Geometry</h4>
+        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-xs">Rug Geometry</h4>
         <div className="flex flex-wrap gap-1">
           {shapes.map((shape) => (
             <button
               key={shape}
               onClick={() => toggleFilter(selectedShapes, setSelectedShapes, shape)}
-              className={`px-2 py-1 border rounded-none text-[10px] transition ${
+              className={`px-2 py-1 border rounded-none text-xs transition ${
                 selectedShapes.includes(shape)
                   ? "border-editorial-accent bg-editorial-aside text-editorial-accent font-bold"
                   : "border-editorial-border bg-white hover:border-gray-300 text-gray-600"
@@ -300,13 +300,13 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
 
       {/* Dominant Colors */}
       <div className="space-y-2 border-t border-editorial-border pt-4">
-        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-[10px]">Dominant Colors</h4>
+        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-xs">Dominant Colors</h4>
         <div className="flex flex-wrap gap-1">
           {colorsList.map((color) => (
             <button
               key={color}
               onClick={() => toggleFilter(selectedColors, setSelectedColors, color)}
-              className={`px-2.5 py-1 text-[10px] transition border rounded-none ${
+              className={`px-2.5 py-1 text-xs transition border rounded-none ${
                 selectedColors.includes(color)
                   ? "border-editorial-accent bg-editorial-aside text-editorial-accent font-bold"
                   : "border-editorial-border bg-editorial-bg hover:bg-gray-100 text-gray-500"
@@ -320,7 +320,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
 
       {/* Availability Status */}
       <div className="space-y-2 border-t border-editorial-border pt-4">
-        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-[10px]">Availability</h4>
+        <h4 className="font-bold uppercase tracking-wider text-editorial-text text-xs">Availability</h4>
         <div className="space-y-1.5">
           {availabilities.map((avail) => (
             <label key={avail} className="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-editorial-text">
@@ -464,20 +464,20 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                       
                       {/* Badge Tags */}
                       <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                        <span className="px-2.5 py-1 bg-editorial-text/90 backdrop-blur-sm text-[9px] text-white font-bold uppercase tracking-widest rounded-none shadow-sm">
+                        <span className="px-2.5 py-1 bg-editorial-text/90 backdrop-blur-sm text-sm text-white font-bold uppercase tracking-widest rounded-none shadow-sm">
                           {rug.origin}
                         </span>
-                        <span className="px-2 py-0.5 bg-editorial-aside text-[8px] text-editorial-text font-bold uppercase tracking-wider rounded-none border border-editorial-border shadow-sm">
+                        <span className="px-2 py-0.5 bg-editorial-aside text-xs text-editorial-text font-bold uppercase tracking-wider rounded-none border border-editorial-border shadow-sm">
                           {rug.style}
                         </span>
                         {rug.isSpecialSale && (
-                          <span className="px-2 py-0.5 bg-[#A68B67] text-[8px] text-white font-bold uppercase tracking-wider rounded-none shadow-sm flex items-center gap-1">
+                          <span className="px-2 py-0.5 bg-[#A68B67] text-xs text-white font-bold uppercase tracking-wider rounded-none shadow-sm flex items-center gap-1">
                             <Sparkles size={10} /> SPECIAL SALE
                           </span>
                         )}
                       </div>
 
-                      <span className={`absolute top-3 right-3 px-2 py-0.5 text-[8px] tracking-wider font-extrabold uppercase rounded-none shadow-sm ${
+                      <span className={`absolute top-3 right-3 px-2 py-0.5 text-xs tracking-wider font-extrabold uppercase rounded-none shadow-sm ${
                         rug.availability === "In Stock" ? "bg-green-600 text-white" :
                         rug.availability === "Reserved" ? "bg-editorial-accent text-white" :
                         "bg-red-500 text-white"
@@ -486,7 +486,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                       </span>
 
                       {/* Dimensions Overlay */}
-                      <div className="absolute bottom-2 inset-x-2 bg-neutral-900/75 backdrop-blur-xs text-white p-1 rounded-none text-center text-[10px] font-mono font-semibold tracking-wider opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="absolute bottom-2 inset-x-2 bg-neutral-900/75 backdrop-blur-xs text-white p-1 rounded-none text-center text-xs font-mono font-semibold tracking-wider opacity-0 group-hover:opacity-100 transition-all">
                         Dimensions: {rug.dimensions}
                       </div>
                     </div>
@@ -496,8 +496,8 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                       <div className="space-y-1.5 text-left">
                         <div className="flex items-center gap-1.5 text-editorial-accent">
                           <Star className="h-3 w-3 fill-editorial-accent" />
-                          <span className="text-[10px] font-bold text-editorial-text">{rug.rating.toFixed(1)} / 5</span>
-                          <span className="text-[9px] text-gray-400">| Certified Origin</span>
+                          <span className="text-xs font-bold text-editorial-text">{rug.rating.toFixed(1)} / 5</span>
+                          <span className="text-sm text-gray-400">| Certified Origin</span>
                         </div>
                         <h3 
                           onClick={() => onSelectRugId(rug.id)}
@@ -505,15 +505,20 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                         >
                           {rug.name}
                         </h3>
-                        <p className="text-[10px] text-gray-400 font-medium font-sans font-light">
+                        <p className="text-xs text-gray-400 font-medium font-sans font-light">
                           Age: {rug.age} | Size: {rug.dimensions} ({rug.sizeCategory}) | {rug.material}
                         </p>
                       </div>
 
                       <div className="pt-3 border-t border-editorial-border flex items-center justify-between">
                         <div>
-                          <span className="block text-[8px] uppercase tracking-wider text-gray-400 font-semibold">Concierge Value</span>
-                          <span className="font-serif text-sm font-light text-editorial-text">${rug.price.toLocaleString()}</span>
+                          <span className="block text-xs uppercase tracking-wider text-gray-400 font-semibold">Concierge Value</span>
+                          <div className="flex items-center gap-2">
+                            {rug.originalPrice && rug.originalPrice > rug.price && (
+                              <span className="text-xs text-gray-400 line-through">${rug.originalPrice.toLocaleString()}</span>
+                            )}
+                            <span className="font-serif text-sm font-light text-editorial-text">${rug.price.toLocaleString()}</span>
+                          </div>
                         </div>
                         
                         <div className="flex items-center gap-1.5">
@@ -528,13 +533,13 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                           {rug.availability === "In Stock" ? (
                             <button
                               onClick={() => addToCart(rug)}
-                              className="px-3 py-2 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-[9px] rounded-none shadow-sm transition flex items-center gap-1"
+                              className="px-3 py-2 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none shadow-sm transition flex items-center gap-1"
                             >
                               <ShoppingBag className="h-3.5 w-3.5" />
                               <span>Add</span>
                             </button>
                           ) : (
-                            <span className="px-2 py-1.5 bg-editorial-aside rounded-none text-[9px] text-gray-400 uppercase tracking-wider font-semibold border border-editorial-border">
+                            <span className="px-2 py-1.5 bg-editorial-aside rounded-none text-sm text-gray-400 uppercase tracking-wider font-semibold border border-editorial-border">
                               Locked
                             </span>
                           )}

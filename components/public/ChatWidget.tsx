@@ -138,23 +138,23 @@ export const ChatWidget: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-serif font-bold text-editorial-text text-sm">Marco Polo Concierge</h3>
-                <p className="text-[10px] text-emerald-600 font-medium">{activeCustomerName}</p>
+                <p className="text-xs text-emerald-600 font-medium">{activeCustomerName}</p>
               </div>
             </div>
             
             <div className="flex items-center gap-1.5">
               {showEndConfirm ? (
                 <div className="flex items-center gap-1 bg-red-50 p-1 border border-red-200">
-                  <span className="text-[8px] text-red-600 font-bold uppercase tracking-wide mr-1 font-sans">Clear chat?</span>
+                  <span className="text-xs text-red-600 font-bold uppercase tracking-wide mr-1 font-sans">Clear chat?</span>
                   <button
                     onClick={handleEndChat}
-                    className="px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-bold uppercase cursor-pointer"
+                    className="px-1.5 py-0.5 bg-red-600 text-white text-xs font-bold uppercase cursor-pointer"
                   >
                     Yes
                   </button>
                   <button
                     onClick={() => setShowEndConfirm(false)}
-                    className="px-1.5 py-0.5 bg-stone-200 text-neutral-700 text-[8px] font-bold uppercase cursor-pointer"
+                    className="px-1.5 py-0.5 bg-stone-200 text-neutral-700 text-xs font-bold uppercase cursor-pointer"
                   >
                     No
                   </button>
@@ -163,7 +163,7 @@ export const ChatWidget: React.FC = () => {
                 <button
                   onClick={() => setShowEndConfirm(true)}
                   title="End session and clear conversation"
-                  className="px-2 py-1 bg-white border border-editorial-border hover:border-red-500 text-gray-500 hover:text-red-500 text-[9px] uppercase font-bold tracking-wider rounded-none transition cursor-pointer font-mono"
+                  className="px-2 py-1 bg-white border border-editorial-border hover:border-red-500 text-gray-500 hover:text-red-500 text-sm uppercase font-bold tracking-wider rounded-none transition cursor-pointer font-mono"
                 >
                   End Chat
                 </button>
@@ -179,8 +179,8 @@ export const ChatWidget: React.FC = () => {
           </div>
 
           {/* Quick Shortcuts */}
-          <div className="bg-white px-4 py-2 border-b border-editorial-border flex items-center justify-between gap-1 text-[9px] text-gray-500">
-            <span className="font-serif uppercase tracking-widest text-[8px] font-bold text-editorial-accent">Direct Options:</span>
+          <div className="bg-white px-4 py-2 border-b border-editorial-border flex items-center justify-between gap-1 text-sm text-gray-500">
+            <span className="font-serif uppercase tracking-widest text-xs font-bold text-editorial-accent">Direct Options:</span>
             <div className="flex gap-2">
               <a
                 href="https://wa.me/18005557831"
@@ -217,7 +217,7 @@ export const ChatWidget: React.FC = () => {
                 >
                   <p>{msg.text}</p>
                 </div>
-                <span className="text-[9px] text-gray-400 mt-1 px-1 font-mono">
+                <span className="text-sm text-gray-400 mt-1 px-1 font-mono">
                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
@@ -231,7 +231,7 @@ export const ChatWidget: React.FC = () => {
               onClick={() => {
                 sendChatMessage("How do I track my active order status?", "customer", undefined, activeSessionId, activeCustomerName);
               }}
-              className="px-2 py-1 bg-editorial-aside border border-editorial-border rounded-none text-gray-600 hover:text-editorial-accent hover:border-editorial-accent text-[9px] transition font-medium cursor-pointer"
+              className="px-2 py-1 bg-editorial-aside border border-editorial-border rounded-none text-gray-600 hover:text-editorial-accent hover:border-editorial-accent text-sm transition font-medium cursor-pointer"
             >
               How to track my order?
             </button>
@@ -239,7 +239,7 @@ export const ChatWidget: React.FC = () => {
               onClick={() => {
                 sendChatMessage("What is your professional rug cleaning cost?", "customer", undefined, activeSessionId, activeCustomerName);
               }}
-              className="px-2 py-1 bg-editorial-aside border border-editorial-border rounded-none text-gray-600 hover:text-editorial-accent hover:border-editorial-accent text-[9px] transition font-medium cursor-pointer"
+              className="px-2 py-1 bg-editorial-aside border border-editorial-border rounded-none text-gray-600 hover:text-editorial-accent hover:border-editorial-accent text-sm transition font-medium cursor-pointer"
             >
               Rug wash services?
             </button>
@@ -247,7 +247,7 @@ export const ChatWidget: React.FC = () => {
               onClick={() => {
                 sendChatMessage("Are all your Persian rugs handmade and certified?", "customer", undefined, activeSessionId, activeCustomerName);
               }}
-              className="px-2 py-1 bg-editorial-aside border border-editorial-border rounded-none text-gray-600 hover:text-editorial-accent hover:border-editorial-accent text-[9px] transition font-medium cursor-pointer"
+              className="px-2 py-1 bg-editorial-aside border border-editorial-border rounded-none text-gray-600 hover:text-editorial-accent hover:border-editorial-accent text-sm transition font-medium cursor-pointer"
             >
               Are rugs certified?
             </button>

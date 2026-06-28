@@ -98,6 +98,10 @@ interface StoreContextType {
   showroomAnnouncement: string;
   setShowroomAnnouncement: (text: string) => void;
   logoUrl: string;
+  // Shop Profile
+  shopProfile: ShopProfile;
+  setShopProfile: (profile: ShopProfile) => void;
+
   setLogoUrl: (url: string) => void;
 
   // Social media links customizable by admin
@@ -219,7 +223,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600"
   ]);
   const [showroomAnnouncement, setShowroomAnnouncementState] = useState<string>("🏛️ SHOWROOM SPECIAL: Free premium felt underlays with any 8x10 or larger antique Persian collection purchase this week.");
-  const [logoUrl, setLogoUrlState] = useState<string>("");
+  const [logoUrl,
+    shopProfile,
+    setShopProfile,
+ setLogoUrlState] = useState<string>("");
   const [socialLinks, setSocialLinksState] = useState<SocialMediaLink[]>([
     { platform: "instagram", url: "https://instagram.com/marcopolorugs" },
     { platform: "pinterest", url: "https://pinterest.com/marcopolorugs" },
@@ -246,6 +253,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onHero: setHeroCoverPhotosState,
         onAnnouncement: setShowroomAnnouncementState,
         onLogo: setLogoUrlState,
+        onProfile: setShopProfileState,
+
         onSocial: setSocialLinksState
       }));
     });
@@ -253,14 +262,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => unsubs.forEach(unsub => unsub());
   }, []);
 
-  const setHeroCoverPhotos = (urls: string[]) => {
-    setHeroCoverPhotosState(urls);
-    updateSettingDoc("hero", { urls });
+    const setHeroCoverPhotos = (urls: string[]) => {
+    // Filter out blob URLs to prevent black screen bug on reload
+    const cleanUrls = urls.map(u => (u.startsWith("blob:") ? "" : u));
+    setHeroCoverPhotosState(cleanUrls);
+    updateSettingDoc("hero", { urls: cleanUrls });
   };
 
   const setShowroomAnnouncement = (text: string) => {
     setShowroomAnnouncementState(text);
     updateSettingDoc("announcement", { text });
+  };
+
+  
+  const setShopProfile = (profile: ShopProfile) => {
+    updateSettingDoc("profile", profile);
   };
 
   const setLogoUrl = (url: string) => {
@@ -457,7 +473,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       reviewerName,
       reviewText,
       imageUrl,
-      isApproved: false, // Admin must approve before publishing!
+      isApproved: true, // Auto-approve per user request
       createdAt: new Date().toISOString()
     };
     addShowroomDoc(SHOWROOM_REVIEWS, newReview);

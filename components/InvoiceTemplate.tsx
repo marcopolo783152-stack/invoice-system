@@ -1,3 +1,4 @@
+"use client";
 /**
  * INVOICE TEMPLATE - UI COMPONENT
  * 
@@ -6,6 +7,7 @@
  * DO NOT modify layout, spacing, or arrangement.
  */
 
+import { useStore } from "@/context/StoreContext";
 import React from 'react';
 import {
   InvoiceData,
@@ -33,22 +35,24 @@ interface InvoiceTemplateProps {
   onDeletePayment?: (paymentId: string) => void;
 }
 
-export default function InvoiceTemplate({
+export default function InvoiceTemplate(props) {
+  const { shopProfile } = useStore();
+  const {
   data,
   calculations,
   businessInfo = {
-    name: 'MARCO POLO ORIENTAL RUGS, INC.',
+    name: shopProfile?.name || 'MARCO POLO ORIENTAL RUGS, INC.',
     address: '3260 DUKE ST',
     city: 'ALEXANDRIA',
-    state: 'VA',
-    zip: '22314',
+    state: '',
+    zip: '',
     phone: '703-461-0207',
     fax: '703-461-0208',
     website: 'www.marcopolorugs.com',
-    email: 'marcopolorugs@aol.com',
+    email: shopProfile?.email || 'marcopolorugs@aol.com',
   },
   onDeletePayment,
-}: InvoiceTemplateProps) {
+} = props;
   // Format date as mm/dd/yyyy
   function formatDateMMDDYYYY(dateString: string) {
     // If dateString is in yyyy-mm-dd, parse as local date

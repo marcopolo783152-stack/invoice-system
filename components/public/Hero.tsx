@@ -115,21 +115,21 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
       title: "Imperial Hand-Knotted Treasures",
       subtitle: "Persian, Afghan & Turkish Masterpieces",
       desc: "Each rug is an investment-grade work of art, hand-knotted with premium organic-dyed highland wool and silk. Curated with museum-grade certification.",
-      image: heroCoverPhotos?.[0] || "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600",
+      image: heroCoverPhotos?.[0] || "",
       cta: "Explore Fine Rugs"
     },
     {
       title: "The Ultimate Silk Harmony",
       subtitle: "Exquisite Isfahan Tree of Life Series",
       desc: "Experience 1,000,000+ knots per square meter. Luminous natural silk pile reflecting majestic shades under ambient home lights.",
-      image: heroCoverPhotos?.[1] || "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1600",
+      image: heroCoverPhotos?.[1] || "",
       cta: "View Luminous Silk"
     },
     {
       title: "Generations of Handwoven Craft",
       subtitle: "Curated Antique & Modern Rug Collections",
       desc: "Bridging ancient Mesopotamian symbols with contemporary palettes, made for luxury villas and upscale urban designs.",
-      image: heroCoverPhotos?.[2] || "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600",
+      image: heroCoverPhotos?.[2] || "",
       cta: "Shop The Curation"
     }
   ];
@@ -255,7 +255,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   {/* Subtle Top Accent */}
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-editorial-accent/20 border border-editorial-accent/35 rounded-none">
                     <Sparkles className="h-3 w-3 text-editorial-accent animate-spin" />
-                    <span className="text-[10px] font-semibold tracking-[0.25em] text-[#F4F1EE] uppercase">
+                    <span className="text-xs font-semibold tracking-[0.25em] text-[#F4F1EE] uppercase">
                       Heritage Weaving
                     </span>
                   </div>
@@ -323,7 +323,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
             
             {/* Left side text */}
             <div className="lg:col-span-7 space-y-6">
-              <span className="text-[10px] uppercase tracking-[0.3em] text-editorial-accent font-semibold block">
+              <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-semibold block">
                 Family Curators Since 1978
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-editorial-text tracking-wide font-light leading-tight">
@@ -348,7 +348,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     <Award className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="text-[11px] font-bold text-editorial-text uppercase tracking-widest">100% Certified</h4>
+                    <h4 className="text-sm font-bold text-editorial-text uppercase tracking-widest">100% Certified</h4>
                     <p className="text-xs text-gray-400 font-light mt-0.5">Guaranteed origin & authentic vintage age.</p>
                   </div>
                 </div>
@@ -358,7 +358,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     <ShieldCheck className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="text-[11px] font-bold text-editorial-text uppercase tracking-widest">Secure Escrow</h4>
+                    <h4 className="text-sm font-bold text-editorial-text uppercase tracking-widest">Secure Escrow</h4>
                     <p className="text-xs text-gray-400 font-light mt-0.5">Full payment escrow and manual approval.</p>
                   </div>
                 </div>
@@ -368,7 +368,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     <Truck className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="text-[11px] font-bold text-editorial-text uppercase tracking-widest">White-Glove</h4>
+                    <h4 className="text-sm font-bold text-editorial-text uppercase tracking-widest">White-Glove</h4>
                     <p className="text-xs text-gray-400 font-light mt-0.5">Free, fully insured premium freight shipping.</p>
                   </div>
                 </div>
@@ -417,7 +417,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
           
           <div className="max-w-xl mx-auto space-y-3">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-editorial-accent font-semibold">Exquisite Masterpieces</span>
+            <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-semibold">Exquisite Masterpieces</span>
             <h2 className="font-serif text-3xl sm:text-4xl text-editorial-text font-light tracking-wide">Featured Collections</h2>
             <div className="h-[1px] w-12 bg-editorial-accent mx-auto my-2" />
             <p className="text-xs text-gray-500 font-light">Explore handpicked Persian, Turkish, and tribal rugs chosen for their historic rarity, majestic sheen, and pristine condition.</p>
@@ -441,10 +441,10 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     className="w-full h-full object-cover group-hover:scale-102 transition-all duration-700"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute top-3 left-3 px-3 py-1 bg-editorial-text/90 backdrop-blur-sm text-[9px] text-white tracking-widest font-bold uppercase rounded-none">
+                  <div className="absolute top-3 left-3 px-3 py-1 bg-editorial-text/90 backdrop-blur-sm text-sm text-white tracking-widest font-bold uppercase rounded-none">
                     {rug.origin}
                   </div>
-                  <div className="absolute top-3 right-3 px-3 py-1 bg-editorial-accent text-white text-[9px] tracking-widest font-bold uppercase rounded-none">
+                  <div className="absolute top-3 right-3 px-3 py-1 bg-editorial-accent text-white text-sm tracking-widest font-bold uppercase rounded-none">
                     {rug.style}
                   </div>
                 </div>
@@ -453,8 +453,8 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                 <div className="p-6 text-left space-y-2">
                   <div className="flex items-center gap-1.5 text-editorial-accent">
                     <Star className="h-3 w-3 fill-editorial-accent" />
-                    <span className="text-[11px] font-bold text-editorial-text">{rug.rating.toFixed(1)}</span>
-                    <span className="text-[10px] text-gray-400">| Certified Origin</span>
+                    <span className="text-sm font-bold text-editorial-text">{rug.rating.toFixed(1)}</span>
+                    <span className="text-xs text-gray-400">| Certified Origin</span>
                   </div>
                   <h3 className="font-serif text-lg font-light text-editorial-text group-hover:text-editorial-accent transition-colors truncate">
                     {rug.name}
@@ -465,10 +465,15 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   
                   <div className="pt-4 border-t border-editorial-border flex items-center justify-between">
                     <div>
-                      <span className="block text-[9px] uppercase text-gray-400 font-semibold tracking-wider">Luxury Curation</span>
-                      <span className="text-base font-serif font-light text-editorial-text">${rug.price.toLocaleString()}</span>
+                      <span className="block text-sm uppercase text-gray-400 font-semibold tracking-wider">Luxury Curation</span>
+                      <div className="flex items-center gap-2">
+                        {rug.originalPrice && rug.originalPrice > rug.price && (
+                          <span className="text-sm text-gray-400 line-through">${rug.originalPrice.toLocaleString()}</span>
+                        )}
+                        <span className="text-base font-serif font-light text-editorial-text">${rug.price.toLocaleString()}</span>
+                      </div>
                     </div>
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-editorial-accent group-hover:translate-x-1 transition-all inline-flex items-center gap-1">
+                    <span className="text-xs uppercase tracking-widest font-bold text-editorial-accent group-hover:translate-x-1 transition-all inline-flex items-center gap-1">
                       <span>View details</span>
                       <ChevronRight className="h-3.5 w-3.5" />
                     </span>
@@ -486,13 +491,13 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
             <div className="space-y-3">
-              <span className="text-[10px] uppercase tracking-[0.3em] text-editorial-accent font-semibold block">Elite Investments</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-semibold block">Elite Investments</span>
               <h2 className="font-serif text-3xl sm:text-4xl text-editorial-text font-light tracking-wide">Showroom Best Sellers</h2>
               <p className="text-xs text-gray-500 font-light">Our highest-rated, dense weave rugs representing authentic family collections.</p>
             </div>
             <button
               onClick={() => setCurrentTab("shop")}
-              className="px-6 py-3 border border-editorial-border hover:border-editorial-accent hover:text-editorial-accent text-editorial-text text-[10px] font-bold uppercase tracking-widest rounded-none transition duration-200"
+              className="px-6 py-3 border border-editorial-border hover:border-editorial-accent hover:text-editorial-accent text-editorial-text text-xs font-bold uppercase tracking-widest rounded-none transition duration-200"
             >
               View Full Collection
             </button>
@@ -518,7 +523,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   <div className="absolute inset-0 bg-neutral-950/10 group-hover:opacity-0 transition duration-300" />
                 </div>
                 <div className="p-6 space-y-3">
-                  <div className="text-[9px] font-mono text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                  <div className="text-sm font-mono text-gray-400 uppercase tracking-widest flex items-center justify-between">
                     <span>SKU: {rug.sku}</span>
                     <span className="text-editorial-accent font-semibold">{rug.dimensions}</span>
                   </div>
@@ -527,7 +532,12 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   </h3>
                   <div className="flex items-center justify-between pt-2 border-t border-editorial-border">
                     <span className="text-xs text-gray-400 font-light">{rug.material}</span>
-                    <span className="font-serif text-lg font-light text-editorial-text">${rug.price.toLocaleString()}</span>
+                    <div className="flex items-center gap-2">
+                      {rug.originalPrice && rug.originalPrice > rug.price && (
+                        <span className="text-sm text-gray-400 line-through">${rug.originalPrice.toLocaleString()}</span>
+                      )}
+                      <span className="font-serif text-lg font-light text-editorial-text">${rug.price.toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -546,7 +556,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
             
             {/* Left side info cards */}
             <div className="lg:col-span-7 space-y-6">
-              <span className="text-[10px] uppercase tracking-[0.3em] text-editorial-accent font-semibold block">
+              <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-semibold block">
                 Marco Polo Specialty Lab
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-white font-light tracking-wide leading-tight">
@@ -599,14 +609,14 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
               <div className="space-y-4">
                 <div className="text-center space-y-1">
                   <h3 className="font-serif text-lg font-light text-editorial-accent uppercase tracking-wide">Schedule Specialty Care</h3>
-                  <p className="text-[10px] text-gray-400 font-light">Certified Persian submersion washing & expert repairs.</p>
+                  <p className="text-xs text-gray-400 font-light">Certified Persian submersion washing & expert repairs.</p>
                 </div>
 
                 <form onSubmit={handleBookCleaning} className="space-y-3.5 text-xs font-sans">
                   {/* Contact details */}
                   <div className="space-y-2.5">
                     <div>
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Full Name *</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Full Name *</label>
                       <input
                         type="text"
                         required
@@ -619,7 +629,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Email Address *</label>
+                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Email Address *</label>
                         <input
                           type="email"
                           required
@@ -630,7 +640,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Phone Number *</label>
+                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Phone Number *</label>
                         <input
                           type="tel"
                           required
@@ -646,11 +656,11 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   {/* Sizing calculator controls */}
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Dimension Units *</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Dimension Units *</label>
                       <select
                         value={dimensionUnit}
                         onChange={(e) => setDimensionUnit(e.target.value as any)}
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-3 text-neutral-200 outline-none focus:border-editorial-accent text-[11px]"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-3 text-neutral-200 outline-none focus:border-editorial-accent text-sm"
                       >
                         <option value="Feet & Inches">Feet & Inches (e.g., 8'3" x 10'1")</option>
                         <option value="Total Inches">Total Inches only (e.g., 99" x 121")</option>
@@ -661,7 +671,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     {dimensionUnit === "Feet & Inches" && (
                       <div className="grid grid-cols-4 gap-2 text-center items-center">
                         <div>
-                          <label className="block text-gray-500 text-[8px] uppercase font-semibold mb-0.5">Width Ft</label>
+                          <label className="block text-gray-500 text-xs uppercase font-semibold mb-0.5">Width Ft</label>
                           <input
                             type="number"
                             min={0}
@@ -672,7 +682,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-500 text-[8px] uppercase font-semibold mb-0.5">Width In</label>
+                          <label className="block text-gray-500 text-xs uppercase font-semibold mb-0.5">Width In</label>
                           <input
                             type="number"
                             min={0}
@@ -684,7 +694,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-500 text-[8px] uppercase font-semibold mb-0.5">Length Ft</label>
+                          <label className="block text-gray-500 text-xs uppercase font-semibold mb-0.5">Length Ft</label>
                           <input
                             type="number"
                             min={0}
@@ -695,7 +705,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-500 text-[8px] uppercase font-semibold mb-0.5">Length In</label>
+                          <label className="block text-gray-500 text-xs uppercase font-semibold mb-0.5">Length In</label>
                           <input
                             type="number"
                             min={0}
@@ -712,7 +722,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     {dimensionUnit === "Total Inches" && (
                       <div className="grid grid-cols-2 gap-3 text-center">
                         <div>
-                          <label className="block text-gray-500 text-[8px] uppercase font-semibold mb-1">Width (Inches)</label>
+                          <label className="block text-gray-500 text-xs uppercase font-semibold mb-1">Width (Inches)</label>
                           <input
                             type="number"
                             min={1}
@@ -723,7 +733,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-500 text-[8px] uppercase font-semibold mb-1">Length (Inches)</label>
+                          <label className="block text-gray-500 text-xs uppercase font-semibold mb-1">Length (Inches)</label>
                           <input
                             type="number"
                             min={1}
@@ -739,7 +749,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     {dimensionUnit === "Meters (M)" && (
                       <div className="grid grid-cols-2 gap-3 text-center">
                         <div>
-                          <label className="block text-gray-500 text-[8px] uppercase font-semibold mb-1">Width (Meters)</label>
+                          <label className="block text-gray-500 text-xs uppercase font-semibold mb-1">Width (Meters)</label>
                           <input
                             type="number"
                             step="0.01"
@@ -751,7 +761,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-500 text-[8px] uppercase font-semibold mb-1">Length (Meters)</label>
+                          <label className="block text-gray-500 text-xs uppercase font-semibold mb-1">Length (Meters)</label>
                           <input
                             type="number"
                             step="0.01"
@@ -769,11 +779,11 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   {/* Scheduling / Options */}
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Service Option</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Service Option</label>
                       <select
                         value={cleaningOption}
                         onChange={(e) => setCleaningOption(e.target.value as "Pickup" | "Drop-off")}
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-2 text-neutral-200 outline-none focus:border-editorial-accent text-[11px]"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-2 text-neutral-200 outline-none focus:border-editorial-accent text-sm"
                       >
                         <option value="Pickup">Pickup</option>
                         <option value="Drop-off">Drop-off</option>
@@ -781,24 +791,24 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     </div>
 
                     <div>
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Preferred Date</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Preferred Date</label>
                       <input
                         type="date"
                         required
                         value={cleaningPreferredDate}
                         onChange={(e) => setCleaningPreferredDate(e.target.value)}
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-2 text-neutral-200 outline-none focus:border-editorial-accent text-[11px]"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-2 text-neutral-200 outline-none focus:border-editorial-accent text-sm"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Preferred Time *</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Preferred Time *</label>
                       <input
                         type="time"
                         required
                         value={cleaningPreferredTime}
                         onChange={(e) => setCleaningPreferredTime(e.target.value)}
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-2 text-neutral-200 outline-none focus:border-editorial-accent text-[11px] font-mono"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-2 text-neutral-200 outline-none focus:border-editorial-accent text-sm font-mono"
                       />
                     </div>
                   </div>
@@ -806,7 +816,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   {cleaningOption === "Pickup" && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-2">
-                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Pickup Address *</label>
+                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Pickup Address *</label>
                         <input
                           type="text"
                           required
@@ -817,11 +827,11 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Carriage Distance</label>
+                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Carriage Distance</label>
                         <select
                           value={pickupFee}
                           onChange={(e) => setPickupFee(Number(e.target.value))}
-                          className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-2 text-neutral-200 outline-none focus:border-editorial-accent text-[11px]"
+                          className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-2 text-neutral-200 outline-none focus:border-editorial-accent text-sm"
                         >
                           <option value={20}>Local ($20)</option>
                           <option value={35}>Metro ($35)</option>
@@ -832,7 +842,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   )}
 
                   {/* Real-time Invoice preview */}
-                  <div className="bg-neutral-900 p-3.5 border border-neutral-800 space-y-1.5 font-mono text-[10px] text-gray-400">
+                  <div className="bg-neutral-900 p-3.5 border border-neutral-800 space-y-1.5 font-mono text-xs text-gray-400">
                     <div className="flex justify-between">
                       <span>Area:</span>
                       <span>{sizeDescription} ({finalAreaSqft.toFixed(2)} sqft)</span>
@@ -853,7 +863,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-[10px] rounded-none transition duration-200 cursor-pointer"
+                    className="w-full py-3 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-xs rounded-none transition duration-200 cursor-pointer"
                   >
                     Submit Specialty Care Request
                   </button>
@@ -863,13 +873,13 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   <div className="absolute inset-0 bg-[#161616] flex flex-col items-center justify-center p-6 text-center rounded-none animate-fadeIn z-10">
                     <CheckCircle className="h-10 w-10 text-editorial-accent mb-3" />
                     <h4 className="font-serif text-lg text-white font-light uppercase tracking-wider">Request Received!</h4>
-                    <p className="text-gray-400 text-[10px] mt-1 mb-4">
+                    <p className="text-gray-400 text-xs mt-1 mb-4">
                       Booking ID: <span className="font-mono text-white font-bold">{cleaningReceiptData.id}</span>
                     </p>
 
                     <div className="bg-[#212121] border border-[#313131] p-3 max-w-sm w-full text-left mb-6">
-                      <p className="text-editorial-accent text-[9px] font-bold uppercase tracking-wider mb-1">Deposit Policy</p>
-                      <p className="text-gray-400 text-[10px]">
+                      <p className="text-editorial-accent text-sm font-bold uppercase tracking-wider mb-1">Deposit Policy</p>
+                      <p className="text-gray-400 text-xs">
                         A <strong>50% deposit (${(cleaningReceiptData.totalPrice / 2).toFixed(2)})</strong> is required upon {cleaningReceiptData.serviceOption === "Pickup" ? "pickup" : "drop-off"}. The balance is due upon return.
                       </p>
                     </div>
@@ -877,13 +887,13 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     <div className="flex gap-2 w-full max-w-sm">
                       <button
                         onClick={() => handleDownloadReceipt(cleaningReceiptData)}
-                        className="flex-1 py-2 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        className="flex-1 py-2 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
                       >
                         <Download className="h-3 w-3" /> Save PDF
                       </button>
                       <button
                         onClick={() => window.print()}
-                        className="flex-1 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white font-bold uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#444]"
+                        className="flex-1 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#444]"
                       >
                         <Printer className="h-3 w-3" /> Print
                       </button>
@@ -891,7 +901,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
                     <button
                       onClick={() => setCleaningFormSubmitted(false)}
-                      className="mt-6 text-[10px] text-gray-500 hover:text-white underline uppercase tracking-wider font-bold transition cursor-pointer"
+                      className="mt-6 text-xs text-gray-500 hover:text-white underline uppercase tracking-wider font-bold transition cursor-pointer"
                     >
                       Start New Request
                     </button>
@@ -909,7 +919,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           
           <div className="text-center space-y-3">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-editorial-accent font-semibold block">Verified Collectors</span>
+            <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-semibold block">Verified Collectors</span>
             <h2 className="font-serif text-3xl sm:text-4xl text-editorial-text font-light tracking-wide">Showroom Testimonials</h2>
             <p className="text-xs text-gray-500 max-w-xl mx-auto font-light">Real experiences from discerning interior designers and private families who trust our hand-knotted curation.</p>
           </div>
@@ -943,11 +953,11 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-editorial-border">
                     <div>
                       <h4 className="font-serif font-medium text-editorial-text text-sm">{rev.reviewerName}</h4>
-                      <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Verified Art Buyer</p>
+                      <p className="text-sm text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Verified Art Buyer</p>
                     </div>
                     {r && (
                       <div className="text-right text-xs">
-                        <span className="block text-gray-400 font-semibold text-[10px]">Purchased Product:</span>
+                        <span className="block text-gray-400 font-semibold text-xs">Purchased Product:</span>
                         <span className="text-editorial-accent hover:underline font-serif font-medium cursor-pointer" onClick={() => {
                           onSelectRugId(r.id);
                           setCurrentTab("shop");
@@ -970,7 +980,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
         <div className="absolute inset-0 bg-[radial-gradient(#A68B67_0.5px,transparent_0.5px)] [background-size:16px_16px] opacity-10" />
 
         <div className="max-w-4xl mx-auto px-4 relative z-10 space-y-6">
-          <span className="text-[10px] uppercase tracking-[0.4em] text-editorial-accent font-bold">Invest in Timeless Craft</span>
+          <span className="text-xs uppercase tracking-[0.4em] text-editorial-accent font-bold">Invest in Timeless Craft</span>
           <h2 className="font-serif text-3xl sm:text-5xl font-light tracking-wide leading-tight">Bring Palace Art Into Your Home</h2>
           <p className="text-gray-400 max-w-lg mx-auto text-xs leading-relaxed font-light">
             Whether you are seeking a stunning focal point or a cozy hallway runner, our rug advisors will assist you with custom dimensions and historical authentication.
@@ -1011,13 +1021,13 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
             <div className="space-y-4">
               <div className="text-center space-y-1">
-                <span className="text-[10px] uppercase tracking-[0.3em] text-editorial-accent font-semibold block">
+                <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-semibold block">
                   Marco Polo Specialty Lab
                 </span>
                 <h3 className="font-serif text-2xl font-light text-editorial-text uppercase tracking-wide">
                   Schedule Specialty Care
                 </h3>
-                <p className="text-[10px] text-gray-500 font-light">
+                <p className="text-xs text-gray-500 font-light">
                   Traditional Persian submersion washing & expert conservation.
                 </p>
               </div>
@@ -1025,13 +1035,13 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
               <form onSubmit={handleBookCleaning} className="space-y-4 text-xs font-sans">
                 {/* 1. Client Contact Details */}
                 <div className="border-b border-gray-100 pb-3 space-y-3">
-                  <h4 className="font-serif font-bold text-neutral-800 text-[11px] uppercase tracking-wider">
+                  <h4 className="font-serif font-bold text-neutral-800 text-sm uppercase tracking-wider">
                     1. Patron Contact Information
                   </h4>
                   
                   <div className="space-y-2.5">
                     <div>
-                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-[9px] mb-1">
+                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-sm mb-1">
                         Full Name *
                       </label>
                       <input
@@ -1046,7 +1056,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-gray-500 font-semibold uppercase tracking-wider text-[9px] mb-1">
+                        <label className="block text-gray-500 font-semibold uppercase tracking-wider text-sm mb-1">
                           Email Address *
                         </label>
                         <input
@@ -1059,7 +1069,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-500 font-semibold uppercase tracking-wider text-[9px] mb-1">
+                        <label className="block text-gray-500 font-semibold uppercase tracking-wider text-sm mb-1">
                           Phone Number *
                         </label>
                         <input
@@ -1077,17 +1087,17 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
                 {/* 2. Custom Size & Dimensions */}
                 <div className="border-b border-gray-100 pb-3 space-y-3">
-                  <h4 className="font-serif font-bold text-neutral-800 text-[11px] uppercase tracking-wider">
+                  <h4 className="font-serif font-bold text-neutral-800 text-sm uppercase tracking-wider">
                     2. Rug Dimensions & Unit Specification
                   </h4>
 
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-[9px] mb-1">Dimension Units *</label>
+                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-sm mb-1">Dimension Units *</label>
                       <select
                         value={dimensionUnit}
                         onChange={(e) => setDimensionUnit(e.target.value as any)}
-                        className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-3 text-editorial-text outline-none focus:border-editorial-accent text-[11px]"
+                        className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-3 text-editorial-text outline-none focus:border-editorial-accent text-sm"
                       >
                         <option value="Feet & Inches">Feet & Inches (e.g., 8'3" x 10'1")</option>
                         <option value="Total Inches">Total Inches only (e.g., 99" x 121")</option>
@@ -1098,7 +1108,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     {dimensionUnit === "Feet & Inches" && (
                       <div className="grid grid-cols-4 gap-2 text-center items-center">
                         <div>
-                          <label className="block text-gray-400 text-[8px] uppercase font-semibold mb-0.5">Width Ft</label>
+                          <label className="block text-gray-400 text-xs uppercase font-semibold mb-0.5">Width Ft</label>
                           <input
                             type="number"
                             min={0}
@@ -1109,7 +1119,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-400 text-[8px] uppercase font-semibold mb-0.5">Width In</label>
+                          <label className="block text-gray-400 text-xs uppercase font-semibold mb-0.5">Width In</label>
                           <input
                             type="number"
                             min={0}
@@ -1121,7 +1131,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-400 text-[8px] uppercase font-semibold mb-0.5">Length Ft</label>
+                          <label className="block text-gray-400 text-xs uppercase font-semibold mb-0.5">Length Ft</label>
                           <input
                             type="number"
                             min={0}
@@ -1132,7 +1142,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-400 text-[8px] uppercase font-semibold mb-0.5">Length In</label>
+                          <label className="block text-gray-400 text-xs uppercase font-semibold mb-0.5">Length In</label>
                           <input
                             type="number"
                             min={0}
@@ -1149,7 +1159,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     {dimensionUnit === "Total Inches" && (
                       <div className="grid grid-cols-2 gap-3 text-center">
                         <div>
-                          <label className="block text-gray-400 text-[8px] uppercase font-semibold mb-1">Width (Inches)</label>
+                          <label className="block text-gray-400 text-xs uppercase font-semibold mb-1">Width (Inches)</label>
                           <input
                             type="number"
                             min={1}
@@ -1160,7 +1170,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-400 text-[8px] uppercase font-semibold mb-1">Length (Inches)</label>
+                          <label className="block text-gray-400 text-xs uppercase font-semibold mb-1">Length (Inches)</label>
                           <input
                             type="number"
                             min={1}
@@ -1176,7 +1186,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     {dimensionUnit === "Meters (M)" && (
                       <div className="grid grid-cols-2 gap-3 text-center">
                         <div>
-                          <label className="block text-gray-400 text-[8px] uppercase font-semibold mb-1">Width (Meters)</label>
+                          <label className="block text-gray-400 text-xs uppercase font-semibold mb-1">Width (Meters)</label>
                           <input
                             type="number"
                             step="0.01"
@@ -1188,7 +1198,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-gray-400 text-[8px] uppercase font-semibold mb-1">Length (Meters)</label>
+                          <label className="block text-gray-400 text-xs uppercase font-semibold mb-1">Length (Meters)</label>
                           <input
                             type="number"
                             step="0.01"
@@ -1206,19 +1216,19 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
                 {/* 3. Transport Options */}
                 <div className="border-b border-gray-100 pb-3 space-y-3">
-                  <h4 className="font-serif font-bold text-neutral-800 text-[11px] uppercase tracking-wider">
+                  <h4 className="font-serif font-bold text-neutral-800 text-sm uppercase tracking-wider">
                     3. Transport & Scheduling
                   </h4>
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-[9px] mb-1">
+                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-sm mb-1">
                         Service Option
                       </label>
                       <select
                         value={cleaningOption}
                         onChange={(e) => setCleaningOption(e.target.value as "Pickup" | "Drop-off")}
-                        className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-2 text-editorial-text outline-none focus:border-editorial-accent text-[11px]"
+                        className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-2 text-editorial-text outline-none focus:border-editorial-accent text-sm"
                       >
                         <option value="Pickup">Pickup</option>
                         <option value="Drop-off">Drop-off</option>
@@ -1226,7 +1236,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     </div>
 
                     <div>
-                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-[9px] mb-1">
+                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-sm mb-1">
                         Preferred Date
                       </label>
                       <input
@@ -1234,12 +1244,12 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                         required
                         value={cleaningPreferredDate}
                         onChange={(e) => setCleaningPreferredDate(e.target.value)}
-                        className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-2 text-editorial-text outline-none focus:border-editorial-accent text-[11px]"
+                        className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-2 text-editorial-text outline-none focus:border-editorial-accent text-sm"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-[9px] mb-1">
+                      <label className="block text-gray-500 font-semibold uppercase tracking-wider text-sm mb-1">
                         Preferred Time *
                       </label>
                       <input
@@ -1247,7 +1257,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                         required
                         value={cleaningPreferredTime}
                         onChange={(e) => setCleaningPreferredTime(e.target.value)}
-                        className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-2 text-editorial-text outline-none focus:border-editorial-accent text-[11px] font-mono"
+                        className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-2 text-editorial-text outline-none focus:border-editorial-accent text-sm font-mono"
                       />
                     </div>
                   </div>
@@ -1255,7 +1265,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   {cleaningOption === "Pickup" && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-2">
-                        <label className="block text-gray-500 font-semibold uppercase tracking-wider text-[9px] mb-1">
+                        <label className="block text-gray-500 font-semibold uppercase tracking-wider text-sm mb-1">
                           Pickup Address *
                         </label>
                         <input
@@ -1268,7 +1278,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-500 font-semibold uppercase tracking-wider text-[9px] mb-1">
+                        <label className="block text-gray-500 font-semibold uppercase tracking-wider text-sm mb-1">
                           Pickup Distance
                         </label>
                         <select
@@ -1287,11 +1297,11 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
                 {/* 4. Luxury Invoice Live Breakdown */}
                 <div className="bg-[#FAF9F6] p-4 border border-editorial-border space-y-2">
-                  <h5 className="font-serif font-bold text-neutral-800 text-[10px] uppercase tracking-wider text-center border-b border-stone-200 pb-1.5">
+                  <h5 className="font-serif font-bold text-neutral-800 text-xs uppercase tracking-wider text-center border-b border-stone-200 pb-1.5">
                     Estimated Care Breakdown
                   </h5>
                   
-                  <div className="space-y-1 font-mono text-[10px] text-gray-600">
+                  <div className="space-y-1 font-mono text-xs text-gray-600">
                     <div className="flex justify-between">
                       <span>Total Area:</span>
                       <span>{sizeDescription} = {finalAreaSqft.toFixed(2)} sqft</span>
@@ -1318,7 +1328,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-widest text-[10px] rounded-none transition duration-200 cursor-pointer"
+                  className="w-full py-3.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-widest text-xs rounded-none transition duration-200 cursor-pointer"
                 >
                   Submit Certified Care Request
                 </button>
@@ -1328,13 +1338,13 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                 <div className="absolute inset-0 bg-white flex flex-col items-center justify-center p-6 text-center rounded-none animate-fadeIn z-10">
                   <CheckCircle className="h-10 w-10 text-emerald-600 mb-2" />
                   <h4 className="font-serif text-xl text-neutral-900 font-bold uppercase tracking-wider">Request Confirmed!</h4>
-                  <p className="text-neutral-500 text-[10px] mt-1 max-w-sm mb-4">
+                  <p className="text-neutral-500 text-xs mt-1 max-w-sm mb-4">
                     Your Booking ID is <span className="font-mono font-bold text-neutral-800">{cleaningReceiptData.id}</span>. We have generated your official care receipt.
                   </p>
                   
                   <div className="bg-amber-50 border border-amber-200 p-3 max-w-sm w-full text-left mb-6">
-                    <p className="text-amber-800 text-[9px] font-bold uppercase tracking-wider mb-1">Important Deposit Policy</p>
-                    <p className="text-amber-700 text-[10px]">
+                    <p className="text-amber-800 text-sm font-bold uppercase tracking-wider mb-1">Important Deposit Policy</p>
+                    <p className="text-amber-700 text-xs">
                       A <strong>50% deposit (${(cleaningReceiptData.totalPrice / 2).toFixed(2)})</strong> is required when we {cleaningReceiptData.serviceOption === "Pickup" ? "pickup" : "receive"} your rug. The remaining balance is due upon return.
                     </p>
                   </div>
@@ -1342,13 +1352,13 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   <div className="flex gap-3 w-full max-w-sm">
                     <button
                       onClick={() => handleDownloadReceipt(cleaningReceiptData)}
-                      className="flex-1 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      className="flex-1 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
                     >
                       <Download className="h-3.5 w-3.5" /> Save Receipt
                     </button>
                     <button
                       onClick={() => window.print()}
-                      className="flex-1 py-2.5 bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-900 font-bold uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      className="flex-1 py-2.5 bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-900 font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
                     >
                       <Printer className="h-3.5 w-3.5" /> Print
                     </button>
@@ -1359,7 +1369,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                       setCleaningFormSubmitted(false);
                       setCleaningModalOpen(false);
                     }}
-                    className="mt-6 text-[10px] text-neutral-400 hover:text-neutral-900 underline uppercase tracking-wider font-bold transition cursor-pointer"
+                    className="mt-6 text-xs text-neutral-400 hover:text-neutral-900 underline uppercase tracking-wider font-bold transition cursor-pointer"
                   >
                     Close Window
                   </button>

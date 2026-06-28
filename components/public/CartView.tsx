@@ -346,7 +346,7 @@ export const CartView: React.FC = () => {
           {/* Header Panel */}
           <div className="px-6 py-5 bg-editorial-aside border-b border-editorial-border flex items-center justify-between">
             <div>
-              <span className="text-[9px] uppercase tracking-widest text-editorial-accent font-bold block">Secure Showroom Gateway</span>
+              <span className="text-sm uppercase tracking-widest text-editorial-accent font-bold block">Secure Showroom Gateway</span>
               <h2 className="font-serif text-lg font-light text-editorial-text flex items-center gap-2">
                 {checkoutStep === "cart" && "Shopping Curation"}
                 {checkoutStep === "shipping" && "Shipping & Address Curation"}
@@ -364,7 +364,7 @@ export const CartView: React.FC = () => {
 
           {/* Stepper visual bar */}
           {checkoutStep !== "success" && (
-            <div className="grid grid-cols-3 bg-white border-b border-editorial-border text-[9px] font-bold text-center uppercase tracking-wider">
+            <div className="grid grid-cols-3 bg-white border-b border-editorial-border text-sm font-bold text-center uppercase tracking-wider">
               <span className={`py-3.5 border-r border-editorial-border transition-colors ${checkoutStep === "cart" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"}`}>
                 1. Review Cart
               </span>
@@ -392,14 +392,14 @@ export const CartView: React.FC = () => {
                     </p>
                     <button
                       onClick={handleClose}
-                      className="px-5 py-2.5 bg-editorial-accent text-white font-bold uppercase tracking-widest text-[10px] rounded-none shadow hover:bg-[#8E7453] transition"
+                      className="px-5 py-2.5 bg-editorial-accent text-white font-bold uppercase tracking-widest text-xs rounded-none shadow hover:bg-[#8E7453] transition"
                     >
                       Browse fine rugs
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <h4 className="text-[10px] uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Selected Rug Masterworks</h4>
+                    <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Selected Rug Masterworks</h4>
                     <div className="space-y-3">
                       {cart.map((item) => (
                         <div key={item.rug.id} className="flex gap-4 p-4 bg-white rounded-none border border-editorial-border shadow-xs">
@@ -420,12 +420,12 @@ export const CartView: React.FC = () => {
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
-                              <p className="text-[9px] text-gray-400">SKU: {item.rug.sku} | Origin: {item.rug.origin}</p>
-                              <p className="text-[9px] text-editorial-accent mt-0.5 font-light">Dimensions: {item.rug.dimensions}</p>
+                              <p className="text-sm text-gray-400">SKU: {item.rug.sku} | Origin: {item.rug.origin}</p>
+                              <p className="text-sm text-editorial-accent mt-0.5 font-light">Dimensions: {item.rug.dimensions}</p>
                             </div>
                             
                             <div className="flex justify-between items-center pt-2 border-t border-editorial-border mt-2">
-                              <span className="text-[9px] uppercase tracking-wider text-gray-400 font-light">Unique Unit</span>
+                              <span className="text-sm uppercase tracking-wider text-gray-400 font-light">Unique Unit</span>
                               <span className="font-serif text-sm font-light text-editorial-text">${item.rug.price.toLocaleString()}</span>
                             </div>
                           </div>
@@ -440,11 +440,11 @@ export const CartView: React.FC = () => {
             {/* --- STEP 2: SHIPPING FORM --- */}
             {checkoutStep === "shipping" && (
               <div className="space-y-4 text-xs">
-                <h4 className="text-[10px] uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Consignee Coordinates</h4>
+                <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Consignee Coordinates</h4>
                 
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">Full Recipient Name</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Full Recipient Name</label>
                     <input
                       type="text"
                       required
@@ -457,7 +457,7 @@ export const CartView: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">Phone Line</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Phone Line</label>
                       <input
                         type="tel"
                         required
@@ -468,7 +468,7 @@ export const CartView: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">Email Coordinates</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Email Coordinates</label>
                       <input
                         type="email"
                         required
@@ -482,7 +482,7 @@ export const CartView: React.FC = () => {
 
                   {/* Pickup or Delivery Selector */}
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px] mb-1">Fulfillment Mode</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Fulfillment Mode</label>
                     <div className="grid grid-cols-2 gap-2 bg-neutral-150 p-1 rounded-none border border-editorial-border">
                       <button
                         type="button"
@@ -490,7 +490,7 @@ export const CartView: React.FC = () => {
                           setDeliveryOption("Delivery");
                           setShippingAddress("");
                         }}
-                        className={`py-2 text-center text-[10px] font-bold uppercase tracking-wider transition ${
+                        className={`py-2 text-center text-xs font-bold uppercase tracking-wider transition ${
                           deliveryOption === "Delivery"
                             ? "bg-editorial-accent text-white font-semibold"
                             : "text-gray-500 hover:text-editorial-text"
@@ -504,7 +504,7 @@ export const CartView: React.FC = () => {
                           setDeliveryOption("Pickup");
                           setShippingAddress("Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314");
                         }}
-                        className={`py-2 text-center text-[10px] font-bold uppercase tracking-wider transition ${
+                        className={`py-2 text-center text-xs font-bold uppercase tracking-wider transition ${
                           deliveryOption === "Pickup"
                             ? "bg-editorial-accent text-white font-semibold"
                             : "text-gray-500 hover:text-editorial-text"
@@ -517,7 +517,7 @@ export const CartView: React.FC = () => {
 
                   {deliveryOption === "Delivery" ? (
                     <div className="space-y-1 animate-fadeIn">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">Physical Shipping Address *</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Physical Shipping Address *</label>
                       <input
                         type="text"
                         required
@@ -526,19 +526,19 @@ export const CartView: React.FC = () => {
                         placeholder="783 Park Avenue, Apt 14B, New York NY"
                         className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
                       />
-                      <p className="text-[9px] text-gray-400 mt-1">
+                      <p className="text-sm text-gray-400 mt-1">
                         Est. total shipping weight: <strong>{totalWeightLbs.toFixed(1)} lbs</strong>. Shipping cost applies: {totalWeightLbs <= 1.9 ? "$8 (under 2 lbs)" : totalWeightLbs >= 2 && totalWeightLbs <= 5 ? "$16 (2-5 lbs)" : "$45 (premium insured)"}.
                       </p>
                     </div>
                   ) : (
                     <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none space-y-2 animate-fadeIn">
-                      <span className="text-[9px] uppercase tracking-wider text-editorial-accent font-bold block">Alexandria HQ Showroom Location</span>
+                      <span className="text-sm uppercase tracking-wider text-editorial-accent font-bold block">Alexandria HQ Showroom Location</span>
                       <p className="text-xs text-editorial-text font-serif italic">
                         MARCO POLO ORIENTAL RUGS, INC.<br/>
                         3260 DUKE ST<br/>
                         ALEXANDRIA, VA 22314
                       </p>
-                      <p className="text-[10px] text-gray-500 font-light">
+                      <p className="text-xs text-gray-500 font-light">
                         We will secure your purchase in our vault. You may pick it up at your convenience. Bring your confirmation code and ID.
                       </p>
                     </div>
@@ -552,13 +552,13 @@ export const CartView: React.FC = () => {
                         onChange={(e) => setBillingSameAsShipping(e.target.checked)}
                         className="rounded-none accent-editorial-accent border-editorial-border h-4 w-4 cursor-pointer"
                       />
-                      <span className="font-semibold text-[10px]">Billing address is identical to shipping</span>
+                      <span className="font-semibold text-xs">Billing address is identical to shipping</span>
                     </label>
                   </div>
 
                   {!billingSameAsShipping && (
                     <div className="space-y-1 animate-fadeIn">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">Billing Address</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Billing Address</label>
                       <input
                         type="text"
                         required
@@ -571,7 +571,7 @@ export const CartView: React.FC = () => {
                   )}
 
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">Delivery instructions / Custom Padding Holds</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Delivery instructions / Custom Padding Holds</label>
                     <textarea
                       rows={2}
                       value={notes}
@@ -591,17 +591,17 @@ export const CartView: React.FC = () => {
                   <ShieldCheck className="h-5 w-5 text-editorial-accent mt-0.5 flex-shrink-0 animate-pulse" />
                   <div>
                     <h5 className="font-serif font-light text-editorial-text text-sm">Escrow Curation Protocol</h5>
-                    <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5 font-light">
+                    <p className="text-xs text-gray-500 leading-relaxed mt-0.5 font-light">
                       Your settlement is fully authorized through zero-knowledge Stripe tokenization. Funds are safely held in escrow and your card is **NOT** debited until a showroom curator reviews inventory holds and manually marks the order as <strong>Confirmed</strong>.
                     </p>
                   </div>
                 </div>
 
-                <h4 className="text-[10px] uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Credit Card Coordinates</h4>
+                <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Credit Card Coordinates</h4>
                 
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">Cardholder Full Name</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Cardholder Full Name</label>
                     <input
                       type="text"
                       required
@@ -613,7 +613,7 @@ export const CartView: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">Credit Card Number</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Credit Card Number</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                         <CreditCard className="h-4 w-4" />
@@ -645,7 +645,7 @@ export const CartView: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">Expiration Date</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Expiration Date</label>
                       <input
                         type="text"
                         required
@@ -664,7 +664,7 @@ export const CartView: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-[9px]">CVV / CVC Security</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">CVV / CVC Security</label>
                       <input
                         type="password"
                         required
@@ -695,7 +695,7 @@ export const CartView: React.FC = () => {
               <div className="space-y-6 text-center py-6 animate-fadeIn">
                 <div className="relative inline-block">
                   <CheckCircle2 className="h-14 w-14 text-green-700 mx-auto animate-bounce" />
-                  <span className="absolute bottom-0 right-0 block h-5 w-5 bg-green-50 rounded-none border border-green-700 text-green-700 flex items-center justify-center font-bold text-[9px]">
+                  <span className="absolute bottom-0 right-0 block h-5 w-5 bg-green-50 rounded-none border border-green-700 text-green-700 flex items-center justify-center font-bold text-sm">
                     ✓
                   </span>
                 </div>
@@ -712,8 +712,8 @@ export const CartView: React.FC = () => {
                   <div className="flex gap-2.5">
                     <AlertTriangle className="h-5 w-5 text-amber-700 flex-shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">CRITICAL REQUIREMENT</h4>
-                      <p className="text-[11px] text-amber-850 leading-relaxed font-normal">
+                      <h4 className="text-sm font-bold text-amber-900 uppercase tracking-wider">CRITICAL REQUIREMENT</h4>
+                      <p className="text-sm text-amber-850 leading-relaxed font-normal">
                         Please **print**, **take a screenshot**, **save as a photo**, or **download** this order receipt right now. This is your official showroom escrow record and reference key.
                       </p>
                     </div>
@@ -724,7 +724,7 @@ export const CartView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handlePrint(createdOrder)}
-                      className="flex items-center justify-center gap-1.5 py-2 bg-amber-700 hover:bg-amber-800 text-white text-[9px] font-bold uppercase tracking-wider transition cursor-pointer"
+                      className="flex items-center justify-center gap-1.5 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-bold uppercase tracking-wider transition cursor-pointer"
                       title="Print receipt"
                     >
                       <Printer className="h-3 w-3" />
@@ -733,7 +733,7 @@ export const CartView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => downloadReceiptAsPDF(createdOrder)}
-                      className="flex items-center justify-center gap-1.5 py-2 bg-stone-900 hover:bg-stone-800 text-white text-[9px] font-bold uppercase tracking-wider transition cursor-pointer"
+                      className="flex items-center justify-center gap-1.5 py-2 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold uppercase tracking-wider transition cursor-pointer"
                       title="Download receipt as PDF"
                     >
                       <Download className="h-3 w-3" />
@@ -742,12 +742,12 @@ export const CartView: React.FC = () => {
                   </div>
 
                   {printFeedback && (
-                    <div className="p-2 bg-amber-100 border border-amber-300 text-amber-950 text-[9px] font-semibold tracking-wide text-center leading-relaxed animate-pulse">
+                    <div className="p-2 bg-amber-100 border border-amber-300 text-amber-950 text-sm font-semibold tracking-wide text-center leading-relaxed animate-pulse">
                       {printFeedback}
                     </div>
                   )}
                   
-                  <div className="text-[9px] text-amber-800/80 italic text-center border-t border-amber-200/50 pt-2 flex items-center justify-center gap-1.5 font-sans">
+                  <div className="text-sm text-amber-800/80 italic text-center border-t border-amber-200/50 pt-2 flex items-center justify-center gap-1.5 font-sans">
                     <Camera className="h-2.5 w-2.5" />
                     <span>Tip: Press <strong>Cmd/Win + Shift + S</strong> to take a screenshot</span>
                   </div>
@@ -760,8 +760,8 @@ export const CartView: React.FC = () => {
                     <span className="font-mono font-bold text-editorial-accent text-sm">{createdOrder.id}</span>
                   </div>
 
-                  <div className="space-y-1.5 text-[11px] text-gray-500 leading-relaxed font-light">
-                    <p>• <strong>Status:</strong> <span className="px-2 py-0.5 bg-editorial-bg text-editorial-accent border border-editorial-border text-[9px] font-bold uppercase">Pending Confirmation</span></p>
+                  <div className="space-y-1.5 text-sm text-gray-500 leading-relaxed font-light">
+                    <p>• <strong>Status:</strong> <span className="px-2 py-0.5 bg-editorial-bg text-editorial-accent border border-editorial-border text-sm font-bold uppercase">Pending Confirmation</span></p>
                     <p>• <strong>Consignee:</strong> {createdOrder.customerInfo.name}</p>
                     <p>• <strong>Settlement Sum:</strong> ${createdOrder.total.toLocaleString()}</p>
                     <p>• <strong>Next Action:</strong> Switch your workspace profile to the <strong>Admin Panel</strong> in the header menu to review, confirm, prepare, and ship this order!</p>
@@ -775,7 +775,7 @@ export const CartView: React.FC = () => {
                   >
                     Return to Showroom
                   </button>
-                  <p className="text-[10px] text-gray-400 font-light">
+                  <p className="text-xs text-gray-400 font-light">
                     Need assistance? Use our floating concierge support chat.
                   </p>
                 </div>
@@ -809,7 +809,7 @@ export const CartView: React.FC = () => {
                   </span>
                   <span className="font-serif font-light text-editorial-text">
                     {deliveryOption === "Pickup" ? (
-                      <span className="text-green-700 font-sans uppercase text-[9px] font-semibold">Free Pickup</span>
+                      <span className="text-green-700 font-sans uppercase text-sm font-semibold">Free Pickup</span>
                     ) : (
                       `$${shipping.toFixed(2)}`
                     )}
@@ -846,8 +846,8 @@ export const CartView: React.FC = () => {
                       Apply
                     </button>
                   </div>
-                  {promoError && <div className="text-red-500 text-[10px] mt-1">{promoError}</div>}
-                  {appliedPromo && <div className="text-green-600 text-[10px] mt-1">Promo applied successfully!</div>}
+                  {promoError && <div className="text-red-500 text-xs mt-1">{promoError}</div>}
+                  {appliedPromo && <div className="text-green-600 text-xs mt-1">Promo applied successfully!</div>}
                 </div>
               )}
 

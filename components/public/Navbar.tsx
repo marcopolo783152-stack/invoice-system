@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
   return (
     <>
       {/* Elegantly styled utility bar displaying official showroom credentials */}
-      <div className="bg-neutral-900 text-white text-[9px] sm:text-[10px] py-2 px-4 border-b border-editorial-accent/20 flex flex-col sm:flex-row justify-between items-center gap-1.5 font-sans tracking-[0.1em] uppercase font-light w-full">
+      <div className="bg-neutral-900 text-white text-sm sm:text-xs py-2 px-4 border-b border-editorial-accent/20 flex flex-col sm:flex-row justify-between items-center gap-1.5 font-sans tracking-[0.1em] uppercase font-light w-full">
         <div className="flex items-center gap-1.5 text-gray-300">
           <span className="text-editorial-accent font-semibold">Alexandria HQ:</span>
           <span>3260 Duke St, Alexandria, VA 22314</span>
@@ -134,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
             {/* Direct Line Badge */}
             <a
               href="tel:+17034610207"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-editorial-aside text-gray-600 hover:text-editorial-accent text-[11px] transition border border-editorial-border font-sans uppercase tracking-wider"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-editorial-aside text-gray-600 hover:text-editorial-accent text-sm transition border border-editorial-border font-sans uppercase tracking-wider"
             >
               <Phone className="h-3.5 w-3.5" />
               <span>+1 (703) 461-0207</span>
@@ -144,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
             {!currentUser ? (
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-editorial-aside text-gray-700 hover:text-editorial-accent text-[11px] transition border border-editorial-border font-sans uppercase tracking-wider font-bold cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-editorial-aside text-gray-700 hover:text-editorial-accent text-sm transition border border-editorial-border font-sans uppercase tracking-wider font-bold cursor-pointer"
               >
                 <LogIn className="h-3.5 w-3.5" />
                 <span>Sign In</span>
@@ -152,7 +152,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
             ) : (
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-stone-100 text-stone-900 hover:text-editorial-accent text-[11px] transition border border-editorial-border font-sans uppercase tracking-wider font-bold cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-stone-100 text-stone-900 hover:text-editorial-accent text-sm transition border border-editorial-border font-sans uppercase tracking-wider font-bold cursor-pointer"
               >
                 <User className="h-3.5 w-3.5" />
                 <span>{currentUser.name.split(" ")[0]}</span>
@@ -164,7 +164,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               <div className="flex items-center bg-stone-100 rounded-none p-0.5 border border-stone-200">
                 <button
                   onClick={() => setActiveView("customer")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-sm font-bold uppercase tracking-wider transition cursor-pointer ${
                     activeView === "customer"
                       ? "bg-editorial-accent text-white"
                       : "text-gray-500 hover:text-editorial-text"
@@ -175,7 +175,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                 </button>
                 <button
                   onClick={() => setActiveView("admin")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-sm font-bold uppercase tracking-wider transition cursor-pointer ${
                     activeView === "admin"
                       ? "bg-editorial-accent text-white"
                       : "text-gray-500 hover:text-editorial-text"
@@ -194,7 +194,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
             >
               <ShoppingBag className="h-4.5 w-4.5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-none bg-editorial-accent text-[8px] font-mono text-white ring-1 ring-white">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-none bg-editorial-accent text-xs font-mono text-white ring-1 ring-white">
                   {cartCount}
                 </span>
               )}
@@ -209,7 +209,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
             >
               <ShoppingBag className="h-4.5 w-4.5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-none bg-editorial-accent text-[8px] font-mono text-white">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-none bg-editorial-accent text-xs font-mono text-white">
                   {cartCount}
                 </span>
               )}
@@ -253,7 +253,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                   setAuthModalOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className="w-full py-2 bg-stone-150 border border-stone-300 text-stone-700 text-center text-[10px] uppercase font-bold tracking-widest font-sans flex items-center justify-center gap-1"
+                className="w-full py-2 bg-stone-150 border border-stone-300 text-stone-700 text-center text-xs uppercase font-bold tracking-widest font-sans flex items-center justify-center gap-1"
               >
                 <LogIn className="h-3.5 w-3.5" />
                 <span>Sign In / Create Account</span>
@@ -266,7 +266,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                     setAuthModalOpen(true);
                     setMobileMenuOpen(false);
                   }}
-                  className="py-1 px-3 bg-stone-200 text-stone-800 text-[10px] uppercase font-bold tracking-widest underline"
+                  className="py-1 px-3 bg-stone-200 text-stone-800 text-xs uppercase font-bold tracking-widest underline"
                 >
                   View Portal
                 </button>
@@ -277,20 +277,20 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
           {/* Quick Support Phone */}
           <div className="pt-4 border-t border-editorial-border flex justify-between items-center text-xs text-gray-500">
             <span className="font-serif italic font-light">Concierge: +1 (703) 461-0207</span>
-            <span className="text-editorial-accent font-bold uppercase tracking-wider text-[10px]">Call to Consult</span>
+            <span className="text-editorial-accent font-bold uppercase tracking-wider text-xs">Call to Consult</span>
           </div>
 
           {/* Role view switcher in mobile (ONLY for Admin) */}
           {isAdmin && (
             <div className="pt-4 border-t border-editorial-border">
-              <p className="text-[9px] uppercase tracking-widest text-gray-400 mb-2 font-semibold">Switch Workspace Profile</p>
+              <p className="text-sm uppercase tracking-widest text-gray-400 mb-2 font-semibold">Switch Workspace Profile</p>
               <div className="grid grid-cols-2 gap-2 bg-editorial-aside rounded-none p-1 border border-editorial-border">
                 <button
                   onClick={() => {
                     setActiveView("customer");
                     setMobileMenuOpen(false);
                   }}
-                  className={`py-2 px-3 rounded-none text-center text-[10px] font-bold uppercase tracking-wider transition ${
+                  className={`py-2 px-3 rounded-none text-center text-xs font-bold uppercase tracking-wider transition ${
                     activeView === "customer"
                       ? "bg-editorial-accent text-white"
                       : "text-gray-500 hover:text-editorial-text"
@@ -303,7 +303,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                     setActiveView("admin");
                     setMobileMenuOpen(false);
                   }}
-                  className={`py-2 px-3 rounded-none text-center text-[10px] font-bold uppercase tracking-wider transition ${
+                  className={`py-2 px-3 rounded-none text-center text-xs font-bold uppercase tracking-wider transition ${
                     activeView === "admin"
                       ? "bg-editorial-accent text-white"
                       : "text-gray-500 hover:text-editorial-text"

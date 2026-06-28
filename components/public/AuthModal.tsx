@@ -98,7 +98,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <h3 className="font-serif font-semibold text-base uppercase tracking-wider text-editorial-text">
               {currentUser ? "My Account Portal" : isSignUp ? "Create Ambassador Account" : "Ambassador Sign In"}
             </h3>
-            <p className="text-[10px] uppercase tracking-widest text-gray-400 mt-1">
+            <p className="text-xs uppercase tracking-widest text-gray-400 mt-1">
               {currentUser ? "Exclusive Curation History" : "Unlock personalized support & orders"}
             </p>
           </div>
@@ -121,7 +121,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="text-sm font-serif font-bold text-neutral-800">{currentUser.name}</h4>
-                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-[9px] uppercase tracking-wider font-semibold text-neutral-600 rounded-none mt-1">
+                    <span className="inline-block px-2 py-0.5 bg-neutral-200 text-sm uppercase tracking-wider font-semibold text-neutral-600 rounded-none mt-1">
                       {currentUser.role === "admin" ? "Administrator Privilege" : "Fine Arts Patron"}
                     </span>
                   </div>
@@ -130,14 +130,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       logoutUser();
                       onClose();
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-800 hover:bg-red-700 text-white font-sans uppercase tracking-widest text-[9px] font-bold transition cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-800 hover:bg-red-700 text-white font-sans uppercase tracking-widest text-sm font-bold transition cursor-pointer"
                   >
                     <LogOut className="h-3 w-3" />
                     <span>Log Out</span>
                   </button>
                 </div>
 
-                <div className="border-t border-neutral-200 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] text-neutral-600 font-sans">
+                <div className="border-t border-neutral-200 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-neutral-600 font-sans">
                   <div className="flex items-center gap-1.5">
                     <LogIn className="h-3.5 w-3.5 text-neutral-400" />
                     <span>Email: <strong>{currentUser.email}</strong></span>
@@ -165,21 +165,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </h4>
 
                 {customerOrders.length === 0 ? (
-                  <p className="text-stone-400 text-[11px] italic">No artisan orders registered with this email account yet.</p>
+                  <p className="text-stone-400 text-sm italic">No artisan orders registered with this email account yet.</p>
                 ) : (
                   <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
                     {customerOrders.map((order) => (
-                      <div key={order.id} className="p-3 border border-neutral-100 bg-neutral-50/50 flex justify-between items-center text-[11px]">
+                      <div key={order.id} className="p-3 border border-neutral-100 bg-neutral-50/50 flex justify-between items-center text-sm">
                         <div>
                           <div className="font-bold text-neutral-800">ID: {order.id}</div>
-                          <div className="text-stone-400 text-[10px]">{new Date(order.createdAt).toLocaleDateString()}</div>
+                          <div className="text-stone-400 text-xs">{new Date(order.createdAt).toLocaleDateString()}</div>
                           <div className="text-stone-500 mt-1 font-serif">
                             {order.cartItems.map((item) => `${item.rug.name} (${item.rug.dimensions})`).join(", ")}
                           </div>
                         </div>
                         <div className="text-right">
                           <span className="block font-bold text-neutral-800">${order.total.toLocaleString()}</span>
-                          <span className="inline-block mt-1 text-[9px] uppercase font-bold text-editorial-accent tracking-wider">
+                          <span className="inline-block mt-1 text-sm uppercase font-bold text-editorial-accent tracking-wider">
                             {order.status}
                           </span>
                         </div>
@@ -197,21 +197,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </h4>
 
                 {customerCleanings.length === 0 ? (
-                  <p className="text-stone-400 text-[11px] italic">No cleaning evaluation logs booked on this account.</p>
+                  <p className="text-stone-400 text-sm italic">No cleaning evaluation logs booked on this account.</p>
                 ) : (
                   <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
                     {customerCleanings.map((bk) => (
-                      <div key={bk.id} className="p-3 border border-neutral-100 bg-stone-50 flex justify-between items-center text-[11px]">
+                      <div key={bk.id} className="p-3 border border-neutral-100 bg-stone-50 flex justify-between items-center text-sm">
                         <div>
-                          <div className="font-mono text-[10px] text-neutral-400">{bk.id}</div>
+                          <div className="font-mono text-xs text-neutral-400">{bk.id}</div>
                           <div className="font-bold text-neutral-800">Rug dimensions entered: {bk.sizeDescription}</div>
-                          <div className="text-neutral-500 text-[10px] mt-0.5">
+                          <div className="text-neutral-500 text-xs mt-0.5">
                             Method: {bk.serviceOption === "Pickup" ? "White-glove Pickup" : "Self Drop-off"} • Preferred Date: {new Date(bk.preferredDate).toLocaleDateString()}
                           </div>
                         </div>
                         <div className="text-right">
                           <span className="block font-bold text-neutral-800">${bk.totalPrice.toFixed(2)}</span>
-                          <span className="inline-block px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-none text-[8px] uppercase tracking-wider font-bold mt-1">
+                          <span className="inline-block px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-none text-xs uppercase tracking-wider font-bold mt-1">
                             {bk.status}
                           </span>
                         </div>
@@ -226,14 +226,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <form onSubmit={handleSubmit} className="space-y-4 text-xs text-left font-sans">
               
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-none text-[11px] flex items-center gap-2 animate-fadeIn">
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-none text-sm flex items-center gap-2 animate-fadeIn">
                   <ShieldAlert className="h-4 w-4 shrink-0 text-red-500" />
                   <span>{error}</span>
                 </div>
               )}
 
               {success && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-none text-[11px] flex items-center gap-2 animate-fadeIn">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-none text-sm flex items-center gap-2 animate-fadeIn">
                   <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
                   <span>{success}</span>
                 </div>
@@ -241,7 +241,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
               {isSignUp && (
                 <div className="space-y-1">
-                  <label className="block text-neutral-600 uppercase font-bold tracking-wider text-[10px]">Full Name *</label>
+                  <label className="block text-neutral-600 uppercase font-bold tracking-wider text-xs">Full Name *</label>
                   <input
                     type="text"
                     required
@@ -254,7 +254,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               )}
 
               <div className="space-y-1">
-                <label className="block text-neutral-600 uppercase font-bold tracking-wider text-[10px]">Email Address *</label>
+                <label className="block text-neutral-600 uppercase font-bold tracking-wider text-xs">Email Address *</label>
                 <input
                   type="email"
                   required
@@ -266,7 +266,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-neutral-600 uppercase font-bold tracking-wider text-[10px]">Password *</label>
+                <label className="block text-neutral-600 uppercase font-bold tracking-wider text-xs">Password *</label>
                 <input
                   type="password"
                   required
@@ -280,7 +280,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               {isSignUp && (
                 <>
                   <div className="space-y-1">
-                    <label className="block text-neutral-600 uppercase font-bold tracking-wider text-[10px]">Phone Number</label>
+                    <label className="block text-neutral-600 uppercase font-bold tracking-wider text-xs">Phone Number</label>
                     <input
                       type="tel"
                       value={phone}
@@ -291,7 +291,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-neutral-600 uppercase font-bold tracking-wider text-[10px]">Shipping Address</label>
+                    <label className="block text-neutral-600 uppercase font-bold tracking-wider text-xs">Shipping Address</label>
                     <textarea
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
@@ -305,7 +305,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-widest text-[10px] rounded-none transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
+                className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-widest text-xs rounded-none transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
               >
                 {isSignUp ? <UserPlus className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
                 <span>{isSignUp ? "Register Account" : "Access Curator Vault"}</span>
@@ -318,7 +318,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     setIsSignUp(!isSignUp);
                     setError("");
                   }}
-                  className="text-[10px] text-stone-500 hover:text-editorial-accent uppercase tracking-wider font-semibold underline cursor-pointer"
+                  className="text-xs text-stone-500 hover:text-editorial-accent uppercase tracking-wider font-semibold underline cursor-pointer"
                 >
                   {isSignUp ? "Already have an account? Sign In" : "New Curator? Establish Credentials"}
                 </button>
@@ -326,8 +326,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
               {/* Admin note snippet inside the sign in page */}
               {!isSignUp && (
-                <div className="p-3 bg-stone-50 border border-editorial-border text-[9px] text-stone-500 space-y-1 font-mono rounded mt-4">
-                  <span className="block font-bold text-neutral-700 uppercase tracking-widest text-[8px]">Curator Notes:</span>
+                <div className="p-3 bg-stone-50 border border-editorial-border text-sm text-stone-500 space-y-1 font-mono rounded mt-4">
+                  <span className="block font-bold text-neutral-700 uppercase tracking-widest text-xs">Curator Notes:</span>
                   <p>Administrators can access full controls by signing in using the certified administrator key pairs.</p>
                 </div>
               )}

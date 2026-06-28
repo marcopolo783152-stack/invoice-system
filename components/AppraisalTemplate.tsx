@@ -1,3 +1,5 @@
+"use client";
+import { useStore } from "@/context/StoreContext";
 import React from 'react';
 import { Appraisal } from '@/lib/appraisals-storage';
 
@@ -15,7 +17,9 @@ interface Props {
     appraisal: Appraisal;
 }
 
-export default function AppraisalTemplate({ appraisal }: Props) {
+export default function AppraisalTemplate(props) {
+  const { shopProfile } = useStore();
+  const { appraisal }: Props) {
     return (
         <div style={{ 
             width: '8.5in',
@@ -205,7 +209,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
                 <div style={{ marginTop: '20px', paddingTop: '10px', paddingBottom: '20px', color: '#000' }}>
                     {/* Signature Area */}
                     <div style={{ marginBottom: '10px' }}>
-                        <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Marco Polo Oriental Rugs</div>
+                        <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>{shopProfile?.name || 'Marco Polo Oriental Rugs'}</div>
                         <div style={{ fontSize: '12pt', marginBottom: '25px' }}>Certified Oriental Rug Appraiser</div>
                         
                         {/* Signature Line */}
@@ -214,7 +218,7 @@ export default function AppraisalTemplate({ appraisal }: Props) {
 
                     {/* Footer */}
                     <div style={{ textAlign: 'left', fontWeight: 'bold', fontStyle: 'italic', fontSize: '10pt', marginTop: '15px' }}>
-                        MARCO POLO ORIENTAL RUGS | 3260 DUKE STREET, ALEXANDRIA, VA 22314 | (703) 461-0207
+                        {shopProfile?.name?.toUpperCase() || 'MARCO POLO ORIENTAL RUGS'} | {shopProfile?.address?.toUpperCase() || '3260 DUKE STREET, ALEXANDRIA, VA 22314'} | {shopProfile?.phone || '(703) 461-0207'}
                     </div>
                 </div>
             </div>

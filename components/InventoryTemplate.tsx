@@ -1,3 +1,5 @@
+"use client";
+import { useStore } from "@/context/StoreContext";
 import React from 'react';
 import { InventoryItem } from '@/lib/inventory-storage';
 
@@ -5,7 +7,9 @@ interface Props {
     item: InventoryItem;
 }
 
-export default function InventoryTemplate({ item }: Props) {
+export default function InventoryTemplate(props) {
+  const { shopProfile } = useStore();
+  const { item }: Props) {
     // Helper to format dimensions
     const formatDimensions = () => {
         return `${item.widthFeet}'${item.widthInches}" × ${item.lengthFeet}'${item.lengthInches}" ${item.shape === 'round' ? '(Round)' : ''}`;
@@ -36,7 +40,7 @@ export default function InventoryTemplate({ item }: Props) {
             }}>
                 <div>
                     <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>
-                        MARCO POLO
+                        {shopProfile?.name?.toUpperCase() || 'MARCO POLO'}
                     </h1>
                     <p style={{ margin: '4px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                         Oriental Rugs & Textiles
@@ -157,8 +161,8 @@ export default function InventoryTemplate({ item }: Props) {
                 color: '#94a3b8',
                 fontWeight: 600
             }}>
-                <div>MARCO POLO ORIENTAL RUGS | 3260 DUKE STREET, ALEXANDRIA, VA 22314</div>
-                <div>(703) 461-0207 | WWW.MARCOPOLORUGS.COM</div>
+                <div>{shopProfile?.name?.toUpperCase() || 'MARCO POLO ORIENTAL RUGS'} | {shopProfile?.address?.toUpperCase() || '3260 DUKE STREET, ALEXANDRIA, VA 22314'}</div>
+                <div>{shopProfile?.phone || '(703) 461-0207'} | {shopProfile?.email?.toUpperCase() || 'WWW.MARCOPOLORUGS.COM'}</div>
             </div>
 
             <style dangerouslySetInnerHTML={{ __html: `

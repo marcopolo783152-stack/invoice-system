@@ -59,7 +59,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
             {/* Back Button */}
             <button
               onClick={handleCloseReading}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-editorial-aside hover:bg-[#F2ECE4] text-editorial-text font-bold uppercase text-[10px] rounded-none transition border border-editorial-border cursor-pointer font-mono"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-editorial-aside hover:bg-[#F2ECE4] text-editorial-text font-bold uppercase text-xs rounded-none transition border border-editorial-border cursor-pointer font-mono"
             >
               <ArrowLeft className="h-4 w-4 text-editorial-accent" />
               <span>Back to Editorial list</span>
@@ -67,14 +67,14 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
 
             {/* Meta headers */}
             <div className="space-y-4">
-              <span className="px-3 py-1 bg-editorial-aside border border-editorial-border text-[10px] text-editorial-accent font-bold uppercase tracking-wider rounded-none">
+              <span className="px-3 py-1 bg-editorial-aside border border-editorial-border text-xs text-editorial-accent font-bold uppercase tracking-wider rounded-none">
                 {activePost.category}
               </span>
               <h1 className="font-serif text-3xl sm:text-4xl font-light text-editorial-text leading-tight">
                 {activePost.title}
               </h1>
               
-              <div className="flex flex-wrap items-center gap-4 text-[10px] text-gray-500 border-y border-editorial-border py-3 font-light">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 border-y border-editorial-border py-3 font-light">
                 <span className="flex items-center gap-1.5">
                   <User className="h-3.5 w-3.5 text-editorial-accent" />
                   <span>{activePost.author}</span>
@@ -157,7 +157,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
                   <Sparkles className="h-4.5 w-4.5 text-editorial-accent" />
                   <h4 className="font-serif font-light text-sm text-editorial-text">Discerning Curation Pairings</h4>
                 </div>
-                <p className="text-[11px] text-gray-500 font-light">
+                <p className="text-sm text-gray-500 font-light">
                   Elevate your space by pairing the design principles of this article with our hand-knotted showroom catalog.
                 </p>
 
@@ -179,7 +179,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
                         />
                         <div className="min-w-0">
                           <h5 className="font-serif text-xs font-light text-editorial-text truncate">{r.name}</h5>
-                          <p className="text-[9px] text-gray-400 font-light">{r.dimensions} | {r.origin}</p>
+                          <p className="text-sm text-gray-400 font-light">{r.dimensions} | {r.origin}</p>
                           <span className="text-xs font-serif font-semibold text-editorial-accent block mt-0.5">${r.price.toLocaleString()}</span>
                         </div>
                       </div>
@@ -189,9 +189,9 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
               </div>
             )}
 
-            <div className="pt-6 border-t border-editorial-border flex justify-between text-gray-400 text-[10px] font-light">
+            <div className="pt-6 border-t border-editorial-border flex justify-between text-gray-400 text-xs font-light">
               <span>Curator Advisory Team</span>
-              <span className="font-serif uppercase tracking-widest text-[9px]">Marco Polo Rugs</span>
+              <span className="font-serif uppercase tracking-widest text-sm">Marco Polo Rugs</span>
             </div>
 
           </article>
@@ -202,7 +202,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
             
             {/* Header Title */}
             <div className="text-center space-y-2">
-              <span className="text-[10px] uppercase tracking-[0.3em] text-editorial-accent font-bold block">Artistry & Design Education</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-bold block">Artistry & Design Education</span>
               <h1 className="font-serif text-3xl sm:text-4xl font-light text-editorial-text tracking-tight">The Marco Polo Journal</h1>
               <p className="text-xs text-gray-500 max-w-md mx-auto font-light">
                 Explore our fine weavers' journals detailing traditional dye compositions, geometric symbolisms, styling frameworks, and wool care formulas.
@@ -217,7 +217,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1.5 rounded-none border text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-none border text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
                       selectedCategory === cat
                         ? "border-editorial-accent bg-editorial-aside text-editorial-accent"
                         : "border-editorial-border bg-white hover:border-editorial-accent text-editorial-text font-light"
@@ -238,7 +238,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search articles..."
-                  className="w-full bg-white rounded-none py-2.5 pl-9 pr-3 border border-editorial-border outline-none text-[11px] text-editorial-text focus:border-editorial-accent font-mono"
+                  className="w-full bg-white rounded-none py-2.5 pl-9 pr-3 border border-editorial-border outline-none text-sm text-editorial-text focus:border-editorial-accent font-mono"
                 />
               </div>
             </div>
@@ -266,7 +266,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
                         className="w-full h-full object-cover group-hover:scale-102 transition duration-500"
                         referrerPolicy="no-referrer"
                       />
-                      <span className="absolute top-3 left-3 px-2.5 py-1 bg-editorial-text/95 backdrop-blur-xs text-[8px] text-[#C2B29F] font-bold uppercase tracking-widest rounded-none border border-editorial-border">
+                      <span className="absolute top-3 left-3 px-2.5 py-1 bg-editorial-text/95 backdrop-blur-xs text-xs text-[#C2B29F] font-bold uppercase tracking-widest rounded-none border border-editorial-border">
                         {post.category}
                       </span>
                     </div>
@@ -274,7 +274,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
                     {/* Excerpt panel */}
                     <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
                       <div className="space-y-2">
-                        <div className="flex gap-3 items-center text-[9px] text-gray-400 font-mono font-light">
+                        <div className="flex gap-3 items-center text-sm text-gray-400 font-mono font-light">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             <span>{post.date}</span>
@@ -287,12 +287,12 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
                           {post.title}
                         </h3>
                         
-                        <p className="text-[11px] text-gray-500 line-clamp-3 leading-relaxed font-light">
+                        <p className="text-sm text-gray-500 line-clamp-3 leading-relaxed font-light">
                           {post.excerpt}
                         </p>
                       </div>
 
-                      <div className="pt-4 border-t border-editorial-border flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-editorial-accent group-hover:translate-x-1.5 transition-all">
+                      <div className="pt-4 border-t border-editorial-border flex items-center justify-between text-xs font-bold uppercase tracking-widest text-editorial-accent group-hover:translate-x-1.5 transition-all">
                         <span>Read Advisory</span>
                         <ChevronRight className="h-4 w-4" />
                       </div>
