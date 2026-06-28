@@ -26,7 +26,7 @@ function EmployeePrintContent() {
             const baseUrl = window.location.origin;
             if (type === 'poster') {
                 const storeId = getCurrentStoreId() || '';
-                const clockUrl = `${baseUrl}/clock${storeId ? `?storeId=${storeId}` : ''}`;
+                const clockUrl = `${baseUrl}/admin/invoices/clock${storeId ? `?storeId=${storeId}` : ''}`;
                 setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(clockUrl)}`);
                 setIsLoading(false);
             } else if (type === 'badge' && id) {
@@ -35,7 +35,7 @@ function EmployeePrintContent() {
                 const emp = emps.find(e => e.empId === id);
                 if (emp) {
                     setEmployee(emp);
-                    const clockUrl = `${baseUrl}/clock?id=${emp.empId}${storeId ? `&storeId=${storeId}` : ''}`;
+                    const clockUrl = `${baseUrl}/admin/invoices/clock?id=${emp.empId}${storeId ? `&storeId=${storeId}` : ''}`;
                     // Higher resolution and error correction (ecc=H) for better scan-ability
                     setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(clockUrl)}&ecc=H&margin=0`);
                 }

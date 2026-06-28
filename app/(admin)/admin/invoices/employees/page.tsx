@@ -84,7 +84,7 @@ export default function EmployeesPage() {
     const [showBulkManualLog, setShowBulkManualLog] = useState(false);
 
     const handlePrintHistory = async (emp: Employee) => {
-        window.open(`/employees/print?type=history&id=${emp.id}&range=${reportRange}`, '_blank');
+        window.open(`/admin/invoices/employees/print?type=history&id=${emp.id}&range=${reportRange}`, '_blank');
     };
 
     const handleBulkManualLog = async () => {
@@ -353,7 +353,7 @@ export default function EmployeesPage() {
     }, []);
 
     const handlePrintBadge = (emp: Employee) => {
-        window.open(`/employees/print?type=badge&id=${emp.empId}`, '_blank');
+        window.open(`/admin/invoices/employees/print?type=badge&id=${emp.empId}`, '_blank');
     };
 
     const handleDelete = async (id: string) => {
@@ -415,7 +415,7 @@ export default function EmployeesPage() {
                     >
                         ➕ Add Staff
                     </button>
-                    <Link href="/clock" target="_blank" className="luxury-button" style={{
+                    <Link href="/admin/invoices/clock" target="_blank" className="luxury-button" style={{
                         padding: '12px 24px', borderRadius: 12, border: '1px solid #e2e8f0',
                         background: '#fff', color: '#1e293b', fontWeight: 700, textDecoration: 'none',
                         display: 'flex', alignItems: 'center', gap: 8
@@ -424,7 +424,7 @@ export default function EmployeesPage() {
                     </Link>
                     <button
                         onClick={() => {
-                            window.open('/employees/print?type=poster', '_blank');
+                            window.open('/admin/invoices/employees/print?type=poster', '_blank');
                         }}
                         style={{ padding: '12px 24px', borderRadius: 12, border: '1px solid #6366f1', background: 'rgba(99, 102, 241, 0.05)', color: '#6366f1', fontWeight: 700, cursor: 'pointer' }}
                     >
