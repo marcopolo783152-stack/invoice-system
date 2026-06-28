@@ -68,7 +68,13 @@ export const seedShowroomDataIfEmpty = async () => {
         { platform: "twitter", url: "https://twitter.com/marcopolorugs" }
       ];
 
-      batch.set(doc(firestoreDb, SHOWROOM_SETTINGS, "hero"), { url: "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600" });
+      batch.set(doc(firestoreDb, SHOWROOM_SETTINGS, "hero"), { 
+        urls: [
+          "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600",
+          "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1600",
+          "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600"
+        ]
+      });
       batch.set(doc(firestoreDb, SHOWROOM_SETTINGS, "announcement"), { text: "🏛️ SHOWROOM SPECIAL: Free premium felt underlays with any 8x10 or larger antique Persian collection purchase this week." });
       batch.set(doc(firestoreDb, SHOWROOM_SETTINGS, "logo"), { url: "" });
       batch.set(doc(firestoreDb, SHOWROOM_SETTINGS, "social"), { links: defaultSocials });
@@ -155,7 +161,7 @@ export const subscribeToCollection = <T>(
 
 export const subscribeToSettings = (
   callbacks: {
-    onHero: (url: string) => void;
+    onHero: (urls: string[]) => void;
     onAnnouncement: (text: string) => void;
     onLogo: (url: string) => void;
     onSocial: (links: SocialMediaLink[]) => void;
@@ -167,7 +173,17 @@ export const subscribeToSettings = (
   return onSnapshot(collection(firestoreDb, SHOWROOM_SETTINGS), (snapshot) => {
     snapshot.forEach((doc) => {
       const data = doc.data();
-      if (doc.id === "hero" && data.url !== undefined) callbacks.onHero(data.url);
+      if (doc.id === "hero") {
+        if (data.urls) {
+          callbacks.onHero(data.urls);
+        } else if (data.url) {
+          callbacks.onHero([
+            data.url, 
+            "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1600", 
+            "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600"
+          ]);
+        }
+      }
       if (doc.id === "announcement" && data.text !== undefined) callbacks.onAnnouncement(data.text);
       if (doc.id === "logo" && data.url !== undefined) callbacks.onLogo(data.url);
       if (doc.id === "social" && data.links !== undefined) callbacks.onSocial(data.links);

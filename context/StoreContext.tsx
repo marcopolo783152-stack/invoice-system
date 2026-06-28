@@ -87,14 +87,39 @@ interface StoreContextType {
   // Customer support chat operations
   sendChatMessage: (text: string, sender: "customer" | "admin", orderId?: string, sessionId?: string, customerName?: string) => void;
   clearChat: (sessionId?: string) => void;
+  deleteCleaningBooking: (id: string) => void;
+  
+  // Cart operations
+  addToCart: (rug: Rug) => void;
+  removeFromCart: (rugId: string) => void;
+  updateCartQuantity: (rugId: string, quantity: number) => void;
+  clearCart: () => void;
+  
+  // Checkout operations
+  checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number) => Order;
+  
+  // Admin Operations
+  addRug: (rug: Omit<Rug, "id" | "rating">) => void;
+  updateRug: (id: string, rug: Partial<Rug>) => void;
+  deleteRug: (id: string) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus, shipping?: ShippingDetails) => void;
+  approveReview: (reviewId: string) => void;
+  deleteReview: (reviewId: string) => void;
+  addBlogPost: (post: Omit<BlogPost, "id">) => void;
+  updateBlogPost: (id: string, post: Partial<BlogPost>) => void;
+  deleteBlogPost: (id: string) => void;
+  
+  // Customer support chat operations
+  sendChatMessage: (text: string, sender: "customer" | "admin", orderId?: string, sessionId?: string, customerName?: string) => void;
+  clearChat: (sessionId?: string) => void;
   deleteChatSession: (sessionId: string) => void;
   
   // Customer Review Submit
   submitReview: (rugId: string, reviewerName: string, rating: number, reviewText: string, imageUrl?: string) => void;
 
   // Hero Cover Photo & Showroom Announcement & Logo
-  heroCoverPhoto: string;
-  setHeroCoverPhoto: (url: string) => void;
+  heroCoverPhotos: string[];
+  setHeroCoverPhotos: (urls: string[]) => void;
   showroomAnnouncement: string;
   setShowroomAnnouncement: (text: string) => void;
   logoUrl: string;
@@ -213,7 +238,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return local ? JSON.parse(local) : [];
   });
 
-  const [heroCoverPhoto, setHeroCoverPhotoState] = useState<string>("https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600");
+  const [heroCoverPhotos, setHeroCoverPhotosState] = useState<string[]>([
+    "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600",
+    "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1600",
+    "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600"
+  ]);
   const [showroomAnnouncement, setShowroomAnnouncementState] = useState<string>("🏛️ SHOWROOM SPECIAL: Free premium felt underlays with any 8x10 or larger antique Persian collection purchase this week.");
   const [logoUrl, setLogoUrlState] = useState<string>("");
   const [socialLinks, setSocialLinksState] = useState<SocialMediaLink[]>([
@@ -239,7 +268,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubs.push(subscribeToCollection<PromoCode>(SHOWROOM_PROMOCODES, setPromoCodes));
       
       unsubs.push(subscribeToSettings({
-        onHero: setHeroCoverPhotoState,
+        onHero: setHeroCoverPhotosState,
         onAnnouncement: setShowroomAnnouncementState,
         onLogo: setLogoUrlState,
         onSocial: setSocialLinksState
@@ -249,9 +278,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => unsubs.forEach(unsub => unsub());
   }, []);
 
-  const setHeroCoverPhoto = (url: string) => {
-    setHeroCoverPhotoState(url);
-    updateSettingDoc("hero", { url });
+  const setHeroCoverPhotos = (urls: string[]) => {
+    setHeroCoverPhotosState(urls);
+    updateSettingDoc("hero", { urls });
   };
 
   const setShowroomAnnouncement = (text: string) => {
@@ -757,33 +786,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         cleaningBookings,
         addCleaningBooking,
         updateCleaningBookingStatus,
-        deleteCleaningBooking,
-        addToCart,
-        removeFromCart,
-        updateCartQuantity,
-        clearCart,
-        checkout,
-        addRug,
-        updateRug,
-        deleteRug,
-        updateOrderStatus,
-        approveReview,
-        deleteReview,
-        addBlogPost,
-        updateBlogPost,
-        deleteBlogPost,
-        sendChatMessage,
-        clearChat,
-        deleteChatSession,
-        submitReview,
-        heroCoverPhoto,
-        setHeroCoverPhoto,
-        showroomAnnouncement,
-        setShowroomAnnouncement,
-        logoUrl,
-        setLogoUrl,
-        socialLinks,
-        setSocialLinks,
         promoCodes,
         addPromoCode,
         deletePromoCode,

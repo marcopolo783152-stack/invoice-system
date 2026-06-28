@@ -32,7 +32,7 @@ interface HeroProps {
 }
 
 export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
-  const { rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhoto } = useStore();
+  const { rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhotos } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
   
   // Cleaning service booking states
@@ -108,21 +108,21 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
       title: "Imperial Hand-Knotted Treasures",
       subtitle: "Persian, Afghan & Turkish Masterpieces",
       desc: "Each rug is an investment-grade work of art, hand-knotted with premium organic-dyed highland wool and silk. Curated with museum-grade certification.",
-      image: heroCoverPhoto,
+      image: heroCoverPhotos?.[0] || "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600",
       cta: "Explore Fine Rugs"
     },
     {
       title: "The Ultimate Silk Harmony",
       subtitle: "Exquisite Isfahan Tree of Life Series",
       desc: "Experience 1,000,000+ knots per square meter. Luminous natural silk pile reflecting majestic shades under ambient home lights.",
-      image: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1600",
+      image: heroCoverPhotos?.[1] || "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1600",
       cta: "View Luminous Silk"
     },
     {
       title: "Generations of Handwoven Craft",
       subtitle: "Curated Antique & Modern Rug Collections",
       desc: "Bridging ancient Mesopotamian symbols with contemporary palettes, made for luxury villas and upscale urban designs.",
-      image: "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600",
+      image: heroCoverPhotos?.[2] || "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600",
       cta: "Shop The Curation"
     }
   ];

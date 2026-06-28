@@ -64,8 +64,8 @@ export const AdminDashboard: React.FC = () => {
     addBlogPost,
     deleteBlogPost,
     deleteChatSession,
-    heroCoverPhoto,
-    setHeroCoverPhoto,
+    heroCoverPhotos,
+    setHeroCoverPhotos,
     showroomAnnouncement,
     setShowroomAnnouncement,
     logoUrl,
@@ -78,7 +78,7 @@ export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"analytics" | "inventory" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
 
   // Showroom cover photo & announcement settings inputs
-  const [coverPhotoInput, setCoverPhotoInput] = useState(heroCoverPhoto);
+  const [coverPhotoInputs, setCoverPhotoInputs] = useState<string[]>(heroCoverPhotos || []);
   const [announcementInput, setAnnouncementInput] = useState(showroomAnnouncement);
   const [logoInput, setLogoInput] = useState(logoUrl);
   const [coverSuccess, setCoverSuccess] = useState(false);
@@ -86,8 +86,8 @@ export const AdminDashboard: React.FC = () => {
   const [logoSuccess, setLogoSuccess] = useState(false);
 
   useEffect(() => {
-    setCoverPhotoInput(heroCoverPhoto);
-  }, [heroCoverPhoto]);
+    setCoverPhotoInputs(heroCoverPhotos || []);
+  }, [heroCoverPhotos]);
 
   useEffect(() => {
     setAnnouncementInput(showroomAnnouncement);
@@ -904,92 +904,72 @@ export const AdminDashboard: React.FC = () => {
 
                 {/* Cover Photo Customizer */}
                 <div className="space-y-3">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wide text-[11px]">Customer Home Cover Photo</h4>
+                  <h4 className="font-bold text-neutral-800 uppercase tracking-wide text-[11px]">Customer Home Cover Photos (Carousel)</h4>
                   <p className="text-gray-400 text-[10px] leading-relaxed font-light">
-                    Paste any direct high-resolution image URL, pick one of our presets, or upload a photo from your PC to set as the customer home page background.
+                    Upload or paste up to 3 high-resolution images for the homepage slider.
                   </p>
                   
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        value={coverPhotoInput}
-                        onChange={(e) => {
-                          setCoverPhotoInput(e.target.value);
-                          setCoverSuccess(false);
-                        }}
-                        placeholder="https://images.unsplash.com/photo-..."
-                        className="flex-1 bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-[11px] font-mono"
-                      />
-                      <label className="flex items-center justify-center px-3 py-2 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 rounded text-neutral-600 text-[10px] font-bold uppercase tracking-wider cursor-pointer transition whitespace-nowrap">
-                        <Upload className="h-3 w-3 mr-1.5" /> 
-                        <span>Upload PC</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                const dataUrl = event.target?.result as string;
-                                setCoverPhotoInput(dataUrl);
-                                setHeroCoverPhoto(dataUrl);
-                                setCoverSuccess(true);
-                                setTimeout(() => setCoverSuccess(false), 3000);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                      </label>
-                    </div>
-                    
-                    {/* Presets */}
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      <span className="text-[9px] text-gray-400 self-center mr-1">Presets:</span>
-                      {[
-                        { label: "Persian Royal Blue", url: "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600" },
-                        { label: "Loom Weaving Art", url: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1600" },
-                        { label: "Traditional Afghan", url: "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600" },
-                        { label: "Modern Luxury Villa", url: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=1600" }
-                      ].map((preset, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => {
-                            setCoverPhotoInput(preset.url);
-                            setHeroCoverPhoto(preset.url);
-                            setCoverSuccess(true);
-                            setTimeout(() => setCoverSuccess(false), 3000);
-                          }}
-                          className={`text-[9px] px-2 py-0.5 border transition cursor-pointer ${
-                            coverPhotoInput === preset.url 
-                              ? "bg-editorial-accent text-white border-editorial-accent" 
-                              : "bg-stone-50 hover:bg-stone-100 text-neutral-600 border-neutral-200"
-                          }`}
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="space-y-4">
+                    {[0, 1, 2].map(index => (
+                      <div key={index} className="space-y-2 pb-3 border-b border-neutral-100 last:border-0 last:pb-0">
+                        <label className="text-[9px] font-bold uppercase text-gray-500">Slide {index + 1}</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="url"
+                            value={coverPhotoInputs[index] || ""}
+                            onChange={(e) => {
+                              const newInputs = [...coverPhotoInputs];
+                              newInputs[index] = e.target.value;
+                              setCoverPhotoInputs(newInputs);
+                              setCoverSuccess(false);
+                            }}
+                            placeholder="https://images.unsplash.com/photo-..."
+                            className="flex-1 bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-[11px] font-mono"
+                          />
+                          <label className="flex items-center justify-center px-3 py-2 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 rounded text-neutral-600 text-[10px] font-bold uppercase tracking-wider cursor-pointer transition whitespace-nowrap">
+                            <Upload className="h-3 w-3 mr-1.5" /> 
+                            <span>Upload PC</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    const dataUrl = event.target?.result as string;
+                                    const newInputs = [...coverPhotoInputs];
+                                    newInputs[index] = dataUrl;
+                                    setCoverPhotoInputs(newInputs);
+                                    setHeroCoverPhotos(newInputs);
+                                    setCoverSuccess(true);
+                                    setTimeout(() => setCoverSuccess(false), 3000);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   <div className="flex items-center gap-3 pt-1">
                     <button
                       type="button"
                       onClick={() => {
-                        setHeroCoverPhoto(coverPhotoInput);
+                        setHeroCoverPhotos(coverPhotoInputs);
                         setCoverSuccess(true);
                         setTimeout(() => setCoverSuccess(false), 3000);
                       }}
                       className="py-1.5 px-4 bg-neutral-900 hover:bg-neutral-850 text-amber-400 font-bold uppercase tracking-wider text-[10px] transition cursor-pointer"
                     >
-                      Apply Cover Photo
+                      Apply All Photos
                     </button>
                     {coverSuccess && (
-                      <span className="text-emerald-600 font-bold text-[10px] animate-fadeIn">✓ Updated Cover!</span>
+                      <span className="text-emerald-600 font-bold text-[10px] animate-fadeIn">✓ Updated Covers!</span>
                     )}
                   </div>
                 </div>
