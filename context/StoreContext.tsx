@@ -87,7 +87,6 @@ interface StoreContextType {
   // Customer support chat operations
   sendChatMessage: (text: string, sender: "customer" | "admin", orderId?: string, sessionId?: string, customerName?: string) => void;
   clearChat: (sessionId?: string) => void;
-
   deleteChatSession: (sessionId: string) => void;
   
   // Customer Review Submit
@@ -762,6 +761,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         cleaningBookings,
         addCleaningBooking,
         updateCleaningBookingStatus,
+        deleteCleaningBooking,
+        addToCart,
+        removeFromCart,
+        updateCartQuantity,
+        clearCart,
+        checkout,
+        addRug,
+        updateRug,
+        deleteRug,
+        updateOrderStatus,
+        approveReview,
+        deleteReview,
+        addBlogPost,
+        updateBlogPost,
+        deleteBlogPost,
+        sendChatMessage,
+        clearChat,
+        deleteChatSession,
+        submitReview,
+        heroCoverPhotos,
+        setHeroCoverPhotos,
+        showroomAnnouncement,
+        setShowroomAnnouncement,
+        logoUrl,
+        setLogoUrl,
+        socialLinks,
+        setSocialLinks,
         promoCodes,
         addPromoCode,
         deletePromoCode,
