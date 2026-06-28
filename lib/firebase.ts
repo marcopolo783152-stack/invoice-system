@@ -49,7 +49,12 @@ try {
   if (isFirebaseConfigured() && typeof window !== 'undefined') {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     db = getFirestore(app);
-    storage = getStorage(app);
+    
+    try {
+      storage = getStorage(app);
+    } catch (storageErr) {
+      console.warn("Firebase Storage could not be initialized. Continuing without storage.", storageErr);
+    }
     
     // Disable offline persistence to force a 100% live online connection 
     // This prevents data from being "hidden" in the local cache if the cloud rejects it.
