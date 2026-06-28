@@ -7,9 +7,9 @@ interface Props {
     item: InventoryItem;
 }
 
-export default function InventoryTemplate(props) {
+export default function InventoryTemplate(props: any) {
   const { shopProfile } = useStore();
-  const { item }: Props) {
+  const { item } = props;
     // Helper to format dimensions
     const formatDimensions = () => {
         return `${item.widthFeet}'${item.widthInches}" × ${item.lengthFeet}'${item.lengthInches}" ${item.shape === 'round' ? '(Round)' : ''}`;

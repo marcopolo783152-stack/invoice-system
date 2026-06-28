@@ -35,7 +35,7 @@ interface InvoiceTemplateProps {
   onDeletePayment?: (paymentId: string) => void;
 }
 
-export default function InvoiceTemplate(props) {
+export default function InvoiceTemplate(props: any) {
   const { shopProfile } = useStore();
   const {
   data,
@@ -96,7 +96,7 @@ export default function InvoiceTemplate(props) {
   let currentPageItems: any[] = [];
   let currentWeight = 0;
 
-  items.forEach((item) => {
+  items.forEach((item: any) => {
     const weight = getItemWeight(item);
     if (currentWeight + weight > MAX_WEIGHT_PER_PAGE) {
       pagesData.push(currentPageItems);
@@ -128,7 +128,7 @@ export default function InvoiceTemplate(props) {
 
   return (
     <>
-      {pagesData.map((pageItems, pageIndex) => {
+      {pagesData.map((pageItems: any, pageIndex: number) => {
         const isLastPage = pageIndex === totalPages - 1;
 
         return (
@@ -270,7 +270,7 @@ export default function InvoiceTemplate(props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {pageItems.map((item) => (
+                  {pageItems.map((item: any) => (
                     <tr key={item.id} style={item.returned ? { color: '#dc2626', backgroundColor: '#fef2f2' } : item.sold ? { color: '#059669', backgroundColor: '#ecfdf5' } : {}}>
                       <td>{item.sku}</td>
                       <td className={styles.description}>
@@ -302,7 +302,7 @@ export default function InvoiceTemplate(props) {
                               { k: 'looseKnots', l: 'Loose knots' }, { k: 'fading', l: 'Fading' }, { k: 'bleeding', l: 'Bleeding risk' },
                               { k: 'stains', l: 'Stains' }, { k: 'petStains', l: 'Pet stains/odor' }, { k: 'waterDamage', l: 'Water damage' },
                               { k: 'mold', l: 'Mold' }, { k: 'insectDamage', l: 'Insect damage' }, { k: 'sunDamage', l: 'Sun damage' }
-                            ].map(c => (item.conditions as any)?.[c.k] && (
+                            ].map((c: any) => (item.conditions as any)?.[c.k] && (
                               <span key={c.k} style={{ background: '#f1f5f9', padding: '1px 4px', borderRadius: 3, border: '1px solid #e2e8f0' }}>• {c.l}</span>
                             ))}
                             {item.conditions.other && <span style={{ fontWeight: 500, background: '#fff7ed', padding: '1px 4px' }}>Notes: {item.conditions.other}</span>}
@@ -407,7 +407,7 @@ export default function InvoiceTemplate(props) {
                       )}
 
                       {/* Additional Charges List */}
-                      {data.additionalCharges && data.additionalCharges.length > 0 && data.additionalCharges.map(charge => (
+                      {data.additionalCharges && data.additionalCharges.length > 0 && data.additionalCharges.map((charge: any) => (
                         <tr key={charge.id}>
                           <td className={styles.totalLabel}>{charge.description || 'Additional Charge'}:</td>
                           <td className={styles.totalValue}>{formatCurrency(charge.amount)}</td>
@@ -473,7 +473,7 @@ export default function InvoiceTemplate(props) {
                         </tr>
                       )}
 
-                      {data.payments && data.payments.map((p, idx) => (
+                      {data.payments && data.payments.map((p: any, idx: number) => (
                         <tr key={`${p.id}-${idx}`}>
                           <td className={styles.totalLabel}>
                             Less Payment ({p.method}{p.reference ? ` #${p.reference}` : ''}):

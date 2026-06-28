@@ -15,7 +15,7 @@ interface ProductDetailProps {
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, onSelectRugId }) => {
-  const { rugs, reviews, addToCart, submitReview } = useStore();
+  const { rugs, reviews, addToCart, submitReview, deleteReview } = useStore();
   
   const rug = rugs.find((r) => r.id === rugId);
   
@@ -84,6 +84,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
   // Get approved reviews for this rug
   const rugReviews = reviews.filter((rev) => rev.rugId === rug.id && rev.isApproved);
   // Get pending reviews for this rug to show a hint
+  const pendingReviewsCount = reviews.filter((rev) => rev.rugId === rug.id && !rev.isApproved).length;
   
 
   // Get 3 related rugs
@@ -131,7 +132,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                   style={zoomStyle}
                 />
 
-                <div className="absolute bottom-3 right-3 bg-editorial-text/90 backdrop-blur-xs text-white text-sm uppercase tracking-widest font-bold px-2.5 py-1 rounded-none">
+                <div className="absolute bottom-3 right-3 bg-editorial-text/90 backdrop-blur-xs text-white text-xs uppercase tracking-widest font-bold px-2.5 py-1 rounded-none">
                   Hover to inspect weave density
                 </div>
               </div>
@@ -183,7 +184,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                 <h2 className="font-serif text-2xl sm:text-3xl font-light text-editorial-text leading-tight">
                   {rug.name}
                 </h2>
-                <p className="text-sm font-mono text-gray-400 uppercase tracking-widest">
+                <p className="text-xs font-mono text-gray-400 uppercase tracking-widest">
                   Showroom SKU: {rug.sku} | Dimensions: {rug.dimensions}
                 </p>
               </div>
@@ -283,7 +284,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-serif text-lg font-light text-editorial-text">Customer Testimonials</h3>
-                  <p className="text-sm text-gray-400">Authentic buyer reviews approved by Marco Polo showroom.</p>
+                  <p className="text-xs text-gray-400">Authentic buyer reviews approved by Marco Polo showroom.</p>
                 </div>
                 <div className="flex items-center gap-1.5 bg-editorial-aside px-3 py-1 border border-editorial-border rounded-none text-editorial-accent">
                   <Star className="h-3.5 w-3.5 fill-editorial-accent text-editorial-accent" />
@@ -312,11 +313,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                               alert("Incorrect admin key.");
                             }
                           }}
-                          className="ml-2 text-[10px] text-red-500 hover:underline uppercase tracking-wider font-bold"
+                          className="ml-2 text-xs text-red-500 hover:underline uppercase tracking-wider font-bold"
                         >
                           Delete
                         </button>
-                        <span className="text-sm text-gray-400 font-mono">
+                        <span className="text-xs text-gray-400 font-mono">
                           {new Date(rev.createdAt).toLocaleDateString()}
                         </span>
                       </div>
@@ -335,7 +336,110 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                 </div>
               )}
 
-              ;
+              {/* Pending reviews warning for admin evaluation testing */}
+              {pendingReviewsCount > 0 && (
+                <div className="p-3 bg-editorial-aside border border-editorial-border rounded-none text-xs text-editorial-accent flex items-center gap-2">
+                  <Compass className="h-4 w-4 text-editorial-accent animate-spin" />
+                  <span>
+                    <strong>Admins Note:</strong> There are {pendingReviewsCount} review(s) submitted for this rug awaiting moderation in the Admin Panel.
+                  </span>
+                </div>
+              )}
+
+            </div>
+
+            {/* Leave a review form */}
+            <div className="lg:col-span-5 bg-white p-6 rounded-none border border-editorial-border space-y-4">
+              <div className="text-center">
+                <h4 className="font-serif text-sm font-light text-editorial-text uppercase tracking-wider">Share Your Experience</h4>
+                <p className="text-xs text-gray-400 mt-0.5">Share your heirloom experience with our community.</p>
+              </div>
+
+              <form onSubmit={handleSubmitReview} className="space-y-3 text-xs font-sans">
+                <div className="space-y-1">
+                  <label className="block text-gray-400 font-semibold uppercase tracking-wider">Your Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={reviewerName}
+                    onChange={(e) => setReviewerName(e.target.value)}
+                    placeholder="e.g. Elena Montgomerie"
+                    className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-gray-400 font-semibold uppercase tracking-wider">Star Rating</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setRating(num)}
+                        className={`p-1.5 border rounded-none transition ${
+                          rating >= num ? "border-editorial-accent bg-editorial-aside text-editorial-accent" : "border-editorial-border bg-white text-gray-400"
+                        }`}
+                      >
+                        <Star className={`h-4 w-4 ${rating >= num ? "fill-editorial-accent text-editorial-accent" : ""}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-gray-400 font-semibold uppercase tracking-wider">Review Details</label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    placeholder="Describe the fine weaving, dyes, luster, underfoot softness or shipping..."
+                    className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent resize-none font-light"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest rounded-none text-xs transition"
+                >
+                  Submit For Curator Approval
+                </button>
+              </form>
+
+              {reviewSubmitted && (
+                <div className="p-3 bg-green-50 border border-green-100 rounded-none text-xs text-green-700 text-center animate-fadeIn">
+                  Review submitted successfully! Thank you for sharing your experience.
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Related Rugs suggestions */}
+          {relatedRugs.length > 0 && (
+            <div className="pt-10 border-t border-editorial-border space-y-6">
+              <div>
+                <h3 className="font-serif text-lg font-light text-editorial-text">Discerning Curation Recommendations</h3>
+                <p className="text-xs text-gray-400">Other fine weaves matching {rug.origin} or {rug.style} styles in stock.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {relatedRugs.map((relRug) => (
+                  <div
+                    key={relRug.id}
+                    onClick={() => {
+                      const coverImg = relRug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800";
+                      if (onSelectRugId) {
+                        onSelectRugId(relRug.id);
+                        setActiveImage(coverImg);
+                      } else {
+                        setActiveImage(coverImg);
+                      }
+                      
+                      // Smoothly scroll the modal's scroll container to the top
+                      const scrollContainer = document.querySelector(".fixed.inset-0.z-50.overflow-y-auto");
+                      if (scrollContainer) {
+                        scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
                       }
                     }}
                     className="flex items-center gap-4 p-3 bg-white rounded-none border border-editorial-border cursor-pointer hover:border-editorial-accent hover:shadow-sm transition duration-200 text-left"
@@ -348,7 +452,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                     />
                     <div className="min-w-0">
                       <h4 className="font-serif text-xs font-light text-editorial-text truncate">{relRug.name}</h4>
-                      <p className="text-sm text-gray-400 font-light">{relRug.dimensions} | {relRug.origin}</p>
+                      <p className="text-xs text-gray-400 font-light">{relRug.dimensions} | {relRug.origin}</p>
                       <span className="text-xs font-serif font-light text-editorial-text block mt-0.5">${relRug.price.toLocaleString()}</span>
                     </div>
                   </div>

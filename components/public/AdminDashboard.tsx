@@ -37,7 +37,9 @@ import {
   Globe,
   Mail,
   Heart,
-  Settings
+  Settings,
+  Tag,
+  Save
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {

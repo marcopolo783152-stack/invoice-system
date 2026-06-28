@@ -179,3 +179,11 @@ export interface SocialMediaLink {
   platform: "instagram" | "facebook" | "pinterest" | "tiktok" | "youtube" | "twitter";
   url: string;
 }
+
+export interface ShopProfile {
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  logoUrl?: string;
+}

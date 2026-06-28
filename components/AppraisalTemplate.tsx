@@ -17,9 +17,9 @@ interface Props {
     appraisal: Appraisal;
 }
 
-export default function AppraisalTemplate(props) {
+export default function AppraisalTemplate(props: any) {
   const { shopProfile } = useStore();
-  const { appraisal }: Props) {
+  const { appraisal } = props;
     return (
         <div style={{ 
             width: '8.5in',

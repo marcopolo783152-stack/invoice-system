@@ -17,7 +17,7 @@ import {
   ShippingDetails,
   User,
   CleaningBooking,
-  SocialMediaLink, PromoCode
+  SocialMediaLink, PromoCode, ShopProfile
 } from "@/types";
 import { INITIAL_RUGS } from "@/data/rugs";
 import { INITIAL_BLOGS } from "@/data/blogs";
@@ -223,10 +223,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600"
   ]);
   const [showroomAnnouncement, setShowroomAnnouncementState] = useState<string>("🏛️ SHOWROOM SPECIAL: Free premium felt underlays with any 8x10 or larger antique Persian collection purchase this week.");
-  const [logoUrl,
-    shopProfile,
-    setShopProfile,
- setLogoUrlState] = useState<string>("");
+  const [shopProfile, setShopProfileState] = useState<ShopProfile>({
+    name: "Marco Polo Showroom",
+    phone: "(555) 123-4567",
+    email: "contact@marcopolorugs.com",
+    address: "123 Antique Way, Silk Road District",
+    logoUrl: ""
+  });
+  const [logoUrl, setLogoUrlState] = useState<string>("");
   const [socialLinks, setSocialLinksState] = useState<SocialMediaLink[]>([
     { platform: "instagram", url: "https://instagram.com/marcopolorugs" },
     { platform: "pinterest", url: "https://pinterest.com/marcopolorugs" },
@@ -800,7 +804,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setHeroCoverPhotos,
         showroomAnnouncement,
         setShowroomAnnouncement,
-        logoUrl,
+        shopProfile,
+    setShopProfile,
+    logoUrl,
         setLogoUrl,
         socialLinks,
         setSocialLinks,
