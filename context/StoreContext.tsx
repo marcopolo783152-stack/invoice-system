@@ -62,6 +62,7 @@ interface StoreContextType {
   cleaningBookings: CleaningBooking[];
   addCleaningBooking: (booking: Omit<CleaningBooking, "id" | "status" | "createdAt">) => CleaningBooking;
   updateCleaningBookingStatus: (id: string, status: CleaningBooking["status"]) => void;
+  deleteCleaningBooking: (id: string) => void;
   
   // Cart operations
   addToCart: (rug: Rug) => void;
@@ -705,6 +706,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateShowroomDoc(SHOWROOM_CLEANING, id, { status });
   };
 
+  const deleteCleaningBooking = (id: string) => {
+    // Optimistic UI update
+    setCleaningBookings(prev => prev.filter(b => b.id !== id));
+    deleteShowroomDoc(SHOWROOM_CLEANING, id).catch(err => {
+      console.error("Failed to delete cleaning booking:", err);
+    });
+  };
+
+
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -747,6 +757,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         cleaningBookings,
         addCleaningBooking,
         updateCleaningBookingStatus,
+        deleteCleaningBooking,
         addToCart,
         removeFromCart,
         updateCartQuantity,

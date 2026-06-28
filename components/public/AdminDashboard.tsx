@@ -50,6 +50,7 @@ export const AdminDashboard: React.FC = () => {
     deleteRug, 
     updateOrderStatus, 
     updateCleaningBookingStatus,
+    deleteCleaningBooking,
     approveReview, 
     deleteReview,
     promoCodes,
