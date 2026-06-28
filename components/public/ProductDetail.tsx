@@ -15,7 +15,7 @@ interface ProductDetailProps {
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, onSelectRugId }) => {
-  const { rugs, reviews, addToCart, submitReview, deleteReview } = useStore();
+  const { rugs, reviews, addToCart, submitReview, deleteReview, activeView } = useStore();
   
   const rug = rugs.find((r) => r.id === rugId);
   
@@ -82,9 +82,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
   };
 
   // Get approved reviews for this rug
-  const rugReviews = reviews.filter((rev) => rev.rugId === rug.id && rev.isApproved);
+  const rugReviews = reviews.filter((rev) => rev.rugId === rug.id && (rev.isApproved === true || rev.isApproved === undefined));
   // Get pending reviews for this rug to show a hint
-  const pendingReviewsCount = reviews.filter((rev) => rev.rugId === rug.id && !rev.isApproved).length;
+  const pendingReviewsCount = reviews.filter((rev) => rev.rugId === rug.id && rev.isApproved === false).length;
   
 
   // Get 3 related rugs
@@ -303,7 +303,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                     <div key={rev.id} className="p-4 rounded-none border border-editorial-border bg-white space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-medium text-editorial-text">{rev.reviewerName}</span>
-                        <button
+                        {activeView === "admin" && (
+                          <button
                           onClick={() => {
                             const key = window.prompt("Enter admin key to delete this review:");
                             if (key === "Marcopolo$") {
@@ -317,6 +318,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                         >
                           Delete
                         </button>
+                        )}
                         <span className="text-xs text-gray-400 font-mono">
                           {new Date(rev.createdAt).toLocaleDateString()}
                         </span>

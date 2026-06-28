@@ -674,6 +674,7 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === "reviews" && "Advisor Review Moderation"}
               {activeTab === "messages" && "Live Concierge Inbox Thread"}
               {activeTab === "blogs" && "Design Journal Publisher"}
+              {activeTab === "promotions" && "Promo Code Management"}
               {activeTab === "settings" && "General Settings & Security"}
             </h1>
           </div>
@@ -1070,11 +1071,20 @@ export const AdminDashboard: React.FC = () => {
                                   });
                                   
                                   try {
-                                    if (!storage) throw new Error("Firebase storage not initialized");
-                                    // Upload to Firebase Storage for permanent hosting
-                                    const fileRef = ref(storage, `showroom_hero/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`);
-                                    const snapshot = await uploadBytes(fileRef, file);
-                                    const finalUrl = await getDownloadURL(snapshot.ref);
+                                    const compressedBase64 = await compressImage(file, 1600, 1200, 0.8);
+                                    let finalUrl = compressedBase64;
+                                    
+                                    if (storage) {
+                                      try {
+                                        const res = await fetch(compressedBase64);
+                                        const blob = await res.blob();
+                                        const fileRef = ref(storage, `showroom_hero/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`);
+                                        const snapshot = await uploadBytes(fileRef, blob);
+                                        finalUrl = await getDownloadURL(snapshot.ref);
+                                      } catch (firebaseErr) {
+                                        console.warn("Firebase hero upload failed, using base64 fallback", firebaseErr);
+                                      }
+                                    }
                                     
                                     setCoverPhotoInputs(prev => {
                                       const updated = [...prev];
