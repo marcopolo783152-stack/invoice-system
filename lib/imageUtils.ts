@@ -1,7 +1,9 @@
+import imageCompression from 'browser-image-compression';
+
 /**
- * Compresses an image file on the client side using an HTML5 Canvas.
+ * Compresses an image file on the client side.
  * It resizes the image to a maximum dimension while maintaining the aspect ratio,
- * and exports it as a highly compressed JPEG (or WebP) Base64 string.
+ * and exports it as a highly compressed JPEG Base64 string.
  * Automatically handles HEIC/HEIF formats.
  * 
  * @param file The image File to compress
@@ -27,52 +29,30 @@ export const compressImage = async (
       processedFile = new File([finalBlob], file.name.replace(/\.heic|\.heif/i, ".jpg"), { type: "image/jpeg" });
     } catch (e) {
       console.error("HEIC conversion failed:", e);
-      // Fallback: continue and hope the browser somehow supports it
     }
   }
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(processedFile);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
+  // Use browser-image-compression for ultra-fast, web-worker based compression
+  const options = {
+    maxSizeMB: 0.2, // Aim for ~200KB max per image
+    maxWidthOrHeight: Math.max(maxWidth, maxHeight),
+    useWebWorker: true,
+    initialQuality: quality
+  };
 
-        // Calculate new dimensions while maintaining aspect ratio
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          reject(new Error("Could not get canvas context"));
-          return;
-        }
-
-        // Draw image on canvas
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Export as highly compressed JPEG
-        const compressedDataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve(compressedDataUrl);
-      };
-      img.onerror = (error) => reject(error);
-    };
-    reader.onerror = (error) => reject(error);
-  });
+  try {
+    const compressedFile = await imageCompression(processedFile, options);
+    // Convert back to base64 for our current storage pipeline
+    return await imageCompression.getDataUrlFromFile(compressedFile);
+  } catch (error) {
+    console.error("Error with browser-image-compression", error);
+    
+    // Fallback if browser-image-compression fails
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(processedFile);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  }
 };
