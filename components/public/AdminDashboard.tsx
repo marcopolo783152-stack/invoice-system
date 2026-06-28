@@ -372,7 +372,8 @@ export const AdminDashboard: React.FC = () => {
     try {
       const uploadPromises = filesToUpload.map(async (file) => {
         // 1. Compress image heavily on the client side
-        const compressedBase64 = await compressImage(file, 1000, 1000, 0.7);
+        // Very small to guarantee fitting in Firestore if Firebase Storage fails
+        const compressedBase64 = await compressImage(file, 600, 600, 0.6);
 
         // Convert base64 back to Blob for Firebase Storage
         const res = await fetch(compressedBase64);
@@ -835,7 +836,7 @@ export const AdminDashboard: React.FC = () => {
                             if (file) {
                               setLogoInput("Uploading...");
                               try {
-                                const compressedBase64 = await compressImage(file, 800, 800, 0.8);
+                                const compressedBase64 = await compressImage(file, 400, 400, 0.8);
                                 
                                 let finalUrl = compressedBase64;
                                 if (storage) {
