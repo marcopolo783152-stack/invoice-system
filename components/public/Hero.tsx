@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import { useStore } from "@/context/StoreContext";
 import { 
@@ -34,6 +34,13 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
   const { rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhotos } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % 3);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
   
   // Cleaning service booking states
   const [cleaningModalOpen, setCleaningModalOpen] = useState(false);

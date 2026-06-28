@@ -87,31 +87,7 @@ interface StoreContextType {
   // Customer support chat operations
   sendChatMessage: (text: string, sender: "customer" | "admin", orderId?: string, sessionId?: string, customerName?: string) => void;
   clearChat: (sessionId?: string) => void;
-  deleteCleaningBooking: (id: string) => void;
-  
-  // Cart operations
-  addToCart: (rug: Rug) => void;
-  removeFromCart: (rugId: string) => void;
-  updateCartQuantity: (rugId: string, quantity: number) => void;
-  clearCart: () => void;
-  
-  // Checkout operations
-  checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number) => Order;
-  
-  // Admin Operations
-  addRug: (rug: Omit<Rug, "id" | "rating">) => void;
-  updateRug: (id: string, rug: Partial<Rug>) => void;
-  deleteRug: (id: string) => void;
-  updateOrderStatus: (orderId: string, status: OrderStatus, shipping?: ShippingDetails) => void;
-  approveReview: (reviewId: string) => void;
-  deleteReview: (reviewId: string) => void;
-  addBlogPost: (post: Omit<BlogPost, "id">) => void;
-  updateBlogPost: (id: string, post: Partial<BlogPost>) => void;
-  deleteBlogPost: (id: string) => void;
-  
-  // Customer support chat operations
-  sendChatMessage: (text: string, sender: "customer" | "admin", orderId?: string, sessionId?: string, customerName?: string) => void;
-  clearChat: (sessionId?: string) => void;
+
   deleteChatSession: (sessionId: string) => void;
   
   // Customer Review Submit
