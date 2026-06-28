@@ -8,6 +8,7 @@ import { useStore } from "@/context/StoreContext";
 import { OrderStatus, Rug, BlogPost, Review, ALL_SIZES } from "@/types";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
+import { compressImage } from "@/lib/imageUtils";
 import { 
   BarChart3, 
   Layers, 
@@ -370,20 +371,29 @@ export const AdminDashboard: React.FC = () => {
 
     try {
       const uploadPromises = filesToUpload.map(async (file) => {
+        // 1. Compress image heavily on the client side
+        const compressedBase64 = await compressImage(file, 1000, 1000, 0.7);
+
+        // Convert base64 back to Blob for Firebase Storage
+        const res = await fetch(compressedBase64);
+        const blob = await res.blob();
+        
         if (!storage) {
-          // Fallback to base64 if Firebase is not configured
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(file);
-          });
+          // If no storage, fallback to the compressed base64 string
+          return compressedBase64;
         }
         
-        // Upload to Firebase Storage
-        const fileRef = ref(storage, `showroom_rugs/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(fileRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        return downloadURL;
+        try {
+          // 2. Try to upload to Firebase Storage
+          const fileRef = ref(storage, `showroom_rugs/${Date.now()}_${file.name}`);
+          const snapshot = await uploadBytes(fileRef, blob);
+          const downloadURL = await getDownloadURL(snapshot.ref);
+          return downloadURL;
+        } catch (storageError) {
+          console.warn("Firebase Storage failed (possibly security rules), falling back to compressed Base64", storageError);
+          // 3. Fallback safely to Base64 (which is now tiny!)
+          return compressedBase64;
+        }
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
@@ -393,8 +403,8 @@ export const AdminDashboard: React.FC = () => {
         return newImages.slice(0, 15);
       });
     } catch (error) {
-      console.error("Error uploading images:", error);
-      alert("Failed to upload images. Please try again or check your storage limits.");
+      console.error("Error compressing/uploading images:", error);
+      alert("Failed to upload images. Please check your connection.");
     } finally {
       setIsUploading(false);
     }
@@ -820,18 +830,35 @@ export const AdminDashboard: React.FC = () => {
                           type="file"
                           accept="image/*"
                           className="hidden"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                const dataUrl = event.target?.result as string;
-                                setLogoInput(dataUrl);
-                                setLogoUrl(dataUrl);
+                              setLogoInput("Uploading...");
+                              try {
+                                const compressedBase64 = await compressImage(file, 800, 800, 0.8);
+                                
+                                let finalUrl = compressedBase64;
+                                if (storage) {
+                                  try {
+                                    const res = await fetch(compressedBase64);
+                                    const blob = await res.blob();
+                                    const fileRef = ref(storage, `showroom_settings/logo_${Date.now()}_${file.name}`);
+                                    const snapshot = await uploadBytes(fileRef, blob);
+                                    finalUrl = await getDownloadURL(snapshot.ref);
+                                  } catch (storageError) {
+                                    console.warn("Storage upload failed, keeping base64 fallback", storageError);
+                                  }
+                                }
+                                
+                                setLogoInput(finalUrl);
+                                setLogoUrl(finalUrl);
                                 setLogoSuccess(true);
                                 setTimeout(() => setLogoSuccess(false), 3000);
-                              };
-                              reader.readAsDataURL(file);
+                              } catch (err) {
+                                console.error(err);
+                                alert("Failed to upload logo.");
+                                setLogoInput("");
+                              }
                             }
                           }}
                         />
@@ -2332,14 +2359,28 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-neutral-500 font-semibold uppercase">Curator's Description</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-neutral-500 font-semibold uppercase">Curator's Description</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ageText = rugAge.includes('Vintage') ? 'vintage' : rugAge.includes('Antique') ? 'antique' : 'contemporary';
+                      const desc = `This exquisite ${ageText} ${rugStyle} rug, masterfully hand-crafted in ${rugOrigin}, brings timeless elegance to any interior space. Measuring ${rugDimensions}, this piece features a breathtaking palette of ${rugColors}. Woven from ${rugMaterial.toLowerCase()}, its ${rugCondition.toLowerCase()} condition speaks to its enduring quality and expert craftsmanship. Perfect for elevating your living space with its unique character and undeniable charm.`;
+                      setRugDescription(desc);
+                    }}
+                    className="flex items-center text-[10px] text-editorial-accent hover:text-amber-600 font-bold transition"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Auto-Generate Description
+                  </button>
+                </div>
                 <textarea
                   required
-                  rows={3}
+                  rows={4}
                   value={rugDescription}
                   onChange={(e) => setRugDescription(e.target.value)}
                   placeholder="Describe the density, geometric themes, weave center history, and overall room styling aesthetics..."
-                  className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 resize-none"
+                  className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 resize-none text-sm leading-relaxed"
                 />
               </div>
 
