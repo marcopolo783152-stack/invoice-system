@@ -102,20 +102,20 @@ export const AdminDashboard: React.FC = () => {
   const [editingRugId, setEditingRugId] = useState<string | null>(null);
   const [rugName, setRugName] = useState("");
   const [rugSKU, setRugSKU] = useState("");
-  const [rugPrice, setRugPrice] = useState(2500);
-  const [rugSizeCategory, setRugSizeCategory] = useState<Rug["sizeCategory"]>("Medium");
-  const [rugDimensions, setRugDimensions] = useState("5' 0\" x 8' 0\"");
-  const [rugOrigin, setRugOrigin] = useState("Persia (Iran)");
-  const [rugStyle, setRugStyle] = useState<Rug["style"]>("Traditional");
-  const [rugMaterial, setRugMaterial] = useState("100% Fine Wool");
-  const [rugAge, setRugAge] = useState<Rug["age"]>("Vintage (50-90 yrs)");
-  const [rugCondition, setRugCondition] = useState<Rug["condition"]>("Excellent");
-  const [rugColors, setRugColors] = useState("Red, Navy, Cream");
-  const [rugWeight, setRugWeight] = useState<number>(3.5);
-  const [rugShape, setRugShape] = useState<Rug["shape"]>("Rectangular");
-  const [rugAvailability, setRugAvailability] = useState<Rug["availability"]>("In Stock");
+  const [rugPrice, setRugPrice] = useState<number | "">("");
+  const [rugSizeCategory, setRugSizeCategory] = useState<Rug["sizeCategory"] | "">("");
+  const [rugDimensions, setRugDimensions] = useState("");
+  const [rugOrigin, setRugOrigin] = useState("");
+  const [rugStyle, setRugStyle] = useState<Rug["style"] | "">("");
+  const [rugMaterial, setRugMaterial] = useState("");
+  const [rugAge, setRugAge] = useState<Rug["age"] | "">("");
+  const [rugCondition, setRugCondition] = useState<Rug["condition"] | "">("");
+  const [rugColors, setRugColors] = useState("");
+  const [rugWeight, setRugWeight] = useState<number | "">("");
+  const [rugShape, setRugShape] = useState<Rug["shape"] | "">("");
+  const [rugAvailability, setRugAvailability] = useState<Rug["availability"] | "">("In Stock");
   const [rugDescription, setRugDescription] = useState("");
-  const [rugImageUrl, setRugImageUrl] = useState("https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=800");
+  const [rugImageUrl, setRugImageUrl] = useState("");
   const [rugImages, setRugImages] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -291,22 +291,22 @@ export const AdminDashboard: React.FC = () => {
     } else {
       setEditingRugId(null);
       setRugName("");
-      setRugSKU(`MPR-${Math.floor(1000 + Math.random() * 9000)}`);
-      setRugPrice(2900);
-      setRugSizeCategory("Medium");
-      setRugDimensions("6' 0\" x 9' 0\"");
-      setRugOrigin("Persia (Iran)");
-      setRugStyle("Traditional");
-      setRugMaterial("100% Cork Wool");
-      setRugAge("Vintage (50-90 yrs)");
-      setRugCondition("Excellent");
-      setRugColors("Red, Blue, Ivory");
-      setRugWeight(3.5);
-      setRugShape("Rectangular");
+      setRugSKU("");
+      setRugPrice("");
+      setRugSizeCategory("");
+      setRugDimensions("");
+      setRugOrigin("");
+      setRugStyle("");
+      setRugMaterial("");
+      setRugAge("");
+      setRugCondition("");
+      setRugColors("");
+      setRugWeight("");
+      setRugShape("");
       setRugAvailability("In Stock");
       setRugDescription("");
       setRugImageUrl("");
-      setRugImages(["https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"]);
+      setRugImages([]);
     }
     setNewImageUrl("");
     setRugModalOpen(true);
@@ -316,21 +316,21 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     const colorsArr = rugColors.split(",").map(c => c.trim()).filter(Boolean);
     const finalImages = rugImages.length > 0 ? rugImages : ["https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"];
-    const payload = {
+    const payload: any = {
       name: rugName,
       sku: rugSKU,
       price: Number(rugPrice),
-      sizeCategory: rugSizeCategory,
+      sizeCategory: rugSizeCategory as Rug["sizeCategory"],
       dimensions: rugDimensions,
       origin: rugOrigin,
-      style: rugStyle,
+      style: rugStyle as Rug["style"],
       material: rugMaterial,
-      age: rugAge,
-      condition: rugCondition,
+      age: rugAge as Rug["age"],
+      condition: rugCondition as Rug["condition"],
       colors: colorsArr,
       weightLbs: Number(rugWeight) || 3.5,
-      shape: rugShape,
-      availability: rugAvailability,
+      shape: rugShape as Rug["shape"],
+      availability: rugAvailability as Rug["availability"],
       description: rugDescription,
       images: finalImages
     };
