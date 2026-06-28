@@ -367,12 +367,21 @@ export const AdminDashboard: React.FC = () => {
       alert(`Only the first ${remainingSlots} files will be uploaded to stay within the 15-picture limit.`);
     }
 
+    // IMMEDIATELY show previews so the user doesn't have to wait
+    const previewUrls = filesToUpload.map(file => URL.createObjectURL(file));
+    setRugImages(prev => {
+      const newImages = [...prev, ...previewUrls];
+      return newImages.slice(0, 15);
+    });
+    
     setIsUploading(true);
 
     try {
-      const uploadedUrls: string[] = [];
-      
-      for (const file of filesToUpload) {
+      // Process in the background, updating the URL one by one
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        const tempUrl = previewUrls[i];
+        
         try {
           // 1. Compress image heavily on the client side
           const compressedBase64 = await compressImage(file, 600, 600, 0.6);
@@ -381,42 +390,39 @@ export const AdminDashboard: React.FC = () => {
           const res = await fetch(compressedBase64);
           const blob = await res.blob();
           
-          if (!storage) {
-            uploadedUrls.push(compressedBase64);
-            continue;
+          let finalUrl = compressedBase64;
+          
+          if (storage) {
+            try {
+              // 2. Try to upload to Firebase Storage with a strict 5-second timeout
+              const fileRef = ref(storage, `showroom_rugs/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`);
+              
+              const uploadTask = async () => {
+                const snapshot = await uploadBytes(fileRef, blob);
+                return await getDownloadURL(snapshot.ref);
+              };
+
+              const timeoutTask = new Promise<string>((_, reject) => 
+                setTimeout(() => reject(new Error("Firebase upload timeout")), 5000)
+              );
+
+              finalUrl = await Promise.race([uploadTask(), timeoutTask]);
+            } catch (storageError) {
+              console.warn("Firebase Storage failed or timed out, falling back to Base64", storageError);
+            }
           }
           
-          try {
-            // 2. Try to upload to Firebase Storage with a strict 5-second timeout
-            const fileRef = ref(storage, `showroom_rugs/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`);
-            
-            const uploadTask = async () => {
-              const snapshot = await uploadBytes(fileRef, blob);
-              return await getDownloadURL(snapshot.ref);
-            };
-
-            const timeoutTask = new Promise<string>((_, reject) => 
-              setTimeout(() => reject(new Error("Firebase upload timeout")), 5000)
-            );
-
-            const downloadURL = await Promise.race([uploadTask(), timeoutTask]);
-            uploadedUrls.push(downloadURL);
-          } catch (storageError) {
-            console.warn("Firebase Storage failed or timed out, falling back to Base64", storageError);
-            uploadedUrls.push(compressedBase64);
-          }
+          // Replace the temporary preview URL with the final permanent URL
+          setRugImages(prev => prev.map(url => url === tempUrl ? finalUrl : url));
         } catch (fileErr) {
           console.error("Error processing file:", file.name, fileErr);
+          // If it fails completely, remove the preview
+          setRugImages(prev => prev.filter(url => url !== tempUrl));
         }
       }
-      
-      setRugImages(prev => {
-        const newImages = [...prev, ...uploadedUrls];
-        return newImages.slice(0, 15);
-      });
     } catch (error) {
       console.error("Error compressing/uploading images:", error);
-      alert("Failed to upload images. Please check your connection.");
+      alert("Failed to process some images. Please check your connection.");
     } finally {
       setIsUploading(false);
     }
