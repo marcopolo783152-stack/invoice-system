@@ -1523,6 +1523,21 @@ export const AdminDashboard: React.FC = () => {
                             <Mail className="h-3.5 w-3.5" />
                             <span>Email Invoice</span>
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const key = window.prompt("Enter Admin Key to permanently delete this order:");
+                              if (key === "Marcopolo$") {
+                                deleteOrder(o.id);
+                              } else if (key !== null) {
+                                alert("Invalid Admin Key. Deletion blocked.");
+                              }
+                            }}
+                            className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded transition flex items-center justify-center cursor-pointer"
+                            title="Delete Order"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
 
@@ -1579,7 +1594,7 @@ export const AdminDashboard: React.FC = () => {
                         <button
                           onClick={() => {
                             const key = window.prompt("Enter Admin Key to permanently delete this cleaning booking:");
-                            if (key === "marcopolo2026") {
+                            if (key === "Marcopolo$") {
                               deleteCleaningBooking(booking.id);
                             } else if (key !== null) {
                               alert("Invalid Admin Key. Deletion blocked.");
