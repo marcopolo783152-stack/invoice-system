@@ -41,7 +41,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedShapes, setSelectedShapes] = useState<string[]>([]);
   const [selectedAvailability, setSelectedAvailability] = useState<string[]>([]);
-  const [maxPrice, setMaxPrice] = useState<number>(30000);
+  const [maxPrice, setMaxPrice] = useState<number>(200000);
 
   // Mobile filters sidebar drawer open state
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -69,7 +69,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
     setSelectedColors([]);
     setSelectedShapes([]);
     setSelectedAvailability([]);
-    setMaxPrice(30000);
+    setMaxPrice(200000);
     setSearchQuery("");
   };
 
@@ -174,15 +174,15 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
         <input
           type="range"
           min="1000"
-          max="30000"
-          step="500"
+          max="200000"
+          step="1000"
           value={maxPrice}
           onChange={(e) => setMaxPrice(Number(e.target.value))}
           className="w-full accent-editorial-accent cursor-pointer h-1 bg-gray-200"
         />
         <div className="flex justify-between text-[9px] text-gray-400">
           <span>$1,000</span>
-          <span>$30,000</span>
+          <span>$200,000</span>
         </div>
       </div>
 

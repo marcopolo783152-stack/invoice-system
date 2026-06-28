@@ -933,20 +933,37 @@ export const AdminDashboard: React.FC = () => {
                               type="file"
                               accept="image/*"
                               className="hidden"
-                              onChange={(e) => {
+                              onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (event) => {
-                                    const dataUrl = event.target?.result as string;
-                                    const newInputs = [...coverPhotoInputs];
-                                    newInputs[index] = dataUrl;
-                                    setCoverPhotoInputs(newInputs);
-                                    setHeroCoverPhotos(newInputs);
+                                  // Show local preview immediately
+                                  const tempUrl = URL.createObjectURL(file);
+                                  setCoverPhotoInputs(prev => {
+                                    const tempInputs = [...prev];
+                                    tempInputs[index] = tempUrl;
+                                    return tempInputs;
+                                  });
+                                  
+                                  try {
+                                    if (!storage) throw new Error("Firebase storage not initialized");
+                                    // Upload to Firebase Storage for permanent hosting
+                                    const fileRef = ref(storage, `showroom_hero/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`);
+                                    const snapshot = await uploadBytes(fileRef, file);
+                                    const finalUrl = await getDownloadURL(snapshot.ref);
+                                    
+                                    setCoverPhotoInputs(prev => {
+                                      const updated = [...prev];
+                                      updated[index] = finalUrl;
+                                      // Save permanent URL to Firestore
+                                      setHeroCoverPhotos(updated);
+                                      return updated;
+                                    });
                                     setCoverSuccess(true);
                                     setTimeout(() => setCoverSuccess(false), 3000);
-                                  };
-                                  reader.readAsDataURL(file);
+                                  } catch (err) {
+                                    console.error("Hero upload error:", err);
+                                    alert("Failed to upload image. Please try again.");
+                                  }
                                 }
                               }}
                             />
