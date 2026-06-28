@@ -5,7 +5,8 @@
  */
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Firebase configuration - hardcoded for static export compatibility
 // These values are safe to expose publicly (they're client-side credentials)
@@ -42,11 +43,13 @@ export function isFirebaseConfigured(): boolean {
 
 let app: FirebaseApp;
 let db: Firestore | undefined;
+let storage: FirebaseStorage | undefined;
 
 try {
   if (isFirebaseConfigured() && typeof window !== 'undefined') {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     db = getFirestore(app);
+    storage = getStorage(app);
     
     // Disable offline persistence to force a 100% live online connection 
     // This prevents data from being "hidden" in the local cache if the cloud rejects it.
@@ -72,7 +75,7 @@ try {
 
 export { app };
 
-export { db };
+export { db, storage };
 
 /**
  * Global Error Handler for Firebase Quota Exhaustion

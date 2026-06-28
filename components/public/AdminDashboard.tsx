@@ -6,6 +6,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useStore } from "@/context/StoreContext";
 import { OrderStatus, Rug, BlogPost, Review, ALL_SIZES } from "@/types";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "@/lib/firebase";
 import { 
   BarChart3, 
   Layers, 
@@ -115,6 +117,7 @@ export const AdminDashboard: React.FC = () => {
   const [rugImageUrl, setRugImageUrl] = useState("https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=800");
   const [rugImages, setRugImages] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   // State for dispatch carrier info modal
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
@@ -349,7 +352,7 @@ export const AdminDashboard: React.FC = () => {
     setNewImageUrl("");
   };
 
-  const handleUploadMultipleImages = (files: FileList | null) => {
+  const handleUploadMultipleImages = async (files: FileList | null) => {
     if (!files) return;
     const currentCount = rugImages.length;
     const remainingSlots = 15 - currentCount;
@@ -363,18 +366,38 @@ export const AdminDashboard: React.FC = () => {
       alert(`Only the first ${remainingSlots} files will be uploaded to stay within the 15-picture limit.`);
     }
 
-    filesToUpload.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === "string") {
-          setRugImages(prev => {
-            if (prev.length >= 15) return prev;
-            return [...prev, reader.result as string];
+    setIsUploading(true);
+
+    try {
+      const uploadPromises = filesToUpload.map(async (file) => {
+        if (!storage) {
+          // Fallback to base64 if Firebase is not configured
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
           });
         }
-      };
-      reader.readAsDataURL(file);
-    });
+        
+        // Upload to Firebase Storage
+        const fileRef = ref(storage, `showroom_rugs/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      
+      setRugImages(prev => {
+        const newImages = [...prev, ...uploadedUrls];
+        return newImages.slice(0, 15);
+      });
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      alert("Failed to upload images. Please try again or check your storage limits.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
@@ -2268,7 +2291,7 @@ export const AdminDashboard: React.FC = () => {
                 {/* Upload & Add Controls */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   {/* File Uploader */}
-                  <div className="border border-dashed border-stone-300 p-3 bg-stone-50/50 flex flex-col items-center justify-center text-center relative">
+                  <div className={`border border-dashed border-stone-300 p-3 flex flex-col items-center justify-center text-center relative transition ${isUploading ? 'bg-amber-50 opacity-70' : 'bg-stone-50/50 hover:bg-stone-100'}`}>
                     <input
                       type="file"
                       multiple
@@ -2276,9 +2299,12 @@ export const AdminDashboard: React.FC = () => {
                       onChange={(e) => handleUploadMultipleImages(e.target.files)}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       title="Upload multiple photos"
+                      disabled={isUploading}
                     />
-                    <Upload className="h-5 w-5 text-amber-600 mb-1" />
-                    <span className="text-[10px] font-bold uppercase text-stone-700">Upload Multiple Files</span>
+                    <Upload className={`h-5 w-5 mb-1 ${isUploading ? 'text-amber-400 animate-bounce' : 'text-amber-600'}`} />
+                    <span className="text-[10px] font-bold uppercase text-stone-700">
+                      {isUploading ? "Uploading to Cloud..." : "Upload Multiple Files"}
+                    </span>
                     <span className="text-[9px] text-stone-400">Drag or click to choose 1-15 files</span>
                   </div>
 
