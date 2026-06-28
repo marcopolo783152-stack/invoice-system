@@ -226,7 +226,7 @@ export const AdminDashboard: React.FC = () => {
   const verifyDecryptPassword = (e: React.FormEvent) => {
     e.preventDefault();
     // Strictly require requested administrator password
-    if (passwordInput === "Admin123$") {
+    if (passwordInput === "Marcopolo$") {
       if (passwordPromptOrderId) {
         setUnlockedOrders((prev) => [...prev, passwordPromptOrderId]);
       }
