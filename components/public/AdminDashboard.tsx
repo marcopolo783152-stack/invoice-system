@@ -1576,6 +1576,20 @@ export const AdminDashboard: React.FC = () => {
                           <option value="Completed">Completed</option>
                           <option value="Cancelled">Cancelled</option>
                         </select>
+                        <button
+                          onClick={() => {
+                            const key = window.prompt("Enter Admin Key to permanently delete this cleaning booking:");
+                            if (key === "marcopolo2026") {
+                              deleteCleaningBooking(booking.id);
+                            } else if (key !== null) {
+                              alert("Invalid Admin Key. Deletion blocked.");
+                            }
+                          }}
+                          className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                          title="Delete Cleaning Booking"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
 
