@@ -370,34 +370,45 @@ export const AdminDashboard: React.FC = () => {
     setIsUploading(true);
 
     try {
-      const uploadPromises = filesToUpload.map(async (file) => {
-        // 1. Compress image heavily on the client side
-        // Very small to guarantee fitting in Firestore if Firebase Storage fails
-        const compressedBase64 = await compressImage(file, 600, 600, 0.6);
-
-        // Convert base64 back to Blob for Firebase Storage
-        const res = await fetch(compressedBase64);
-        const blob = await res.blob();
-        
-        if (!storage) {
-          // If no storage, fallback to the compressed base64 string
-          return compressedBase64;
-        }
-        
+      const uploadedUrls: string[] = [];
+      
+      for (const file of filesToUpload) {
         try {
-          // 2. Try to upload to Firebase Storage
-          const fileRef = ref(storage, `showroom_rugs/${Date.now()}_${file.name}`);
-          const snapshot = await uploadBytes(fileRef, blob);
-          const downloadURL = await getDownloadURL(snapshot.ref);
-          return downloadURL;
-        } catch (storageError) {
-          console.warn("Firebase Storage failed (possibly security rules), falling back to compressed Base64", storageError);
-          // 3. Fallback safely to Base64 (which is now tiny!)
-          return compressedBase64;
-        }
-      });
+          // 1. Compress image heavily on the client side
+          const compressedBase64 = await compressImage(file, 600, 600, 0.6);
 
-      const uploadedUrls = await Promise.all(uploadPromises);
+          // Convert base64 back to Blob for Firebase Storage
+          const res = await fetch(compressedBase64);
+          const blob = await res.blob();
+          
+          if (!storage) {
+            uploadedUrls.push(compressedBase64);
+            continue;
+          }
+          
+          try {
+            // 2. Try to upload to Firebase Storage with a strict 5-second timeout
+            const fileRef = ref(storage, `showroom_rugs/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`);
+            
+            const uploadTask = async () => {
+              const snapshot = await uploadBytes(fileRef, blob);
+              return await getDownloadURL(snapshot.ref);
+            };
+
+            const timeoutTask = new Promise<string>((_, reject) => 
+              setTimeout(() => reject(new Error("Firebase upload timeout")), 5000)
+            );
+
+            const downloadURL = await Promise.race([uploadTask(), timeoutTask]);
+            uploadedUrls.push(downloadURL);
+          } catch (storageError) {
+            console.warn("Firebase Storage failed or timed out, falling back to Base64", storageError);
+            uploadedUrls.push(compressedBase64);
+          }
+        } catch (fileErr) {
+          console.error("Error processing file:", file.name, fileErr);
+        }
+      }
       
       setRugImages(prev => {
         const newImages = [...prev, ...uploadedUrls];
