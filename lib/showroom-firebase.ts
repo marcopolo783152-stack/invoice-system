@@ -215,27 +215,50 @@ const cleanData = (obj: any): any => {
 export const addShowroomDoc = async (colName: string, data: any) => {
   const firestoreDb = db; 
   if (!isFirebaseConfigured() || !firestoreDb) { alert("FIREBASE IS NOT CONFIGURED OR DB IS NULL in addShowroomDoc! isConfig: " + isFirebaseConfigured() + ", db: " + !!firestoreDb); return; }
-  if (data.id) {
-    await setDoc(doc(firestoreDb, colName, data.id), data);
-  } else {
-    await addDoc(collection(firestoreDb, colName), data);
+  const cleanedData = cleanData(data);
+  try {
+    if (cleanedData.id) {
+      await setDoc(doc(firestoreDb, colName, cleanedData.id), cleanedData);
+    } else {
+      await addDoc(collection(firestoreDb, colName), cleanedData);
+    }
+  } catch (error: any) {
+    alert(`LIVE FIREBASE ERROR (addShowroomDoc ${colName}): ` + error.message);
+    throw error;
   }
 };
 
 export const updateShowroomDoc = async (colName: string, id: string, data: any) => {
   const firestoreDb = db; 
-  if (!isFirebaseConfigured() || !firestoreDb) { alert("FIREBASE IS NOT CONFIGURED OR DB IS NULL in addShowroomDoc! isConfig: " + isFirebaseConfigured() + ", db: " + !!firestoreDb); return; }
-  await updateDoc(doc(firestoreDb, colName, id), data);
+  if (!isFirebaseConfigured() || !firestoreDb) { alert("FIREBASE IS NOT CONFIGURED OR DB IS NULL in updateShowroomDoc! isConfig: " + isFirebaseConfigured() + ", db: " + !!firestoreDb); return; }
+  const cleanedData = cleanData(data);
+  try {
+    await updateDoc(doc(firestoreDb, colName, id), cleanedData);
+  } catch (error: any) {
+    alert(`LIVE FIREBASE ERROR (updateShowroomDoc ${colName}): ` + error.message);
+    throw error;
+  }
 };
 
 export const deleteShowroomDoc = async (colName: string, id: string) => {
   const firestoreDb = db; 
-  if (!isFirebaseConfigured() || !firestoreDb) { alert("FIREBASE IS NOT CONFIGURED OR DB IS NULL in addShowroomDoc! isConfig: " + isFirebaseConfigured() + ", db: " + !!firestoreDb); return; }
-  await deleteDoc(doc(firestoreDb, colName, id));
+  if (!isFirebaseConfigured() || !firestoreDb) { alert("FIREBASE IS NOT CONFIGURED OR DB IS NULL in deleteShowroomDoc! isConfig: " + isFirebaseConfigured() + ", db: " + !!firestoreDb); return; }
+  try {
+    await deleteDoc(doc(firestoreDb, colName, id));
+  } catch (error: any) {
+    alert(`LIVE FIREBASE ERROR (deleteShowroomDoc ${colName}): ` + error.message);
+    throw error;
+  }
 };
 
 export const updateSettingDoc = async (settingId: string, data: any) => {
   const firestoreDb = db; 
-  if (!isFirebaseConfigured() || !firestoreDb) { alert("FIREBASE IS NOT CONFIGURED OR DB IS NULL in addShowroomDoc! isConfig: " + isFirebaseConfigured() + ", db: " + !!firestoreDb); return; }
-  await setDoc(doc(firestoreDb, SHOWROOM_SETTINGS, settingId), data, { merge: true });
+  if (!isFirebaseConfigured() || !firestoreDb) { alert("FIREBASE IS NOT CONFIGURED OR DB IS NULL in updateSettingDoc! isConfig: " + isFirebaseConfigured() + ", db: " + !!firestoreDb); return; }
+  const cleanedData = cleanData(data);
+  try {
+    await setDoc(doc(firestoreDb, SHOWROOM_SETTINGS, settingId), cleanedData, { merge: true });
+  } catch (error: any) {
+    alert(`LIVE FIREBASE ERROR (updateSettingDoc): ` + error.message);
+    throw error;
+  }
 };
