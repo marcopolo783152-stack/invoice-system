@@ -1,7 +1,5 @@
 /**
  * FIREBASE CONFIGURATION
- * 
- * Cloud database for syncing invoices across all devices
  */
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
@@ -9,8 +7,6 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 
-// Firebase configuration - hardcoded for static export compatibility
-// These values are safe to expose publicly (they're client-side credentials)
 const firebaseConfig = {
   apiKey: "AIzaSyCT5ukPxCXfMI3j8PgJCGdF5AvN6RnX0Y8",
   authDomain: "marcopolo-invoice.firebaseapp.com",
@@ -20,100 +16,41 @@ const firebaseConfig = {
   appId: "1:257585408766:web:6309ba28477926e86c796f"
 };
 
-/**
- * Check if Firebase is configured
- */
 export function isFirebaseConfigured(): boolean {
-  const hasConfig = !!(
-    firebaseConfig.apiKey &&
-    firebaseConfig.projectId &&
-    firebaseConfig.apiKey !== ''
-  );
-
-  console.log('Firebase configured:', hasConfig);
-  console.log('Firebase config:', {
-    hasApiKey: !!firebaseConfig.apiKey,
-    hasProjectId: !!firebaseConfig.projectId,
-    projectId: firebaseConfig.projectId
-  });
-
-  return hasConfig;
+  return !!(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.apiKey !== '');
 }
 
-// Initialize Firebase only if configured
+// Initialize immediately to ensure const exports are bound correctly!
+let appInstance: FirebaseApp;
+let dbInstance: Firestore | undefined;
+let storageInstance: FirebaseStorage | undefined;
 
-let app: FirebaseApp;
-let db: Firestore | undefined;
-let storage: FirebaseStorage | undefined;
-
-try {
-  if (isFirebaseConfigured() && typeof window !== 'undefined') {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    db = getFirestore(app);
-    
-    try {
-      storage = getStorage(app);
-      try {
-        const auth = getAuth(app);
-        signInAnonymously(auth).catch(e => console.warn('Anon auth failed:', e));
-      } catch (authErr) { console.warn('Auth init failed:', authErr); }
-    } catch (storageErr) {
-      console.warn("Firebase Storage could not be initialized. Continuing without storage.", storageErr);
-    }
-    
-    // Disable offline persistence to force a 100% live online connection 
-    // This prevents data from being "hidden" in the local cache if the cloud rejects it.
-    /*
-    enableIndexedDbPersistence(db).catch((err) => {
-      console.warn("Firestore offline persistence error:", err);
-    });
-    */
-
-    console.log('Firebase initialized successfully (LIVE ONLY)');
-  } else {
-    // For SSR or if not configured, initialize a dummy app (for type safety)
-    if (getApps().length === 0) {
-      app = initializeApp(firebaseConfig);
-    } else {
-      app = getApps()[0];
-    }
-    console.log('Firebase not configured - using localStorage only');
-  }
-} catch (error) {
-  console.error('Firebase initialization error:', error);
+if (typeof window !== 'undefined' && isFirebaseConfigured()) {
+  appInstance = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  dbInstance = getFirestore(appInstance);
+  try {
+    storageInstance = getStorage(appInstance);
+  } catch(e) {}
+  
+  try {
+    const auth = getAuth(appInstance);
+    signInAnonymously(auth).catch(e => console.warn("Anon Auth failed:", e));
+  } catch(e) {}
+} else {
+  // SSR Dummy
+  appInstance = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 }
 
-export { app };
+export const app = appInstance;
+export const db = dbInstance;
+export const storage = storageInstance;
 
-export { db, storage };
-
-/**
- * Global Error Handler for Firebase Quota Exhaustion
- * Call this inside try/catch blocks making Firebase requests to alert the user if the database is full.
- */
 export function checkFirebaseQuotaError(error: any) {
-  if (!error) return;
-
-  const errorString = (error.message || error.code || error.toString()).toLowerCase();
-
-  // Firebase specific quota exceeded / resource exhausted errors
-  if (
-    errorString.includes('quota-exceeded') ||
-    errorString.includes('quota exceeded') ||
-    errorString.includes('resource-exhausted') ||
-    errorString.includes('resource exhausted') ||
-    error.code === 'resource-exhausted'
-  ) {
-    const alertMessage = "CRITICAL ALARM: Your Firebase Database is full or has exceeded its quota limits! Please upgrade your Firebase plan immediately to continue saving and loading invoices.";
-    console.error(alertMessage, error);
-
-    // Alert the user on the client side
-    if (typeof window !== 'undefined') {
-      alert(alertMessage);
-    }
-
+  if (!error) return false;
+  const errStr = String(error.message || error.code || error).toLowerCase();
+  if (errStr.includes('quota') || errStr.includes('resource-exhausted')) {
+    if (typeof window !== 'undefined') alert("FIREBASE QUOTA EXCEEDED");
     return true;
   }
-
   return false;
 }
