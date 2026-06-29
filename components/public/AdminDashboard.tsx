@@ -86,6 +86,14 @@ export const AdminDashboard: React.FC = () => {
   const prevUnapprovedCount = useRef(unapprovedReviewsCount);
 
   useEffect(() => {
+    if (unapprovedReviewsCount > 0) {
+      setTimeout(() => {
+        alert(`🔔 You have ${unapprovedReviewsCount} unapproved customer review(s) waiting!\n\nPlease check the 'Advisor Reviews' tab to approve them.`);
+      }, 500);
+    }
+  }, []); // Run once on mount!
+
+  useEffect(() => {
     if (unapprovedReviewsCount > prevUnapprovedCount.current) {
       alert("🔔 NEW CUSTOMER REVIEW SUBMITTED!\n\nPlease check the 'Advisor Reviews' tab to approve it.");
     }
@@ -627,8 +635,8 @@ export const AdminDashboard: React.FC = () => {
               <Star className="h-4.5 w-4.5" />
               <span>Advisor Reviews</span>
               {reviews.filter(r => !r.isApproved).length > 0 && (
-                <span className="absolute right-3 bg-editorial-accent text-white text-sm font-bold px-2 py-0.5 rounded-none">
-                  {reviews.filter(r => !r.isApproved).length}
+                <span className="absolute right-3 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse shadow-md">
+                  {reviews.filter(r => !r.isApproved).length} NEW
                 </span>
               )}
             </button>
