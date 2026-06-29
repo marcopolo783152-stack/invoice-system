@@ -241,10 +241,13 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
             {/* Dark vignette overlay */}
             <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/90 via-neutral-950/60 to-transparent z-10" />
             <img
-              src={slide.image}
+              src={slide.image || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=2000"}
               alt={slide.title}
               className="absolute inset-0 w-full h-full object-cover object-center opacity-65"
               referrerPolicy="no-referrer"
+              onError={(e) => {
+                e.currentTarget.src = "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=2000";
+              }}
             />
             
             {/* Text Overlay Box */}

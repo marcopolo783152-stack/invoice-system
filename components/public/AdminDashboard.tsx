@@ -1558,7 +1558,16 @@ export const AdminDashboard: React.FC = () => {
                           <div>{r.dimensions}</div>
                           <span className="text-sm text-neutral-400">{r.sizeCategory} | {r.shape}</span>
                         </td>
-                        <td className="py-3 px-4 font-serif font-bold text-neutral-900">${r.price.toLocaleString()}</td>
+                        <td className="py-3 px-4 font-serif font-bold text-neutral-900">
+                          {r.originalPrice ? (
+                            <div className="flex flex-col">
+                              <span className="text-xs text-gray-400 line-through">${r.originalPrice.toLocaleString()}</span>
+                              <span className="text-editorial-accent">${r.price.toLocaleString()}</span>
+                            </div>
+                          ) : (
+                            <span>${r.price.toLocaleString()}</span>
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
                             r.availability === "In Stock" ? "bg-green-100 text-green-700" :
@@ -2224,9 +2233,19 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-neutral-500 font-semibold uppercase">Showroom Value ($)</label>
+                  <label className="block text-neutral-500 font-semibold uppercase">Original Price ($)</label>
+                  <input
+                    type="number"
+                    value={rugOriginalPrice}
+                    onChange={(e) => setRugOriginalPrice(Number(e.target.value))}
+                    className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500"
+                    placeholder="Optional"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase">Sale Price ($)</label>
                   <input
                     type="number"
                     required
