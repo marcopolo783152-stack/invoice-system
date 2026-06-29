@@ -11,7 +11,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCT5ukPxCXfMI3j8PgJCGdF5AvN6RnX0Y8",
   authDomain: "marcopolo-invoice.firebaseapp.com",
   projectId: "marcopolo-invoice",
-  storageBucket: "marcopolo-invoice.appspot.com",
+  storageBucket: "marcopolo-invoice.firebasestorage.app",
   messagingSenderId: "257585408766",
   appId: "1:257585408766:web:6309ba28477926e86c796f"
 };
