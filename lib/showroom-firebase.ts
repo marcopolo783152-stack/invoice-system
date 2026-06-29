@@ -197,6 +197,21 @@ export const subscribeToSettings = (
 
 // -- CRUD Operations --
 
+
+// Helper to remove undefined fields because Firestore rejects them
+const cleanData = (obj: any): any => {
+  if (obj === undefined) return null;
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(cleanData);
+  const newObj: any = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      newObj[key] = cleanData(obj[key]);
+    }
+  }
+  return newObj;
+};
+
 export const addShowroomDoc = async (colName: string, data: any) => {
   const firestoreDb = db; 
   if (!isFirebaseConfigured() || !firestoreDb) { alert("FIREBASE IS NOT CONFIGURED OR DB IS NULL in addShowroomDoc! isConfig: " + isFirebaseConfigured() + ", db: " + !!firestoreDb); return; }

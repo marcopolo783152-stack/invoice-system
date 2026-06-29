@@ -494,7 +494,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString()
     };
     setReviews(prev => [newReview, ...prev]);
-      addShowroomDoc(SHOWROOM_REVIEWS, newReview);
+      addShowroomDoc(SHOWROOM_REVIEWS, newReview).catch(e => console.error("Review save failed", e));
   };
 
   const approveReview = (reviewId: string) => {
