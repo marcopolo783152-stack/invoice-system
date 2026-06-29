@@ -170,6 +170,7 @@ function AppContent() {
         <ProductDetail 
           rugId={selectedRugId} 
           onClose={() => setSelectedRugId(null)} 
+          onSelectRugId={setSelectedRugId}
         />
       )}
 
