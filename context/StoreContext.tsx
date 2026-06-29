@@ -71,7 +71,7 @@ interface StoreContextType {
   clearCart: () => void;
   
   // Checkout operations
-  checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number) => Order;
+  checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number, appliedPromo?: PromoCode, discountAmount?: number) => Order;
   
   // Admin Operations
   addRug: (rug: Omit<Rug, "id" | "rating">) => void;
@@ -497,12 +497,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const approveReview = (reviewId: string) => {
-    updateShowroomDoc(SHOWROOM_REVIEWS, reviewId, { isApproved: true });
-  };
+      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, isApproved: true } : r));
+      updateShowroomDoc(SHOWROOM_REVIEWS, reviewId, { isApproved: true });
+    };
 
   const deleteReview = (reviewId: string) => {
-    deleteShowroomDoc(SHOWROOM_REVIEWS, reviewId);
-  };
+      setReviews(prev => prev.filter(r => r.id !== reviewId));
+      deleteShowroomDoc(SHOWROOM_REVIEWS, reviewId);
+    };
 
   // --- Blog Operations ---
   const addBlogPost = (post: Omit<BlogPost, "id">) => {

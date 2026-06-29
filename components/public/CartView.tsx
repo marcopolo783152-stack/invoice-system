@@ -322,7 +322,7 @@ export const CartView: React.FC = () => {
       cardCVC: cardCVC
     };
 
-    const order = checkout(customerInfo, paymentDetails, deliveryOption, shipping, tax, totalWeightLbs);
+    const order = checkout(customerInfo, paymentDetails, deliveryOption, shipping, tax, totalWeightLbs, appliedPromo || undefined, discount);
     setCreatedOrder(order);
     setCheckoutStep("success");
   };
