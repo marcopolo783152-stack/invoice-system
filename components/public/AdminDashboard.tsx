@@ -86,7 +86,7 @@ export const AdminDashboard: React.FC = () => {
   const [announcementInput, setAnnouncementInput] = useState(showroomAnnouncement);
   const [logoInput, setLogoInput] = useState(logoUrl);
   const [coverSuccess, setCoverSuccess] = useState(false);
-  const hasBlobUrls = coverPhotoInputs.some(url => url && url.startsWith("blob:"));
+  
   const [annSuccess, setAnnSuccess] = useState(false);
   const [shopNameInput, setShopNameInput] = useState(shopProfile?.name || "");
   const [shopPhoneInput, setShopPhoneInput] = useState(shopProfile?.phone || "");
@@ -1039,8 +1039,8 @@ export const AdminDashboard: React.FC = () => {
                         setLogoSuccess(true);
                         setTimeout(() => setLogoSuccess(false), 3000);
                       }}
-                      disabled={hasBlobUrls}
-                      className={`py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition ${hasBlobUrls ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer'}`}
+                      
+                      className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
                     >
                       Apply Logo
                     </button>
@@ -1160,8 +1160,8 @@ export const AdminDashboard: React.FC = () => {
                         setCoverSuccess(true);
                         setTimeout(() => setCoverSuccess(false), 3000);
                       }}
-                      disabled={hasBlobUrls}
-                      className={`py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition ${hasBlobUrls ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer'}`}
+                      
+                      className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
                     >
                       Apply All Photos
                     </button>
@@ -1199,8 +1199,8 @@ export const AdminDashboard: React.FC = () => {
                         setAnnSuccess(true);
                         setTimeout(() => setAnnSuccess(false), 3000);
                       }}
-                      disabled={hasBlobUrls}
-                      className={`py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition ${hasBlobUrls ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer'}`}
+                      
+                      className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
                     >
                       Save Announcement
                     </button>
@@ -1364,8 +1364,8 @@ export const AdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => alert('Security setting updated.')}
-                      disabled={hasBlobUrls}
-                      className={`py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition ${hasBlobUrls ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer'}`}
+                      
+                      className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
                     >
                       Update Password
                     </button>
@@ -1402,8 +1402,8 @@ export const AdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => alert('Security setting updated.')}
-                      disabled={hasBlobUrls}
-                      className={`py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition ${hasBlobUrls ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer'}`}
+                      
+                      className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
                     >
                       Save Configuration
                     </button>

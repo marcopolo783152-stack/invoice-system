@@ -83,8 +83,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
 
   // Get approved reviews for this rug
   const rugReviews = reviews.filter((rev) => rev.rugId === rug.id && (rev.isApproved === true || rev.isApproved === undefined));
-  // Get pending reviews for this rug to show a hint
-  const pendingReviewsCount = reviews.filter((rev) => rev.rugId === rug.id && rev.isApproved === false).length;
+  
+  
   
 
   // Get 3 related rugs
@@ -338,15 +338,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                 </div>
               )}
 
-              {/* Pending reviews warning for admin evaluation testing */}
-              {pendingReviewsCount > 0 && (
-                <div className="p-3 bg-editorial-aside border border-editorial-border rounded-none text-xs text-editorial-accent flex items-center gap-2">
-                  <Compass className="h-4 w-4 text-editorial-accent animate-spin" />
-                  <span>
-                    <strong>Admins Note:</strong> There are {pendingReviewsCount} review(s) submitted for this rug awaiting moderation in the Admin Panel.
-                  </span>
-                </div>
-              )}
+              
 
             </div>
 
