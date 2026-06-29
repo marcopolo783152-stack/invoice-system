@@ -10,6 +10,8 @@ import {
   SlidersHorizontal, 
   Search, 
   Grid, 
+  Square,
+  List,
   ChevronDown, 
   X, 
   Filter, 
@@ -45,6 +47,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
 
   // Mobile filters sidebar drawer open state
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'large' | 'list'>('grid');
 
   // Constants lists for filtering
   const sizeCategories = ["Small", "Medium", "Large", "Runner", "Oversized", "Palace-size"];
@@ -420,16 +423,47 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
           <main className="lg:col-span-9 space-y-6">
             
             {/* Show search counts if filters active */}
-            {activeFiltersCount > 0 || searchQuery !== "" ? (
-              <div className="text-xs text-gray-500 font-sans flex justify-between items-center">
-                <span>
-                  Found <strong>{filteredRugs.length}</strong> matching rug masterwork(s)
-                </span>
-                <button onClick={clearAllFilters} className="text-editorial-accent font-bold uppercase hover:underline">
-                  Clear All Filters
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pb-2 border-b border-editorial-border">
+              {activeFiltersCount > 0 || searchQuery !== "" ? (
+                <div className="text-xs text-gray-500 font-sans flex items-center gap-4">
+                  <span>
+                    Found <strong>{filteredRugs.length}</strong> matching rug masterwork(s)
+                  </span>
+                  <button onClick={clearAllFilters} className="text-editorial-accent font-bold uppercase hover:underline">
+                    Clear All Filters
+                  </button>
+                </div>
+              ) : (
+                <div className="text-xs text-gray-400 font-sans uppercase tracking-widest font-semibold">
+                  Showroom Collection
+                </div>
+              )}
+
+              {/* View Mode Toggles */}
+              <div className="flex items-center gap-2 bg-editorial-aside border border-editorial-border p-1">
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 transition ${viewMode === 'grid' ? 'bg-white text-editorial-accent shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                  title="Medium Grid View"
+                >
+                  <Grid className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={() => setViewMode('large')}
+                  className={`p-1.5 transition ${viewMode === 'large' ? 'bg-white text-editorial-accent shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                  title="Large Content Tiles"
+                >
+                  <Square className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 transition ${viewMode === 'list' ? 'bg-white text-editorial-accent shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                  title="List View"
+                >
+                  <List className="h-4 w-4" />
                 </button>
               </div>
-            ) : null}
+            </div>
 
             {filteredRugs.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-none border border-editorial-border p-8 space-y-3">
@@ -446,19 +480,27 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className={`grid gap-6 ${
+                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
+                viewMode === 'large' ? 'grid-cols-1 sm:grid-cols-1 lg:grid-cols-2' :
+                'grid-cols-1'
+              }`}>
                 {filteredRugs.map((rug) => (
                   <div
                     key={rug.id}
-                    className="group bg-white rounded-none overflow-hidden border border-editorial-border shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between"
+                    className={`group bg-white rounded-none overflow-hidden border border-editorial-border shadow-sm hover:shadow-md transition duration-300 flex ${
+                      viewMode === 'list' ? 'flex-col sm:flex-row' : 'flex-col'
+                    } justify-between`}
                   >
                     
                     {/* Visual Panel */}
-                    <div className="relative aspect-[4/3] bg-stone-100 overflow-hidden cursor-pointer animate-fadeIn" onClick={() => onSelectRugId(rug.id)}>
+                    <div className={`relative bg-stone-100 overflow-hidden cursor-pointer animate-fadeIn ${
+                      viewMode === 'list' ? 'w-full sm:w-1/3 aspect-[4/3] sm:aspect-square' : 'aspect-[4/3]'
+                    }`} onClick={() => onSelectRugId(rug.id)}>
                       <img
                         src={rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"}
                         alt={rug.name}
-                        className="w-full h-full object-cover object-center group-hover:scale-102 transition duration-500"
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-700"
                         referrerPolicy="no-referrer"
                       />
                       
@@ -492,7 +534,9 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                     </div>
 
                     {/* Information Panel */}
-                    <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+                    <div className={`p-5 space-y-4 flex flex-col justify-between ${
+                      viewMode === 'list' ? 'w-full sm:w-2/3 flex-1' : 'flex-1'
+                    }`}>
                       <div className="space-y-1.5 text-left">
                         <div className="flex items-center gap-1.5 text-editorial-accent">
                           <Star className="h-3 w-3 fill-editorial-accent" />
