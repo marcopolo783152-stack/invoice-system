@@ -493,7 +493,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isApproved: false, // Moderated by admin
       createdAt: new Date().toISOString()
     };
-    addShowroomDoc(SHOWROOM_REVIEWS, newReview);
+    setReviews(prev => [newReview, ...prev]);
+      addShowroomDoc(SHOWROOM_REVIEWS, newReview);
   };
 
   const approveReview = (reviewId: string) => {

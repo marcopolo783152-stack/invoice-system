@@ -1062,18 +1062,40 @@ export const AdminDashboard: React.FC = () => {
                       <div key={index} className="space-y-2 pb-3 border-b border-neutral-100 last:border-0 last:pb-0">
                         <label className="text-sm font-bold uppercase text-gray-500">Slide {index + 1}</label>
                         <div className="flex gap-2">
-                          <input
-                            type="url"
-                            value={coverPhotoInputs[index] || ""}
-                            onChange={(e) => {
-                              const newInputs = [...coverPhotoInputs];
-                              newInputs[index] = e.target.value;
-                              setCoverPhotoInputs(newInputs);
-                              setCoverSuccess(false);
-                            }}
-                            placeholder="https://images.unsplash.com/photo-..."
-                            className="flex-1 bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm font-mono"
-                          />
+                          {(coverPhotoInputs[index]?.startsWith('data:image/') || coverPhotoInputs[index]?.startsWith('blob:')) ? (
+                              <div className="flex-1 flex items-center justify-between bg-stone-50 border border-neutral-200 rounded py-2 px-3">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                  <img src={coverPhotoInputs[index]} alt="Preview" className="h-6 w-8 object-cover rounded shadow-sm" />
+                                  <span className="text-sm text-emerald-600 font-bold truncate">✓ Local Photo Uploaded</span>
+                                </div>
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    setCoverPhotoInputs(prev => {
+                                      const newInputs = [...prev];
+                                      newInputs[index] = "";
+                                      return newInputs;
+                                    });
+                                  }}
+                                  className="text-neutral-400 hover:text-red-500 text-xs px-2 font-bold cursor-pointer"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            ) : (
+                              <input
+                                type="url"
+                                value={coverPhotoInputs[index] || ""}
+                                onChange={(e) => {
+                                  const newInputs = [...coverPhotoInputs];
+                                  newInputs[index] = e.target.value;
+                                  setCoverPhotoInputs(newInputs);
+                                  setCoverSuccess(false);
+                                }}
+                                placeholder="https://images.unsplash.com/photo-..."
+                                className="flex-1 bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm font-mono"
+                              />
+                            )}
                           <label className="flex items-center justify-center px-3 py-2 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 rounded text-neutral-600 text-xs font-bold uppercase tracking-wider cursor-pointer transition whitespace-nowrap">
                             <Upload className="h-3 w-3 mr-1.5" /> 
                             <span>Upload PC</span>
