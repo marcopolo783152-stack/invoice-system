@@ -490,7 +490,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       reviewerName,
       reviewText,
       imageUrl,
-      isApproved: true, // Auto-approve per user request
+      isApproved: false, // Moderated by admin
       createdAt: new Date().toISOString()
     };
     addShowroomDoc(SHOWROOM_REVIEWS, newReview);

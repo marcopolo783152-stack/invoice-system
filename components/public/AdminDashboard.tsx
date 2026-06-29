@@ -162,7 +162,8 @@ export const AdminDashboard: React.FC = () => {
   const [passwordAction, setPasswordAction] = useState<"decrypt" | "delete" | null>(null);
   
   // Bulk select and promotions
-  const [selectedRugIds, setSelectedRugIds] = useState<Set<string>>(new Set());
+  const [selectedRugIds, setSelectedRugIds] = useState<string[]>([]);
+  const [bulkDiscountPercent, setBulkDiscountPercent] = useState<number | "">("");
   const [promoModalOpen, setPromoModalOpen] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [promoType, setPromoType] = useState<"percentage" | "fixed">("percentage");
@@ -1507,11 +1508,91 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Catalog list grid */}
+            {/* Bulk Actions Bar */}
+              <div className="bg-stone-50 p-4 rounded-xl border border-neutral-200 flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <span className="text-sm font-bold text-neutral-700">
+                      {selectedRugIds.length} Selected
+                    </span>
+                    {selectedRugIds.length > 0 && (
+                      <div className="flex items-center gap-2 border-l border-neutral-300 pl-4">
+                        <div className="flex items-center gap-1">
+                          <input 
+                            type="number" 
+                            min="1" max="99" 
+                            value={bulkDiscountPercent} 
+                            onChange={(e) => setBulkDiscountPercent(Number(e.target.value))}
+                            placeholder="% Off"
+                            className="w-20 bg-white border border-neutral-200 rounded px-2 py-1 outline-none text-sm focus:border-editorial-accent"
+                          />
+                          <button 
+                            onClick={() => {
+                              if (!bulkDiscountPercent || bulkDiscountPercent <= 0 || bulkDiscountPercent >= 100) {
+                                alert("Please enter a valid percentage between 1 and 99");
+                                return;
+                              }
+                              
+                              selectedRugIds.forEach(id => {
+                                const rug = rugs.find(r => r.id === id);
+                                if (rug) {
+                                  const original = rug.originalPrice || rug.price;
+                                  const discounted = Math.round(original * (1 - (Number(bulkDiscountPercent) / 100)));
+                                  updateRug(id, {
+                                    originalPrice: original,
+                                    price: discounted
+                                  });
+                                }
+                              });
+                              setSelectedRugIds([]);
+                              setBulkDiscountPercent("");
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition"
+                          >
+                            Apply Sale
+                          </button>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            selectedRugIds.forEach(id => {
+                              const rug = rugs.find(r => r.id === id);
+                              if (rug && rug.originalPrice) {
+                                updateRug(id, {
+                                  price: rug.originalPrice,
+                                  originalPrice: undefined
+                                });
+                              }
+                            });
+                            setSelectedRugIds([]);
+                          }}
+                          className="bg-neutral-200 hover:bg-neutral-300 text-neutral-700 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition"
+                        >
+                          Remove Sale
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              {/* Catalog list grid */}
             <div className="overflow-x-auto">
               <table className="w-full text-left font-sans text-sm border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 uppercase tracking-wider text-sm text-neutral-400 font-semibold bg-stone-50">
+                    <th className="py-3 px-4 w-12 text-center">
+                      <input 
+                        type="checkbox"
+                        checked={selectedRugIds.length > 0 && selectedRugIds.length === rugs.filter(r => (adminSearchQuery === "" || r.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) || r.sku.toLowerCase().includes(adminSearchQuery.toLowerCase()))).length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const filtered = rugs.filter(r => (adminSearchQuery === "" || r.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) || r.sku.toLowerCase().includes(adminSearchQuery.toLowerCase())));
+                            setSelectedRugIds(filtered.map(r => r.id));
+                          } else {
+                            setSelectedRugIds([]);
+                          }
+                        }}
+                        className="rounded-sm border-gray-300 text-editorial-accent focus:ring-editorial-accent cursor-pointer"
+                      />
+                    </th>
                     <th className="py-3 px-4">Preview</th>
                     <th className="py-3 px-4">Rug Name / SKU</th>
                     <th className="py-3 px-4">Geographic Origin</th>
@@ -1546,7 +1627,21 @@ export const AdminDashboard: React.FC = () => {
 
                     return filteredAdminRugs.map((r) => (
                       <tr key={r.id} className="hover:bg-stone-50 transition">
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 text-center">
+                            <input 
+                              type="checkbox"
+                              checked={selectedRugIds.includes(r.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedRugIds(prev => [...prev, r.id]);
+                                } else {
+                                  setSelectedRugIds(prev => prev.filter(id => id !== r.id));
+                                }
+                              }}
+                              className="rounded-sm border-gray-300 text-editorial-accent focus:ring-editorial-accent cursor-pointer"
+                            />
+                          </td>
+                          <td className="py-3 px-4">
                           <img src={r.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"} alt="preview" className="h-10 w-14 object-cover rounded border border-neutral-200" referrerPolicy="no-referrer" />
                         </td>
                         <td className="py-3 px-4 font-bold text-neutral-900">
