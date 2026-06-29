@@ -8,7 +8,7 @@ export interface Rug {
   name: string;
   sku: string;
   price: number;
-  originalPrice?: number; // for showing discount
+  originalPrice?: number | null; // for showing discount
   sizeCategory: string; // e.g. "8x10", "9x12", "6x9", "10x13", "Runner", "Custom"
   dimensions: string; // e.g. "8'3 x 10'1", "4' x 6'", "8' x 10'"
   origin: string; // e.g. "Persia (Iran)", "Afghanistan", "Turkey", "Caucasus"

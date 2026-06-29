@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useStore } from "@/context/StoreContext";
 import { OrderStatus, Rug, BlogPost, Review, ALL_SIZES } from "@/types";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -80,6 +80,17 @@ export const AdminDashboard: React.FC = () => {
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<"analytics" | "inventory" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
+
+  // Review notification alert
+  const unapprovedReviewsCount = reviews.filter(r => !r.isApproved).length;
+  const prevUnapprovedCount = useRef(unapprovedReviewsCount);
+
+  useEffect(() => {
+    if (unapprovedReviewsCount > prevUnapprovedCount.current) {
+      alert("🔔 NEW CUSTOMER REVIEW SUBMITTED!\n\nPlease check the 'Advisor Reviews' tab to approve it.");
+    }
+    prevUnapprovedCount.current = unapprovedReviewsCount;
+  }, [unapprovedReviewsCount]);
 
   // Showroom cover photo & announcement settings inputs
   const [coverPhotoInputs, setCoverPhotoInputs] = useState<string[]>(heroCoverPhotos || []);
@@ -335,7 +346,7 @@ export const AdminDashboard: React.FC = () => {
       name: rugName,
       sku: rugSKU,
       price: Number(rugPrice),
-      originalPrice: rugOriginalPrice === "" ? undefined : Number(rugOriginalPrice),
+      originalPrice: rugOriginalPrice === "" ? null : Number(rugOriginalPrice),
       sizeCategory: rugSizeCategory as Rug["sizeCategory"],
       dimensions: rugDimensions,
       origin: rugOrigin,
@@ -1581,7 +1592,7 @@ export const AdminDashboard: React.FC = () => {
                               if (rug && rug.originalPrice) {
                                 updateRug(id, {
                                   price: rug.originalPrice,
-                                  originalPrice: undefined
+                                  originalPrice: null
                                 });
                               }
                             });
