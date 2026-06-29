@@ -844,7 +844,7 @@ export const AdminDashboard: React.FC = () => {
                 <Tag className="h-5 w-5 text-editorial-accent" />
                 Promo Code Management
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Code</label>
                   <input
@@ -875,6 +875,17 @@ export const AdminDashboard: React.FC = () => {
                     className="w-full border-b border-gray-300 pb-1 text-sm focus:outline-none focus:border-editorial-accent bg-transparent"
                   />
                 </div>
+                <div className="flex flex-col justify-end pb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={promoOneTime}
+                      onChange={(e) => setPromoOneTime(e.target.checked)}
+                      className="rounded-none border-gray-300 text-editorial-accent focus:ring-editorial-accent"
+                    />
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">One-Time Use</span>
+                  </label>
+                </div>
                 <div className="flex items-end">
                   <button
                     onClick={() => {
@@ -887,6 +898,7 @@ export const AdminDashboard: React.FC = () => {
                         oneTimeUse: promoOneTime
                       });
                       setPromoCode("");
+                      setPromoOneTime(false);
                     }}
                     className="w-full bg-editorial-accent text-white font-bold text-sm uppercase tracking-wider py-2 rounded-none hover:bg-[#8E7453] transition"
                   >

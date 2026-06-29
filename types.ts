@@ -108,6 +108,8 @@ export interface PromoCode {
   validUntil?: string; // ISO date string
   isActive: boolean;
   oneTimeUse: boolean;
+    usedBy?: string;
+    usedAt?: string;
   usedCount: number;
 }
 
@@ -123,6 +125,8 @@ export interface Order {
   customerInfo: CustomerInfo;
   cartItems: CartItem[];
   subtotal: number;
+    discountAmount?: number;
+    appliedPromoCode?: string;
   tax: number; // 6% taxes
   shipping: number; // shipping cost (e.g. $16 for 2-5 lbs)
   deliveryOption: "Pickup" | "Delivery"; // pickup or delivery choice

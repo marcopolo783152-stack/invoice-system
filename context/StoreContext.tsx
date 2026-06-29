@@ -111,6 +111,7 @@ interface StoreContextType {
   // Promo Codes
   promoCodes: PromoCode[];
   addPromoCode: (promo: Omit<PromoCode, "id" | "usedCount">) => void;
+  updatePromoCode: (id: string, updates: Partial<PromoCode>) => void;
   deletePromoCode: (id: string) => void;
   deleteOrder: (id: string) => void;
 }
@@ -370,7 +371,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deliveryOption: "Pickup" | "Delivery",
     shipping: number,
     tax: number,
-    totalWeightLbs?: number
+    totalWeightLbs?: number,
+    appliedPromo?: PromoCode,
+    discountAmount?: number
   ): Order => {
     const subtotal = cart.reduce((sum, item) => sum + item.rug.price * item.quantity, 0);
     const total = subtotal + shipping + tax;
@@ -383,7 +386,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       tax,
       shipping,
       deliveryOption,
-      total,
+      total: total - (discountAmount || 0),
+      discountAmount,
+      appliedPromoCode: appliedPromo?.code,
       totalWeightLbs,
       status: "Pending Confirmation", // manual admin verification
       paymentDetails: payment,
@@ -392,6 +397,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Add new order to Firebase
     addShowroomDoc(SHOWROOM_ORDERS, newOrder);
+    
+    if (appliedPromo && appliedPromo.oneTimeUse) {
+      updatePromoCode(appliedPromo.id, {
+        isActive: false,
+        usedBy: customer.name,
+        usedAt: new Date().toISOString()
+      });
+    }
     
     // Mark checked out rugs as "Reserved" (pending confirmation) in Firebase
     cart.forEach(item => {
@@ -520,6 +533,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addShowroomDoc(SHOWROOM_PROMOCODES, newPromo);
   };
 
+  const updatePromoCode = (id: string, updates: Partial<PromoCode>) => {
+    updateShowroomDoc(SHOWROOM_PROMOCODES, id, updates);
+  };
+  
   const deletePromoCode = (id: string) => {
     setPromoCodes(prev => prev.filter(p => p.id !== id)); // Optimistic UI
     deleteShowroomDoc(SHOWROOM_PROMOCODES, id);
@@ -812,6 +829,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSocialLinks,
         promoCodes,
         addPromoCode,
+        updatePromoCode,
         deletePromoCode,
         deleteOrder
       }}
