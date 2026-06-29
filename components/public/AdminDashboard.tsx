@@ -548,6 +548,15 @@ export const AdminDashboard: React.FC = () => {
 
           <nav className="space-y-1.5 text-xs">
             <button
+              onClick={() => setActiveTab("promotions")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "promotions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Tag className="h-4.5 w-4.5" />
+              <span>Promotions</span>
+            </button>
+            <button
               onClick={() => setActiveTab("analytics")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "analytics" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
