@@ -7,6 +7,7 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
 // Firebase configuration - hardcoded for static export compatibility
 // These values are safe to expose publicly (they're client-side credentials)
@@ -52,6 +53,10 @@ try {
     
     try {
       storage = getStorage(app);
+      try {
+        const auth = getAuth(app);
+        signInAnonymously(auth).catch(e => console.warn('Anon auth failed:', e));
+      } catch (authErr) { console.warn('Auth init failed:', authErr); }
     } catch (storageErr) {
       console.warn("Firebase Storage could not be initialized. Continuing without storage.", storageErr);
     }

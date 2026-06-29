@@ -1127,6 +1127,7 @@ export const AdminDashboard: React.FC = () => {
                                         finalUrl = await getDownloadURL(snapshot.ref);
                                       } catch (firebaseErr) {
                                         console.warn("Firebase hero upload failed, using base64 fallback", firebaseErr);
+                                          alert("LIVE FIREBASE STORAGE ERROR (Images): " + (firebaseErr as Error).message + " -> Falling back to Base64...");
                                       }
                                     }
                                     
