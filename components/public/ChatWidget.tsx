@@ -181,24 +181,24 @@ export const ChatWidget: React.FC = () => {
           {/* Quick Shortcuts */}
           <div className="bg-white px-4 py-2 border-b border-editorial-border flex items-center justify-between gap-1 text-sm text-gray-500">
             <span className="font-serif uppercase tracking-widest text-xs font-bold text-editorial-accent">Direct Options:</span>
-            <div className="flex gap-2">
-              <a
-                href="https://wa.me/18005557831"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1 text-emerald-600 hover:underline font-bold"
-              >
-                <MessageCircle className="h-3 w-3" />
-                <span>WhatsApp</span>
-              </a>
-              <a
-                href="tel:+18005557831"
-                className="flex items-center gap-1 text-editorial-accent hover:underline font-bold"
-              >
-                <Phone className="h-3 w-3" />
-                <span>Call Advisor</span>
-              </a>
-            </div>
+              <div className="flex gap-4">
+                <a 
+                  href="https://wa.me/12409219791" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-emerald-600 hover:underline font-bold"
+                >
+                  <MessageCircle className="h-3 w-3" />
+                  <span>WhatsApp</span>
+                </a>
+                <a 
+                  href="tel:+17034610207" 
+                  className="flex items-center gap-1 text-editorial-accent hover:underline font-bold"
+                >
+                  <Phone className="h-3 w-3" />
+                  <span>Call Showroom</span>
+                </a>
+              </div>
           </div>
 
           {/* Messages Feed */}
