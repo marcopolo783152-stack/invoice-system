@@ -433,8 +433,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateShowroomDoc(SHOWROOM_RUGS, id, updatedFields);
   };
 
-  const deleteRug = (id: string) => {
+  const deleteRug = async (id: string) => {
+    const rug = rugs.find(r => r.id === id);
     setRugs(prev => prev.filter(r => r.id !== id)); // Optimistic UI
+    
+    // Delete images from Firebase Storage
+    if (rug) {
+      try {
+        const { storage } = await import("@/lib/firebase");
+        const { ref, deleteObject } = await import("firebase/storage");
+        if (storage) {
+          const deleteImg = async (url: string) => {
+            if (!url || !url.includes("firebasestorage.googleapis.com")) return;
+            try {
+              // @ts-ignore
+              await deleteObject(ref(storage, url));
+            } catch (e) {
+              console.error("Failed to delete storage image", e);
+            }
+          };
+          
+          if (rug.images && Array.isArray(rug.images)) {
+            for (const img of rug.images) {
+              await deleteImg(img);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error cleaning up storage", e);
+      }
+    }
+    
     deleteShowroomDoc(SHOWROOM_RUGS, id);
   };
 

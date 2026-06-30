@@ -1653,6 +1653,19 @@ export const AdminDashboard: React.FC = () => {
                         >
                           Remove Sale
                         </button>
+                        <button 
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to completely delete ${selectedRugIds.length} rug(s)? This will also permanently delete all associated images from storage.`)) {
+                              selectedRugIds.forEach(id => {
+                                deleteRug(id);
+                              });
+                              setSelectedRugIds([]);
+                            }
+                          }}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition ml-4"
+                        >
+                          Delete Selected
+                        </button>
                       </div>
                     )}
                   </div>
