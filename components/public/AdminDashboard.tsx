@@ -147,6 +147,7 @@ export const AdminDashboard: React.FC = () => {
   const [rugCondition, setRugCondition] = useState<Rug["condition"] | "">("");
   const [rugColors, setRugColors] = useState("");
   const [rugWeight, setRugWeight] = useState<number | "">("");
+    const [rugIsFreeShipping, setRugIsFreeShipping] = useState<boolean>(false);
   const [rugShape, setRugShape] = useState<Rug["shape"] | "">("");
   const [rugAvailability, setRugAvailability] = useState<Rug["availability"] | "">("In Stock");
   const [rugDescription, setRugDescription] = useState("");
@@ -320,6 +321,7 @@ export const AdminDashboard: React.FC = () => {
       setRugCondition(r.condition);
       setRugColors(r.colors.join(", "));
       setRugWeight(r.weightLbs || 3.5);
+        setRugIsFreeShipping(r.isFreeShipping || false);
       setRugShape(r.shape);
       setRugAvailability(r.availability);
       setRugDescription(r.description);
@@ -340,6 +342,7 @@ export const AdminDashboard: React.FC = () => {
       setRugCondition("");
       setRugColors("");
       setRugWeight("");
+        setRugIsFreeShipping(false);
       setRugShape("");
       setRugAvailability("In Stock");
       setRugDescription("");
@@ -368,6 +371,7 @@ export const AdminDashboard: React.FC = () => {
       condition: rugCondition as Rug["condition"],
       colors: colorsArr,
       weightLbs: Number(rugWeight) || 3.5,
+        isFreeShipping: rugIsFreeShipping,
       shape: rugShape as Rug["shape"],
       availability: rugAvailability as Rug["availability"],
       description: rugDescription,
