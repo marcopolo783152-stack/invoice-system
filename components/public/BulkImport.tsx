@@ -81,7 +81,7 @@ export const BulkImport: React.FC = () => {
 
     try {
       // Dynamic import to avoid breaking if not available immediately
-      const { storage } = await import('@/lib/showroom-firebase');
+      const { storage } = await import('@/lib/firebase');
       const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
 
       for (const item of mappedRugs) {
