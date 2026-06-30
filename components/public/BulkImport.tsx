@@ -84,6 +84,8 @@ export const BulkImport: React.FC = () => {
       const { storage } = await import('@/lib/firebase');
       const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
 
+      if (!storage) throw new Error("Firebase storage is not available");
+
       for (const item of mappedRugs) {
         const imageUrls: string[] = [];
         
