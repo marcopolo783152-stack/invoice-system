@@ -6,6 +6,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useStore } from "@/context/StoreContext";
 import { OrderStatus, Rug, BlogPost, Review, ALL_SIZES } from "@/types";
+import { BulkImport } from "./BulkImport";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import { compressImage } from "@/lib/imageUtils";
@@ -39,7 +40,10 @@ import {
   Heart,
   Settings,
   Tag,
-  Save
+  Save,
+  Eye, 
+  UploadCloud,
+  Camera
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
@@ -79,7 +83,7 @@ export const AdminDashboard: React.FC = () => {
     addAdminUser
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<"analytics" | "inventory" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
 
   // Review notification alert
   const unapprovedReviewsCount = reviews.filter(r => !r.isApproved).length;
@@ -597,6 +601,16 @@ export const AdminDashboard: React.FC = () => {
             </button>
             
             <button
+              onClick={() => setActiveTab("bulk_import")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "bulk_import" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <UploadCloud className="h-4.5 w-4.5" />
+              <span>Bulk Import</span>
+            </button>
+            
+            <button
               onClick={() => setActiveTab("orders")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "orders" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -699,6 +713,7 @@ export const AdminDashboard: React.FC = () => {
             <h1 className="font-serif text-2xl font-light text-editorial-text">
               {activeTab === "analytics" && "Analytical Insights"}
               {activeTab === "inventory" && "Manage Showroom Inventory"}
+              {activeTab === "bulk_import" && "Bulk Importer"}
               {activeTab === "orders" && "Escrow Invoices & Dispatch Logs"}
               {activeTab === "reviews" && "Advisor Review Moderation"}
               {activeTab === "messages" && "Live Concierge Inbox Thread"}
@@ -1743,6 +1758,11 @@ export const AdminDashboard: React.FC = () => {
               </table>
             </div>
           </div>
+        )}
+
+        {/* --- TAB: BULK IMPORT --- */}
+        {activeTab === "bulk_import" && (
+          <BulkImport />
         )}
 
         {/* --- TAB C: ORDER MANAGEMENT (ESCROW INVOICES) --- */}
