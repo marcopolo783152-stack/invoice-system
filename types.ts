@@ -24,6 +24,7 @@ export interface Rug {
   rating: number; // average rating
   weightLbs?: number; // shipping weight in pounds
   isSpecialSale?: boolean;
+  isFreeShipping?: boolean;
 }
 
 export const ALL_SIZES = Array.from(new Set([
