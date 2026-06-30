@@ -795,7 +795,7 @@ export const CartView: React.FC = () => {
                 {appliedPromo && (
                   <div className="flex justify-between text-[#A68B67] font-bold">
                     <span>Promo ({appliedPromo.code}):</span>
-                    <span>-${discount.toLocaleString()}</span>
+                    <span>{appliedPromo.discountType === "free_shipping" ? "Free Shipping" : `-${discount.toLocaleString()}`}</span>
                   </div>
                 )}
                 <div className="flex justify-between">

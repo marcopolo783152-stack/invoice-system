@@ -103,7 +103,7 @@ export interface PaymentDetails {
 export interface PromoCode {
   id: string;
   code: string;
-  discountType: "percentage" | "fixed";
+  discountType: "percentage" | "fixed" | "free_shipping";
   discountValue: number;
   validUntil?: string; // ISO date string
   isActive: boolean;

@@ -899,6 +899,7 @@ export const AdminDashboard: React.FC = () => {
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed Amount ($)</option>
+                      <option value="free_shipping">Free Shipping</option>
                   </select>
                 </div>
                 <div>
@@ -968,7 +969,7 @@ export const AdminDashboard: React.FC = () => {
                       <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-3 text-sm font-bold text-neutral-800">{p.code}</td>
                         <td className="py-3 text-sm text-gray-600">
-                          {p.discountType === "percentage" ? p.discountValue + "%" : "$" + p.discountValue}
+                          {p.discountType === "free_shipping" ? "Free Shipping" : p.discountType === "percentage" ? p.discountValue + "%" : "$" + p.discountValue}
                         </td>
                         <td className="py-3 text-sm text-gray-600">{p.usedCount}</td>
                         <td className="py-3 text-sm text-gray-600">
