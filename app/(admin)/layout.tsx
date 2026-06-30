@@ -12,6 +12,7 @@ import HelpModal from '@/components/HelpModal';
 import NotificationModal from '@/components/NotificationModal';
 import { useState, useEffect, Suspense } from 'react';
 import { checkAutoClockOut } from '@/lib/employee-storage';
+import { StoreProvider } from '@/context/StoreContext';
 
 const inter = Inter({ subsets: ['latin'] });
 const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '700'] });
@@ -104,7 +105,9 @@ export default function RootLayout({
     return (
       <html lang="en">
         <body className={inter.className} style={{ background: 'white', width: '100%', minWidth: 'auto' }}>
-          {children}
+          <StoreProvider>
+            {children}
+          </StoreProvider>
         </body>
       </html>
     );
@@ -171,7 +174,9 @@ export default function RootLayout({
             background: isPublicPage ? '#fff' : 'var(--bg-void)',
             width: '100%'
           }}>
-            {children}
+            <StoreProvider>
+              {children}
+            </StoreProvider>
           </div>
         </div>
       </body>
