@@ -183,7 +183,7 @@ export const TrackingView: React.FC = () => {
                             View Details
                           </button>
                           <button 
-                            onClick={() => generateAndDownloadReceiptPDF(ro, shopProfile)}
+                            onClick={() => generateAndDownloadReceiptPDF(ro, shopProfile, logoUrl)}
                             className="px-4 py-2 bg-editorial-accent hover:bg-[#8E7453] text-white text-[10px] font-bold uppercase tracking-widest transition cursor-pointer"
                           >
                             Download PDF
@@ -329,7 +329,7 @@ export const TrackingView: React.FC = () => {
                         Contact Curator
                       </button>
                       <button
-                        onClick={() => generateAndDownloadReceiptPDF(activeOrder, shopProfile)}
+                        onClick={() => generateAndDownloadReceiptPDF(activeOrder, shopProfile, logoUrl)}
                         className="px-4 py-2 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-wider rounded-none text-[10px] transition cursor-pointer"
                       >
                         Download PDF

@@ -1,6 +1,16 @@
 import { jsPDF } from "jspdf";
 
-export const generateAndDownloadReceiptPDF = (order: any, shopProfile: any) => {
+const loadImage = (url: string): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = (e) => reject(e);
+    img.src = url;
+  });
+};
+
+export const generateAndDownloadReceiptPDF = async (order: any, shopProfile: any, logoUrl?: string) => {
 if (!order) return;
     try {
       const doc = new jsPDF({
@@ -179,7 +189,9 @@ if (!order) return;
     } catch (err) {
       console.error("Failed to generate PDF:", err);
       // Fallback to basic text file download if PDF rendering fails
-      const text = `MARCO POLO ESCROW RECEIPT\nOrder Reference: ${order.id}\nTotal Secured: $${order.total.toLocaleString()}`;
+      const text = `MARCO POLO ESCROW RECEIPT
+Order Reference: ${order.id}
+Total Secured: $${order.total.toLocaleString()}`;
       const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

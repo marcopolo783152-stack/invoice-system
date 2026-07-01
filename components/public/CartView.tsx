@@ -56,7 +56,7 @@ export const CartView: React.FC = () => {
 
   const downloadReceiptAsPDF = (order: any) => {
     import("@/utils/pdf").then(({ generateAndDownloadReceiptPDF }) => {
-      generateAndDownloadReceiptPDF(order, shopProfile);
+      generateAndDownloadReceiptPDF(order, shopProfile, logoUrl);
     });
   };
 
