@@ -36,8 +36,7 @@ export interface Employee {
     lastAction?: string;
     dailyRate?: number; // Salary per day
     photo?: string; // Profile picture (Base64)
-    passkeyId?: string; // WebAuthn Credential ID (base64url)
-    passkeyPublicKey?: string; // WebAuthn Public Key (base64url)
+    faceDescriptor?: number[]; // Array of 128 floats from face-api.js
 }
 
 export interface TimeLog {

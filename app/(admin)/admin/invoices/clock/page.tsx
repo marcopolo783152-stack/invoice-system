@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { clockInOut, Employee, checkAutoClockOut, getTimeLogs, getEmployees } from '@/lib/employee-storage';
 import Link from 'next/link';
+import * as faceapi from 'face-api.js';
 
 export default function ClockPage() {
     const [identifier, setIdentifier] = useState('');
@@ -10,6 +11,7 @@ export default function ClockPage() {
     const [message, setMessage] = useState('');
     const [lastAction, setLastAction] = useState<{ type: string, name: string } | null>(null);
     const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+    const [isModelsLoaded, setIsModelsLoaded] = useState(false);
 
     // Geofencing coordinates (Precision Shop Location)
     const SHOP_LAT = 38.808028;
@@ -39,6 +41,21 @@ export default function ClockPage() {
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
+        // Load face-api models
+        const loadModels = async () => {
+            try {
+                await Promise.all([
+                    faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+                    faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+                    faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+                ]);
+                setIsModelsLoaded(true);
+            } catch (error) {
+                console.error("Failed to load models:", error);
+            }
+        };
+        loadModels();
+
         // Start Camera
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
@@ -101,32 +118,62 @@ export default function ClockPage() {
     };
 
     const handleBiometricClock = async () => {
+        if (!isModelsLoaded) {
+            setMessage('AI Models are still loading. Please wait a moment.');
+            setStatus('ERROR');
+            setTimeout(() => setStatus('IDLE'), 3000);
+            return;
+        }
+
+        if (!videoRef.current) return;
+
         try {
-            const { authenticateBiometric } = await import('@/lib/webauthn-utils');
-            const credentialId = await authenticateBiometric();
-            
             setStatus('LOADING');
-            setMessage('Biometric match found! Verifying location...');
+            setMessage('Analyzing face...');
 
-            // Find employee by passkey ID
-            const employees = await getEmployees();
-            const employee = employees.find(e => e.passkeyId === credentialId);
+            const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+                .withFaceLandmarks()
+                .withFaceDescriptor();
 
-            if (!employee) {
-                throw new Error("Biometric credential not linked to any active employee.");
+            if (!detection) {
+                throw new Error("No face detected. Please look directly at the camera.");
             }
 
-            // Temporarily set identifier for the unified clock submission
-            setIdentifier(employee.id);
+            const employees = await getEmployees();
             
-            // Proceed to the normal clock-in process but inject the biometric identifier
-            const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
-            await handleClock(fakeEvent, employee.id);
+            // Find the closest match
+            let bestMatch: Employee | null = null;
+            let lowestDistance = 1.0;
+
+            for (const emp of employees) {
+                if (emp.faceDescriptor) {
+                    const distance = faceapi.euclideanDistance(
+                        detection.descriptor,
+                        new Float32Array(emp.faceDescriptor)
+                    );
+                    if (distance < lowestDistance) {
+                        lowestDistance = distance;
+                        bestMatch = emp;
+                    }
+                }
+            }
+
+            // Threshold for Face Match (0.6 is standard for face-api.js)
+            if (bestMatch && lowestDistance < 0.55) {
+                setMessage(`Match found! Hello, ${bestMatch.name}. Verifying location...`);
+                setIdentifier(bestMatch.id);
+                
+                // Proceed to the normal clock-in process
+                const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                await handleClock(fakeEvent, bestMatch.id);
+            } else {
+                throw new Error("Face not recognized in the system.");
+            }
 
         } catch (error: any) {
             console.error("Biometric Clock Error:", error);
             setStatus('ERROR');
-            setMessage(error.message || 'Biometric authentication failed.');
+            setMessage(error.message || 'Face authentication failed.');
             speak("Authentication failed, please try again");
             setTimeout(() => setStatus('IDLE'), 5000);
         }
@@ -303,20 +350,7 @@ export default function ClockPage() {
 
                             <button
                                 type="submit"
-                                disabled={status === 'LOADING'}
-                                style={{
-                                    width: '100%', padding: '16px', borderRadius: 12, border: 'none',
-                                    background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
-                                    color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer'
-                                }}
-                            >
-                                {status === 'LOADING' ? 'VERIFYING...' : 'VERIFY & CLOCK'}
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={handleBiometricClock}
-                                disabled={status === 'LOADING'}
+                                disabled={status === 'LOADING' || !isModelsLoaded}
                                 style={{
                                     width: '100%', padding: '16px', borderRadius: 12, border: '1px solid rgba(16, 185, 129, 0.5)',
                                     background: 'rgba(16, 185, 129, 0.1)',
@@ -324,7 +358,7 @@ export default function ClockPage() {
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                                 }}
                             >
-                                👤 FACE / FINGERPRINT CLOCK
+                                👤 {isModelsLoaded ? 'FACE RECOGNITION CLOCK' : 'LOADING AI...'}
                             </button>
                         </form>
 

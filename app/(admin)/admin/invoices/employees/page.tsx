@@ -29,7 +29,7 @@ import {
 } from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
-import { registerBiometric } from '@/lib/webauthn-utils';
+import FaceRegistrationModal from '@/components/FaceRegistrationModal';
 
 interface PayrollSummary {
     employeeId: string;
@@ -45,6 +45,7 @@ export default function EmployeesPage() {
     const [logs, setLogs] = useState<TimeLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [faceModalEmployee, setFaceModalEmployee] = useState<Employee | null>(null);
     const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
     const [activeView, setActiveView] = useState<'STAFF' | 'LOGS' | 'PAYROLL'>('STAFF');
     const [payrollData, setPayrollData] = useState<Record<string, PayrollSummary>>({});
@@ -89,17 +90,21 @@ export default function EmployeesPage() {
         window.open(`/admin/invoices/employees/print?type=history&id=${emp.id}&range=${reportRange}`, '_blank');
     };
 
-    const handleRegisterBiometric = async (emp: Employee) => {
+    const handleRegisterBiometric = (emp: Employee) => {
+        setFaceModalEmployee(emp);
+    };
+
+    const handleFaceSuccess = async (descriptor: number[]) => {
+        if (!faceModalEmployee) return;
         try {
-            const credentialId = await registerBiometric(emp.id, emp.name);
             await saveEmployee({
-                ...emp,
-                passkeyId: credentialId
+                ...faceModalEmployee,
+                faceDescriptor: descriptor
             });
-            alert(`Biometric Passkey successfully registered for ${emp.name}!`);
+            alert(`Face successfully registered for ${faceModalEmployee.name}!`);
             loadData();
         } catch (e: any) {
-            console.error("Biometric registration failed:", e);
+            console.error("Face registration failed:", e);
             alert("Registration failed: " + e.message);
         }
     };
@@ -799,7 +804,7 @@ export default function EmployeesPage() {
                                             onClick={() => handleRegisterBiometric(emp)}
                                             style={{ padding: '8px', borderRadius: 8, border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.05)', color: '#10b981', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                                         >
-                                            {emp.passkeyId ? '✅ Biometric Ready' : 'Biometric Setup'}
+                                            {emp.faceDescriptor ? '✅ Face Ready' : 'Face Setup'}
                                         </button>
                                         <button
                                             onClick={() => handlePrintBadge(emp)}
@@ -1301,6 +1306,13 @@ export default function EmployeesPage() {
                     />
                 </div>
             )}
+            
+            <FaceRegistrationModal
+                isOpen={!!faceModalEmployee}
+                onClose={() => setFaceModalEmployee(null)}
+                onSuccess={handleFaceSuccess}
+                employeeName={faceModalEmployee?.name || ''}
+            />
 
         </div>
     );
