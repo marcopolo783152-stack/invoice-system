@@ -7,6 +7,15 @@ export default function TopAdminBar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const pathname = usePathname();
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('mp-invoice-auth');
+    sessionStorage.removeItem('mp-invoice-user');
+    localStorage.removeItem('mp-invoice-auth');
+    localStorage.removeItem('mp-invoice-user');
+    localStorage.removeItem('marcopolo_active_view');
+    window.location.href = '/';
+  };
+
   useEffect(() => {
     const checkAuth = () => {
       const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
@@ -29,16 +38,31 @@ export default function TopAdminBar() {
     };
   }, [pathname]);
 
-  if (!isAdmin) return null;
+  // Inactivity auto-logout
+  useEffect(() => {
+    if (!isAdmin) return;
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('mp-invoice-auth');
-    sessionStorage.removeItem('mp-invoice-user');
-    localStorage.removeItem('mp-invoice-auth');
-    localStorage.removeItem('mp-invoice-user');
-    localStorage.removeItem('marcopolo_active_view');
-    window.location.href = '/';
-  };
+    let timeoutId: NodeJS.Timeout;
+
+    const resetTimeout = () => {
+      clearTimeout(timeoutId);
+      // 15 minutes of inactivity logs out
+      timeoutId = setTimeout(() => {
+        handleLogout();
+      }, 15 * 60 * 1000);
+    };
+
+    resetTimeout();
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(e => document.addEventListener(e, resetTimeout));
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(e => document.removeEventListener(e, resetTimeout));
+    };
+  }, [isAdmin]);
+
+  if (!isAdmin) return null;
 
 
   const linkStyle = (isActive: boolean) => ({
