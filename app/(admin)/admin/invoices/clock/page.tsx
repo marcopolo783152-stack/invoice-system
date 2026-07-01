@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { clockInOut, Employee, checkAutoClockOut, getTimeLogs } from '@/lib/employee-storage';
+import { clockInOut, Employee, checkAutoClockOut, getTimeLogs, getEmployees } from '@/lib/employee-storage';
 import Link from 'next/link';
 
 export default function ClockPage() {
@@ -100,9 +100,42 @@ export default function ClockPage() {
         return R * c;
     };
 
-    const handleClock = async (e: React.FormEvent) => {
+    const handleBiometricClock = async () => {
+        try {
+            const { authenticateBiometric } = await import('@/lib/webauthn-utils');
+            const credentialId = await authenticateBiometric();
+            
+            setStatus('LOADING');
+            setMessage('Biometric match found! Verifying location...');
+
+            // Find employee by passkey ID
+            const employees = await getEmployees();
+            const employee = employees.find(e => e.passkeyId === credentialId);
+
+            if (!employee) {
+                throw new Error("Biometric credential not linked to any active employee.");
+            }
+
+            // Temporarily set identifier for the unified clock submission
+            setIdentifier(employee.id);
+            
+            // Proceed to the normal clock-in process but inject the biometric identifier
+            const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+            await handleClock(fakeEvent, employee.id);
+
+        } catch (error: any) {
+            console.error("Biometric Clock Error:", error);
+            setStatus('ERROR');
+            setMessage(error.message || 'Biometric authentication failed.');
+            speak("Authentication failed, please try again");
+            setTimeout(() => setStatus('IDLE'), 5000);
+        }
+    };
+
+    const handleClock = async (e: React.FormEvent, overrideIdentifier?: string) => {
         e.preventDefault();
-        if (!identifier.trim()) return;
+        const activeIdentifier = overrideIdentifier || identifier.trim();
+        if (!activeIdentifier) return;
 
         setStatus('LOADING');
         setMessage('Verifying location and capturing photo...');
@@ -155,7 +188,7 @@ export default function ClockPage() {
 
             // 3. Submit
             const { employee, log } = await clockInOut(
-                identifier.trim(),
+                activeIdentifier,
                 undefined,
                 facePhoto,
                 { lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy }
@@ -278,6 +311,20 @@ export default function ClockPage() {
                                 }}
                             >
                                 {status === 'LOADING' ? 'VERIFYING...' : 'VERIFY & CLOCK'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleBiometricClock}
+                                disabled={status === 'LOADING'}
+                                style={{
+                                    width: '100%', padding: '16px', borderRadius: 12, border: '1px solid rgba(16, 185, 129, 0.5)',
+                                    background: 'rgba(16, 185, 129, 0.1)',
+                                    color: '#10b981', fontSize: 16, fontWeight: 800, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
+                                }}
+                            >
+                                👤 FACE / FINGERPRINT CLOCK
                             </button>
                         </form>
 

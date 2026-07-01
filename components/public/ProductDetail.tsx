@@ -249,6 +249,10 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                     <span className="font-light text-editorial-text">{rug.origin}</span>
                   </div>
                   <div className="flex justify-between py-1.5 border-b border-editorial-border">
+                    <span className="text-gray-400 font-light">Type:</span>
+                    <span className="font-light text-editorial-text">{rug.manufacturingType || 'Handmade'}</span>
+                  </div>
+                  <div className="flex justify-between py-1.5 border-b border-editorial-border">
                     <span className="text-gray-400 font-light">Age Curation:</span>
                     <span className="font-light text-editorial-text">{rug.age}</span>
                   </div>

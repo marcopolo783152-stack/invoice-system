@@ -24,10 +24,12 @@ import {
     updateTimeLog,
     deleteEmployeePayment,
     subscribeToEmployees,
-    subscribeToTimeLogs
+    subscribeToTimeLogs,
+    saveEmployee
 } from '@/lib/employee-storage';
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
+import { registerBiometric } from '@/lib/webauthn-utils';
 
 interface PayrollSummary {
     employeeId: string;
@@ -85,6 +87,21 @@ export default function EmployeesPage() {
 
     const handlePrintHistory = async (emp: Employee) => {
         window.open(`/admin/invoices/employees/print?type=history&id=${emp.id}&range=${reportRange}`, '_blank');
+    };
+
+    const handleRegisterBiometric = async (emp: Employee) => {
+        try {
+            const credentialId = await registerBiometric(emp.id, emp.name);
+            await saveEmployee({
+                ...emp,
+                passkeyId: credentialId
+            });
+            alert(`Biometric Passkey successfully registered for ${emp.name}!`);
+            loadData();
+        } catch (e: any) {
+            console.error("Biometric registration failed:", e);
+            alert("Registration failed: " + e.message);
+        }
     };
 
     const handleBulkManualLog = async () => {
@@ -777,13 +794,27 @@ export default function EmployeesPage() {
                                             Last action: {formatDate(emp.lastAction || '')}
                                         </div>
                                     </div>
-                                    <div style={{ marginTop: 20, display: 'flex', gap: 8 }}>
+                                    <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8 }}>
+                                        <button
+                                            onClick={() => handleRegisterBiometric(emp)}
+                                            style={{ padding: '8px', borderRadius: 8, border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.05)', color: '#10b981', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                                        >
+                                            {emp.passkeyId ? '✅ Biometric Ready' : 'Biometric Setup'}
+                                        </button>
                                         <button
                                             onClick={() => handlePrintBadge(emp)}
-                                            style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #4f46e5', background: 'rgba(79, 70, 229, 0.05)', color: '#4f46e5', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                                            style={{ padding: '8px', borderRadius: 8, border: '1px solid #4f46e5', background: 'rgba(79, 70, 229, 0.05)', color: '#4f46e5', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                                         >
                                             QR Badge
                                         </button>
+                                        <button
+                                            onClick={() => handleDelete(emp.id)}
+                                            style={{ padding: '8px', borderRadius: 8, border: 'none', background: 'rgba(244, 63, 94, 0.05)', color: '#f43f5e', fontSize: 12, cursor: 'pointer' }}
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                    <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
                                         <button
                                             onClick={() => {
                                                 setEditingEmp(emp);
@@ -791,13 +822,7 @@ export default function EmployeesPage() {
                                             }}
                                             style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                                         >
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(emp.id)}
-                                            style={{ padding: '8px', borderRadius: 8, border: ' none', background: 'rgba(244, 63, 94, 0.05)', color: '#f43f5e', fontSize: 12, cursor: 'pointer' }}
-                                        >
-                                            🗑️
+                                            Edit Employee Details
                                         </button>
                                     </div>
                                     <button

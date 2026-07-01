@@ -25,6 +25,7 @@ export interface Rug {
   weightLbs?: number; // shipping weight in pounds
   isSpecialSale?: boolean;
   isFreeShipping?: boolean;
+  manufacturingType?: "Handmade" | "Machine-made";
 }
 
 export const ALL_SIZES = Array.from(new Set([

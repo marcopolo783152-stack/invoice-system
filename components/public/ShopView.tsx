@@ -32,6 +32,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
   
   // Search and Sort State
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeMfgType, setActiveMfgType] = useState<"All" | "Handmade" | "Machine-made">("All");
   const [sortOption, setSortOption] = useState("featured");
 
   // Advanced Filters State

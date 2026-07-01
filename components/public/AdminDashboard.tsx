@@ -189,6 +189,7 @@ export const AdminDashboard: React.FC = () => {
   const [rugModalOpen, setRugModalOpen] = useState(false);
   const [editingRugId, setEditingRugId] = useState<string | null>(null);
   const [rugName, setRugName] = useState("");
+  const [rugManufacturingType, setRugManufacturingType] = useState<"Handmade" | "Machine-made">("Handmade");
   const [rugSKU, setRugSKU] = useState("");
   const [rugPrice, setRugPrice] = useState<number | "">("");
   const [rugOriginalPrice, setRugOriginalPrice] = useState<number | "">("");
@@ -363,6 +364,7 @@ export const AdminDashboard: React.FC = () => {
     if (r) {
       setEditingRugId(r.id);
       setRugName(r.name);
+      setRugManufacturingType(r.manufacturingType || "Handmade");
       setRugSKU(r.sku);
       setRugPrice(r.price);
     setRugOriginalPrice(r.originalPrice || "");
@@ -384,6 +386,7 @@ export const AdminDashboard: React.FC = () => {
     } else {
       setEditingRugId(null);
       setRugName("");
+      setRugManufacturingType("Handmade");
       setRugSKU("");
       setRugPrice("");
     setRugOriginalPrice("");
@@ -413,6 +416,7 @@ export const AdminDashboard: React.FC = () => {
     const finalImages = rugImages.length > 0 ? rugImages : ["https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"];
     const payload: any = {
       name: rugName,
+      manufacturingType: rugManufacturingType,
       sku: rugSKU,
       price: Number(rugPrice),
       originalPrice: rugOriginalPrice === "" ? null : Number(rugOriginalPrice),
@@ -1872,6 +1876,11 @@ export const AdminDashboard: React.FC = () => {
                         <td className="py-3 px-4 text-neutral-600 font-semibold">{r.origin}</td>
                         <td className="py-3 px-4">
                           <div>{r.dimensions}</div>
+                          {r.manufacturingType === 'Machine-made' ? (
+                              <span className="inline-block px-2 py-0.5 mt-1 bg-stone-100 text-stone-600 text-[10px] font-bold rounded-sm border border-stone-200">MACHINE</span>
+                          ) : (
+                              <span className="inline-block px-2 py-0.5 mt-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-sm border border-amber-200">HANDMADE</span>
+                          )}
                           <span className="text-sm text-neutral-400">{r.sizeCategory} | {r.shape}</span>
                         </td>
                         <td className="py-3 px-4 font-serif font-bold text-neutral-900">
@@ -2592,6 +2601,19 @@ export const AdminDashboard: React.FC = () => {
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500"
                   />
                 </div>
+                
+                <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase">Type</label>
+                  <select
+                    value={rugManufacturingType}
+                    onChange={(e) => setRugManufacturingType(e.target.value as any)}
+                    className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 text-xs"
+                  >
+                    <option value="Handmade">Handmade</option>
+                    <option value="Machine-made">Machine-made</option>
+                  </select>
+                </div>
+
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Size Category</label>
                   <select
