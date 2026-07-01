@@ -110,29 +110,34 @@ export const AdminDashboard: React.FC = () => {
   // Review notification alert
   const unapprovedReviewsCount = reviews.filter(r => !r.isApproved).length;
   // Order notification alert
-  const localLastSeenOrder = useRef(0);
+  const localLastSeenOrder = useRef<number | null>(null);
 
   useEffect(() => {
     if (orders.length === 0) return;
 
     const latestOrderTime = Math.max(...orders.map(o => new Date(o.createdAt).getTime()));
     
-    // If this is the very first time the dashboard loads, just set the time silently
-    if (localLastSeenOrder.current === 0) {
-      localLastSeenOrder.current = latestOrderTime;
-      return;
+    const savedTime = typeof window !== "undefined" ? sessionStorage.getItem('lastSeenOrder') : null;
+    const previousTime = savedTime ? parseInt(savedTime) : 0;
+    
+    if (localLastSeenOrder.current === null) {
+      localLastSeenOrder.current = previousTime;
     }
     
-    // If a brand new order arrives, play the sound locally on THIS device
     if (latestOrderTime > localLastSeenOrder.current) {
-      localLastSeenOrder.current = latestOrderTime;
+      if (localLastSeenOrder.current > 0 || (Date.now() - latestOrderTime < 60000)) {
+        const audio = new Audio("/coin.mp3");
+        audio.play().catch(e => {
+          console.error("Audio playback blocked by browser", e);
+          alert("🔔🔔 NEW ORDER RECEIVED! 🔔🔔 (Audio blocked by browser, please click anywhere on the page first)");
+        });
+      }
       
-      const audio = new Audio("/coin.mp3");
-      audio.play().catch(e => {
-        console.error("Audio playback blocked by browser", e);
-        // Browsers block auto-playing audio unless the user has clicked somewhere on the page first.
-        alert("🔔🔔 NEW ORDER RECEIVED! 🔔🔔 (Audio blocked by browser, please click anywhere on the page first)");
-      });
+      localLastSeenOrder.current = latestOrderTime;
+      if (typeof window !== "undefined") sessionStorage.setItem('lastSeenOrder', latestOrderTime.toString());
+    } else if (localLastSeenOrder.current === 0) {
+      localLastSeenOrder.current = latestOrderTime;
+      if (typeof window !== "undefined") sessionStorage.setItem('lastSeenOrder', latestOrderTime.toString());
     }
   }, [orders]);
 
@@ -817,6 +822,62 @@ export const AdminDashboard: React.FC = () => {
             <span className="font-bold text-editorial-text font-mono">marcopolorugs@aol.com</span>
           </div>
         </div>
+
+        {/* --- TAB: TRANSACTIONS --- */}
+        {activeTab === "transactions" && (
+          <div className="space-y-6 animate-fadeIn text-left">
+            <h2 className="text-xl font-serif text-editorial-text border-b border-editorial-border pb-2">Transactions Ledger</h2>
+            
+            <div className="bg-white p-6 border border-editorial-border shadow-sm flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500 block mb-1">Total System Revenue</span>
+                <span className="text-4xl font-serif text-amber-700">${dynamicAnalytics.totalSales.toLocaleString()}</span>
+              </div>
+              <Banknote className="h-12 w-12 text-amber-700/20" />
+            </div>
+
+            <div className="bg-white border border-editorial-border shadow-xs overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-editorial-aside text-gray-600 font-semibold uppercase tracking-wider text-[10px] border-b border-editorial-border">
+                  <tr>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Transaction ID</th>
+                    <th className="px-4 py-3">Customer</th>
+                    <th className="px-4 py-3">Payment Type</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-editorial-border">
+                  {orders.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400 italic font-sans">No transactions recorded yet.</td>
+                    </tr>
+                  ) : (
+                    orders.map(order => (
+                      <tr key={order.id} className="hover:bg-neutral-50 transition-colors">
+                        <td className="px-4 py-3">{new Date(order.createdAt || 0).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 font-mono text-xs">{order.id.split('-').pop()?.toUpperCase() || order.id}</td>
+                        <td className="px-4 py-3 font-medium text-editorial-text">{order.customerInfo?.name || 'Unknown'}</td>
+                        <td className="px-4 py-3 capitalize">{order.paymentDetails?.cardBrand || 'Card'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                            order.status === 'Delivered' || order.status === 'Shipped' || order.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                            order.status === 'Pending Confirmation' || order.status === 'Preparing for Shipping' ? 'bg-amber-100 text-amber-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-emerald-700">${order.total?.toLocaleString() || '0'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* --- TAB A: ANALYTICS CURATION --- */}
         {activeTab === "analytics" && (

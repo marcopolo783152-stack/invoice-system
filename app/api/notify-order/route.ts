@@ -78,7 +78,7 @@ export async function POST(request: Request) {
                 <p style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 3px; color: #000;">${order.id}</p>
               </div>
               <div style="text-align: center; margin-top: 20px;">
-                <a href="https://marcopoloorientalrugs.com/?track=${order.id}" style="display: inline-block; background-color: #8E7453; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; letter-spacing: 2px; border-radius: 4px; text-transform: uppercase;">Track Order Instantly</a>
+                <a href="${request.headers.get('origin') || 'https://marcopoloorientalrugs.com'}/?track=${order.id}" style="display: inline-block; background-color: #8E7453; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; letter-spacing: 2px; border-radius: 4px; text-transform: uppercase;">Track Order Instantly</a>
               </div>
             </div>
 
