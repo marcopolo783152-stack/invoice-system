@@ -107,38 +107,30 @@ export const AdminDashboard: React.FC = () => {
   // Review notification alert
   const unapprovedReviewsCount = reviews.filter(r => !r.isApproved).length;
   // Order notification alert
+  const localLastSeenOrder = useRef(0);
+
   useEffect(() => {
     if (orders.length === 0) return;
 
     const latestOrderTime = Math.max(...orders.map(o => new Date(o.createdAt).getTime()));
     
-    const checkAndRing = async () => {
-      try {
-        const { db } = await import("@/lib/firebase");
-        const { doc, getDoc, setDoc } = await import("firebase/firestore");
-        const { SHOWROOM_SETTINGS } = await import("@/lib/showroom-firebase");
-        if (!db) return;
-        
-        const prefRef = doc(db, SHOWROOM_SETTINGS, "admin_preferences");
-        const prefSnap = await getDoc(prefRef);
-        const lastSeenTime = prefSnap.exists() && prefSnap.data().lastSeenOrderTime ? prefSnap.data().lastSeenOrderTime : 0;
-        
-        if (latestOrderTime > lastSeenTime) {
-          if (lastSeenTime > 0) {
-            const audio = new Audio("/coin.mp3");
-            audio.play().catch(e => {
-              console.error("Audio playback blocked by browser", e);
-              alert("🛎️ NEW ORDER RECEIVED! 🛎️ (Audio blocked by browser, please click anywhere on the page first)");
-            });
-          }
-          await setDoc(prefRef, { lastSeenOrderTime: latestOrderTime }, { merge: true });
-        }
-      } catch (err) {
-        console.error("Firebase admin_preferences error", err);
-      }
-    };
+    // If this is the very first time the dashboard loads, just set the time silently
+    if (localLastSeenOrder.current === 0) {
+      localLastSeenOrder.current = latestOrderTime;
+      return;
+    }
     
-    checkAndRing();
+    // If a brand new order arrives, play the sound locally on THIS device
+    if (latestOrderTime > localLastSeenOrder.current) {
+      localLastSeenOrder.current = latestOrderTime;
+      
+      const audio = new Audio("/coin.mp3");
+      audio.play().catch(e => {
+        console.error("Audio playback blocked by browser", e);
+        // Browsers block auto-playing audio unless the user has clicked somewhere on the page first.
+        alert("🔔🔔 NEW ORDER RECEIVED! 🔔🔔 (Audio blocked by browser, please click anywhere on the page first)");
+      });
+    }
   }, [orders]);
 
   const prevUnapprovedCount = useRef(unapprovedReviewsCount);
