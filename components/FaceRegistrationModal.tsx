@@ -12,9 +12,16 @@ interface Props {
 
 export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, employeeName }: Props) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    
     const [status, setStatus] = useState<string>('Initializing AI...');
     const [isModelsLoaded, setIsModelsLoaded] = useState(false);
     const [stream, setStream] = useState<MediaStream | null>(null);
+    const [isReadyToCapture, setIsReadyToCapture] = useState(false);
+    const [detectedDescriptor, setDetectedDescriptor] = useState<number[] | null>(null);
+    
+    // Interval ref for continuous scanning
+    const scanInterval = useRef<any>(null);
 
     // 1. Load Models
     useEffect(() => {
@@ -37,6 +44,8 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, empl
         };
 
         loadModels();
+        
+        return () => stopCamera();
     }, [isOpen]);
 
     // 2. Start Camera
@@ -58,51 +67,76 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, empl
         };
 
         startCamera();
-
-        return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-        };
     }, [isOpen, isModelsLoaded]);
 
+    const handleVideoPlay = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        
+        // Match canvas to video dimensions
+        const displaySize = { 
+            width: videoRef.current.videoWidth, 
+            height: videoRef.current.videoHeight 
+        };
+        faceapi.matchDimensions(canvasRef.current, displaySize);
+
+        scanInterval.current = setInterval(async () => {
+            if (!videoRef.current || !canvasRef.current) return;
+            
+            try {
+                const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+                                               .withFaceLandmarks()
+                                               .withFaceDescriptor();
+
+                const ctx = canvasRef.current.getContext('2d');
+                if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+
+                if (detection) {
+                    const resizedDetection = faceapi.resizeResults(detection, displaySize);
+                    faceapi.draw.drawDetections(canvasRef.current, resizedDetection);
+                    
+                    const box = resizedDetection.detection.box;
+                    const faceArea = box.width * box.height;
+                    const screenArea = displaySize.width * displaySize.height;
+                    const ratio = faceArea / screenArea;
+
+                    if (ratio < 0.05) {
+                        setStatus('Move closer to the camera');
+                        setIsReadyToCapture(false);
+                    } else if (detection.detection.score < 0.7) {
+                        setStatus('Hold still. Finding clear image...');
+                        setIsReadyToCapture(false);
+                    } else {
+                        setStatus('Perfect! Press Capture Face');
+                        setIsReadyToCapture(true);
+                        setDetectedDescriptor(Array.from(detection.descriptor));
+                    }
+                } else {
+                    setStatus('No face detected. Look directly at the camera.');
+                    setIsReadyToCapture(false);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }, 300); // scan ~3 times a second
+    };
+
     const stopCamera = () => {
+        if (scanInterval.current) clearInterval(scanInterval.current);
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
             setStream(null);
         }
     };
 
-    const handleCapture = async () => {
-        if (!videoRef.current || !isModelsLoaded) return;
-
-        setStatus('Analyzing face...');
+    const handleCapture = () => {
+        if (!detectedDescriptor) return;
         
-        try {
-            // Detect single face and compute descriptor
-            const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-                                           .withFaceLandmarks()
-                                           .withFaceDescriptor();
-
-            if (!detection) {
-                setStatus('No face detected. Please ensure your face is clearly visible and try again.');
-                return;
-            }
-
-            // Convert Float32Array to standard number array for Firebase storage
-            const descriptorArray = Array.from(detection.descriptor);
-            
-            setStatus('Face successfully registered!');
-            stopCamera();
-            setTimeout(() => {
-                onSuccess(descriptorArray);
-                onClose();
-            }, 1000);
-
-        } catch (error) {
-            console.error("Capture error:", error);
-            setStatus('Error analyzing face. Try again.');
-        }
+        setStatus('Face successfully registered!');
+        stopCamera();
+        setTimeout(() => {
+            onSuccess(detectedDescriptor);
+            onClose();
+        }, 1000);
     };
 
     if (!isOpen) return null;
@@ -118,19 +152,24 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, empl
                 display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'
             }}>
                 <h2 style={{ margin: '0 0 10px 0', fontSize: 24, color: '#1e293b' }}>Face Setup for {employeeName}</h2>
-                <p style={{ margin: '0 0 20px 0', color: '#64748b', fontSize: 14 }}>{status}</p>
+                <p style={{ margin: '0 0 20px 0', color: '#64748b', fontSize: 14, fontWeight: 700, minHeight: 20 }}>{status}</p>
 
                 <div style={{
-                    width: 300, height: 300, borderRadius: '50%', overflow: 'hidden',
+                    width: 320, height: 320, borderRadius: 16, overflow: 'hidden',
                     background: '#e2e8f0', marginBottom: 20, position: 'relative',
-                    border: '4px solid #10b981'
+                    border: isReadyToCapture ? '4px solid #10b981' : '4px solid #94a3b8'
                 }}>
                     <video 
                         ref={videoRef}
+                        onPlay={handleVideoPlay}
                         autoPlay
                         playsInline
                         muted
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+                    />
+                    <canvas 
+                        ref={canvasRef} 
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', transform: 'scaleX(-1)' }} 
                     />
                 </div>
 
@@ -146,11 +185,11 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, empl
                     </button>
                     <button
                         onClick={handleCapture}
-                        disabled={!isModelsLoaded}
+                        disabled={!isReadyToCapture}
                         style={{
                             flex: 2, padding: 15, borderRadius: 12, border: 'none',
-                            background: isModelsLoaded ? '#10b981' : '#94a3b8', color: '#fff', 
-                            fontSize: 16, fontWeight: 600, cursor: isModelsLoaded ? 'pointer' : 'not-allowed'
+                            background: isReadyToCapture ? '#10b981' : '#94a3b8', color: '#fff', 
+                            fontSize: 16, fontWeight: 600, cursor: isReadyToCapture ? 'pointer' : 'not-allowed'
                         }}
                     >
                         Capture Face
