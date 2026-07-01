@@ -158,13 +158,6 @@ export const CartView: React.FC = () => {
     const order = checkout(customerInfo, paymentDetails, deliveryOption, shipping, tax, totalWeightLbs, appliedPromo || undefined, discount);
     setCreatedOrder(order);
     setCheckoutStep("success");
-
-    // Automatically fire off confirmation email
-    fetch('/api/notify-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order, shopProfile, type: 'confirmation' })
-    }).catch(console.error);
   };
 
   const handleClose = () => {
@@ -288,7 +281,7 @@ export const CartView: React.FC = () => {
                     <input
                       type="text"
                       required
-                      value={name}
+                      value={name} autoComplete="name"
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Elena Rostov"
                       className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
@@ -301,7 +294,7 @@ export const CartView: React.FC = () => {
                       <input
                         type="tel"
                         required
-                        value={phone}
+                        value={phone} autoComplete="tel"
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+1 (555) 789-0122"
                         className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
@@ -312,7 +305,7 @@ export const CartView: React.FC = () => {
                       <input
                         type="email"
                         required
-                        value={email}
+                        value={email} autoComplete="email"
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="elena@luxury-designs.com"
                         className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
@@ -359,25 +352,25 @@ export const CartView: React.FC = () => {
                                           <div className="space-y-3 animate-fadeIn">
                         <div>
                           <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Street Address *</label>
-                          <input type="text" required value={shippingStreet} onChange={(e) => setShippingStreet(e.target.value)} placeholder="783 Park Avenue" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                          <input type="text" required value={shippingStreet} autoComplete="street-address" onChange={(e) => setShippingStreet(e.target.value)} placeholder="783 Park Avenue" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
                         </div>
                         <div>
                           <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Apt, Suite, Bldg (optional)</label>
-                          <input type="text" value={shippingApt} onChange={(e) => setShippingApt(e.target.value)} placeholder="Apt 14B" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                          <input type="text" value={shippingApt} autoComplete="address-line2" onChange={(e) => setShippingApt(e.target.value)} placeholder="Apt 14B" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">City *</label>
-                            <input type="text" required value={shippingCity} onChange={(e) => setShippingCity(e.target.value)} placeholder="New York" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                            <input type="text" required value={shippingCity} autoComplete="address-level2" onChange={(e) => setShippingCity(e.target.value)} placeholder="New York" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">State *</label>
-                              <input type="text" required value={shippingState} onChange={(e) => setShippingState(e.target.value)} placeholder="NY" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                              <input type="text" required value={shippingState} autoComplete="address-level1" onChange={(e) => setShippingState(e.target.value)} placeholder="NY" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
                             </div>
                             <div>
                               <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Zip *</label>
-                              <input type="text" required value={shippingZip} onChange={(e) => setShippingZip(e.target.value)} placeholder="10021" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                              <input type="text" required value={shippingZip} autoComplete="postal-code" onChange={(e) => setShippingZip(e.target.value)} placeholder="10021" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
                             </div>
                           </div>
                         </div>
@@ -417,7 +410,7 @@ export const CartView: React.FC = () => {
                       <input
                         type="text"
                         required
-                        value={billingAddress}
+                        value={billingAddress} autoComplete="street-address"
                         onChange={(e) => setBillingAddress(e.target.value)}
                         placeholder="Billing address..."
                         className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
@@ -460,7 +453,7 @@ export const CartView: React.FC = () => {
                     <input
                       type="text"
                       required
-                      value={cardName}
+                      value={cardName} autoComplete="cc-name"
                       onChange={(e) => setCardName(e.target.value)}
                       placeholder="e.g. Elena Rostov"
                       className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none focus:border-editorial-accent text-xs text-editorial-text"
@@ -476,7 +469,7 @@ export const CartView: React.FC = () => {
                       <input
                         type="text"
                         required
-                        value={cardNumber}
+                        value={cardNumber} autoComplete="cc-number"
                         onChange={(e) => {
                           const val = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
                           const matches = val.match(/\d{4,16}/g);
@@ -504,7 +497,7 @@ export const CartView: React.FC = () => {
                       <input
                         type="text"
                         required
-                        value={cardExpiry}
+                        value={cardExpiry} autoComplete="cc-exp"
                         onChange={(e) => {
                           let val = e.target.value.replace(/[^0-9]/g, "");
                           if (val.length >= 2) {
@@ -523,7 +516,7 @@ export const CartView: React.FC = () => {
                       <input
                         type="password"
                         required
-                        value={cardCVC}
+                        value={cardCVC} autoComplete="cc-csc"
                         onChange={(e) => setCardCVC(e.target.value.replace(/[^0-9]/g, ""))}
                         maxLength={4}
                         placeholder="•••"
