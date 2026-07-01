@@ -43,9 +43,9 @@ if (!order) return;
       doc.setTextColor(215, 195, 175);
       
       const shopDetails = [
-        "EXOTIC ORIENTAL RUGS & TAPESTRIES  •  OFFICIAL RECEIPT",
+        "EXOTIC ORIENTAL RUGS & TAPESTRIES  ---  OFFICIAL RECEIPT",
         shopProfile?.address ? shopProfile.address : "",
-        [shopProfile?.phone || "", shopProfile?.email || ""].filter(Boolean).join("  •  ")
+        [shopProfile?.phone || "", shopProfile?.email || ""].filter(Boolean).join("  ---  ")
       ].filter(Boolean);
       
       doc.text(shopDetails, 105, 26, { align: "center", lineHeightFactor: 1.5 });
