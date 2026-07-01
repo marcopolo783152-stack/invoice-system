@@ -32,7 +32,7 @@ export async function POST(request: Request) {
                 <h2 style="color: #8E7453;">Official Invoice</h2>
                 <p>Dear ${customerInfo.name},</p>
                 <p>Your official invoice for order <strong>${order.id}</strong> is ready for your records.</p>
-                <p><strong>Total amount:</strong> ${order.total.toLocaleString()}</p>
+                <p><strong>Total amount:</strong> ${order.total?.toLocaleString()}</p>
                 <p>You can view, print, or download your full PDF receipt anytime by visiting the Tracking page on our website and entering your Tracking ID: <strong>${order.id}</strong></p>
                 <br/>
                 <p>Warm Regards,</p>
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
                 <h2 style="color: #8E7453;">Thank you for your order!</h2>
                 <p>Dear ${customerInfo.name},</p>
                 <p>We have successfully received your order <strong>${order.id}</strong>. Our curators are currently reviewing the inventory holds.</p>
-                <p><strong>Total amount:</strong> ${order.total.toLocaleString()}</p>
+                <p><strong>Total amount:</strong> ${order.total?.toLocaleString()}</p>
                 <p>You can track your order status anytime on our website using your Tracking ID: <strong>${order.id}</strong></p>
                 <br/>
                 <p>Warm Regards,</p>

@@ -6,7 +6,7 @@ async function testEmail() {
       to: [{ email: 'test@example.com' }],
       subject: 'Test SendGrid'
     }],
-    from: { email: 'noreply@marcopolorugs.com', name: 'Marco Polo' },
+    from: { email: 'marcopolorugs@aol.com', name: 'Marco Polo' },
     content: [{
       type: 'text/html',
       value: '<p>Testing</p>'
