@@ -7,6 +7,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useStore } from "@/context/StoreContext";
 import { OrderStatus, Rug, BlogPost, Review, ALL_SIZES } from "@/types";
 import { BulkImport } from "./BulkImport";
+import { generateAndDownloadReceiptPDF } from "@/utils/pdf";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import { compressImage } from "@/lib/imageUtils";
@@ -37,13 +38,15 @@ import {
   Sparkles,
   Globe,
   Mail,
+  Printer,
   Heart,
   Settings,
   Tag,
   Save,
   Eye, 
   UploadCloud,
-  Camera
+  Camera,
+  Banknote
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
@@ -83,7 +86,7 @@ export const AdminDashboard: React.FC = () => {
     addAdminUser
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -788,6 +791,7 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === "inventory" && "Manage Showroom Inventory"}
               {activeTab === "bulk_import" && "Bulk Importer"}
               {activeTab === "orders" && "Escrow Invoices & Dispatch Logs"}
+              {activeTab === "transactions" && "System Transactions Ledger"}
               {activeTab === "reviews" && "Advisor Review Moderation"}
               {activeTab === "messages" && "Live Concierge Inbox Thread"}
               {activeTab === "blogs" && "Design Journal Publisher"}
@@ -2059,6 +2063,14 @@ export const AdminDashboard: React.FC = () => {
                         <div className="pt-2 border-t border-neutral-100 flex gap-2 mt-auto">
                           <button
                             type="button"
+                            onClick={() => generateAndDownloadReceiptPDF(o, shopProfile, logoUrl)}
+                            className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                            <span>Print PDF</span>
+                          </button>
+                          <button
+                            type="button"
                             onClick={async () => {
                               try {
                                 alert('Sending invoice via SendGrid...');
@@ -2749,6 +2761,18 @@ export const AdminDashboard: React.FC = () => {
                     placeholder="e.g. 3.5"
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 font-mono text-xs"
                   />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase">Shipping Offer</label>
+                  <label className="flex items-center gap-2 mt-2 cursor-pointer h-full pb-2">
+                    <input 
+                      type="checkbox"
+                      checked={rugIsFreeShipping}
+                      onChange={(e) => setRugIsFreeShipping(e.target.checked)}
+                      className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 w-4 h-4"
+                    />
+                    <span className="text-sm font-semibold text-neutral-800">Free Shipping</span>
+                  </label>
                 </div>
               </div>
 

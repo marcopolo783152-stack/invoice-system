@@ -192,10 +192,13 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
               <div className="flex items-center gap-3 py-3 border-y border-editorial-border justify-between">
                 <div>
                   <span className="text-xs text-gray-400 uppercase tracking-wider block font-semibold">Concierge Value</span>
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex flex-wrap items-baseline gap-2">
                     <span className="font-serif text-2xl sm:text-3xl font-light text-editorial-text">${rug.price.toLocaleString()}</span>
                     {rug.originalPrice && (
                       <span className="text-sm font-serif line-through text-gray-400">${rug.originalPrice.toLocaleString()}</span>
+                    )}
+                    {rug.isFreeShipping && (
+                      <span className="bg-[#8E7453] text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-sm ml-2">Free Shipping Included</span>
                     )}
                   </div>
                 </div>

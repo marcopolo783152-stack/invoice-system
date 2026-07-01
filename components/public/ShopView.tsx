@@ -557,11 +557,14 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                       <div className="pt-3 border-t border-editorial-border flex items-center justify-between">
                         <div>
                           <span className="block text-xs uppercase tracking-wider text-gray-400 font-semibold">Concierge Value</span>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             {rug.originalPrice && rug.originalPrice > rug.price && (
                               <span className="text-xs text-gray-400 line-through">${rug.originalPrice.toLocaleString()}</span>
                             )}
                             <span className="font-serif text-sm font-light text-editorial-text">${rug.price.toLocaleString()}</span>
+                            {rug.isFreeShipping && (
+                              <span className="bg-[#8E7453] text-white text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm">Free Ship</span>
+                            )}
                           </div>
                         </div>
                         

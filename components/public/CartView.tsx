@@ -91,6 +91,7 @@ export const CartView: React.FC = () => {
   
   // Calculate total weight in lbs
   const totalWeightLbs = cart.reduce((sum, item) => {
+    if (item.rug.isFreeShipping) return sum; // Free shipping items don't add to freight weight
     const rugWeight = item.rug.weightLbs || (
       item.rug.sizeCategory.includes("8x10") ? 4.5 :
       item.rug.sizeCategory.includes("9x12") ? 6.5 :
