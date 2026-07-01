@@ -117,6 +117,45 @@ export const TrackingView: React.FC = () => {
           </button>
         </form>
 
+        <div className="text-center mt-2">
+          <button 
+            type="button"
+            onClick={() => setShowRecovery(!showRecovery)}
+            className="text-editorial-accent font-bold tracking-wider uppercase text-[10px] hover:underline cursor-pointer"
+          >
+            Lost your receipt? Click here to find your order by Email or Phone.
+          </button>
+        </div>
+
+        {showRecovery && (
+          <form onSubmit={handleRecovery} className="bg-white p-6 rounded-none border border-editorial-border shadow-sm flex flex-col sm:flex-row gap-3 animate-fadeIn mt-2">
+            <div className="relative flex-1">
+              <input
+                type="email"
+                value={recoveryEmail}
+                onChange={(e) => setRecoveryEmail(e.target.value)}
+                placeholder="Enter Email Address"
+                className="w-full bg-editorial-aside border border-editorial-border rounded-none py-3.5 px-4 outline-none text-xs focus:border-editorial-accent text-editorial-text tracking-widest"
+              />
+            </div>
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={recoveryPhone}
+                onChange={(e) => setRecoveryPhone(e.target.value)}
+                placeholder="Or Phone Number"
+                className="w-full bg-editorial-aside border border-editorial-border rounded-none py-3.5 px-4 outline-none text-xs focus:border-editorial-accent text-editorial-text tracking-widest"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-6 py-3.5 bg-neutral-800 hover:bg-black text-white font-bold uppercase tracking-widest rounded-none transition cursor-pointer text-xs"
+            >
+              Find Orders
+            </button>
+          </form>
+        )}
+
         {/* --- TRACKING RESULT BOARD --- */}
         {searched && (
           <div className="animate-fadeIn">
