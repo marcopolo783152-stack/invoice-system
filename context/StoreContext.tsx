@@ -398,6 +398,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Add new order to Firebase
     addShowroomDoc(SHOWROOM_ORDERS, newOrder);
     
+    // Trigger Email/SMS notifications automatically
+    fetch('/api/notify-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: newOrder, shopProfile })
+    }).catch(err => console.error('Notification trigger failed:', err));
+    
     if (appliedPromo && appliedPromo.oneTimeUse) {
       updatePromoCode(appliedPromo.id, {
         isActive: false,
