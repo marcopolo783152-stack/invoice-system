@@ -244,17 +244,18 @@ export default function ClockPage() {
 
             setMessage('Recording timestamp...');
 
-            const result = await clockInOut({
-                identifier: activeIdentifier,
-                location: geoStatus,
-                photo: null
-            });
+            const result = await clockInOut(
+                activeIdentifier, 
+                undefined, 
+                undefined, 
+                { lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy }
+            );
 
             setStatus('SUCCESS');
             setIdentifier('');
-            setLastAction({ type: result.type, name: result.employeeName });
+            setLastAction({ type: result.log.type, name: result.employee.name });
             
-            speak(`${result.employeeName} clocked ${result.type.toLowerCase()} successfully`);
+            speak(`${result.employee.name} clocked ${result.log.type.toLowerCase()} successfully`);
 
             setTimeout(() => {
                 setStatus('IDLE');
