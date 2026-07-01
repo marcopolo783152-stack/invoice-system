@@ -96,7 +96,7 @@ export const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings") => {
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -751,6 +751,18 @@ export const AdminDashboard: React.FC = () => {
               <span>Design Journal</span>
             </button>
             
+
+            <button
+              onClick={() => setActiveTab("transactions")}
+              className={`w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "transactions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Banknote className="h-4.5 w-4.5" />
+                <span>Transactions</span>
+              </div>
+            </button>
             <a
               href="/admin/invoices"
               className="w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer text-gray-300 hover:bg-white/10 hover:text-white"

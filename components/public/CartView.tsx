@@ -107,7 +107,9 @@ export const CartView: React.FC = () => {
   // "shiping cost like 2-5 lbs gonna be 16 dollar"
   let shipping = 0;
   if (deliveryOption === "Delivery") {
-    if (totalWeightLbs <= 1.9) {
+    if (totalWeightLbs === 0) {
+      shipping = 0;
+    } else if (totalWeightLbs <= 1.9) {
       shipping = 8;
     } else if (totalWeightLbs >= 2 && totalWeightLbs <= 5) {
       shipping = 16;
