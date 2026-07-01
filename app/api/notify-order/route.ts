@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     // 1. EmailJS Notification (Replaced SendGrid to bypass DMARC issues)
     const EMAILJS_SERVICE_ID = 'marcopolo2'; // From your default config
-    const EMAILJS_TEMPLATE_ID = 'yxmedu9'; // From user screenshot
+    const EMAILJS_TEMPLATE_ID = 'marcopolo2'; // Explicitly requested by user
     const EMAILJS_PUBLIC_KEY = 'Anj9zrEUo-VEWvMVw';
     const EMAILJS_PRIVATE_KEY = 'ZgV1UYxVUy0UQKBmgj3I5';
 
