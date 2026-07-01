@@ -2067,10 +2067,19 @@ export const AdminDashboard: React.FC = () => {
                         <div className="pt-2 border-t border-neutral-100 flex gap-2 mt-auto">
                           <button
                             type="button"
-                            onClick={() => {
-                              const subject = encodeURIComponent(`Invoice for Order ${o.id} - Marco Polo Oriental Rugs`);
-                              const body = encodeURIComponent(`Dear ${o.customerInfo.name},\n\nAttached is your invoice for order ${o.id}.\n\nTotal: $${o.total?.toLocaleString()}\n\nThank you for choosing Marco Polo Oriental Rugs.`);
-                              window.open(`mailto:${o.customerInfo.email}?subject=${subject}&body=${body}`);
+                            onClick={async () => {
+                              try {
+                                alert('Sending invoice via SendGrid...');
+                                const res = await fetch('/api/notify-order', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ order: o, shopProfile, type: 'invoice' })
+                                });
+                                if (res.ok) alert('Invoice Email Sent Successfully!');
+                                else alert('Failed to send email.');
+                              } catch(e) {
+                                alert('Error sending email.');
+                              }
                             }}
                             className="flex-1 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
                           >

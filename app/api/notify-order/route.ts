@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { order, shopProfile } = await request.json();
+    const { order, shopProfile, type = 'confirmation' } = await request.json();
     
     if (!order || !order.customerInfo) {
       return NextResponse.json({ error: 'Invalid order data' }, { status: 400 });
@@ -20,17 +20,30 @@ export async function POST(request: Request) {
         const emailBody = {
           personalizations: [{
             to: [{ email: customerInfo.email }],
-            subject: `Order Confirmation - ${shopProfile?.name || 'Marco Polo'} (${order.id})`
+            subject: type === 'invoice' 
+              ? `Official Invoice - ${shopProfile?.name || 'Marco Polo'} (${order.id})`
+              : `Order Confirmation - ${shopProfile?.name || 'Marco Polo'} (${order.id})`
           }],
           from: { email: shopProfile?.email || 'noreply@marcopolorugs.com', name: shopProfile?.name || 'Marco Polo' },
           content: [{
             type: 'text/html',
-            value: `
+            value: type === 'invoice' ? `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <h2 style="color: #8E7453;">Official Invoice</h2>
+                <p>Dear ${customerInfo.name},</p>
+                <p>Your official invoice for order <strong>${order.id}</strong> is ready for your records.</p>
+                <p><strong>Total amount:</strong> ${order.total.toLocaleString()}</p>
+                <p>You can view, print, or download your full PDF receipt anytime by visiting the Tracking page on our website and entering your Tracking ID: <strong>${order.id}</strong></p>
+                <br/>
+                <p>Warm Regards,</p>
+                <p><strong>${shopProfile?.name || 'Marco Polo'}</strong></p>
+              </div>
+            ` : `
               <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
                 <h2 style="color: #8E7453;">Thank you for your order!</h2>
                 <p>Dear ${customerInfo.name},</p>
                 <p>We have successfully received your order <strong>${order.id}</strong>. Our curators are currently reviewing the inventory holds.</p>
-                <p><strong>Total amount:</strong> $${order.total.toLocaleString()}</p>
+                <p><strong>Total amount:</strong> ${order.total.toLocaleString()}</p>
                 <p>You can track your order status anytime on our website using your Tracking ID: <strong>${order.id}</strong></p>
                 <br/>
                 <p>Warm Regards,</p>
