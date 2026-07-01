@@ -130,6 +130,8 @@ export const CartView: React.FC = () => {
 
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isProcessing) return;
+    setIsProcessing(true);
     if (!name || !phone || !email || (!shippingStreet || !shippingCity || !shippingState || !shippingZip) && deliveryOption === "Delivery") return;
 
     // Secure payment simulation card masking
