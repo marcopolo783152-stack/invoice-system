@@ -23,6 +23,15 @@ function AppContent() {
   const [currentTab, setCurrentTab] = useState("home");
   const [selectedRugId, setSelectedRugId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("track")) {
+        setCurrentTab("track");
+      }
+    }
+  }, []);
+
   // If active role is Admin Panel, render the administrative workspace directly
   if (activeView === "admin") {
     return (

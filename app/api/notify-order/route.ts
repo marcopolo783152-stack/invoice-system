@@ -41,6 +41,9 @@ export async function POST(request: Request) {
               <div style="background: white; border: 1px dashed #ccc; padding: 10px; text-align: center;">
                 <p style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 3px; color: #000;">${order.id}</p>
               </div>
+              <div style="text-align: center; margin-top: 20px;">
+                <a href="https://marcopoloorientalrugs.com/?track=${order.id}" style="display: inline-block; background-color: #8E7453; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; letter-spacing: 2px; border-radius: 4px; text-transform: uppercase;">Track Order Instantly</a>
+              </div>
             </div>
 
             <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 5px; margin: 30px 0;">
@@ -73,6 +76,9 @@ export async function POST(request: Request) {
               <p style="margin-bottom: 15px;">You can view your live order status, print, or download your full PDF receipt anytime by visiting our website, clicking on the <strong>Track Order</strong> section, and entering your Tracking ID:</p>
               <div style="background: white; border: 1px dashed #ccc; padding: 10px; text-align: center;">
                 <p style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 3px; color: #000;">${order.id}</p>
+              </div>
+              <div style="text-align: center; margin-top: 20px;">
+                <a href="https://marcopoloorientalrugs.com/?track=${order.id}" style="display: inline-block; background-color: #8E7453; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; letter-spacing: 2px; border-radius: 4px; text-transform: uppercase;">Track Order Instantly</a>
               </div>
             </div>
 

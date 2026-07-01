@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useStore } from "@/context/StoreContext";
 import { Search, Compass, Truck, ShieldCheck, ClipboardCheck, PackageCheck, AlertCircle, ShoppingBag, MapPin, Send } from "lucide-react";
 import { generateAndDownloadReceiptPDF } from "@/utils/pdf";
@@ -18,6 +18,22 @@ export const TrackingView: React.FC = () => {
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryPhone, setRecoveryPhone] = useState("");
   const [recoveredOrders, setRecoveredOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && orders && orders.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const trackId = urlParams.get("track");
+      if (trackId && !searched) {
+        setSearchId(trackId);
+        setSearched(true);
+        const idClean = trackId.trim().toUpperCase();
+        const foundOrder = orders.find((o: any) => o.id === idClean);
+        const foundCleaning = cleaningBookings.find((b: any) => b.id === idClean);
+        setActiveOrder(foundOrder || null);
+        setActiveCleaning(foundCleaning || null);
+      }
+    }
+  }, [orders, cleaningBookings, searched]);
 
   const handleRecovery = (e: React.FormEvent) => {
     e.preventDefault();
