@@ -158,6 +158,13 @@ export const CartView: React.FC = () => {
     const order = checkout(customerInfo, paymentDetails, deliveryOption, shipping, tax, totalWeightLbs, appliedPromo || undefined, discount);
     setCreatedOrder(order);
     setCheckoutStep("success");
+
+    // Automatically fire off confirmation email
+    fetch('/api/notify-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order, shopProfile, type: 'confirmation' })
+    }).catch(console.error);
   };
 
   const handleClose = () => {
