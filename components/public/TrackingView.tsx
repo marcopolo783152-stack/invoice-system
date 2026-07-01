@@ -188,7 +188,7 @@ export const TrackingView: React.FC = () => {
                           >
                             Download PDF
                           </button>
-                          {ro.status === "Pending" && (
+                          {ro.status === "Pending Confirmation" && (
                             <button 
                               onClick={() => handleCancelOrder(ro.id)}
                               className="px-4 py-2 bg-red-800 hover:bg-red-900 text-white text-[10px] font-bold uppercase tracking-widest transition cursor-pointer"
@@ -321,12 +321,28 @@ export const TrackingView: React.FC = () => {
                   {/* Actions row */}
                   <div className="pt-4 border-t border-editorial-border flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-xs text-gray-400 font-mono">Registered on: {new Date(activeOrder.createdAt).toLocaleString()}</span>
-                    <button
-                      onClick={handleContactSupport}
-                      className="px-4 py-2 bg-editorial-aside border border-editorial-border hover:border-editorial-accent hover:text-editorial-accent rounded-none text-xs font-bold uppercase tracking-wider transition"
-                    >
-                      Contact Curator About Order
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        onClick={handleContactSupport}
+                        className="px-4 py-2 bg-neutral-900 hover:bg-black text-white font-bold uppercase tracking-wider rounded-none text-[10px] transition cursor-pointer"
+                      >
+                        Contact Curator
+                      </button>
+                      <button
+                        onClick={() => generateAndDownloadReceiptPDF(activeOrder, shopProfile)}
+                        className="px-4 py-2 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-wider rounded-none text-[10px] transition cursor-pointer"
+                      >
+                        Download PDF
+                      </button>
+                      {activeOrder.status === "Pending Confirmation" && (
+                        <button
+                          onClick={() => handleCancelOrder(activeOrder.id)}
+                          className="px-4 py-2 bg-red-800 hover:bg-red-900 text-white font-bold uppercase tracking-wider rounded-none text-[10px] transition cursor-pointer"
+                        >
+                          Cancel Order
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                 </div>
