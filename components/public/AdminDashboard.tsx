@@ -88,27 +88,32 @@ export const AdminDashboard: React.FC = () => {
   // Review notification alert
   const unapprovedReviewsCount = reviews.filter(r => !r.isApproved).length;
   // Order notification alert
-  const prevOrdersCount = useRef(-1);
   useEffect(() => {
-    if (prevOrdersCount.current !== -1 && orders.length > prevOrdersCount.current) {
-      // Play a mario coin sound using the Web Audio API!
-      try {
-        const audio = new Audio("/coin.mp3");
-        audio.play().catch(e => {
-          console.error("Audio playback blocked by browser", e);
-          // Fallback if browser blocks autoplay
-          alert("💰 NEW ORDER RECEIVED! 💰 (Audio blocked by browser, please click anywhere on the page first)");
-        });
-      } catch (e) {
-        console.error("Audio playback failed", e);
+    if (orders.length === 0) return;
+
+    const latestOrderTime = Math.max(...orders.map(o => new Date(o.createdAt).getTime()));
+    const lastSeenTimeStr = localStorage.getItem("marcopolo_last_order_time");
+    const lastSeenTime = lastSeenTimeStr ? parseInt(lastSeenTimeStr) : 0;
+
+    if (latestOrderTime > lastSeenTime) {
+      // Play a coin sound using the Web Audio API
+      if (lastSeenTime > 0) { // Don't ring on the very first time they ever use the system, but ring if there are actually new orders since last time
+        try {
+          const audio = new Audio("/coin.mp3");
+          audio.play().catch(e => {
+            console.error("Audio playback blocked by browser", e);
+            // Fallback if browser blocks autoplay
+            alert("💰 NEW ORDER RECEIVED! 💰 (Audio blocked by browser, please click anywhere on the page first)");
+          });
+        } catch (e) {
+          console.error("Audio playback failed", e);
+        }
       }
       
-      // Also show a temporary visual toast or alert
-      // We will use a standard alert for now, similar to the review one.
-      // alert("💰 NEW ORDER RECEIVED! 💰"); // commented out so we don't block the audio thread, audio alone is enough or we could use custom toast
+      // Update the last seen time
+      localStorage.setItem("marcopolo_last_order_time", latestOrderTime.toString());
     }
-    prevOrdersCount.current = orders.length;
-  }, [orders.length]);
+  }, [orders]);
 
   const prevUnapprovedCount = useRef(unapprovedReviewsCount);
 
