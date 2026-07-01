@@ -8,12 +8,35 @@ import { useStore } from "@/context/StoreContext";
 import { Search, Compass, Truck, ShieldCheck, ClipboardCheck, PackageCheck, AlertCircle, ShoppingBag, MapPin, Send } from "lucide-react";
 
 export const TrackingView: React.FC = () => {
-  const { orders, cleaningBookings, sendChatMessage } = useStore();
+  const { orders, cleaningBookings, sendChatMessage, shopProfile, logoUrl } = useStore();
   const [searchId, setSearchId] = useState("");
   const [activeOrder, setActiveOrder] = useState<any>(null);
   const [activeCleaning, setActiveCleaning] = useState<any>(null);
   const [searched, setSearched] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryPhone, setRecoveryPhone] = useState("");
+  const [recoveredOrders, setRecoveredOrders] = useState<any[]>([]);
 
+  const handleRecovery = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearched(true);
+    const emailClean = recoveryEmail.trim().toLowerCase();
+    const phoneClean = recoveryPhone.trim();
+    
+    if (!emailClean && !phoneClean) return;
+    
+    const found = orders.filter((o) => {
+      const eMatch = emailClean && o.customerInfo?.email?.toLowerCase().includes(emailClean);
+      const pMatch = phoneClean && o.customerInfo?.phone?.includes(phoneClean);
+      return eMatch || pMatch;
+    });
+    
+    setRecoveredOrders(found);
+    setActiveOrder(null);
+    setActiveCleaning(null);
+  };
+  
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault();
     setSearched(true);

@@ -83,7 +83,26 @@ export const AdminDashboard: React.FC = () => {
     addAdminUser
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("adminTab") as any;
+      if (tab) setActiveTabState(tab);
+    }
+  }, []);
+
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings") => {
+    setActiveTabState(tab);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("view", "admin");
+      params.set("adminTab", tab);
+      window.history.pushState(null, "", "?" + params.toString());
+    }
+  };
+  const [audioEnabled, setAudioEnabled] = useState(false);
 
   // Review notification alert
   const unapprovedReviewsCount = reviews.filter(r => !r.isApproved).length;
@@ -595,6 +614,29 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="bg-[#F9F7F5] min-h-screen font-sans text-xs text-editorial-text flex flex-col md:flex-row">
+        
+        {/* Audio Autoplay Override Banner */}
+        {!audioEnabled && (
+          <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-600 text-white p-3 flex flex-col sm:flex-row items-center justify-center gap-4 shadow-md animate-fadeIn">
+            <span className="font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" /> Audio alerts are currently muted by your browser.
+            </span>
+            <button 
+              onClick={() => {
+                const audio = new Audio("/coin.mp3");
+                audio.play().then(() => {
+                  setAudioEnabled(true);
+                }).catch(e => {
+                  console.error("Audio unlock failed", e);
+                  setAudioEnabled(true); // Hide it anyway if they at least tried to click
+                });
+              }}
+              className="px-4 py-1.5 bg-white text-amber-700 font-bold uppercase tracking-widest text-xs hover:bg-amber-50 transition-colors"
+            >
+              Enable Order Notification Sound
+            </button>
+          </div>
+        )}
       
       {/* 1. Sidebar Nav */}
       <aside className="w-full md:w-64 bg-editorial-text text-white flex flex-col justify-between border-r border-editorial-border p-5 gap-6">

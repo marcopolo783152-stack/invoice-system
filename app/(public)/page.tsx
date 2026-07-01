@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { StoreProvider, useStore } from "@/context/StoreContext";
 import { Navbar } from "@/components/public/Navbar";
 import { Hero } from "@/components/public/Hero";
