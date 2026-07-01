@@ -22,6 +22,7 @@ export const CartView: React.FC = () => {
   } = useStore();
 
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "shipping" | "payment" | "success">("cart");
+  const [isProcessing, setIsProcessing] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
 
   // Promo Code State
