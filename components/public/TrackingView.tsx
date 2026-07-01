@@ -6,9 +6,10 @@
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import { Search, Compass, Truck, ShieldCheck, ClipboardCheck, PackageCheck, AlertCircle, ShoppingBag, MapPin, Send } from "lucide-react";
+import { generateAndDownloadReceiptPDF } from "@/utils/pdf";
 
 export const TrackingView: React.FC = () => {
-  const { orders, cleaningBookings, sendChatMessage, shopProfile, logoUrl } = useStore();
+  const { orders, cleaningBookings, sendChatMessage, shopProfile, logoUrl, updateOrderStatus } = useStore();
   const [searchId, setSearchId] = useState("");
   const [activeOrder, setActiveOrder] = useState<any>(null);
   const [activeCleaning, setActiveCleaning] = useState<any>(null);
@@ -62,6 +63,16 @@ export const TrackingView: React.FC = () => {
     return orderStatuses.findIndex(s => s.label === status);
   };
 
+  
+  const handleCancelOrder = (orderId: string) => {
+    if (confirm("Are you sure you want to cancel this order? This cannot be undone.")) {
+      updateOrderStatus(orderId, "Cancelled");
+      setActiveOrder((prev: any) => prev && prev.id === orderId ? { ...prev, status: "Cancelled" } : prev);
+      setRecoveredOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "Cancelled" } : o));
+      alert("Your order has been cancelled.");
+    }
+  };
+
   const handleContactSupport = () => {
     if (!activeOrder) return;
     const inquiryText = `Hi! I am asking about my order tracking ID ${activeOrder.id}. Is there any update on shipping?`;
@@ -109,7 +120,52 @@ export const TrackingView: React.FC = () => {
         {/* --- TRACKING RESULT BOARD --- */}
         {searched && (
           <div className="animate-fadeIn">
-            {!activeOrder && !activeCleaning ? (
+            {!activeOrder && !activeCleaning && recoveredOrders.length > 0 && (
+              <div className="space-y-4 animate-fadeIn">
+                <div className="bg-white p-6 border border-editorial-border shadow-sm">
+                  <h3 className="font-serif text-lg text-editorial-text border-b border-editorial-border pb-3 mb-4">Found {recoveredOrders.length} Order(s)</h3>
+                  <div className="space-y-4">
+                    {recoveredOrders.map((ro) => (
+                      <div key={ro.id} className="p-4 border border-editorial-border bg-editorial-aside flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                          <p className="font-mono text-xs font-bold text-editorial-text">Order: {ro.id}</p>
+                          <p className="text-xs text-gray-500 mt-1">Status: {ro.status}</p>
+                          <p className="text-xs text-gray-500">Date: {new Date(ro.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                          <button 
+                            onClick={() => {
+                              setSearchId(ro.id);
+                              setActiveOrder(ro);
+                              setRecoveredOrders([]);
+                            }}
+                            className="px-4 py-2 bg-neutral-900 hover:bg-black text-white text-[10px] font-bold uppercase tracking-widest transition cursor-pointer"
+                          >
+                            View Details
+                          </button>
+                          <button 
+                            onClick={() => generateAndDownloadReceiptPDF(ro, shopProfile)}
+                            className="px-4 py-2 bg-editorial-accent hover:bg-[#8E7453] text-white text-[10px] font-bold uppercase tracking-widest transition cursor-pointer"
+                          >
+                            Download PDF
+                          </button>
+                          {ro.status === "Pending" && (
+                            <button 
+                              onClick={() => handleCancelOrder(ro.id)}
+                              className="px-4 py-2 bg-red-800 hover:bg-red-900 text-white text-[10px] font-bold uppercase tracking-widest transition cursor-pointer"
+                            >
+                              Cancel Order
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!activeOrder && !activeCleaning && recoveredOrders.length === 0 ? (
               <div className="bg-white p-10 rounded-none border border-editorial-border shadow-sm text-center space-y-3">
                 <AlertCircle className="h-10 w-10 text-editorial-accent/60 mx-auto" />
                 <h3 className="font-serif text-base font-light text-editorial-text">Reference Number Not Found</h3>
