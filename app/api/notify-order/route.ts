@@ -24,7 +24,7 @@ export async function POST(request: Request) {
               ? `Official Invoice - ${shopProfile?.name || 'Marco Polo'} (${order.id})`
               : `Order Confirmation - ${shopProfile?.name || 'Marco Polo'} (${order.id})`
           }],
-          from: { email: shopProfile?.email || 'noreply@marcopolorugs.com', name: shopProfile?.name || 'Marco Polo' },
+          from: { email: 'marcopolorugs@aol.com', name: shopProfile?.name || 'Marco Polo' },
           content: [{
             type: 'text/html',
             value: type === 'invoice' ? `
