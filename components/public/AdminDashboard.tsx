@@ -92,27 +92,34 @@ export const AdminDashboard: React.FC = () => {
     if (orders.length === 0) return;
 
     const latestOrderTime = Math.max(...orders.map(o => new Date(o.createdAt).getTime()));
-    const lastSeenTimeStr = localStorage.getItem("marcopolo_last_order_time");
-    const lastSeenTime = lastSeenTimeStr ? parseInt(lastSeenTimeStr) : 0;
-
-    if (latestOrderTime > lastSeenTime) {
-      // Play a coin sound using the Web Audio API
-      if (lastSeenTime > 0) { // Don't ring on the very first time they ever use the system, but ring if there are actually new orders since last time
-        try {
-          const audio = new Audio("/coin.mp3");
-          audio.play().catch(e => {
-            console.error("Audio playback blocked by browser", e);
-            // Fallback if browser blocks autoplay
-            alert("💰 NEW ORDER RECEIVED! 💰 (Audio blocked by browser, please click anywhere on the page first)");
-          });
-        } catch (e) {
-          console.error("Audio playback failed", e);
+    
+    const checkAndRing = async () => {
+      try {
+        const { db } = await import("@/lib/firebase");
+        const { doc, getDoc, setDoc } = await import("firebase/firestore");
+        const { SHOWROOM_SETTINGS } = await import("@/lib/showroom-firebase");
+        if (!db) return;
+        
+        const prefRef = doc(db, SHOWROOM_SETTINGS, "admin_preferences");
+        const prefSnap = await getDoc(prefRef);
+        const lastSeenTime = prefSnap.exists() && prefSnap.data().lastSeenOrderTime ? prefSnap.data().lastSeenOrderTime : 0;
+        
+        if (latestOrderTime > lastSeenTime) {
+          if (lastSeenTime > 0) {
+            const audio = new Audio("/coin.mp3");
+            audio.play().catch(e => {
+              console.error("Audio playback blocked by browser", e);
+              alert("🛎️ NEW ORDER RECEIVED! 🛎️ (Audio blocked by browser, please click anywhere on the page first)");
+            });
+          }
+          await setDoc(prefRef, { lastSeenOrderTime: latestOrderTime }, { merge: true });
         }
+      } catch (err) {
+        console.error("Firebase admin_preferences error", err);
       }
-      
-      // Update the last seen time
-      localStorage.setItem("marcopolo_last_order_time", latestOrderTime.toString());
-    }
+    };
+    
+    checkAndRing();
   }, [orders]);
 
   const prevUnapprovedCount = useRef(unapprovedReviewsCount);

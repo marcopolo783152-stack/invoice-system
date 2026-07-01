@@ -33,11 +33,19 @@ export const CartView: React.FC = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingStreet, setShippingStreet] = useState("");
+  const [shippingApt, setShippingApt] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingState, setShippingState] = useState("");
+  const [shippingZip, setShippingZip] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
   const [notes, setNotes] = useState("");
   const [deliveryOption, setDeliveryOption] = useState<"Pickup" | "Delivery">("Delivery");
+  
+  const derivedShippingAddress = deliveryOption === "Pickup"
+    ? "Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314"
+    : `${shippingStreet} ${shippingApt ? "Apt/Suite " + shippingApt : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
 
   // Credit Card Simulation
   const [cardName, setCardName] = useState("");
@@ -298,7 +306,7 @@ export const CartView: React.FC = () => {
     if (checkoutStep === "cart") setCheckoutStep("shipping");
     else if (checkoutStep === "shipping") {
       if (billingSameAsShipping) {
-        setBillingAddress(shippingAddress);
+        setBillingAddress(derivedShippingAddress);
       }
       setCheckoutStep("payment");
     }
@@ -306,7 +314,7 @@ export const CartView: React.FC = () => {
 
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !phone || !email || !shippingAddress) return;
+    if (!name || !phone || !email || (!shippingStreet || !shippingCity || !shippingState || !shippingZip) && deliveryOption === "Delivery") return;
 
     // Secure payment simulation card masking
     const cleanCard = cardNumber.replace(/\s+/g, "");
@@ -317,8 +325,8 @@ export const CartView: React.FC = () => {
       name,
       phone,
       email,
-      shippingAddress,
-      billingAddress: billingSameAsShipping ? shippingAddress : billingAddress,
+      shippingAddress: derivedShippingAddress,
+      billingAddress: billingSameAsShipping ? derivedShippingAddress : billingAddress,
       notes
     };
 
@@ -497,7 +505,7 @@ export const CartView: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setDeliveryOption("Delivery");
-                          setShippingAddress("");
+                          setShippingStreet(""); setShippingApt(""); setShippingCity(""); setShippingState(""); setShippingZip("");
                         }}
                         className={`py-2 text-center text-xs font-bold uppercase tracking-wider transition ${
                           deliveryOption === "Delivery"
@@ -511,7 +519,7 @@ export const CartView: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setDeliveryOption("Pickup");
-                          setShippingAddress("Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314");
+                          // Delivery option set to pickup, derived address handles it automatically.
                         }}
                         className={`py-2 text-center text-xs font-bold uppercase tracking-wider transition ${
                           deliveryOption === "Pickup"
@@ -525,20 +533,35 @@ export const CartView: React.FC = () => {
                   </div>
 
                   {deliveryOption === "Delivery" ? (
-                    <div className="space-y-1 animate-fadeIn">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Physical Shipping Address *</label>
-                      <input
-                        type="text"
-                        required
-                        value={shippingAddress}
-                        onChange={(e) => setShippingAddress(e.target.value)}
-                        placeholder="783 Park Avenue, Apt 14B, New York NY"
-                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
-                      />
-                      <p className="text-sm text-gray-400 mt-1">
-                        Est. total shipping weight: <strong>{totalWeightLbs.toFixed(1)} lbs</strong>. Shipping cost applies: {totalWeightLbs <= 1.9 ? "$8 (under 2 lbs)" : totalWeightLbs >= 2 && totalWeightLbs <= 5 ? "$16 (2-5 lbs)" : "$45 (premium insured)"}.
-                      </p>
-                    </div>
+                                          <div className="space-y-3 animate-fadeIn">
+                        <div>
+                          <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Street Address *</label>
+                          <input type="text" required value={shippingStreet} onChange={(e) => setShippingStreet(e.target.value)} placeholder="783 Park Avenue" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                        </div>
+                        <div>
+                          <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Apt, Suite, Bldg (optional)</label>
+                          <input type="text" value={shippingApt} onChange={(e) => setShippingApt(e.target.value)} placeholder="Apt 14B" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">City *</label>
+                            <input type="text" required value={shippingCity} onChange={(e) => setShippingCity(e.target.value)} placeholder="New York" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">State *</label>
+                              <input type="text" required value={shippingState} onChange={(e) => setShippingState(e.target.value)} placeholder="NY" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                            </div>
+                            <div>
+                              <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Zip *</label>
+                              <input type="text" required value={shippingZip} onChange={(e) => setShippingZip(e.target.value)} placeholder="10021" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Est. total shipping weight: <strong>{totalWeightLbs.toFixed(1)} lbs</strong>. Shipping cost applies: {totalWeightLbs <= 1.9 ? "$8 (under 2 lbs)" : totalWeightLbs >= 2 && totalWeightLbs <= 5 ? "$16 (2-5 lbs)" : "$45 (premium insured)"}.
+                        </p>
+                      </div>
                   ) : (
                     <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none space-y-2 animate-fadeIn">
                       <span className="text-sm uppercase tracking-wider text-editorial-accent font-bold block">Alexandria HQ Showroom Location</span>
@@ -885,7 +908,7 @@ export const CartView: React.FC = () => {
               {checkoutStep === "shipping" && (
                 <button
                   onClick={handleNextStep}
-                  disabled={!name || !phone || !email || !shippingAddress}
+                  disabled={!name || !phone || !email || ((!shippingStreet || !shippingCity || !shippingState || !shippingZip) && deliveryOption === "Delivery")}
                   className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-xs rounded-none shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Proceed to Escrow Settlement</span>
