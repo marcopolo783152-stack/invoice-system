@@ -63,8 +63,7 @@ export default function RootLayout({
     const handleOpenNotifications = () => setShowNotifications(true);
     window.addEventListener('open-notifications', handleOpenNotifications);
 
-    // Global background interval to auto-clock out employees exactly at 6:00 PM if the dashboard is open
-    // We use a local state flag to prevent multi-firing and safeguard against browser throttling skipping the 18:00 minute
+    // Global background interval to auto-clock out employees exactly at 6:00 PM
     const clockOutInterval = setInterval(() => {
       const now = new Date();
       if (now.getHours() >= 18) {
@@ -75,13 +74,45 @@ export default function RootLayout({
             localStorage.setItem('last_auto_clock_out', todayStr);
         }
       }
-    }, 30000); // Check every 30 seconds
+    }, 30000); 
+
+    // --- INACTIVITY TIMEOUT ---
+    let inactivityTimer: NodeJS.Timeout;
+    const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes
+
+    const resetInactivity = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        // Auto-logout after 15 minutes
+        sessionStorage.removeItem('mp-invoice-auth');
+        sessionStorage.removeItem('mp-invoice-user');
+        localStorage.removeItem('mp-invoice-auth');
+        localStorage.removeItem('mp-invoice-user');
+        window.location.href = '/';
+      }, INACTIVITY_LIMIT);
+    };
+
+    // Attach listeners
+    window.addEventListener('mousemove', resetInactivity);
+    window.addEventListener('keypress', resetInactivity);
+    window.addEventListener('click', resetInactivity);
+    window.addEventListener('scroll', resetInactivity);
+    window.addEventListener('touchstart', resetInactivity);
+    
+    // Start initial timer
+    resetInactivity();
 
     return () => {
       window.removeEventListener('storage', checkAuth);
       window.removeEventListener('open-notifications', handleOpenNotifications);
       clearInterval(interval);
       clearInterval(clockOutInterval);
+      clearTimeout(inactivityTimer);
+      window.removeEventListener('mousemove', resetInactivity);
+      window.removeEventListener('keypress', resetInactivity);
+      window.removeEventListener('click', resetInactivity);
+      window.removeEventListener('scroll', resetInactivity);
+      window.removeEventListener('touchstart', resetInactivity);
     };
   }, []);
 

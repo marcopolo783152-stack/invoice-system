@@ -659,8 +659,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // --- INVOICE SYSTEM INTEGRATION ---
         // Generate and store the shared authentication tokens for the old invoice system
         // so that the admin is seamlessly logged into /admin/invoices as well.
-        safeSetItem("mp-invoice-auth", "1");
-        safeSetItem("mp-invoice-user", JSON.stringify({ 
+        sessionStorage.setItem("mp-invoice-auth", "1");
+        sessionStorage.setItem("mp-invoice-user", JSON.stringify({ 
           id: "admin-1", 
           username: formattedEmail, 
           fullName: "Nazif (Admin)", 
@@ -691,8 +691,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (found.user.role === "admin") {
       setActiveView("admin");
       // Generate and store the shared authentication tokens for the old invoice system
-      safeSetItem("mp-invoice-auth", "1");
-      safeSetItem("mp-invoice-user", JSON.stringify({ 
+      sessionStorage.setItem("mp-invoice-auth", "1");
+      sessionStorage.setItem("mp-invoice-user", JSON.stringify({ 
         id: found.user.id, 
         username: formattedEmail, 
         fullName: found.user.name, 
@@ -802,7 +802,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     // Restore active view from local storage, but verify auth for admin view
     const view = safeGetItem('marcopolo_active_view');
-    const auth = safeGetItem('mp-invoice-auth');
+    const auth = safeGetItem('mp-invoice-auth') || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('mp-invoice-auth') : null);
     
     if (view === 'admin' && auth === '1') {
       setActiveView('admin');
@@ -812,6 +812,45 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Fallback if they tried to force admin without auth
       setActiveView('customer');
     }
+
+    // --- INACTIVITY TIMEOUT (SHOWROOM) ---
+    let inactivityTimer: NodeJS.Timeout;
+    const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes
+
+    const resetInactivity = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        // Auto-logout after 15 minutes
+        sessionStorage.removeItem('mp-invoice-auth');
+        sessionStorage.removeItem('mp-invoice-user');
+        localStorage.removeItem('mp-invoice-auth');
+        localStorage.removeItem('mp-invoice-user');
+        if (typeof window !== 'undefined') {
+          setActiveView('customer');
+        }
+      }, INACTIVITY_LIMIT);
+    };
+
+    // Attach listeners
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mousemove', resetInactivity);
+      window.addEventListener('keypress', resetInactivity);
+      window.addEventListener('click', resetInactivity);
+      window.addEventListener('scroll', resetInactivity);
+      window.addEventListener('touchstart', resetInactivity);
+      resetInactivity();
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        clearTimeout(inactivityTimer);
+        window.removeEventListener('mousemove', resetInactivity);
+        window.removeEventListener('keypress', resetInactivity);
+        window.removeEventListener('click', resetInactivity);
+        window.removeEventListener('scroll', resetInactivity);
+        window.removeEventListener('touchstart', resetInactivity);
+      }
+    };
   }, []);
 
   return (
