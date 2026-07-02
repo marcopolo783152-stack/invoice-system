@@ -197,6 +197,7 @@ export default function ClockPage() {
                         }
 
                         if (bestMatch && lowestDistance < 0.55) {
+                            if (isClockingInRef.current) return;
                             // MATCH FOUND! Trigger clock in automatically.
                             isClockingInRef.current = true;
                             stopCamera();

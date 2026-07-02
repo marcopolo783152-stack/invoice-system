@@ -329,6 +329,7 @@ export async function clockInOut(
                 synced: true,
             }));
             cleanLog.timestamp = Timestamp.fromDate(new Date());
+            delete cleanLog.id;
 
             // Log entry
             const logRef = await addDoc(collection(db!, logCol), cleanLog);
@@ -509,8 +510,8 @@ export async function getTimeLogs(limitCount = 1000): Promise<TimeLog[]> {
                 }
 
                 logs.push({
-                    id: lDoc.id,
                     ...data,
+                    id: lDoc.id,
                     timestamp: timestamp
                 } as TimeLog);
             });
