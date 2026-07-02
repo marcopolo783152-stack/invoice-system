@@ -323,12 +323,15 @@ export async function clockInOut(
 
     if (isFirebaseConfigured() && db) {
         try {
-            // Log entry
-            const logRef = await addDoc(collection(db!, logCol), {
+            // Sanitize log object for Firestore (remove undefined fields)
+            const cleanLog: any = JSON.parse(JSON.stringify({
                 ...log,
-                synced: true, // Permanent flag: once synced, never re-upload
-                timestamp: Timestamp.fromDate(new Date())
-            });
+                synced: true,
+            }));
+            cleanLog.timestamp = Timestamp.fromDate(new Date());
+
+            // Log entry
+            const logRef = await addDoc(collection(db!, logCol), cleanLog);
             log.id = logRef.id;
 
             // Update status in cloud
