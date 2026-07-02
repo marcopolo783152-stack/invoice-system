@@ -767,36 +767,26 @@ export async function deleteTimeLog(logId: string): Promise<void> {
     const logCol = getCol(BASE_LOG_COLLECTION);
     if (isFirebaseConfigured() && db) {
         try {
-            const { deleteDoc, doc } = await import('firebase/firestore');
-            // Hard delete from the current store-specific collection
-            await deleteDoc(doc(db, logCol, logId));
-            
-            // Hard delete from root collection to ensure it doesn't get auto-migrated back
-            const prefix = getStorePrefix();
-            if (prefix) {
-                await deleteDoc(doc(db, BASE_LOG_COLLECTION, logId));
-            }
+            // Soft delete
+            await updateDoc(doc(db, logCol, logId), { isDeleted: true });
             
             // Clean up local if it exists
-            const localLogKey = getKey(BASE_LOCAL_LOG_KEY);
             const localData = null;
             if (localData) {
                 const logs: TimeLog[] = JSON.parse(localData);
                 const filtered = logs.filter(l => l.id !== logId);
                 try {
-                    // localStorage.setItem(, JSON.stringify(filtered));
+                    // localStorage.setItem(localLogKey, JSON.stringify(filtered));
                 } catch (e) {
                     console.warn('LocalStorage full, skipped local cleanup');
                 }
             }
-            
-            // If the user's internet is slow or Firebase rules fail, we want them to know immediately!
         } catch (e: any) {
             console.error('Error deleting log:', e);
             if (typeof window !== 'undefined') {
-                alert('Failed to delete log from Database! ' + (e.message || 'Check your internet connection or Firebase Rules.'));
+                alert('Failed to delete log! ' + (e.message || ''));
             }
-            throw e; // Rethrow to prevent loadData from masking the failure
+            throw e; 
         }
     }
 }
@@ -804,31 +794,25 @@ export async function deleteTimeLog(logId: string): Promise<void> {
 export async function deleteTimeLogsBulk(logIds: string[]): Promise<void> {
     if (logIds.length === 0) return;
     const logCol = getCol(BASE_LOG_COLLECTION);
-    const prefix = getStorePrefix();
 
     if (isFirebaseConfigured() && db) {
         try {
-            const { deleteDoc, doc } = await import('firebase/firestore');
+            const { updateDoc, doc } = await import('firebase/firestore');
             
             let deletedCount = 0;
             const CHUNK_SIZE = 50;
             for (let i = 0; i < logIds.length; i += CHUNK_SIZE) {
                 const chunk = logIds.slice(i, i + CHUNK_SIZE);
                 const deletePromises = chunk.map(async (id) => {
-                    // Direct hard delete from store collection
-                    await deleteDoc(doc(db!, logCol, id));
-                    
-                    // Direct hard delete from root collection
-                    if (prefix) {
-                        await deleteDoc(doc(db!, BASE_LOG_COLLECTION, id));
-                    }
+                    // Soft delete
+                    await updateDoc(doc(db!, logCol, id), { isDeleted: true });
                     deletedCount++;
                 });
                 await Promise.all(deletePromises);
             }
             
             if (typeof window !== 'undefined') {
-                alert(`Successfully deleted ${logIds.length} logs forever from cloud storage.`);
+                alert(`Successfully deleted ${logIds.length} logs.`);
             }
         } catch (e: any) {
             console.error('Bulk delete error:', e);
