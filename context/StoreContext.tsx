@@ -179,14 +179,26 @@ const safeSetItem = (key: string, value: string) => {
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Views
-  const [activeView, setActiveView] = useState<"customer" | "admin">("customer");
+  const [activeView, setActiveView] = useState<"customer" | "admin">(() => {
+    if (typeof window === 'undefined') return "customer";
+    // Clear legacy localStorage to enforce strict session logouts
+    localStorage.removeItem("marcopolo_active_view");
+    const sessionView = sessionStorage.getItem("marcopolo_active_view");
+    return (sessionView === "admin") ? "admin" : "customer";
+  });
   const [adminTab, setAdminTab] = useState<string>("analytics");
   const [cartOpen, setCartOpen] = useState<boolean>(false);
+  useEffect(() => {
+    sessionStorage.setItem('marcopolo_active_view', activeView);
+  }, [activeView]);
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const local = safeGetItem("marcopolo_current_user");
-    return local ? JSON.parse(local) : null;
+    if (typeof window === 'undefined') return null;
+    // Clear legacy localStorage to enforce strict session logouts
+    localStorage.removeItem("marcopolo_current_user");
+    const sessionUser = sessionStorage.getItem("marcopolo_current_user");
+    return sessionUser ? JSON.parse(sessionUser) : null;
   });
 
   const [registeredUsers, setRegisteredUsers] = useState<{ user: User; pass: string }[]>(() => {
@@ -300,7 +312,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [cart]);
 
   useEffect(() => {
-    safeSetItem("marcopolo_current_user", JSON.stringify(currentUser));
+    sessionStorage.setItem("marcopolo_current_user", JSON.stringify(currentUser));
   }, [currentUser]);
 
   useEffect(() => {
@@ -801,7 +813,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsHydrated(true);
     
     // Restore active view from local storage, but verify auth for admin view
-    const view = safeGetItem('marcopolo_active_view');
+    const view = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('marcopolo_active_view') : null;
     const auth = safeGetItem('mp-invoice-auth') || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('mp-invoice-auth') : null);
     
     if (view === 'admin' && auth === '1') {
@@ -825,6 +837,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sessionStorage.removeItem('mp-invoice-user');
         localStorage.removeItem('mp-invoice-auth');
         localStorage.removeItem('mp-invoice-user');
+        sessionStorage.removeItem('marcopolo_current_user');
+        sessionStorage.removeItem('marcopolo_active_view');
         if (typeof window !== 'undefined') {
           setActiveView('customer');
         }
