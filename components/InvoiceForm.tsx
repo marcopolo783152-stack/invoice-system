@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency, calculateInvoice } from '@/lib/calculations';
+import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency, calculateInvoice, calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
 import { getItemBySku, searchInventory, InventoryItem } from '@/lib/inventory-storage';
 import { Customer, searchCustomers } from '@/lib/customer-storage';
@@ -1266,6 +1266,32 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     )}
                   </td>
                 </tr>
+                <tr>
+                  <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Total Items:</td>
+                  <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
+                    {items.length}
+                  </td>
+                </tr>
+                {documentType !== 'APPRAISAL_RECEIPT' && (
+                  <tr>
+                    <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Total Sq.Ft:</td>
+                    <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
+                      {(() => {
+                        const totalSqFt = items.reduce((sum, item) => {
+                          const sqFt = calculateSquareFoot(
+                            item.widthFeet || 0,
+                            item.widthInches || 0,
+                            item.lengthFeet || 0,
+                            item.lengthInches || 0,
+                            item.shape || 'rectangle'
+                          );
+                          return sum + sqFt;
+                        }, 0);
+                        return formatSquareFoot(totalSqFt);
+                      })()}
+                    </td>
+                  </tr>
+                )}
                 <tr>
                   <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Subtotal:</td>
                   <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>

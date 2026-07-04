@@ -380,6 +380,14 @@ export default function InvoiceTemplate(props: any) {
                         <td className={styles.totalLabel}>Total Items:</td>
                         <td className={styles.totalValue}>{calculations.items.length}</td>
                       </tr>
+                      {!isAppraisal && (
+                        <tr>
+                          <td className={styles.totalLabel}>Total Sq.Ft:</td>
+                          <td className={styles.totalValue}>
+                            {formatSquareFoot(calculations.items.reduce((sum: number, item: any) => sum + (item.squareFoot || 0), 0))}
+                          </td>
+                        </tr>
+                      )}
                       {/* Hide Subtotal for Consignment, show for others */}
                       {data.documentType !== 'CONSIGNMENT' && (
                         <tr>
