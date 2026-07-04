@@ -88,6 +88,8 @@ export default function RootLayout({
         sessionStorage.removeItem('mp-invoice-user');
         localStorage.removeItem('mp-invoice-auth');
         localStorage.removeItem('mp-invoice-user');
+        sessionStorage.removeItem('marcopolo_current_user');
+        sessionStorage.removeItem('marcopolo_active_view');
         window.location.href = '/';
       }, INACTIVITY_LIMIT);
     };
@@ -122,6 +124,8 @@ export default function RootLayout({
       sessionStorage.removeItem('mp-invoice-user');
       localStorage.removeItem('mp-invoice-auth');
       localStorage.removeItem('mp-invoice-user');
+        sessionStorage.removeItem('marcopolo_current_user');
+        sessionStorage.removeItem('marcopolo_active_view');
       setIsAuthenticated(false);
       setUser(null);
       window.location.href = '/';

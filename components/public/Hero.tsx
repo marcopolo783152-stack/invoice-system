@@ -54,25 +54,25 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
   const [cleaningAddress, setCleaningAddress] = useState("");
   const [cleaningOption, setCleaningOption] = useState<"Drop-off" | "Pickup">("Pickup");
   const [pickupFee, setPickupFee] = useState(35); // standard $35 pickup fee, user chose around 20-50
-  const [cleaningPreferredDate, setCleaningPreferredDate] = useState("2026-07-01");
-  const [cleaningPreferredTime, setCleaningPreferredTime] = useState("10:00");
+  const [cleaningPreferredDate, setCleaningPreferredDate] = useState("");
+  const [cleaningPreferredTime, setCleaningPreferredTime] = useState("");
   
   // Custom Dimension Sizing States
   const [dimensionUnit, setDimensionUnit] = useState<"Feet & Inches" | "Total Inches" | "Meters (M)">("Feet & Inches");
   
   // Feet & Inches inputs (e.g. 8'3 x 10'1)
-  const [wFeet, setWFeet] = useState<number>(8);
-  const [wInches, setWInches] = useState<number>(3);
-  const [lFeet, setLFeet] = useState<number>(10);
-  const [lInches, setLInches] = useState<number>(1);
+  const [wFeet, setWFeet] = useState<number | "">("");
+  const [wInches, setWInches] = useState<number | "">("");
+  const [lFeet, setLFeet] = useState<number | "">("");
+  const [lInches, setLInches] = useState<number | "">("");
   
   // Total Inches inputs
-  const [wTotalInches, setWTotalInches] = useState<number>(99);
-  const [lTotalInches, setLTotalInches] = useState<number>(121);
+  const [wTotalInches, setWTotalInches] = useState<number | "">("");
+  const [lTotalInches, setLTotalInches] = useState<number | "">("");
 
   // Meters inputs
-  const [wMeters, setWMeters] = useState<number>(2.5);
-  const [lMeters, setLMeters] = useState<number>(3.0);
+  const [wMeters, setWMeters] = useState<number | "">("");
+  const [lMeters, setLMeters] = useState<number | "">("");
 
   // Dynamic calculations for manual inputs
   let calculatedWidth = 8;
@@ -81,21 +81,21 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
   let sizeDescription = "";
 
   if (dimensionUnit === "Feet & Inches") {
-    calculatedWidth = Number(wFeet) + Number(wInches) / 12;
-    calculatedLength = Number(lFeet) + Number(lInches) / 12;
+    calculatedWidth = Number(wFeet || 0) + Number(wInches || 0) / 12;
+    calculatedLength = Number(lFeet || 0) + Number(lInches || 0) / 12;
     areaSqft = calculatedWidth * calculatedLength;
-    sizeDescription = `${wFeet}'${wInches}" × ${lFeet}'${lInches}"`;
+    sizeDescription = `${wFeet || 0}'${wInches || 0}" × ${lFeet || 0}'${lInches || 0}"`;
   } else if (dimensionUnit === "Total Inches") {
-    calculatedWidth = Number(wTotalInches) / 12;
-    calculatedLength = Number(lTotalInches) / 12;
+    calculatedWidth = Number(wTotalInches || 0) / 12;
+    calculatedLength = Number(lTotalInches || 0) / 12;
     areaSqft = calculatedWidth * calculatedLength;
-    sizeDescription = `${wTotalInches}" × ${lTotalInches}" (${Math.floor(wTotalInches / 12)}'${wTotalInches % 12}" × ${Math.floor(lTotalInches / 12)}'${lTotalInches % 12}")`;
+    sizeDescription = `${wTotalInches || 0}" × ${lTotalInches || 0}" (${Math.floor(Number(wTotalInches || 0) / 12)}'${Number(wTotalInches || 0) % 12}" × ${Math.floor(Number(lTotalInches || 0) / 12)}'${Number(lTotalInches || 0) % 12}")`;
   } else if (dimensionUnit === "Meters (M)") {
     // 1 meter = 3.28084 feet
-    calculatedWidth = Number(wMeters) * 3.28084;
-    calculatedLength = Number(lMeters) * 3.28084;
+    calculatedWidth = Number(wMeters || 0) * 3.28084;
+    calculatedLength = Number(lMeters || 0) * 3.28084;
     areaSqft = calculatedWidth * calculatedLength;
-    sizeDescription = `${wMeters} m × ${lMeters} m`;
+    sizeDescription = `${wMeters || 0} m × ${lMeters || 0} m`;
   }
 
   const finalAreaSqft = Math.round(areaSqft * 100) / 100;
@@ -680,7 +680,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min={0}
                             required
                             value={wFeet}
-                            onChange={(e) => setWFeet(Math.max(0, Number(e.target.value)))}
+                            onChange={(e) => setWFeet(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                             className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-1 text-neutral-200 text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -692,7 +692,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             max={11}
                             required
                             value={wInches}
-                            onChange={(e) => setWInches(Math.min(11, Math.max(0, Number(e.target.value))))}
+                            onChange={(e) => setWInches(e.target.value === '' ? '' : Math.min(11, Math.max(0, Number(e.target.value)))))}
                             className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-1 text-neutral-200 text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -703,7 +703,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min={0}
                             required
                             value={lFeet}
-                            onChange={(e) => setLFeet(Math.max(0, Number(e.target.value)))}
+                            onChange={(e) => setLFeet(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                             className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-1 text-neutral-200 text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -715,7 +715,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             max={11}
                             required
                             value={lInches}
-                            onChange={(e) => setLInches(Math.min(11, Math.max(0, Number(e.target.value))))}
+                            onChange={(e) => setLInches(e.target.value === '' ? '' : Math.min(11, Math.max(0, Number(e.target.value)))))}
                             className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-1 text-neutral-200 text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -731,7 +731,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min={1}
                             required
                             value={wTotalInches}
-                            onChange={(e) => setWTotalInches(Math.max(1, Number(e.target.value)))}
+                            onChange={(e) => setWTotalInches(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
                             className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-3 text-neutral-200 text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -742,7 +742,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min={1}
                             required
                             value={lTotalInches}
-                            onChange={(e) => setLTotalInches(Math.max(1, Number(e.target.value)))}
+                            onChange={(e) => setLTotalInches(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
                             className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-3 text-neutral-200 text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -759,7 +759,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min="0.1"
                             required
                             value={wMeters}
-                            onChange={(e) => setWMeters(Math.max(0.1, Number(e.target.value)))}
+                            onChange={(e) => setWMeters(e.target.value === '' ? '' : Math.max(0.1, Number(e.target.value)))}
                             className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-3 text-neutral-200 text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -771,7 +771,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min="0.1"
                             required
                             value={lMeters}
-                            onChange={(e) => setLMeters(Math.max(0.1, Number(e.target.value)))}
+                            onChange={(e) => setLMeters(e.target.value === '' ? '' : Math.max(0.1, Number(e.target.value)))}
                             className="w-full bg-neutral-900 border border-neutral-800 rounded-none py-2 px-3 text-neutral-200 text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -1117,7 +1117,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min={0}
                             required
                             value={wFeet}
-                            onChange={(e) => setWFeet(Math.max(0, Number(e.target.value)))}
+                            onChange={(e) => setWFeet(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                             className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-1 text-editorial-text text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -1129,7 +1129,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             max={11}
                             required
                             value={wInches}
-                            onChange={(e) => setWInches(Math.min(11, Math.max(0, Number(e.target.value))))}
+                            onChange={(e) => setWInches(e.target.value === '' ? '' : Math.min(11, Math.max(0, Number(e.target.value)))))}
                             className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-1 text-editorial-text text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -1140,7 +1140,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min={0}
                             required
                             value={lFeet}
-                            onChange={(e) => setLFeet(Math.max(0, Number(e.target.value)))}
+                            onChange={(e) => setLFeet(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                             className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-1 text-editorial-text text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -1152,7 +1152,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             max={11}
                             required
                             value={lInches}
-                            onChange={(e) => setLInches(Math.min(11, Math.max(0, Number(e.target.value))))}
+                            onChange={(e) => setLInches(e.target.value === '' ? '' : Math.min(11, Math.max(0, Number(e.target.value)))))}
                             className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-1 text-editorial-text text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -1168,7 +1168,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min={1}
                             required
                             value={wTotalInches}
-                            onChange={(e) => setWTotalInches(Math.max(1, Number(e.target.value)))}
+                            onChange={(e) => setWTotalInches(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
                             className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-3 text-editorial-text text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -1179,7 +1179,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min={1}
                             required
                             value={lTotalInches}
-                            onChange={(e) => setLTotalInches(Math.max(1, Number(e.target.value)))}
+                            onChange={(e) => setLTotalInches(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
                             className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-3 text-editorial-text text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -1196,7 +1196,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min="0.1"
                             required
                             value={wMeters}
-                            onChange={(e) => setWMeters(Math.max(0.1, Number(e.target.value)))}
+                            onChange={(e) => setWMeters(e.target.value === '' ? '' : Math.max(0.1, Number(e.target.value)))}
                             className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-3 text-editorial-text text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>
@@ -1208,7 +1208,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                             min="0.1"
                             required
                             value={lMeters}
-                            onChange={(e) => setLMeters(Math.max(0.1, Number(e.target.value)))}
+                            onChange={(e) => setLMeters(e.target.value === '' ? '' : Math.max(0.1, Number(e.target.value)))}
                             className="w-full bg-[#F9F7F5] border border-editorial-border rounded-none py-2 px-3 text-editorial-text text-center outline-none focus:border-editorial-accent font-mono text-xs"
                           />
                         </div>

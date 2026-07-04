@@ -243,7 +243,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     address: "123 Antique Way, Silk Road District",
     logoUrl: ""
   });
-  const [logoUrl, setLogoUrlState] = useState<string>("");
+  const [logoUrl, setLogoUrlState] = useState<string>("/LOGO.png");
   const [socialLinks, setSocialLinksState] = useState<SocialMediaLink[]>([
     { platform: "instagram", url: "https://instagram.com/marcopolorugs" },
     { platform: "pinterest", url: "https://pinterest.com/marcopolorugs" },

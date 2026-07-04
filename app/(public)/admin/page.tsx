@@ -10,7 +10,7 @@ export default function AdminRedirect() {
     const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
     if (auth === '1') {
       // Logged in: Force activeView to admin and redirect to showroom dashboard
-      localStorage.setItem('marcopolo_active_view', 'admin');
+      sessionStorage.setItem('marcopolo_active_view', 'admin');
       window.location.href = '/';
     } else {
       // Not logged in: Send them to the old invoice system login screen

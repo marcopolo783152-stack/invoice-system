@@ -26,8 +26,16 @@ function AppContent() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
+      const path = window.location.pathname.toLowerCase();
+
       if (urlParams.get("track")) {
         setCurrentTab("track");
+      } else if (path === "/shop") {
+        setCurrentTab("shop");
+      } else if (path === "/cart") {
+        setCurrentTab("shop"); // or home, then open cart? We'll just set shop.
+      } else if (path === "/about") {
+        // We don't have an about tab, maybe stay on home
       }
     }
   }, []);
