@@ -96,6 +96,11 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
         return false;
       }
 
+      // Manufacturing Type Match
+      const isRugMachineMade = (rug.manufacturingType || "").toLowerCase().includes("machine");
+      if (activeMfgType === "Handmade" && isRugMachineMade) return false;
+      if (activeMfgType === "Machine-made" && !isRugMachineMade) return false;
+
       // Search Text Match
       const matchesSearch = 
         searchQuery === "" ||
@@ -135,7 +140,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
       return 0; // featured/default
     });
   }, [
-    rugs, searchQuery, sortOption, selectedSizes, selectedSpecificSizes, selectedOrigins, selectedStyles, selectedMaterials, selectedColors, selectedShapes, selectedAvailability, maxPrice
+    rugs, searchQuery, sortOption, selectedSizes, selectedSpecificSizes, selectedOrigins, selectedStyles, selectedMaterials, selectedColors, selectedShapes, selectedAvailability, maxPrice, activeMfgType
   ]);
 
   const activeFiltersCount = 
@@ -353,14 +358,30 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
         
         {/* Page title and description */}
         <div className="border-b border-editorial-border pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-2">
+          <div className="space-y-4">
             <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-semibold block">Curated Oriental Showroom</span>
             <h1 className="font-serif text-3xl sm:text-4xl font-light text-editorial-text tracking-tight">
-              Fine Hand-Knotted Collection
+              {activeMfgType === "Handmade" ? "Handmade Collection" : activeMfgType === "Machine-made" ? "Machine-Made Collection" : "Complete Collection"}
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 max-w-2xl font-light leading-relaxed">
               Filter through our investment-grade, ancient family-tied and certified authentic rugs. Secure escrow and manual invoice confirmations apply to each masterwork.
             </p>
+
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              {(["All", "Handmade", "Machine-made"] as const).map(type => (
+                <button
+                  key={type}
+                  onClick={() => setActiveMfgType(type)}
+                  className={`px-5 py-2.5 text-xs font-bold uppercase tracking-widest transition-all border cursor-pointer ${
+                    activeMfgType === type 
+                      ? 'bg-editorial-text text-white border-editorial-text shadow-md' 
+                      : 'bg-white text-gray-500 border-editorial-border hover:bg-gray-50 hover:border-gray-300'
+                  }`}
+                >
+                  {type === "All" ? "All Rugs" : type}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Controls Bar for Mobile */}
