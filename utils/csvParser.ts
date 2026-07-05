@@ -2,13 +2,13 @@ import { Rug } from "../types";
 
 export const downloadCsvTemplate = () => {
   const headers = [
-    "sku", "name", "price", "originalPrice", "sizeCategory", "dimensions",
+    "sku", "name", "type", "color", "price", "originalPrice", "sizeCategory", "dimensions",
     "origin", "material", "style", "age", "condition", "shape",
     "availability", "weightLbs", "isSpecialSale", "description"
   ];
 
   const exampleRow = [
-    "M. 32267", "Antique Persian Heriz", "4500", "5500", "8x10", "8'2 x 10'5",
+    "M. 32267", "Antique Persian Heriz", "Oushak", "Red, Blue", "4500", "5500", "8x10", "8'2 x 10'5",
     "Persia (Iran)", "100% Kork Wool", "Antique", "Antique (100+ yrs)", "Excellent", "Rectangular",
     "In Stock", "45", "TRUE", "A stunning example of a Persian Heriz..."
   ];
@@ -87,6 +87,8 @@ export const parseRugCsv = (csvText: string): Partial<Rug>[] => {
     const formattedRug: Partial<Rug> = {
       sku: rug.sku,
       name: rug.name,
+      type: rug.type || "",
+      color: rug.color || "",
       price: rug.price,
       originalPrice: rug.originalprice,
       sizeCategory: rug.sizecategory || "Medium",
@@ -101,7 +103,7 @@ export const parseRugCsv = (csvText: string): Partial<Rug>[] => {
       weightLbs: rug.weightlbs,
       isSpecialSale: rug.isspecialsale || false,
       description: rug.description || "",
-      colors: [],
+      colors: rug.color ? rug.color.split(',').map((c: string) => c.trim()) : [],
       images: [], // Images handled separately via file match
       rating: 5,
     };

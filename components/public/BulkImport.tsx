@@ -225,6 +225,8 @@ export const BulkImport: React.FC = () => {
                   <th className="px-4 py-3">Matched Photos</th>
                   <th className="px-4 py-3">SKU</th>
                   <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Color</th>
                   <th className="px-4 py-3">Price</th>
                   <th className="px-4 py-3">Dimensions</th>
                 </tr>
@@ -247,6 +249,8 @@ export const BulkImport: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 font-mono font-bold text-xs">{item.rug.sku}</td>
                     <td className="px-4 py-3 text-xs">{item.rug.name}</td>
+                    <td className="px-4 py-3 text-xs">{item.rug.type}</td>
+                    <td className="px-4 py-3 text-xs">{item.rug.color || (item.rug.colors ? item.rug.colors.join(", ") : "")}</td>
                     <td className="px-4 py-3 text-xs">${item.rug.price}</td>
                     <td className="px-4 py-3 text-xs">{item.rug.dimensions}</td>
                   </tr>

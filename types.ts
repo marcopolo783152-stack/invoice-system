@@ -26,6 +26,8 @@ export interface Rug {
   isSpecialSale?: boolean;
   isFreeShipping?: boolean;
   manufacturingType?: "Handmade" | "Machine-made";
+  type?: string;
+  color?: string;
 }
 
 export const ALL_SIZES = Array.from(new Set([
