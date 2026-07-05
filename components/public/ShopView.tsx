@@ -516,13 +516,13 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                   >
                     
                     {/* Visual Panel */}
-                    <div className={`relative bg-stone-100 overflow-hidden cursor-pointer animate-fadeIn ${
+                    <div className={`relative flex items-center justify-center bg-stone-100 overflow-hidden cursor-pointer animate-fadeIn p-2 ${
                       viewMode === 'list' ? 'w-full sm:w-1/3 aspect-[4/3] sm:aspect-square' : 'aspect-[4/3]'
                     }`} onClick={() => onSelectRugId(rug.id)}>
                       <img
                         src={rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"}
                         alt={rug.name}
-                        className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-700"
+                        className="w-full h-full object-contain object-center group-hover:scale-105 transition duration-700"
                         referrerPolicy="no-referrer"
                       />
                       
