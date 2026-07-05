@@ -166,7 +166,7 @@ export default function InventoryManager() {
             {
                 'Rug Number': '197111',
                 'Desing': 'Super kazak',
-                'Type': 'Runner',
+                'Type': 'Handmade',
                 'W Foot': 8,
                 'W Inch': 5,
                 'length Foot': 10,
@@ -185,7 +185,7 @@ export default function InventoryManager() {
             {
                 'Rug Number': '197115',
                 'Desing': 'Fine Mahal',
-                'Type': '8x10',
+                'Type': 'Machine-made',
                 'W Foot': 8,
                 'W Inch': 2,
                 'length Foot': 10,

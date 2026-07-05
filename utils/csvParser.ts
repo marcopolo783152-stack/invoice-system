@@ -8,7 +8,7 @@ export const downloadCsvTemplate = () => {
   ];
 
   const exampleRow = [
-    "M. 32267", "Antique Persian Heriz", "Oushak", "Red, Blue", "4500", "5500", "8x10", "8'2 x 10'5",
+    "M. 32267", "Antique Persian Heriz", "Handmade", "Red, Blue", "4500", "5500", "8x10", "8'2 x 10'5",
     "Persia (Iran)", "100% Kork Wool", "Antique", "Antique (100+ yrs)", "Excellent", "Rectangular",
     "In Stock", "45", "TRUE", "A stunning example of a Persian Heriz..."
   ];
@@ -87,6 +87,7 @@ export const parseRugCsv = (csvText: string): Partial<Rug>[] => {
     const formattedRug: Partial<Rug> = {
       sku: rug.sku,
       name: rug.name,
+      manufacturingType: rug.type as any || "Handmade",
       type: rug.type || "",
       color: rug.color || "",
       price: rug.price,
