@@ -1876,7 +1876,7 @@ export const AdminDashboard: React.FC = () => {
                         <td className="py-3 px-4 text-neutral-600 font-semibold">{r.origin}</td>
                         <td className="py-3 px-4">
                           <div>{r.dimensions}</div>
-                          {r.manufacturingType === 'Machine-made' ? (
+                          {(r.manufacturingType || "").toLowerCase().includes("machine") ? (
                               <span className="inline-block px-2 py-0.5 mt-1 bg-stone-100 text-stone-600 text-[10px] font-bold rounded-sm border border-stone-200">MACHINE</span>
                           ) : (
                               <span className="inline-block px-2 py-0.5 mt-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-sm border border-amber-200">HANDMADE</span>

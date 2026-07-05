@@ -83,11 +83,16 @@ export const parseRugCsv = (csvText: string): Partial<Rug>[] => {
       }
     });
 
+    let mfgType: any = "Handmade";
+    if (rug.type && typeof rug.type === 'string' && rug.type.toLowerCase().includes('machine')) {
+      mfgType = "Machine-made";
+    }
+
     // Fix casing for camelCase fields since headers are lowercase
     const formattedRug: Partial<Rug> = {
       sku: rug.sku,
       name: rug.name,
-      manufacturingType: rug.type as any || "Handmade",
+      manufacturingType: mfgType,
       type: rug.type || "",
       color: rug.color || "",
       price: rug.price,
