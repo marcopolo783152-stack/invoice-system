@@ -6,7 +6,9 @@
 import React, { useState, useRef } from "react";
 import { useStore } from "@/context/StoreContext";
 import { Rug, Review } from "@/types";
-import { X, Star, ShoppingBag, ShieldAlert, Award, Compass, RefreshCw, Layers, MessageCircle } from "lucide-react";
+import { X, Star, ShoppingBag, ShieldAlert, Award, Compass, RefreshCw, Layers, MessageCircle, ZoomIn } from "lucide-react";
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
 interface ProductDetailProps {
   rugId: string;
@@ -22,7 +24,6 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
   if (!rug) return null;
 
   const [activeImage, setActiveImage] = useState(rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800");
-  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({ display: "none" });
 
   React.useEffect(() => {
     if (rug && rug.images && rug.images.length > 0) {
@@ -38,33 +39,12 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
   const [reviewText, setReviewText] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  // Mouse zoom events
-  const imageRef = useRef<HTMLImageElement | null>(null);
-
   const handleInquireRug = () => {
     const inquiryText = `Hello Marco Polo team! I would like to inquire about the showroom piece: "${rug.name}" (SKU: ${rug.sku}, Size: ${rug.dimensions}, price: $${rug.price.toLocaleString()}). Could you please share more details about its origin, weaves, and certificate?`;
     window.dispatchEvent(new CustomEvent("open-marcopolo-chat", {
       detail: { initialMessage: inquiryText }
     }));
     onClose();
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageRef.current) return;
-    const { left, top, width, height } = imageRef.current.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
-    
-    setZoomStyle({
-      display: "block",
-      backgroundImage: `url(${activeImage})`,
-      backgroundPosition: `${x}% ${y}%`,
-      backgroundSize: "250%" // Zoom level
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setZoomStyle({ display: "none" });
   };
 
   const handleSubmitReview = (e: React.FormEvent) => {
@@ -113,27 +93,19 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
             <div className="lg:col-span-6 space-y-4">
               
               {/* Interactive Zoom box */}
-              <div 
-                className="relative aspect-square rounded-none bg-[#F4F1EE] overflow-hidden border border-editorial-border cursor-crosshair group"
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-              >
-                <img
-                  ref={imageRef}
-                  src={activeImage}
-                  alt={rug.name}
-                  className="w-full h-full object-cover object-center"
-                  referrerPolicy="no-referrer"
-                />
-                
-                {/* Floating Lens Magnifier Panel */}
-                <div 
-                  className="absolute inset-0 pointer-events-none border border-editorial-accent rounded-none"
-                  style={zoomStyle}
-                />
+              <div className="relative aspect-square rounded-none bg-[#F4F1EE] overflow-hidden border border-editorial-border group flex items-center justify-center">
+                <Zoom>
+                  <img
+                    src={activeImage}
+                    alt={rug.name}
+                    className="w-full h-full object-contain object-center"
+                    referrerPolicy="no-referrer"
+                  />
+                </Zoom>
 
-                <div className="absolute bottom-3 right-3 bg-editorial-text/90 backdrop-blur-xs text-white text-xs uppercase tracking-widest font-bold px-2.5 py-1 rounded-none">
-                  Hover to inspect weave density
+                <div className="absolute bottom-3 right-3 pointer-events-none bg-editorial-text/90 backdrop-blur-xs text-white text-xs uppercase tracking-widest font-bold px-2.5 py-1.5 rounded-none flex items-center gap-1.5 shadow-sm">
+                  <ZoomIn className="h-3.5 w-3.5" />
+                  <span>Tap to Fullscreen</span>
                 </div>
               </div>
 
@@ -147,7 +119,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                       activeImage === img ? "border-editorial-accent scale-98" : "border-editorial-border hover:border-gray-400"
                     }`}
                   >
-                    <img src={img} alt="Thumbnail" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={img} alt="Thumbnail" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                   </button>
                 ))}
               </div>
@@ -191,7 +163,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
 
               <div className="flex items-center gap-3 py-3 border-y border-editorial-border justify-between">
                 <div>
-                  <span className="text-xs text-gray-400 uppercase tracking-wider block font-semibold">Concierge Value</span>
+                  <span className="text-xs text-gray-400 uppercase tracking-wider block font-semibold">Sale Price</span>
                   <div className="flex flex-wrap items-baseline gap-2">
                     <span className="font-serif text-2xl sm:text-3xl font-light text-editorial-text">${rug.price.toLocaleString()}</span>
                     {rug.originalPrice && (
