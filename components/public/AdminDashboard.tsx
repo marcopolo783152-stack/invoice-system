@@ -225,6 +225,7 @@ export const AdminDashboard: React.FC = () => {
   // States for inventory filters
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
   const [adminSizeFilter, setAdminSizeFilter] = useState("All");
+  const [adminTypeFilter, setAdminTypeFilter] = useState("All");
 
   // State for blogs
   const [blogModalOpen, setBlogModalOpen] = useState(false);
@@ -1694,7 +1695,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Search and Size Filters Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-stone-50 p-4 border border-neutral-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-stone-50 p-4 border border-neutral-200">
               <div className="space-y-1">
                 <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider">Search Inventory</label>
                 <input
@@ -1716,6 +1717,18 @@ export const AdminDashboard: React.FC = () => {
                   {ALL_SIZES.map((sz) => (
                     <option key={sz} value={sz}>{sz}</option>
                   ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider">Filter by Type</label>
+                <select
+                  value={adminTypeFilter}
+                  onChange={(e) => setAdminTypeFilter(e.target.value)}
+                  className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-xs outline-none focus:border-amber-500"
+                >
+                  <option value="All">All Types</option>
+                  <option value="Handmade">Handmade</option>
+                  <option value="Machine-made">Machine-made</option>
                 </select>
               </div>
             </div>
@@ -1837,7 +1850,12 @@ export const AdminDashboard: React.FC = () => {
                       
                       const matchesSize = adminSizeFilter === "All" || r.sizeCategory === adminSizeFilter;
                       
-                      return matchesSearch && matchesSize;
+                      const isMachineMade = (r.manufacturingType || "").toLowerCase().includes("machine");
+                      let matchesType = true;
+                      if (adminTypeFilter === "Handmade" && isMachineMade) matchesType = false;
+                      if (adminTypeFilter === "Machine-made" && !isMachineMade) matchesType = false;
+                      
+                      return matchesSearch && matchesSize && matchesType;
                     });
 
                     if (filteredAdminRugs.length === 0) {
