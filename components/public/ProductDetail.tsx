@@ -7,8 +7,9 @@ import React, { useState, useRef } from "react";
 import { useStore } from "@/context/StoreContext";
 import { Rug, Review } from "@/types";
 import { X, Star, ShoppingBag, ShieldAlert, Award, Compass, RefreshCw, Layers, MessageCircle, ZoomIn } from "lucide-react";
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
 
 interface ProductDetailProps {
   rugId: string;
@@ -24,6 +25,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
   if (!rug) return null;
 
   const [activeImage, setActiveImage] = useState(rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   React.useEffect(() => {
     if (rug && rug.images && rug.images.length > 0) {
@@ -93,21 +96,34 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
             <div className="lg:col-span-6 space-y-4">
               
               {/* Interactive Zoom box */}
-              <div className="relative aspect-square rounded-none bg-[#F4F1EE] overflow-hidden border border-editorial-border group flex items-center justify-center">
-                <Zoom>
-                  <img
-                    src={activeImage}
-                    alt={rug.name}
-                    className="w-full h-full object-contain object-center"
-                    referrerPolicy="no-referrer"
-                  />
-                </Zoom>
+              <div 
+                className="relative aspect-square rounded-none bg-[#F4F1EE] overflow-hidden border border-editorial-border group flex items-center justify-center cursor-pointer"
+                onClick={() => {
+                  setLightboxIndex(Math.max(0, (rug.images || []).indexOf(activeImage)));
+                  setLightboxOpen(true);
+                }}
+              >
+                <img
+                  src={activeImage}
+                  alt={rug.name}
+                  className="w-full h-full object-contain object-center"
+                  referrerPolicy="no-referrer"
+                />
 
                 <div className="absolute bottom-3 right-3 pointer-events-none bg-editorial-text/90 backdrop-blur-xs text-white text-xs uppercase tracking-widest font-bold px-2.5 py-1.5 rounded-none flex items-center gap-1.5 shadow-sm">
                   <ZoomIn className="h-3.5 w-3.5" />
                   <span>Tap to Fullscreen</span>
                 </div>
               </div>
+
+              <Lightbox
+                open={lightboxOpen}
+                close={() => setLightboxOpen(false)}
+                index={lightboxIndex}
+                slides={(rug.images || []).map(img => ({ src: img }))}
+                plugins={[Zoom]}
+                animation={{ zoom: 300 }}
+              />
 
               {/* Gallery List */}
               <div className="grid grid-cols-4 gap-2">
