@@ -115,6 +115,10 @@ interface StoreContextType {
   updatePromoCode: (id: string, updates: Partial<PromoCode>) => void;
   deletePromoCode: (id: string) => void;
   deleteOrder: (id: string) => void;
+
+  // Analytics
+  referrers: Record<string, number>;
+  incrementReferrer: (source: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -254,6 +258,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     { platform: "twitter", url: "https://twitter.com/marcopolorugs" }
   ]);
 
+  const [referrers, setReferrers] = useState<Record<string, number>>({});
+
+  const incrementReferrer = (source: string) => {
+    setReferrers(prev => {
+      const updated = { ...prev, [source]: (prev[source] || 0) + 1 };
+      updateSettingDoc("referrers", { sources: updated });
+      return updated;
+    });
+  };
+
+  // Track global referrer on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasTracked = sessionStorage.getItem("mp_tracked_referrer");
+      if (!hasTracked) {
+        sessionStorage.setItem("mp_tracked_referrer", "true");
+        let source = "Direct";
+        if (document.referrer) {
+          try {
+            const url = new URL(document.referrer);
+            source = url.hostname;
+          } catch (e) {
+            source = document.referrer;
+          }
+        }
+        incrementReferrer(source);
+      }
+    }
+  }, []);
+
   // Seed and Subscribe on mount
   useEffect(() => {
     let unsubs: (() => void)[] = [];
@@ -272,7 +306,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onAnnouncement: setShowroomAnnouncementState,
         onLogo: setLogoUrlState,
         onProfile: setShopProfileState,
-
+        onReferrers: setReferrers,
         onSocial: setSocialLinksState
       }));
     });
@@ -931,7 +965,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addPromoCode,
         updatePromoCode,
         deletePromoCode,
-        deleteOrder
+        deleteOrder,
+        referrers,
+        incrementReferrer
       }}
     >
       {isHydrated ? children : null}

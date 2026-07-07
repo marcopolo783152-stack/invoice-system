@@ -167,7 +167,7 @@ export const subscribeToSettings = (
     onAnnouncement: (text: string) => void;
     onLogo: (url: string) => void;
   onProfile: (p: any) => void;
-
+    onReferrers: (data: Record<string, number>) => void;
     onSocial: (links: SocialMediaLink[]) => void;
   }
 ) => {
@@ -187,6 +187,7 @@ export const subscribeToSettings = (
       if (doc.id === "announcement" && data.text !== undefined) callbacks.onAnnouncement(data.text);
       if (doc.id === "logo" && data.url !== undefined) callbacks.onLogo(data.url);
       if (doc.id === "profile") callbacks.onProfile(data);
+      if (doc.id === "referrers" && data.sources) callbacks.onReferrers(data.sources);
 
       if (doc.id === "social" && data.links !== undefined) callbacks.onSocial(data.links);
     });

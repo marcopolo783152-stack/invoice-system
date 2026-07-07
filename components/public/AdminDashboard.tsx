@@ -1023,22 +1023,45 @@ export const AdminDashboard: React.FC = () => {
 
             </div>
 
-            {/* Top Viewed Rugs row */}
-            <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border mt-6 text-left">
-              <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3 mb-4">Top Viewed Pieces (Product Analytics)</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {rugs.filter(r => r.views).sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3).map(rug => (
-                  <div key={rug.id} className="flex gap-4 items-center border border-editorial-border p-3">
-                    <img src={rug.images?.[0]} className="w-16 h-16 object-cover" />
-                    <div>
-                      <p className="font-serif text-sm text-editorial-text truncate w-40">{rug.name}</p>
-                      <p className="text-xs text-editorial-accent font-bold mt-1">{rug.views} Views</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              {/* Top Viewed Rugs row */}
+              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left">
+                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3 mb-4">Top Viewed Pieces (Product Analytics)</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {rugs.filter(r => r.views).sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3).map(rug => (
+                    <div key={rug.id} className="flex gap-4 items-center border border-editorial-border p-3">
+                      <img src={rug.images?.[0]} className="w-16 h-16 object-cover" />
+                      <div>
+                        <p className="font-serif text-sm text-editorial-text truncate w-40">{rug.name}</p>
+                        <p className="text-xs text-editorial-accent font-bold mt-1">{rug.views} Views</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {rugs.filter(r => r.views).length === 0 && (
-                  <p className="text-sm text-gray-500 italic py-4">No product views recorded yet.</p>
-                )}
+                  ))}
+                  {rugs.filter(r => r.views).length === 0 && (
+                    <p className="text-sm text-gray-500 italic py-4">No product views recorded yet.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Traffic Sources row */}
+              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left">
+                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3 mb-4">Traffic Sources (Referrers)</h3>
+                <div className="flex flex-col space-y-3">
+                  {Object.entries(referrers || {})
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([source, count]) => (
+                    <div key={source} className="flex justify-between items-center border border-editorial-border p-3 bg-stone-50">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-editorial-accent" />
+                        <span className="font-serif text-sm text-editorial-text font-bold">{source}</span>
+                      </div>
+                      <span className="text-xs font-bold bg-white border border-editorial-border px-2 py-1 rounded-sm">{count} Visitors</span>
+                    </div>
+                  ))}
+                  {Object.keys(referrers || {}).length === 0 && (
+                    <p className="text-sm text-gray-500 italic py-4">No traffic sources recorded yet.</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
