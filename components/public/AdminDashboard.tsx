@@ -186,6 +186,16 @@ export const AdminDashboard: React.FC = () => {
     setLogoInput(logoUrl);
   }, [logoUrl]);
 
+  useEffect(() => {
+    if (shopProfile) {
+      setShopNameInput(shopProfile.name || "");
+      setShopPhoneInput(shopProfile.phone || "");
+      setShopEmailInput(shopProfile.email || "");
+      setShopAddressInput(shopProfile.address || "");
+    }
+  }, [shopProfile]);
+
+
   // State for inventory add/edit modal
   const [rugModalOpen, setRugModalOpen] = useState(false);
   const [editingRugId, setEditingRugId] = useState<string | null>(null);

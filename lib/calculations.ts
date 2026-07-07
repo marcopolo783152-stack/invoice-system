@@ -348,6 +348,12 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     balanceDue = netTotalDue - totalPaid;
   }
 
+  // Forgive small balances less than $1 (e.g. $0.01 or $0.99 remainders) 
+  // to prevent annoying decimal remainders preventing "Paid" status
+  if (Math.abs(balanceDue) < 1) {
+    balanceDue = 0;
+  }
+
   return {
     items: calculatedItems,
     subtotal,
