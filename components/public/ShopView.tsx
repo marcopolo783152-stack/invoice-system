@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo } from "react";
+import Image from "next/image";
 import { useStore } from "@/context/StoreContext";
 import { Rug, ALL_SIZES } from "@/types";
 import { 
@@ -519,10 +520,12 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                     <div className={`relative flex items-center justify-center bg-stone-100 overflow-hidden cursor-pointer animate-fadeIn p-2 ${
                       viewMode === 'list' ? 'w-full sm:w-1/3 aspect-[4/3] sm:aspect-square' : 'aspect-[4/3]'
                     }`} onClick={() => onSelectRugId(rug.id)}>
-                      <img
+                      <Image
                         src={rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"}
                         alt={rug.name}
-                        className="w-full h-full object-contain object-center group-hover:scale-105 transition duration-700"
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-contain object-center group-hover:scale-105 transition duration-700"
                         referrerPolicy="no-referrer"
                       />
                       

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef } from "react";
+import Image from "next/image";
 import { useStore } from "@/context/StoreContext";
 import { Rug, Review } from "@/types";
 import { X, Star, ShoppingBag, ShieldAlert, Award, Compass, RefreshCw, Layers, MessageCircle, ZoomIn } from "lucide-react";
@@ -131,12 +132,16 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                   setLightboxOpen(true);
                 }}
               >
-                <img
-                  src={activeImage}
-                  alt={rug.name}
-                  className="w-full h-full object-contain object-center"
-                  referrerPolicy="no-referrer"
-                />
+                <div className="w-full h-full relative">
+                  <Image
+                    src={activeImage}
+                    alt={rug.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-contain object-center"
+                    priority
+                  />
+                </div>
 
                 <div className="absolute bottom-3 right-3 pointer-events-none bg-editorial-text/90 backdrop-blur-xs text-white text-xs uppercase tracking-widest font-bold px-2.5 py-1.5 rounded-none flex items-center gap-1.5 shadow-sm">
                   <ZoomIn className="h-3.5 w-3.5" />
@@ -163,7 +168,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                       activeImage === img ? "border-editorial-accent scale-98" : "border-editorial-border hover:border-gray-400"
                     }`}
                   >
-                    <img src={img} alt="Thumbnail" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    <Image src={img} alt="Thumbnail" fill sizes="100px" className="object-contain" />
                   </button>
                 ))}
               </div>

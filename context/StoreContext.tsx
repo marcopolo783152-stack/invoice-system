@@ -235,17 +235,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return local ? JSON.parse(local) : [];
   });
 
-  const [heroCoverPhotos, setHeroCoverPhotosState] = useState<string[]>([
-    "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1600",
-    "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1600",
-    "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1600"
-  ]);
-  const [showroomAnnouncement, setShowroomAnnouncementState] = useState<string>("🏛️ SHOWROOM SPECIAL: Free premium felt underlays with any 8x10 or larger antique Persian collection purchase this week.");
+  const [heroCoverPhotos, setHeroCoverPhotosState] = useState<string[]>([]);
+  const [showroomAnnouncement, setShowroomAnnouncementState] = useState<string>("");
   const [shopProfile, setShopProfileState] = useState<ShopProfile>({
-    name: "Marco Polo Showroom",
-    phone: "(555) 123-4567",
-    email: "contact@marcopolorugs.com",
-    address: "123 Antique Way, Silk Road District",
+    name: "MARCO POLO ORIENTAL RUGS, INC.",
+    phone: "703-461-0200",
+    email: "marcopolorugs@aol.com",
+    address: "3240 DUKE ST, ALEXANDRIA, VA 22314",
     logoUrl: ""
   });
   const [logoUrl, setLogoUrlState] = useState<string>("/LOGO.png");
