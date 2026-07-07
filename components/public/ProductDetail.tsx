@@ -156,6 +156,19 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                 slides={(rug.images || []).map(img => ({ src: img }))}
                 plugins={[Zoom]}
                 animation={{ zoom: 300 }}
+                render={{
+                  slide: ({ slide }) => (
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={slide.src}
+                        alt="Rug full screen"
+                        fill
+                        sizes="100vw"
+                        className="object-contain"
+                      />
+                    </div>
+                  )
+                }}
               />
 
               {/* Gallery List */}
