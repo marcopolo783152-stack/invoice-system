@@ -45,12 +45,17 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
 
   // Track product view & recently viewed on mount
   React.useEffect(() => {
-    if (activeView === "customer") {
-      incrementRugViews(rugId);
-    }
-    
     try {
       const saved = localStorage.getItem("mp_recently_viewed");
+      const existing = saved ? (JSON.parse(saved) as string[]) : [];
+
+      // Check if we already viewed this rug
+      const hasViewed = existing.includes(rugId);
+
+      if (activeView === "customer" && !hasViewed) {
+        incrementRugViews(rugId);
+      }
+      
       if (saved) {
         const parsed = JSON.parse(saved) as string[];
         const rRugs = parsed
@@ -60,7 +65,6 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
         setRecentlyViewed(rRugs.slice(0, 3));
       }
 
-      const existing = saved ? (JSON.parse(saved) as string[]) : [];
       const updated = [rugId, ...existing.filter(id => id !== rugId)].slice(0, 10);
       localStorage.setItem("mp_recently_viewed", JSON.stringify(updated));
     } catch (e) {}

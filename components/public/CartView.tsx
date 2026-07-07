@@ -204,15 +204,30 @@ export const CartView: React.FC = () => {
           {/* Stepper visual bar */}
           {checkoutStep !== "success" && (
             <div className="grid grid-cols-3 bg-white border-b border-editorial-border text-sm font-bold text-center uppercase tracking-wider">
-              <span className={`py-3.5 border-r border-editorial-border transition-colors ${checkoutStep === "cart" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"}`}>
+              <button 
+                type="button"
+                onClick={() => setCheckoutStep("cart")}
+                className={`py-3.5 border-r border-editorial-border transition-colors cursor-pointer ${checkoutStep === "cart" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside hover:bg-neutral-100"}`}
+              >
                 1. Review Cart
-              </span>
-              <span className={`py-3.5 border-r border-editorial-border transition-colors ${checkoutStep === "shipping" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"}`}>
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  if (checkoutStep === "payment") setCheckoutStep("shipping");
+                }}
+                disabled={checkoutStep === "cart"}
+                className={`py-3.5 border-r border-editorial-border transition-colors ${checkoutStep === "shipping" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"} ${checkoutStep === "payment" ? "cursor-pointer hover:bg-neutral-100" : "cursor-default"}`}
+              >
                 2. Shipping
-              </span>
-              <span className={`py-3.5 transition-colors ${checkoutStep === "payment" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"}`}>
+              </button>
+              <button 
+                type="button"
+                disabled
+                className={`py-3.5 transition-colors cursor-default ${checkoutStep === "payment" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"}`}
+              >
                 3. Card Escrow
-              </span>
+              </button>
             </div>
           )}
 

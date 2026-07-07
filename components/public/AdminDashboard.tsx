@@ -1855,6 +1855,7 @@ export const AdminDashboard: React.FC = () => {
                     <th className="py-3 px-4">Geographic Origin</th>
                     <th className="py-3 px-4">Size & Shape</th>
                     <th className="py-3 px-4">Price Value</th>
+                    <th className="py-3 px-4">Views</th>
                     <th className="py-3 px-4">Availability</th>
                     <th className="py-3 px-4 text-center">Manage</th>
                   </tr>
@@ -1929,6 +1930,12 @@ export const AdminDashboard: React.FC = () => {
                           ) : (
                             <span>${r.price.toLocaleString()}</span>
                           )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-editorial-text bg-stone-100 px-2 py-1 rounded-sm border border-stone-200">
+                            <Eye className="h-3 w-3 text-editorial-accent" />
+                            {r.views || 0}
+                          </span>
                         </td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
