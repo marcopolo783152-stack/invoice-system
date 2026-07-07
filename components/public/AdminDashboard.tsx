@@ -83,7 +83,8 @@ export const AdminDashboard: React.FC = () => {
     setLogoUrl,
     socialLinks,
     setSocialLinks,
-    addAdminUser
+    addAdminUser,
+    referrers
   } = useStore();
 
   const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
