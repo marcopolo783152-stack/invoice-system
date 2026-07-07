@@ -26,6 +26,7 @@ export interface Rug {
   isSpecialSale?: boolean;
   isFreeShipping?: boolean;
   manufacturingType?: "Handmade" | "Machine-made";
+  views?: number;
   type?: string;
   color?: string;
 }

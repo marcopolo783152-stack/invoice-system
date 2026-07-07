@@ -18,7 +18,7 @@ interface ProductDetailProps {
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, onSelectRugId }) => {
-  const { rugs, reviews, addToCart, submitReview, deleteReview, activeView } = useStore();
+  const { rugs, reviews, addToCart, submitReview, deleteReview, activeView, incrementRugViews } = useStore();
   
   const rug = rugs.find((r) => r.id === rugId);
   
@@ -35,12 +35,36 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
       setActiveImage("https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800");
     }
   }, [rugId, rug]);
-  
+
   // Review form states
   const [reviewerName, setReviewerName] = useState("");
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [recentlyViewed, setRecentlyViewed] = useState<Rug[]>([]);
+
+  // Track product view & recently viewed on mount
+  React.useEffect(() => {
+    if (activeView === "customer") {
+      incrementRugViews(rugId);
+    }
+    
+    try {
+      const saved = localStorage.getItem("mp_recently_viewed");
+      if (saved) {
+        const parsed = JSON.parse(saved) as string[];
+        const rRugs = parsed
+          .filter(id => id !== rugId)
+          .map(id => rugs.find(r => r.id === id))
+          .filter(Boolean) as Rug[];
+        setRecentlyViewed(rRugs.slice(0, 3));
+      }
+
+      const existing = saved ? (JSON.parse(saved) as string[]) : [];
+      const updated = [rugId, ...existing.filter(id => id !== rugId)].slice(0, 10);
+      localStorage.setItem("mp_recently_viewed", JSON.stringify(updated));
+    } catch (e) {}
+  }, [rugId, rugs, activeView]);
 
   const handleInquireRug = () => {
     const inquiryText = `Hello Marco Polo team! I would like to inquire about the showroom piece: "${rug.name}" (SKU: ${rug.sku}, Size: ${rug.dimensions}, price: $${rug.price.toLocaleString()}). Could you please share more details about its origin, weaves, and certificate?`;
@@ -217,6 +241,13 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                     <MessageCircle className="h-4 w-4" />
                     <span>Inquire / Ask Details</span>
                   </button>
+                </div>
+
+                {/* Trust Badges */}
+                <div className="flex flex-wrap items-center gap-4 py-2 mt-4 text-xs text-gray-500 font-medium">
+                  <span className="flex items-center gap-1"><ShieldAlert className="h-3.5 w-3.5 text-emerald-600" /> Secure Checkout</span>
+                  <span className="flex items-center gap-1"><RefreshCw className="h-3.5 w-3.5 text-emerald-600" /> Free Shipping & Returns</span>
+                  <span className="flex items-center gap-1"><Award className="h-3.5 w-3.5 text-emerald-600" /> Authenticity Guaranteed</span>
                 </div>
               </div>
 
@@ -450,6 +481,52 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
             </div>
           )}
 
+          {/* Recently Viewed */}
+          {recentlyViewed.length > 0 && (
+            <div className="pt-10 border-t border-editorial-border space-y-6">
+              <div>
+                <h3 className="font-serif text-lg font-light text-editorial-text">Recently Viewed</h3>
+                <p className="text-xs text-gray-400">Continue where you left off.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {recentlyViewed.map((relRug) => (
+                  <div
+                    key={relRug.id}
+                    onClick={() => {
+                      const coverImg = relRug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800";
+                      if (onSelectRugId) {
+                        onSelectRugId(relRug.id);
+                        setActiveImage(coverImg);
+                      } else {
+                        setActiveImage(coverImg);
+                      }
+                      
+                      const scrollContainer = document.querySelector(".fixed.inset-0.z-50.overflow-y-auto");
+                      if (scrollContainer) {
+                        scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                    }}
+                    className="flex items-center gap-4 p-3 bg-white rounded-none border border-editorial-border cursor-pointer hover:border-editorial-accent hover:shadow-sm transition duration-200 text-left"
+                  >
+                    <img
+                      src={relRug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"}
+                      alt={relRug.name}
+                      className="w-16 h-16 object-cover rounded-none flex-shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="min-w-0">
+                      <h4 className="font-serif text-xs font-light text-editorial-text truncate">{relRug.name}</h4>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-sm font-light text-editorial-text">${relRug.price.toLocaleString()}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{relRug.dimensions}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

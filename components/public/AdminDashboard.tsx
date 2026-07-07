@@ -1022,6 +1022,25 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
             </div>
+
+            {/* Top Viewed Rugs row */}
+            <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border mt-6 text-left">
+              <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3 mb-4">Top Viewed Pieces (Product Analytics)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {rugs.filter(r => r.views).sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3).map(rug => (
+                  <div key={rug.id} className="flex gap-4 items-center border border-editorial-border p-3">
+                    <img src={rug.images?.[0]} className="w-16 h-16 object-cover" />
+                    <div>
+                      <p className="font-serif text-sm text-editorial-text truncate w-40">{rug.name}</p>
+                      <p className="text-xs text-editorial-accent font-bold mt-1">{rug.views} Views</p>
+                    </div>
+                  </div>
+                ))}
+                {rugs.filter(r => r.views).length === 0 && (
+                  <p className="text-sm text-gray-500 italic py-4">No product views recorded yet.</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

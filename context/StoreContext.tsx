@@ -77,6 +77,7 @@ interface StoreContextType {
   addRug: (rug: Omit<Rug, "id" | "rating">) => void;
   updateRug: (id: string, rug: Partial<Rug>) => void;
   deleteRug: (id: string) => void;
+  incrementRugViews: (id: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus, shipping?: ShippingDetails) => void;
   approveReview: (reviewId: string) => void;
   deleteReview: (reviewId: string) => void;
@@ -450,6 +451,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateRug = (id: string, updatedFields: Partial<Rug>) => {
     setRugs(prev => prev.map(r => r.id === id ? { ...r, ...updatedFields } : r)); // Optimistic UI
     updateShowroomDoc(SHOWROOM_RUGS, id, updatedFields);
+  };
+
+  const incrementRugViews = (id: string) => {
+    const rug = rugs.find(r => r.id === id);
+    if (!rug) return;
+    updateRug(id, { views: (rug.views || 0) + 1 });
   };
 
   const deleteRug = async (id: string) => {
@@ -827,12 +834,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // --- INACTIVITY TIMEOUT (SHOWROOM) ---
     let inactivityTimer: NodeJS.Timeout;
-    const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes
+    const INACTIVITY_LIMIT = 4 * 60 * 60 * 1000; // 4 hours
 
     const resetInactivity = () => {
       clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
-        // Auto-logout after 15 minutes
+        // Auto-logout after 4 hours
         sessionStorage.removeItem('mp-invoice-auth');
         sessionStorage.removeItem('mp-invoice-user');
         localStorage.removeItem('mp-invoice-auth');
@@ -899,6 +906,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addRug,
         updateRug,
         deleteRug,
+        incrementRugViews,
         updateOrderStatus,
         approveReview,
         deleteReview,

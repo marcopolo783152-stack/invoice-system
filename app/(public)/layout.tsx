@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import '../../public-styles.css';
 
 import TopAdminBar from '@/components/TopAdminBar';
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   title: 'Marco Polo | Fine Hand-Knotted Rugs & Machine-Made Runners',
@@ -15,6 +16,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <body>
         <TopAdminBar />
         {children}
+        <Analytics />
       </body>
     </html>
   );
