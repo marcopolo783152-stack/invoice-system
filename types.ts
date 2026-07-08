@@ -123,6 +123,7 @@ export interface ShippingDetails {
   trackingNumber: string;
   estimatedDelivery?: string;
   shippedAt?: string;
+  labelUrl?: string;
 }
 
 export interface Order {
