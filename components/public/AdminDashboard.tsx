@@ -2253,7 +2253,7 @@ export const AdminDashboard: React.FC = () => {
                               
                               {o.shippingDetails?.labelUrl && (
                                 <button
-                                  onClick={() => window.open(o.shippingDetails.labelUrl, "_blank")}
+                                  onClick={() => window.open(o.shippingDetails!.labelUrl!, "_blank")}
                                   className="flex-1 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
                                 >
                                   <span>Print Label</span>
