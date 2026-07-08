@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     if (transaction.status !== "SUCCESS") {
       const messages = transaction.messages?.map((m: any) => m.text).join(", ") || "Unknown error";
       return NextResponse.json(
-        { error: `Failed to purchase label: ${messages}` },
+        { error: `Failed to purchase label: ${messages} (Sent to Carrier: Street="${parsedStreet}", City="${parsedCity}", State="${parsedState}", Zip="${parsedZip}")` },
         { status: 400 }
       );
     }
