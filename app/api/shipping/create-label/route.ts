@@ -68,6 +68,13 @@ export async function POST(request: Request) {
       country: customerAddress.country || "US",
     };
 
+    if (!parsedCity || !parsedState || !parsedZip) {
+      return NextResponse.json(
+        { error: `Address could not be parsed correctly. Please ensure the customer's address is formatted with commas like this: "123 Main St, City, State Zip". Current parsed values -> Street: ${parsedStreet}, City: ${parsedCity}, State: ${parsedState}, Zip: ${parsedZip}` },
+        { status: 400 }
+      );
+    }
+
     const parcel = {
       length: dimensions.length.toString(),
       width: dimensions.width.toString(),
