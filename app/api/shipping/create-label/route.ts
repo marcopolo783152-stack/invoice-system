@@ -4,8 +4,15 @@ import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 
 export async function POST(request: Request) {
+  // Clean up the API key to prevent any trailing spaces or duplicate prefixes
+  let rawKey = process.env.SHIPPO_API_KEY || "";
+  rawKey = rawKey.trim();
+  if (rawKey.startsWith("ShippoToken ")) {
+    rawKey = rawKey.replace("ShippoToken ", "");
+  }
+
   const shippo = new Shippo({
-    apiKeyHeader: process.env.SHIPPO_API_KEY || "",
+    apiKeyHeader: rawKey,
   });
 
   try {
