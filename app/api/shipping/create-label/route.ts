@@ -38,13 +38,33 @@ export async function POST(request: Request) {
       email: "support@marcopolorugs.com",
     };
 
+    // Parse the shipping address string (e.g. "123 Main St, New York, NY 10001")
+    let parsedStreet = customerAddress.address1 || customerAddress.street || "";
+    let parsedCity = customerAddress.city || "";
+    let parsedState = customerAddress.state || "";
+    let parsedZip = customerAddress.zip || customerAddress.zipCode || "";
+
+    if (customerAddress.shippingAddress) {
+      const parts = customerAddress.shippingAddress.split(',');
+      if (parts.length >= 3) {
+        parsedStreet = parts[0].trim();
+        parsedCity = parts[1].trim();
+        const stateZip = parts[2].trim().split(' ');
+        parsedState = stateZip[0] || "";
+        parsedZip = stateZip[1] || "";
+      } else {
+        // Fallback if no commas
+        parsedStreet = customerAddress.shippingAddress;
+      }
+    }
+
     const addressTo = {
       name: customerAddress.name || "Customer",
-      street1: customerAddress.address1 || customerAddress.street,
+      street1: parsedStreet,
       street2: customerAddress.address2 || "",
-      city: customerAddress.city,
-      state: customerAddress.state,
-      zip: customerAddress.zip || customerAddress.zipCode,
+      city: parsedCity,
+      state: parsedState,
+      zip: parsedZip,
       country: customerAddress.country || "US",
     };
 
