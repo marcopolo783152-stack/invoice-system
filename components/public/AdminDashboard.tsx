@@ -2131,8 +2131,15 @@ export const AdminDashboard: React.FC = () => {
                           </span>
                         </div>
                         {o.shippingDetails?.trackingNumber && (
-                          <div className="text-xs text-neutral-500 font-mono flex items-center gap-1 bg-neutral-100 px-2 py-1 rounded">
-                            <span className="font-bold text-neutral-700">TRACKING:</span> {o.shippingDetails.trackingNumber}
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="text-xs text-neutral-500 font-mono flex items-center gap-1 bg-neutral-100 px-2 py-1 rounded">
+                              <span className="font-bold text-neutral-700">TRACKING:</span> {o.shippingDetails.trackingNumber}
+                            </div>
+                            {o.shippingDetails?.estimatedDelivery && (
+                              <div className="text-[10px] text-amber-600 font-medium max-w-[250px] text-right leading-tight">
+                                Live Status: {o.shippingDetails.estimatedDelivery}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
