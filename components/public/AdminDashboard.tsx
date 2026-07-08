@@ -613,6 +613,7 @@ export const AdminDashboard: React.FC = () => {
         trackingNumber: data.trackingNumber,
         labelUrl: data.labelUrl,
         carrier: data.carrier,
+        transactionId: data.transactionId,
       });
 
       alert(`Label generated successfully! Tracking: ${data.trackingNumber}`);
@@ -628,6 +629,30 @@ export const AdminDashboard: React.FC = () => {
       alert("Error generating label: " + error.message);
     } finally {
       setIsGeneratingLabel(false);
+    }
+  };
+
+  const handleRefundLabel = async (orderId: string, transactionId: string) => {
+    if (!confirm("Are you sure you want to cancel this label and request a refund from Shippo?")) return;
+    
+    try {
+      const response = await fetch('/api/shipping/refund-label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId })
+      });
+      
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to refund label");
+      }
+      
+      // Revert status to 'Preparing for Shipping' and clear shipping details
+      updateOrderStatus(orderId, "Preparing for Shipping");
+      
+      alert("Label successfully refunded/cancelled!");
+    } catch (error: any) {
+      alert("Error refunding label: " + error.message);
     }
   };
 
@@ -2261,6 +2286,15 @@ export const AdminDashboard: React.FC = () => {
                                   className="flex-1 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
                                 >
                                   <span>Print Label</span>
+                                </button>
+                              )}
+                              {o.shippingDetails?.transactionId && (
+                                <button
+                                  onClick={() => handleRefundLabel(o.id, o.shippingDetails!.transactionId!)}
+                                  className="py-1.5 px-3 bg-red-100 hover:bg-red-200 text-red-600 font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
+                                  title="Cancel Label & Request Refund"
+                                >
+                                  <span>Refund</span>
                                 </button>
                               )}
                             </>

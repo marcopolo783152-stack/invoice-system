@@ -164,7 +164,8 @@ export async function POST(request: Request) {
       labelUrl,
       trackingUrl,
       carrier: cheapestRate.provider,
-      cost: cheapestRate.amount
+      cost: cheapestRate.amount,
+      transactionId: transaction.objectId
     });
 
   } catch (error: any) {
