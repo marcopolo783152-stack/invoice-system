@@ -2091,14 +2091,21 @@ export const AdminDashboard: React.FC = () => {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider ${
-                          o.status === "Cancelled" ? "bg-red-100 text-red-700" :
-                          o.status === "Delivered" ? "bg-green-100 text-green-700" :
-                          "bg-amber-100 text-amber-700 animate-pulse"
-                        }`}>
-                          {o.status}
-                        </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider ${
+                            o.status === "Cancelled" ? "bg-red-100 text-red-700" :
+                            o.status === "Delivered" ? "bg-green-100 text-green-700" :
+                            "bg-amber-100 text-amber-700 animate-pulse"
+                          }`}>
+                            {o.status}
+                          </span>
+                        </div>
+                        {o.shippingDetails?.trackingNumber && (
+                          <div className="text-xs text-neutral-500 font-mono flex items-center gap-1 bg-neutral-100 px-2 py-1 rounded">
+                            <span className="font-bold text-neutral-700">TRACKING:</span> {o.shippingDetails.trackingNumber}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -2236,12 +2243,23 @@ export const AdminDashboard: React.FC = () => {
                           )}
 
                           {o.status === "Shipped" && (
-                            <button
-                              onClick={() => updateOrderStatus(o.id, "Delivered")}
-                              className="flex-1 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
-                            >
-                              <span>Mark Delivered</span>
-                            </button>
+                            <>
+                              <button
+                                onClick={() => updateOrderStatus(o.id, "Delivered")}
+                                className="flex-1 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                <span>Mark Delivered</span>
+                              </button>
+                              
+                              {o.shippingDetails?.labelUrl && (
+                                <button
+                                  onClick={() => window.open(o.shippingDetails.labelUrl, "_blank")}
+                                  className="flex-1 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <span>Print Label</span>
+                                </button>
+                              )}
+                            </>
                           )}
 
                           {o.status !== "Delivered" && o.status !== "Cancelled" && (
