@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
         // Find the order with this tracking number
         const q = query(
-          collection(db, "showroom_orders"),
+          collection(db!, "showroom_orders"),
           where("shippingDetails.trackingNumber", "==", trackingNumber)
         );
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
           
           // Only update if it's currently "Shipped", to prevent overriding manual admin changes
           if (currentStatus === "Shipped") {
-            const docRef = doc(db, "showroom_orders", orderDoc.id);
+            const docRef = doc(db!, "showroom_orders", orderDoc.id);
             await updateDoc(docRef, {
               status: newOrderStatus,
               "shippingDetails.estimatedDelivery": payload.data.tracking_status?.status_details || ""
