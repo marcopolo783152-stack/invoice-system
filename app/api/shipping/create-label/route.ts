@@ -40,6 +40,7 @@ export async function POST(request: Request) {
 
     // Parse the shipping address string (e.g. "123 Main St, New York, NY 10001")
     let parsedStreet = customerAddress.address1 || customerAddress.street || "";
+    let parsedStreet2 = customerAddress.address2 || "";
     let parsedCity = customerAddress.city || "";
     let parsedState = customerAddress.state || "";
     let parsedZip = customerAddress.zip || customerAddress.zipCode || "";
@@ -52,6 +53,13 @@ export async function POST(request: Request) {
         const stateZip = parts[2].trim().split(' ');
         parsedState = stateZip[0] || "";
         parsedZip = stateZip[1] || "";
+        
+        // Fix for "Apt/Suite" which breaks USPS validation when appended to street1
+        if (parsedStreet.includes("Apt/Suite")) {
+            const streetParts = parsedStreet.split("Apt/Suite");
+            parsedStreet = streetParts[0].trim();
+            parsedStreet2 = "Apt " + streetParts[1].trim();
+        }
       } else {
         // Fallback if no commas
         parsedStreet = customerAddress.shippingAddress;
@@ -61,7 +69,7 @@ export async function POST(request: Request) {
     const addressTo = {
       name: customerAddress.name || "Customer",
       street1: parsedStreet,
-      street2: customerAddress.address2 || "",
+      street2: parsedStreet2,
       city: parsedCity,
       state: parsedState,
       zip: parsedZip,
