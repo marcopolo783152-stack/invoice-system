@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       transaction: transactionId
     });
 
-    if (refund.status === "QUEUED" || refund.status === "SUCCESS") {
+    if (refund.status === "QUEUED" || refund.status === "SUCCESS" || refund.status === "PENDING") {
       return NextResponse.json({ success: true, message: "Refund requested successfully" });
     } else {
       return NextResponse.json({ error: `Refund failed. Status: ${refund.status}` }, { status: 400 });
