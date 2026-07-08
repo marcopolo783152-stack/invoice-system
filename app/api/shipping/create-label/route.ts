@@ -68,8 +68,9 @@ export async function POST(request: Request) {
     });
 
     if (!shipment.rates || shipment.rates.length === 0) {
+      const shippoMessages = shipment.messages ? shipment.messages.map((m: any) => m.text).join(" | ") : "Unknown reason";
       return NextResponse.json(
-        { error: "No shipping rates available for this destination/package." },
+        { error: `No shipping rates available for this destination/package. Carrier says: ${shippoMessages}` },
         { status: 400 }
       );
     }
