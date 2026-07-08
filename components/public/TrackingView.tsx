@@ -324,7 +324,18 @@ export const TrackingView: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-gray-400 block uppercase font-light">Tracking Number:</span>
-                          <span className="font-mono font-bold text-[#C2B29F]">{activeOrder.shippingDetails.trackingNumber}</span>
+                          {activeOrder.shippingDetails.trackingUrl ? (
+                            <a 
+                              href={activeOrder.shippingDetails.trackingUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="font-mono font-bold text-[#C2B29F] hover:text-white transition underline"
+                            >
+                              {activeOrder.shippingDetails.trackingNumber}
+                            </a>
+                          ) : (
+                            <span className="font-mono font-bold text-[#C2B29F]">{activeOrder.shippingDetails.trackingNumber}</span>
+                          )}
                         </div>
                         <div className="col-span-2">
                           <span className="text-gray-400 block uppercase font-light">Estimated Delivery:</span>

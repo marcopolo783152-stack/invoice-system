@@ -125,6 +125,7 @@ export interface ShippingDetails {
   shippedAt?: string;
   labelUrl?: string;
   transactionId?: string;
+  trackingUrl?: string;
 }
 
 export interface Order {

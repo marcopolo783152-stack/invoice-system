@@ -614,6 +614,7 @@ export const AdminDashboard: React.FC = () => {
         labelUrl: data.labelUrl,
         carrier: data.carrier,
         transactionId: data.transactionId,
+        trackingUrl: data.trackingUrl,
       });
 
       alert(`Label generated successfully! Tracking: ${data.trackingNumber}`);
