@@ -608,8 +608,17 @@ export const AdminDashboard: React.FC = () => {
         throw new Error(data.error || "Failed to generate label");
       }
       
+      // Update the order locally via context (status only)
+      updateOrderStatus(order.id, "Shipped");
+
       alert(`Label generated successfully! Tracking: ${data.trackingNumber}`);
       setShippingModalOpen(false);
+      
+      // Automatically open the PDF label in a new tab for printing!
+      if (data.labelUrl) {
+        window.open(data.labelUrl, '_blank');
+      }
+      
       
     } catch (error: any) {
       alert("Error generating label: " + error.message);
