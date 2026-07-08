@@ -3,11 +3,11 @@ import { Shippo } from "shippo";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 
-const shippo = new Shippo({
-  apiKeyHeader: `shippo_test_${process.env.SHIPPO_API_KEY?.replace('shippo_test_', '').replace('shippo_live_', '')}`,
-});
-
 export async function POST(request: Request) {
+  const shippo = new Shippo({
+    apiKeyHeader: process.env.SHIPPO_API_KEY || "",
+  });
+
   try {
     const body = await request.json();
     const { orderId, customerAddress, dimensions } = body;
