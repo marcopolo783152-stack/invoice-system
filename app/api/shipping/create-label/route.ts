@@ -97,7 +97,8 @@ export async function POST(request: Request) {
 
     // 5. Update Firebase order status
     try {
-      const orderRef = doc(db, "orders", orderId);
+      if (!db) throw new Error("Firebase DB not initialized");
+      const orderRef = doc(db, "showroom_orders", orderId);
       await updateDoc(orderRef, {
         status: "Shipped",
         shippingDetails: {
