@@ -608,8 +608,12 @@ export const AdminDashboard: React.FC = () => {
         throw new Error(data.error || "Failed to generate label");
       }
       
-      // Update the order locally via context (status only)
-      updateOrderStatus(order.id, "Shipped");
+      // Update the order locally via context (status & shipping details)
+      updateOrderStatus(order.id, "Shipped", {
+        trackingNumber: data.trackingNumber,
+        labelUrl: data.labelUrl,
+        carrier: data.carrier,
+      });
 
       alert(`Label generated successfully! Tracking: ${data.trackingNumber}`);
       setShippingModalOpen(false);
