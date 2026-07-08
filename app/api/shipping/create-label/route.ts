@@ -28,13 +28,13 @@ export async function POST(request: Request) {
 
     // 1. Create a shipment
     const addressFrom = {
-      name: "Marco Polo",
-      street1: "123 Store Address",
-      city: "New York",
-      state: "NY",
-      zip: "10001",
+      name: "Marco Polo Oriental Rugs",
+      street1: "3260 Duke Street",
+      city: "Alexandria",
+      state: "VA",
+      zip: "22314",
       country: "US",
-      phone: "+1 555 341 9393",
+      phone: "(703) 461-0207",
       email: "support@marcopolorugs.com",
     };
 
