@@ -225,9 +225,11 @@ export const AdminDashboard: React.FC = () => {
   // State for dispatch carrier info modal
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
   const [shippingOrderId, setShippingOrderId] = useState<string | null>(null);
-  const [carrier, setCarrier] = useState("FedEx Priority Freight");
-  const [trackingNumber, setTrackingNumber] = useState("MP-FEDEX-98319");
-  const [estDelivery, setEstDelivery] = useState("July 3, 2026");
+  const [shippingWeight, setShippingWeight] = useState("10");
+  const [shippingLength, setShippingLength] = useState("36");
+  const [shippingWidth, setShippingWidth] = useState("8");
+  const [shippingHeight, setShippingHeight] = useState("8");
+  const [isGeneratingLabel, setIsGeneratingLabel] = useState(false);
 
   // State for message replies
   const [adminReplyText, setAdminReplyText] = useState("");
@@ -568,21 +570,52 @@ export const AdminDashboard: React.FC = () => {
 
   const handleOpenShippingModal = (oId: string) => {
     setShippingOrderId(oId);
-    setCarrier("FedEx Priority Freight");
-    setTrackingNumber(`MP-FDX-${Math.floor(100000 + Math.random() * 900000)}`);
-    setEstDelivery("3 Business Days");
+    setShippingWeight("10");
+    setShippingLength("36");
+    setShippingWidth("8");
+    setShippingHeight("8");
     setShippingModalOpen(true);
   };
 
-  const handleDispatchShipping = (e: React.FormEvent) => {
+  const handleDispatchShipping = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shippingOrderId) return;
-    updateOrderStatus(shippingOrderId, "Shipped", {
-      carrier,
-      trackingNumber,
-      estimatedDelivery: estDelivery
-    });
-    setShippingModalOpen(false);
+    
+    setIsGeneratingLabel(true);
+    
+    try {
+      const order = orders.find(o => o.id === shippingOrderId);
+      if (!order) throw new Error("Order not found");
+
+      const response = await fetch('/api/shipping/create-label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.id,
+          customerAddress: order.customerInfo,
+          dimensions: {
+            weight: shippingWeight,
+            length: shippingLength,
+            width: shippingWidth,
+            height: shippingHeight
+          }
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to generate label");
+      }
+      
+      alert(`Label generated successfully! Tracking: ${data.trackingNumber}`);
+      setShippingModalOpen(false);
+      
+    } catch (error: any) {
+      alert("Error generating label: " + error.message);
+    } finally {
+      setIsGeneratingLabel(false);
+    }
   };
 
   const handleAdminChatReply = (e: React.FormEvent) => {
@@ -2214,9 +2247,17 @@ export const AdminDashboard: React.FC = () => {
 
                         {/* Showing Tracking details if already dispatched */}
                         {o.shippingDetails && (
-                          <div className="text-sm text-neutral-500 border-t border-stone-100 pt-2 flex justify-between">
-                            <span>{o.shippingDetails.carrier}</span>
-                            <span className="font-mono text-amber-700 font-bold">{o.shippingDetails.trackingNumber}</span>
+                          <div className="text-sm text-neutral-500 border-t border-stone-100 pt-2 flex flex-col gap-1">
+                            <div className="flex justify-between">
+                              <span>{o.shippingDetails.carrier}</span>
+                              <span className="font-mono text-amber-700 font-bold">{o.shippingDetails.trackingNumber}</span>
+                            </div>
+                            {o.shippingDetails.labelUrl && (
+                              <a href={o.shippingDetails.labelUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                                <Printer className="h-3 w-3" />
+                                Download Label PDF
+                              </a>
+                            )}
                           </div>
                         )}
                         
@@ -3163,47 +3204,66 @@ export const AdminDashboard: React.FC = () => {
 
             <form onSubmit={handleDispatchShipping} className="p-6 space-y-4 text-xs font-sans">
               <div className="space-y-1">
-                <label className="block text-neutral-500 font-semibold uppercase">Insured Freight Carrier</label>
+                <label className="block text-neutral-500 font-semibold uppercase">Package Weight (lbs)</label>
                 <input
-                  type="text"
+                  type="number"
                   required
-                  value={carrier}
-                  onChange={(e) => setCarrier(e.target.value)}
-                  placeholder="e.g. FedEx Priority Freight / DHL Express"
+                  value={shippingWeight}
+                  onChange={(e) => setShippingWeight(e.target.value)}
+                  placeholder="e.g. 10"
                   className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2.5 px-3 outline-none focus:border-amber-500 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-neutral-500 font-semibold uppercase">Tracking Registry Reference</label>
-                <input
-                  type="text"
-                  required
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="e.g. MP-FDX-2938194"
-                  className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2.5 px-3 outline-none focus:border-amber-500 text-xs font-mono"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-neutral-500 font-semibold uppercase">Estimated Delivery Transit</label>
-                <input
-                  type="text"
-                  required
-                  value={estDelivery}
-                  onChange={(e) => setEstDelivery(e.target.value)}
-                  placeholder="e.g. 3 Business Days"
-                  className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2.5 px-3 outline-none focus:border-amber-500 text-xs"
-                />
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase text-[10px]">Length (in)</label>
+                  <input
+                    type="number"
+                    required
+                    value={shippingLength}
+                    onChange={(e) => setShippingLength(e.target.value)}
+                    placeholder="36"
+                    className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2.5 px-3 outline-none focus:border-amber-500 text-xs font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase text-[10px]">Width (in)</label>
+                  <input
+                    type="number"
+                    required
+                    value={shippingWidth}
+                    onChange={(e) => setShippingWidth(e.target.value)}
+                    placeholder="8"
+                    className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2.5 px-3 outline-none focus:border-amber-500 text-xs font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase text-[10px]">Height (in)</label>
+                  <input
+                    type="number"
+                    required
+                    value={shippingHeight}
+                    onChange={(e) => setShippingHeight(e.target.value)}
+                    placeholder="8"
+                    className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2.5 px-3 outline-none focus:border-amber-500 text-xs font-mono"
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-neutral-900 hover:bg-neutral-850 text-amber-400 font-bold uppercase tracking-widest rounded-lg transition flex items-center justify-center gap-2"
+                disabled={isGeneratingLabel}
+                className="w-full py-3 bg-neutral-900 hover:bg-neutral-850 text-amber-400 font-bold uppercase tracking-widest rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Truck className="h-4 w-4" />
-                <span>Dispatch Freight Now</span>
+                {isGeneratingLabel ? (
+                  <span className="animate-pulse">Connecting to Carrier...</span>
+                ) : (
+                  <>
+                    <Truck className="h-4 w-4" />
+                    <span>Generate Label & Dispatch</span>
+                  </>
+                )}
               </button>
             </form>
           </div>

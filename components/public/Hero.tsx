@@ -74,6 +74,25 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
   const [wMeters, setWMeters] = useState<number | string>("");
   const [lMeters, setLMeters] = useState<number | string>("");
 
+  const resetCleaningForm = () => {
+    setCleaningName("");
+    setCleaningEmail("");
+    setCleaningPhone("");
+    setCleaningAddress("");
+    setCleaningPreferredDate("");
+    setCleaningPreferredTime("");
+    setWFeet("");
+    setWInches("");
+    setLFeet("");
+    setLInches("");
+    setWTotalInches("");
+    setLTotalInches("");
+    setWMeters("");
+    setLMeters("");
+    setCleaningFormSubmitted(false);
+    setCleaningModalOpen(false);
+  };
+
   // Dynamic calculations for manual inputs
   let calculatedWidth = 8;
   let calculatedLength = 10;
@@ -903,7 +922,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     </div>
 
                     <button
-                      onClick={() => setCleaningFormSubmitted(false)}
+                      onClick={resetCleaningForm}
                       className="mt-6 text-xs text-gray-500 hover:text-white underline uppercase tracking-wider font-bold transition cursor-pointer"
                     >
                       Start New Request
@@ -1368,10 +1387,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   </div>
                   
                   <button
-                    onClick={() => {
-                      setCleaningFormSubmitted(false);
-                      setCleaningModalOpen(false);
-                    }}
+                    onClick={resetCleaningForm}
                     className="mt-6 text-xs text-neutral-400 hover:text-neutral-900 underline uppercase tracking-wider font-bold transition cursor-pointer"
                   >
                     Close Window
