@@ -2405,6 +2405,8 @@ export const AdminDashboard: React.FC = () => {
                               <LiveTrackingButton 
                                 carrier={o.shippingDetails.carrier} 
                                 trackingNumber={o.shippingDetails.trackingNumber} 
+                                orderId={o.id}
+                                currentOrderStatus={o.status}
                               />
                             )}
                           </>

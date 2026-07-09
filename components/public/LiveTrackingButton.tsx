@@ -1,7 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useStore } from "@/context/StoreContext";
 
-export default function LiveTrackingButton({ carrier, trackingNumber }: { carrier: string, trackingNumber: string }) {
+export default function LiveTrackingButton({ carrier, trackingNumber, orderId, currentOrderStatus }: { carrier: string, trackingNumber: string, orderId?: string, currentOrderStatus?: string }) {
+  const { updateOrderStatus } = useStore();
   const [loading, setLoading] = useState(true);
   const [trackingData, setTrackingData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +20,11 @@ export default function LiveTrackingButton({ carrier, trackingNumber }: { carrie
         if (isMounted) {
           setTrackingData(data);
           setError(null);
+          
+          // Automatically mark order as delivered in the system if Shippo says it's delivered
+          if (data?.tracking_status?.status === "DELIVERED" && orderId && currentOrderStatus === "Shipped") {
+            updateOrderStatus(orderId, "Delivered");
+          }
         }
       } catch (err: any) {
         if (isMounted) {
