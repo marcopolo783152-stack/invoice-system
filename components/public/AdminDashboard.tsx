@@ -2163,13 +2163,34 @@ export const AdminDashboard: React.FC = () => {
                       {/* Items */}
                       <div className="space-y-1">
                         <span className="text-sm uppercase tracking-wider text-neutral-400 font-bold block">Items & Escrow Payment</span>
-                        <ul className="space-y-1 list-disc pl-4 text-neutral-600">
+                        <div className="space-y-2 mt-2">
                           {o.cartItems.map((item: any, idx: number) => (
-                            <li key={idx}>
-                              <strong>{item.rug.name}</strong> ({item.rug.dimensions})
-                            </li>
+                            <details key={idx} className="bg-white p-2 rounded-md border border-neutral-200 shadow-sm text-sm group cursor-pointer">
+                              <summary className="font-bold text-neutral-800 flex justify-between items-center outline-none list-none">
+                                <span>{item.rug.name} ({item.rug.dimensions})</span>
+                                <span className="text-xs text-neutral-400 group-open:hidden border border-neutral-200 px-2 py-0.5 rounded">View Item ▾</span>
+                                <span className="text-xs text-neutral-400 hidden group-open:block border border-neutral-200 px-2 py-0.5 rounded">Hide ▴</span>
+                              </summary>
+                              <div className="mt-3 pt-3 border-t border-neutral-100 text-xs text-neutral-600 grid grid-cols-2 gap-x-4 gap-y-2">
+                                {item.rug.images && item.rug.images.length > 0 && (
+                                  <div className="col-span-2 mb-1">
+                                    <img src={item.rug.images[0]} alt={item.rug.name} className="w-16 h-16 object-cover rounded shadow-sm border border-neutral-200" />
+                                  </div>
+                                )}
+                                <div><span className="font-semibold text-neutral-800">SKU:</span> {item.rug.sku}</div>
+                                <div><span className="font-semibold text-neutral-800">Price:</span> ${(item.rug.price || 0).toLocaleString()}</div>
+                                <div><span className="font-semibold text-neutral-800">Material:</span> {item.rug.material}</div>
+                                <div><span className="font-semibold text-neutral-800">Origin:</span> {item.rug.origin}</div>
+                                <div><span className="font-semibold text-neutral-800">Style:</span> {item.rug.style}</div>
+                                <div><span className="font-semibold text-neutral-800">Age:</span> {item.rug.age}</div>
+                              </div>
+                            </details>
                           ))}
-                        </ul>
+                        </div>
+                        <div className="mt-3 text-sm font-black text-green-800 bg-green-50 p-2 border border-green-200 rounded flex justify-between items-center">
+                          <span>TOTAL PAID:</span>
+                          <span>${(o.total || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        </div>
                         <div className="text-xs text-neutral-500 pt-2 font-mono space-y-1">
                           {(() => {
                             const pd = o.paymentDetails || {
