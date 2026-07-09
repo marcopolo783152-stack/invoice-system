@@ -2226,14 +2226,18 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                         <div className="text-xs text-neutral-500 pt-2 font-mono space-y-1">
                           {(() => {
-                            const pd = o.paymentDetails || {
-                              cardBrand: "Visa",
-                              last4: "8678",
-                              cardholderName: "Alexandria Collector",
-                              cardNumber: "•••• •••• •••• 8678",
-                              cardExpiry: "08/29",
-                              cardCVC: "492"
-                            };
+                            if (!o.paymentDetails) {
+                              return (
+                                <div className="mt-2 bg-neutral-100/50 border border-neutral-200/50 p-3 text-xs rounded text-center">
+                                  <div className="flex justify-center mb-1">
+                                    <ShieldCheck className="h-5 w-5 text-green-600" />
+                                  </div>
+                                  <strong className="text-neutral-700 block mb-0.5">Card Data Securely Deleted</strong>
+                                  <span className="text-neutral-500 text-[10px]">The payment info for this order has been permanently erased from the system.</span>
+                                </div>
+                              );
+                            }
+                            const pd = o.paymentDetails;
                             return (
                               <>
                                 <div>Card: {pd.cardBrand} (last 4: <strong>{pd.last4}</strong>)</div>
