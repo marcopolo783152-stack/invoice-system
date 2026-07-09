@@ -701,6 +701,24 @@ export const AdminDashboard: React.FC = () => {
     setBlogContent("");
   };
 
+  const filteredAdminRugs = useMemo(() => {
+    return rugs.filter(r => {
+      const matchesSearch = adminSearchQuery === "" || 
+        r.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+        r.sku.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+        r.origin.toLowerCase().includes(adminSearchQuery.toLowerCase());
+      
+      const matchesSize = adminSizeFilter === "All" || r.sizeCategory === adminSizeFilter;
+      
+      const isMachineMade = (r.manufacturingType || "").toLowerCase().includes("machine");
+      let matchesType = true;
+      if (adminTypeFilter === "Handmade" && isMachineMade) matchesType = false;
+      if (adminTypeFilter === "Machine-made" && !isMachineMade) matchesType = false;
+      
+      return matchesSearch && matchesSize && matchesType;
+    });
+  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter]);
+
   return (
     <div className="bg-[#F9F7F5] min-h-screen font-sans text-xs text-editorial-text flex flex-col md:flex-row">
         
@@ -1945,11 +1963,10 @@ export const AdminDashboard: React.FC = () => {
                     <th className="py-3 px-4 w-12 text-center">
                       <input 
                         type="checkbox"
-                        checked={selectedRugIds.length > 0 && selectedRugIds.length === rugs.filter(r => (adminSearchQuery === "" || r.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) || r.sku.toLowerCase().includes(adminSearchQuery.toLowerCase()))).length}
+                        checked={selectedRugIds.length > 0 && selectedRugIds.length === filteredAdminRugs.length}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            const filtered = rugs.filter(r => (adminSearchQuery === "" || r.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) || r.sku.toLowerCase().includes(adminSearchQuery.toLowerCase())));
-                            setSelectedRugIds(filtered.map(r => r.id));
+                            setSelectedRugIds(filteredAdminRugs.map(r => r.id));
                           } else {
                             setSelectedRugIds([]);
                           }
@@ -1969,21 +1986,6 @@ export const AdminDashboard: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-stone-100">
                   {(() => {
-                    const filteredAdminRugs = rugs.filter(r => {
-                      const matchesSearch = adminSearchQuery === "" || 
-                        r.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
-                        r.sku.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
-                        r.origin.toLowerCase().includes(adminSearchQuery.toLowerCase());
-                      
-                      const matchesSize = adminSizeFilter === "All" || r.sizeCategory === adminSizeFilter;
-                      
-                      const isMachineMade = (r.manufacturingType || "").toLowerCase().includes("machine");
-                      let matchesType = true;
-                      if (adminTypeFilter === "Handmade" && isMachineMade) matchesType = false;
-                      if (adminTypeFilter === "Machine-made" && !isMachineMade) matchesType = false;
-                      
-                      return matchesSearch && matchesSize && matchesType;
-                    });
 
                     if (filteredAdminRugs.length === 0) {
                       return (

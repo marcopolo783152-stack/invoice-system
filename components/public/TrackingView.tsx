@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import { useStore } from "@/context/StoreContext";
 import { Search, Compass, Truck, ShieldCheck, ClipboardCheck, PackageCheck, AlertCircle, ShoppingBag, MapPin, Send } from "lucide-react";
 import { generateAndDownloadReceiptPDF } from "@/utils/pdf";
+import LiveTrackingButton from "./LiveTrackingButton";
 
 export const TrackingView: React.FC = () => {
   const { orders, cleaningBookings, sendChatMessage, shopProfile, logoUrl, updateOrderStatus } = useStore();
@@ -341,6 +342,16 @@ export const TrackingView: React.FC = () => {
                           <span className="text-gray-400 block uppercase font-light">Estimated Delivery:</span>
                           <span className="font-semibold text-white">{activeOrder.shippingDetails.estimatedDelivery || "Showroom pending verification"}</span>
                         </div>
+                        
+                        {/* Live Tracking Feature */}
+                        {activeOrder.shippingDetails.carrier && activeOrder.shippingDetails.trackingNumber && (
+                          <div className="col-span-2 pt-2 border-t border-gray-700/50 mt-1">
+                            <LiveTrackingButton 
+                              carrier={activeOrder.shippingDetails.carrier} 
+                              trackingNumber={activeOrder.shippingDetails.trackingNumber} 
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
