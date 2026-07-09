@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
-import { X, Trash2, ShieldCheck, CreditCard, ChevronRight, CheckCircle2, Truck, HelpCircle, FileText, AlertTriangle, Printer, Download, Camera } from "lucide-react";
+import { X, Trash2, ShieldCheck, CreditCard, ChevronRight, CheckCircle2, Truck, HelpCircle, FileText, AlertTriangle, Printer, Download, Camera, Lock } from "lucide-react";
 import { jsPDF } from "jspdf";
 
 export const CartView: React.FC = () => {
@@ -466,8 +466,15 @@ export const CartView: React.FC = () => {
                   </div>
                 </div>
 
-                <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Credit Card Coordinates</h4>
+                <div className="flex items-center justify-between border-b border-editorial-border pb-2">
+                  <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold">Secure Payment Method</h4>
+                  <div className="flex items-center gap-1.5 text-[10px] text-green-700 font-bold uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded">
+                    <Lock className="h-3 w-3" />
+                    <span>256-bit SSL Encrypted</span>
+                  </div>
+                </div>
                 
+
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Cardholder Full Name</label>

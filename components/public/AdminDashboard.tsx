@@ -823,7 +823,7 @@ export const AdminDashboard: React.FC = () => {
               }`}
             >
               <ClipboardList className="h-4.5 w-4.5" />
-              <span>Escrow Invoices</span>
+              <span>Customer Orders</span>
               {dynamicAnalytics.pendingOrders > 0 && (
                 <span className="absolute right-3 bg-[#C22E2E] text-white text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
                   {dynamicAnalytics.pendingOrders}
@@ -932,7 +932,7 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === "analytics" && "Analytical Insights"}
               {activeTab === "inventory" && "Manage Showroom Inventory"}
               {activeTab === "bulk_import" && "Bulk Importer"}
-              {activeTab === "orders" && "Escrow Invoices & Dispatch Logs"}
+              {activeTab === "orders" && "Customer Orders & Dispatch Logs"}
               {activeTab === "transactions" && "System Transactions Ledger"}
               {activeTab === "reviews" && "Advisor Review Moderation"}
               {activeTab === "messages" && "Live Concierge Inbox Thread"}
@@ -1119,7 +1119,7 @@ export const AdminDashboard: React.FC = () => {
                   {dynamicAnalytics.pendingOrders > 0 ? (
                     <p className="flex items-start gap-2 text-[#8F6A3D]">
                       <AlertCircle className="h-4.5 w-4.5 flex-shrink-0 text-editorial-accent" />
-                      <span>You have <strong>{dynamicAnalytics.pendingOrders} invoice holds</strong> requiring manual verification under the "Escrow Invoices" tab.</span>
+                      <span>You have <strong>{dynamicAnalytics.pendingOrders} invoice holds</strong> requiring manual verification under the "Customer Orders" tab.</span>
                     </p>
                   ) : (
                     <p className="flex items-start gap-2 text-emerald-800">
@@ -2109,11 +2109,11 @@ export const AdminDashboard: React.FC = () => {
           <BulkImport />
         )}
 
-        {/* --- TAB C: ORDER MANAGEMENT (ESCROW INVOICES) --- */}
+        {/* --- TAB C: ORDER MANAGEMENT (CUSTOMER ORDERS) --- */}
         {activeTab === "orders" && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
-              <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Escrow Invoice Fulfillment Logs</h2>
+              <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Customer Orders Fulfillment Logs</h2>
               <p className="text-xs text-neutral-400">Review client payment settlements, generate certificate files, and update freight dispatch statuses.</p>
             </div>
 
