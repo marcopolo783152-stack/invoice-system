@@ -46,7 +46,7 @@ export const CartView: React.FC = () => {
   
   const derivedShippingAddress = deliveryOption === "Pickup"
     ? "Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314"
-    : `${shippingStreet} ${shippingApt ? "Apt/Suite " + shippingApt : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
+    : `${shippingStreet}${shippingApt.trim() ? " " + shippingApt.trim() : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
 
   // Credit Card Simulation
   const [cardName, setCardName] = useState("");
