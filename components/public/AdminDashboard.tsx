@@ -11,6 +11,7 @@ import { generateAndDownloadReceiptPDF } from "@/utils/pdf";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import { compressImage } from "@/lib/imageUtils";
+import LiveTrackingButton from "./LiveTrackingButton";
 import { 
   BarChart3, 
   Layers, 
@@ -2353,6 +2354,14 @@ export const AdminDashboard: React.FC = () => {
                               </a>
                             )}
                           </div>
+                          
+                          {/* Live Tracking Feature */}
+                          {o.shippingDetails.carrier && o.shippingDetails.trackingNumber && (
+                            <LiveTrackingButton 
+                              carrier={o.shippingDetails.carrier} 
+                              trackingNumber={o.shippingDetails.trackingNumber} 
+                            />
+                          )}
                         )}
                         
                         <div className="pt-2 border-t border-neutral-100 flex gap-2 mt-auto">
