@@ -2344,26 +2344,28 @@ export const AdminDashboard: React.FC = () => {
 
                         {/* Showing Tracking details if already dispatched */}
                         {o.shippingDetails && (
-                          <div className="text-sm text-neutral-500 border-t border-stone-100 pt-2 flex flex-col gap-1">
-                            <div className="flex justify-between">
-                              <span>{o.shippingDetails.carrier}</span>
-                              <span className="font-mono text-amber-700 font-bold">{o.shippingDetails.trackingNumber}</span>
+                          <>
+                            <div className="text-sm text-neutral-500 border-t border-stone-100 pt-2 flex flex-col gap-1">
+                              <div className="flex justify-between">
+                                <span>{o.shippingDetails.carrier}</span>
+                                <span className="font-mono text-amber-700 font-bold">{o.shippingDetails.trackingNumber}</span>
+                              </div>
+                              {o.shippingDetails.labelUrl && (
+                                <a href={o.shippingDetails.labelUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                                  <Printer className="h-3 w-3" />
+                                  Download Label PDF
+                                </a>
+                              )}
                             </div>
-                            {o.shippingDetails.labelUrl && (
-                              <a href={o.shippingDetails.labelUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                                <Printer className="h-3 w-3" />
-                                Download Label PDF
-                              </a>
+                            
+                            {/* Live Tracking Feature */}
+                            {o.shippingDetails.carrier && o.shippingDetails.trackingNumber && (
+                              <LiveTrackingButton 
+                                carrier={o.shippingDetails.carrier} 
+                                trackingNumber={o.shippingDetails.trackingNumber} 
+                              />
                             )}
-                          </div>
-                          
-                          {/* Live Tracking Feature */}
-                          {o.shippingDetails.carrier && o.shippingDetails.trackingNumber && (
-                            <LiveTrackingButton 
-                              carrier={o.shippingDetails.carrier} 
-                              trackingNumber={o.shippingDetails.trackingNumber} 
-                            />
-                          )}
+                          </>
                         )}
                         
                         <div className="pt-2 border-t border-neutral-100 flex gap-2 mt-auto">
