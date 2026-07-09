@@ -47,7 +47,9 @@ import {
   Eye, 
   UploadCloud,
   Camera,
-  Banknote
+  Banknote,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
@@ -249,8 +251,9 @@ export const AdminDashboard: React.FC = () => {
   const [blogCategory, setBlogCategory] = useState<any>("Interior Design Tips");
   const [blogContent, setBlogContent] = useState("");
 
-  // States for secure card decrypt password prompt
+  // Security features state
   const [unlockedOrders, setUnlockedOrders] = useState<string[]>([]);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [passwordPromptOrderId, setPasswordPromptOrderId] = useState<string | null>(null);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -2124,12 +2127,17 @@ export const AdminDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {orders.map((o) => (
-                  <div key={o.id} className="p-5 bg-stone-50 rounded-2xl border border-neutral-200/60 shadow-sm space-y-4">
+                {orders.map((o) => {
+                  const isExpanded = expandedOrderId === o.id;
+                  return (
+                  <div key={o.id} className="p-5 bg-stone-50 rounded-2xl border border-neutral-200/60 shadow-sm transition-all duration-300">
                     
                     {/* Header bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-200 pb-3 gap-2">
-                      <div>
+                    <div 
+                      onClick={() => setExpandedOrderId(isExpanded ? null : o.id)}
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer hover:opacity-80 transition ${isExpanded ? "border-b border-neutral-200 pb-4 mb-4" : ""}`}
+                    >
+                      <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-bold text-amber-700 text-sm">{o.id}</span>
                           <span className="text-xs text-neutral-400">({new Date(o.createdAt).toLocaleDateString()})</span>
@@ -2139,7 +2147,7 @@ export const AdminDashboard: React.FC = () => {
                         </p>
                       </div>
 
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex flex-col sm:items-end gap-2 pr-4 sm:pr-0">
                         <div className="flex items-center gap-3">
                           <span className={`px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider ${
                             o.status === "Cancelled" ? "bg-red-100 text-red-700" :
@@ -2150,19 +2158,26 @@ export const AdminDashboard: React.FC = () => {
                           </span>
                         </div>
                         {o.shippingDetails?.trackingNumber && (
-                          <div className="flex flex-col items-end gap-1">
+                          <div className="flex flex-col items-start sm:items-end gap-1">
                             <div className="text-xs text-neutral-500 font-mono flex items-center gap-1 bg-neutral-100 px-2 py-1 rounded">
                               <span className="font-bold text-neutral-700">TRACKING:</span> {o.shippingDetails.trackingNumber}
                             </div>
                             {o.shippingDetails?.estimatedDelivery && (
-                              <div className="text-[10px] text-amber-600 font-medium max-w-[250px] text-right leading-tight">
+                              <div className="text-[10px] text-amber-600 font-medium max-w-[250px] text-left sm:text-right leading-tight">
                                 Live Status: {o.shippingDetails.estimatedDelivery}
                               </div>
                             )}
                           </div>
                         )}
                       </div>
+                      
+                      <div className="text-neutral-400 self-center hidden sm:flex justify-center items-center">
+                        {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                      </div>
                     </div>
+
+                    {isExpanded && (
+                      <div className="space-y-4 animate-fadeIn">
 
                     {/* Middle grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-left">
@@ -2441,8 +2456,11 @@ export const AdminDashboard: React.FC = () => {
 
                     </div>
 
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
