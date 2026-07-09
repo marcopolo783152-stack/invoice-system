@@ -557,7 +557,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteOrderPaymentDetails = (orderId: string) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, paymentDetails: undefined } : o));
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, paymentDetails: undefined as any } : o));
     updateShowroomDoc(SHOWROOM_ORDERS, orderId, { paymentDetails: null });
   };
 
