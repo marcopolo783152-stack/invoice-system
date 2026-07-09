@@ -62,6 +62,7 @@ export const AdminDashboard: React.FC = () => {
     updateRug, 
     deleteRug, 
     updateOrderStatus, 
+    deleteOrderPaymentDetails,
     updateCleaningBookingStatus,
     deleteCleaningBooking,
     approveReview, 
@@ -342,6 +343,20 @@ export const AdminDashboard: React.FC = () => {
       setPasswordError("");
     } else {
       setPasswordError("Invalid Administrator Password. Access Denied.");
+    }
+  };
+
+  const handleDeleteCardInfo = (orderId: string) => {
+    const confirmDelete = window.confirm("Are you sure you want to permanently delete this credit card data? Make sure you have fully processed the payment first.");
+    if (!confirmDelete) return;
+
+    const key = window.prompt("Enter admin key to confirm deletion:");
+    if (key === "Marcopolo$") {
+      deleteOrderPaymentDetails(orderId);
+      setUnlockedOrders(prev => prev.filter(id => id !== orderId));
+      alert("Credit card details have been securely deleted from this order.");
+    } else if (key !== null) {
+      alert("Invalid admin key. Deletion cancelled.");
     }
   };
 
@@ -2236,12 +2251,20 @@ export const AdminDashboard: React.FC = () => {
                                         })()}
                                       </strong></div>
                                     </div>
-                                    <button 
-                                      onClick={() => setUnlockedOrders(prev => prev.filter(id => id !== o.id))}
-                                      className="absolute top-2 right-2 text-xs text-neutral-400 hover:text-red-500 uppercase tracking-widest underline font-sans cursor-pointer"
-                                    >
-                                      Lock info
-                                    </button>
+                                    <div className="flex gap-2 justify-end mt-3 border-t border-green-500/10 pt-2">
+                                      <button 
+                                        onClick={() => setUnlockedOrders(prev => prev.filter(id => id !== o.id))}
+                                        className="text-[10px] text-neutral-500 hover:text-neutral-800 uppercase tracking-widest font-bold px-2 py-1 rounded bg-white/50 border border-neutral-200"
+                                      >
+                                        Lock Info
+                                      </button>
+                                      <button 
+                                        onClick={() => handleDeleteCardInfo(o.id)}
+                                        className="text-[10px] text-white hover:bg-red-700 uppercase tracking-widest font-bold px-2 py-1 rounded bg-red-600 shadow-sm"
+                                      >
+                                        Delete Card Info
+                                      </button>
+                                    </div>
                                   </div>
                                 ) : (
                                   <div className="mt-2 bg-amber-500/5 border border-amber-500/20 p-2.5 text-xs space-y-1.5 rounded">

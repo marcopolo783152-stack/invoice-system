@@ -79,6 +79,7 @@ interface StoreContextType {
   deleteRug: (id: string) => void;
   incrementRugViews: (id: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus, shipping?: ShippingDetails) => void;
+  deleteOrderPaymentDetails: (orderId: string) => void;
   approveReview: (reviewId: string) => void;
   deleteReview: (reviewId: string) => void;
   addBlogPost: (post: Omit<BlogPost, "id">) => void;
@@ -555,6 +556,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateShowroomDoc(SHOWROOM_ORDERS, orderId, updatedFields);
   };
 
+  const deleteOrderPaymentDetails = (orderId: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, paymentDetails: undefined } : o));
+    updateShowroomDoc(SHOWROOM_ORDERS, orderId, { paymentDetails: null });
+  };
+
   const deleteOrder = (orderId: string) => {
     setOrders(prev => prev.filter(o => o.id !== orderId)); // Optimistic UI
     deleteShowroomDoc(SHOWROOM_ORDERS, orderId);
@@ -938,6 +944,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteRug,
         incrementRugViews,
         updateOrderStatus,
+        deleteOrderPaymentDetails,
         approveReview,
         deleteReview,
         addBlogPost,
