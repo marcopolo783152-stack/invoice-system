@@ -1,4 +1,5 @@
 import { Rug } from "../types";
+import Papa from "papaparse";
 
 export const downloadCsvTemplate = () => {
   const headers = [
@@ -30,58 +31,52 @@ export const downloadCsvTemplate = () => {
 };
 
 export const parseRugCsv = (csvText: string): Partial<Rug>[] => {
-  const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
-  if (lines.length < 2) throw new Error("CSV must contain a header row and at least one data row.");
+  const result = Papa.parse(csvText, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (header) => header.trim().toLowerCase(),
+  });
 
-  // Naive CSV split (handles quotes naively, assumes no complex internal commas inside unquoted strings)
-  // For a robust app, you'd use a real regex or parser, but this works for basic template usage.
-  const parseLine = (line: string) => {
-    const result = [];
-    let current = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"' && line[i+1] === '"') {
-        current += '"';
-        i++;
-      } else if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(current);
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    result.push(current);
-    return result;
-  };
-
-  const headers = parseLine(lines[0]).map(h => h.trim().toLowerCase());
-  const requiredHeaders = ["sku", "name", "price", "sizecategory", "dimensions"];
-  
-  for (const req of requiredHeaders) {
-    if (!headers.includes(req)) {
-      throw new Error(`Missing required column: ${req}`);
-    }
+  if (result.errors && result.errors.length > 0) {
+    // If there's an error on the very first row, it might be structural
+    console.error("CSV Parsing Errors:", result.errors);
+    throw new Error(`CSV Parsing Error: ${result.errors[0].message} (Row ${result.errors[0].row})`);
   }
+
+  const rows = result.data as Record<string, string>[];
+  if (rows.length === 0) {
+    throw new Error("CSV must contain a header row and at least one data row.");
+  }
+
+  const firstRowHeaders = Object.keys(rows[0]);
+  const hasSku = firstRowHeaders.includes("sku");
+  const hasName = firstRowHeaders.includes("name");
+  const hasPrice = firstRowHeaders.includes("price");
+  const hasSizeCategory = firstRowHeaders.includes("sizecategory");
+  // Some users might have 'dimension' instead of 'dimensions', accept both!
+  const hasDimensions = firstRowHeaders.includes("dimensions") || firstRowHeaders.includes("dimension");
+
+  if (!hasSku) throw new Error("Missing required column: sku");
+  if (!hasName) throw new Error("Missing required column: name");
+  if (!hasPrice) throw new Error("Missing required column: price");
+  if (!hasSizeCategory) throw new Error("Missing required column: sizeCategory");
+  if (!hasDimensions) throw new Error("Missing required column: dimensions or dimension");
 
   const parsedRugs: Partial<Rug>[] = [];
 
-  for (let i = 1; i < lines.length; i++) {
-    const row = parseLine(lines[i]);
+  for (const row of rows) {
     const rug: any = {};
     
-    headers.forEach((header, index) => {
-      let val = row[index]?.trim() || "";
-      if (header === "price" || header === "originalprice" || header === "weightlbs") {
-        rug[header] = val ? parseFloat(val.replace(/[^0-9.]/g, '')) : undefined;
-      } else if (header === "isspecialsale") {
-        rug[header] = val.toLowerCase() === "true" || val === "1";
+    for (const [key, value] of Object.entries(row)) {
+      const val = value?.trim() || "";
+      if (key === "price" || key === "originalprice" || key === "weightlbs") {
+        rug[key] = val ? parseFloat(val.replace(/[^0-9.]/g, '')) : undefined;
+      } else if (key === "isspecialsale") {
+        rug[key] = val.toLowerCase() === "true" || val === "1";
       } else {
-        rug[header] = val;
+        rug[key] = val;
       }
-    });
+    }
 
     let mfgType: any = "Handmade";
     if (rug.type && typeof rug.type === 'string' && rug.type.toLowerCase().includes('machine')) {
@@ -98,7 +93,7 @@ export const parseRugCsv = (csvText: string): Partial<Rug>[] => {
       price: rug.price,
       originalPrice: rug.originalprice,
       sizeCategory: rug.sizecategory || "Medium",
-      dimensions: rug.dimensions,
+      dimensions: rug.dimensions || rug.dimension || "",
       origin: rug.origin || "Unknown",
       material: rug.material || "Wool",
       style: rug.style || "Traditional",
