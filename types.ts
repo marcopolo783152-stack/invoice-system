@@ -83,6 +83,7 @@ export type OrderStatus =
   | "Pending Confirmation"
   | "Confirmed"
   | "Preparing for Shipping"
+  | "Ready for Pickup"
   | "Shipped"
   | "Delivered"
   | "Cancelled";

@@ -49,7 +49,8 @@ import {
   Camera,
   Banknote,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Store
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
@@ -2336,12 +2337,32 @@ export const AdminDashboard: React.FC = () => {
                           )}
 
                           {o.status === "Preparing for Shipping" && (
+                            (o.deliveryOption === "Pickup" || o.customerInfo.shippingAddress?.toLowerCase().includes("pickup")) ? (
+                              <button
+                                onClick={() => updateOrderStatus(o.id, "Ready for Pickup")}
+                                className="flex-1 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-amber-400 font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                <Store className="h-3.5 w-3.5" />
+                                <span>Mark Ready for Pickup</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenShippingModal(o.id)}
+                                className="flex-1 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-amber-400 font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                <Truck className="h-3.5 w-3.5" />
+                                <span>Dispatch carrier</span>
+                              </button>
+                            )
+                          )}
+
+                          {o.status === "Ready for Pickup" && (
                             <button
-                              onClick={() => handleOpenShippingModal(o.id)}
-                              className="flex-1 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-amber-400 font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
+                              onClick={() => updateOrderStatus(o.id, "Delivered")}
+                              className="flex-1 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer"
                             >
-                              <Truck className="h-3.5 w-3.5" />
-                              <span>Dispatch carrier</span>
+                              <Check className="h-3.5 w-3.5" />
+                              <span>Mark Picked Up</span>
                             </button>
                           )}
 
