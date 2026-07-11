@@ -112,7 +112,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
       // Category Lists Match
       const matchesSize = selectedSizes.length === 0 || selectedSizes.some(sel => {
         const genRugSize = getGeneralSizeCategory(rug.sizeCategory);
-        return genRugSize === sel || rug.sizeCategory === sel;
+        return genRugSize === sel || rug.sizeCategory === sel || rug.shape === sel;
       });
 
       // Specific Sizes Match
