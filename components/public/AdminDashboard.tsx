@@ -255,6 +255,7 @@ export const AdminDashboard: React.FC = () => {
   // States for inventory filters
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
   const [inventoryViewMode, setInventoryViewMode] = useState<"list" | "gallery">("list");
+  const [adminAvailabilityFilter, setAdminAvailabilityFilter] = useState("Available");
   const [adminSizeFilter, setAdminSizeFilter] = useState("All");
   const [adminTypeFilter, setAdminTypeFilter] = useState("All");
 
@@ -812,6 +813,47 @@ export const AdminDashboard: React.FC = () => {
     setBlogContent("");
   };
 
+  // Helper to intelligently match size filter, especially for Runners
+  const matchesSizeLogic = (rug: any, filter: string) => {
+    if (filter === "All") return true;
+    if (rug.sizeCategory === filter) return true;
+    if (rug.shape === filter) return true;
+    
+    const filterLower = filter.toLowerCase();
+    const isRunnerFilter = filterLower.includes("runner");
+    const isRugRunner = rug.shape?.toLowerCase() === "runner" || rug.sizeCategory?.toLowerCase() === "runner";
+    
+    if (isRunnerFilter) {
+      if (filterLower === "runner" || filterLower === "runners") {
+        return isRugRunner;
+      }
+      
+      const match = filterLower.match(/(\d+)\s*ft\s*runner/);
+      if (match && isRugRunner) {
+        const targetFt = parseInt(match[1]);
+        
+        // Parse rug dimensions like "2'6'' x 7'9''"
+        const dims = rug.dimensions || "";
+        const numbers = [...dims.matchAll(/(\d+)(?:'|ft|\.)?(\d+)?(?:''|in)?/gi)];
+        
+        let maxFt = 0;
+        for (const m of numbers) {
+           const ft = parseInt(m[1]) || 0;
+           const inc = parseInt(m[2]) || 0;
+           const totalFt = ft + (inc / 12);
+           if (totalFt > maxFt) maxFt = totalFt;
+        }
+        
+        // Match if within ~1.5 ft to be safe (e.g. 7'9" is ~7.75ft, matches 8ft)
+        if (maxFt > 0 && Math.abs(maxFt - targetFt) <= 1.5) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  };
+
   const filteredAdminRugs = useMemo(() => {
     return rugs.filter(r => {
       const matchesSearch = adminSearchQuery === "" || 
@@ -819,16 +861,22 @@ export const AdminDashboard: React.FC = () => {
         r.sku.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
         r.origin.toLowerCase().includes(adminSearchQuery.toLowerCase());
       
-      const matchesSize = adminSizeFilter === "All" || r.sizeCategory === adminSizeFilter;
+      const matchesSize = matchesSizeLogic(r, adminSizeFilter);
       
       const isMachineMade = (r.manufacturingType || "").toLowerCase().includes("machine");
       let matchesType = true;
       if (adminTypeFilter === "Handmade" && isMachineMade) matchesType = false;
       if (adminTypeFilter === "Machine-made" && !isMachineMade) matchesType = false;
       
-      return matchesSearch && matchesSize && matchesType;
+      const matchesAvailability = 
+        adminAvailabilityFilter === "All" ||
+        (adminAvailabilityFilter === "Available" && r.availability === "In Stock") ||
+        (adminAvailabilityFilter === "On Hold" && r.availability === "Reserved") ||
+        (adminAvailabilityFilter === "Sold" && r.availability === "Sold Out");
+      
+      return matchesSearch && matchesSize && matchesType && matchesAvailability;
     });
-  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter]);
+  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter]);
 
   return (
     <div className="bg-[#F9F7F5] min-h-screen font-sans text-xs text-editorial-text flex flex-col md:flex-row">
@@ -1945,7 +1993,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Search and Size Filters Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-stone-50 p-4 border border-neutral-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-stone-50 p-4 border border-neutral-200">
               <div className="space-y-1">
                 <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider">Search Inventory</label>
                 <input
@@ -1979,6 +2027,19 @@ export const AdminDashboard: React.FC = () => {
                   <option value="All">All Types</option>
                   <option value="Handmade">Handmade</option>
                   <option value="Machine-made">Machine-made</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider">Availability</label>
+                <select
+                  value={adminAvailabilityFilter}
+                  onChange={(e) => setAdminAvailabilityFilter(e.target.value)}
+                  className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-xs outline-none focus:border-amber-500"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Available">Available (In Stock)</option>
+                  <option value="On Hold">On Hold (Reserved)</option>
+                  <option value="Sold">Sold (Sold Out)</option>
                 </select>
               </div>
             </div>
