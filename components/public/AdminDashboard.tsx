@@ -50,7 +50,9 @@ import {
   Banknote,
   ChevronUp,
   ChevronDown,
-  Store
+  Store,
+  List,
+  LayoutGrid
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
@@ -243,6 +245,7 @@ export const AdminDashboard: React.FC = () => {
 
   // States for inventory filters
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
+  const [inventoryViewMode, setInventoryViewMode] = useState<"list" | "gallery">("list");
   const [adminSizeFilter, setAdminSizeFilter] = useState("All");
   const [adminTypeFilter, setAdminTypeFilter] = useState("All");
 
@@ -1928,13 +1931,31 @@ export const AdminDashboard: React.FC = () => {
                 <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Registered Rug Inventory</h2>
                 <p className="text-xs text-neutral-400">Add, edit, modify, or delete high-resolution wool and silk rugs.</p>
               </div>
-              <button
-                onClick={() => handleOpenRugModal()}
-                className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-neutral-950 text-xs font-bold uppercase tracking-widest rounded-lg transition flex items-center gap-1.5 shadow"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Publish New Rug</span>
-              </button>
+              <div className="flex items-center gap-4">
+                <div className="hidden sm:flex items-center bg-stone-100 rounded-lg p-1 border border-stone-200">
+                  <button 
+                    onClick={() => setInventoryViewMode("list")} 
+                    className={`p-1.5 rounded-md transition ${inventoryViewMode === 'list' ? 'bg-white shadow text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
+                    title="List View"
+                  >
+                    <List size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setInventoryViewMode("gallery")} 
+                    className={`p-1.5 rounded-md transition ${inventoryViewMode === 'gallery' ? 'bg-white shadow text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
+                    title="Gallery View"
+                  >
+                    <LayoutGrid size={16} />
+                  </button>
+                </div>
+                <button
+                  onClick={() => handleOpenRugModal()}
+                  className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-neutral-950 text-xs font-bold uppercase tracking-widest rounded-lg transition flex items-center gap-1.5 shadow"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Publish New Rug</span>
+                </button>
+              </div>
             </div>
 
             {/* Search and Size Filters Bar */}
@@ -2054,8 +2075,100 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-              {/* Catalog list grid */}
+              {/* Catalog Display */}
             <div className="overflow-x-auto">
+              {inventoryViewMode === "gallery" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4 bg-stone-50 border-t border-neutral-200">
+                  {filteredAdminRugs.length === 0 ? (
+                    <div className="col-span-full py-12 text-center text-neutral-400 font-sans italic text-sm">
+                      No rugs found matching search query or active size filter.
+                    </div>
+                  ) : (
+                    filteredAdminRugs.map((r) => (
+                      <div key={r.id} className="bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition overflow-hidden flex flex-col relative group">
+                        {/* Checkbox overlay */}
+                        <div className="absolute top-2 left-2 z-10">
+                          <input 
+                            type="checkbox"
+                            checked={selectedRugIds.includes(r.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedRugIds(prev => [...prev, r.id]);
+                              } else {
+                                setSelectedRugIds(prev => prev.filter(id => id !== r.id));
+                              }
+                            }}
+                            className="rounded-sm border-gray-300 text-editorial-accent focus:ring-editorial-accent cursor-pointer bg-white shadow-sm"
+                          />
+                        </div>
+                        <div className="relative aspect-square">
+                          <img src={r.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80"} alt={r.name} className="w-full h-full object-cover" />
+                          <span className={`absolute bottom-2 right-2 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider shadow-sm ${
+                            r.availability === "In Stock" ? "bg-green-100 text-green-700" :
+                            r.availability === "Reserved" ? "bg-amber-100 text-amber-700 animate-pulse" :
+                            "bg-red-100 text-red-700"
+                          }`}>
+                            {r.availability}
+                          </span>
+                        </div>
+                        <div className="p-4 flex flex-col flex-1">
+                          <div className="flex justify-between items-start mb-2 gap-2">
+                            <h3 className="font-bold text-neutral-900 text-sm leading-tight">{r.name}</h3>
+                            <div className="flex flex-col items-end shrink-0 text-right">
+                              {r.originalPrice ? (
+                                <>
+                                  <span className="text-[10px] text-gray-400 line-through">${r.originalPrice.toLocaleString()}</span>
+                                  <span className="text-sm font-serif font-bold text-editorial-accent">${r.price.toLocaleString()}</span>
+                                </>
+                              ) : (
+                                <span className="text-sm font-serif font-bold text-neutral-900">${r.price.toLocaleString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-xs text-neutral-500 font-mono mb-2">SKU: {r.sku}</p>
+                          
+                          <div className="flex items-center gap-2 mb-4 flex-wrap">
+                            {(r.manufacturingType || "").toLowerCase().includes("machine") ? (
+                                <span className="px-1.5 py-0.5 bg-stone-100 text-stone-600 text-[9px] font-bold rounded-sm border border-stone-200">MACHINE</span>
+                            ) : (
+                                <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 text-[9px] font-bold rounded-sm border border-amber-200">HANDMADE</span>
+                            )}
+                            <span className="text-[10px] text-neutral-500">{r.origin} • {r.dimensions}</span>
+                          </div>
+
+                          <div className="mt-auto flex items-center justify-between pt-3 border-t border-neutral-100">
+                            <div className="flex gap-2">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-editorial-text bg-stone-100 px-1.5 py-0.5 rounded-sm" title="Views">
+                                <Eye className="h-3 w-3 text-editorial-accent" />
+                                {r.views || 0}
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-editorial-text bg-stone-100 px-1.5 py-0.5 rounded-sm" title="Favorites">
+                                <Heart className="h-3 w-3 text-rose-500" fill={r.favorites && r.favorites > 0 ? "currentColor" : "none"} />
+                                {r.favorites || 0}
+                              </span>
+                            </div>
+                            
+                            <div className="flex gap-1">
+                              <button onClick={() => handleOpenRugModal(r)} className="p-1.5 hover:bg-stone-100 text-neutral-600 hover:text-amber-600 rounded" title="Edit">
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              <button onClick={() => {
+                                  askConfirmation(
+                                    "Delete Rug from Inventory",
+                                    `Are you sure you want to delete "${r.name}"? This action cannot be undone.`,
+                                    () => deleteRug(r.id)
+                                  );
+                                }} className="p-1.5 hover:bg-stone-100 text-neutral-400 hover:text-red-500 rounded" title="Delete">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : (
               <table className="w-full text-left font-sans text-sm border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200 uppercase tracking-wider text-sm text-neutral-400 font-semibold bg-stone-50">
@@ -2187,6 +2300,7 @@ export const AdminDashboard: React.FC = () => {
                   })()}
                 </tbody>
               </table>
+              )}
             </div>
           </div>
         )}
