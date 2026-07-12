@@ -6,7 +6,7 @@
 import React, { useState, useRef } from "react";
 import { useStore } from "@/context/StoreContext";
 import { Rug, Review } from "@/types";
-import { X, Star, ShoppingBag, ShieldAlert, Award, Compass, RefreshCw, Layers, MessageCircle, ZoomIn } from "lucide-react";
+import { X, Star, ShoppingBag, ShieldAlert, Award, Compass, RefreshCw, Layers, MessageCircle, ZoomIn, Eye, Heart } from "lucide-react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
@@ -18,7 +18,7 @@ interface ProductDetailProps {
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, onSelectRugId }) => {
-  const { rugs, reviews, addToCart, submitReview, deleteReview, activeView, incrementRugViews } = useStore();
+  const { rugs, reviews, addToCart, submitReview, deleteReview, activeView, incrementRugViews, incrementRugFavorites } = useStore();
   
   const rug = rugs.find((r) => r.id === rugId);
   
@@ -200,9 +200,15 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                 <h2 className="font-serif text-2xl sm:text-3xl font-light text-editorial-text leading-tight">
                   {rug.name}
                 </h2>
-                <p className="text-xs font-mono text-gray-400 uppercase tracking-widest">
-                  Showroom SKU: {rug.sku} | Dimensions: {rug.dimensions}
-                </p>
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-mono text-gray-400 uppercase tracking-widest">
+                    Showroom SKU: {rug.sku} | Dimensions: {rug.dimensions}
+                  </p>
+                  <div className="flex gap-3">
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500 font-bold bg-stone-100 px-2 py-1 rounded-sm"><Eye size={12} /> {rug.views || 0} Views</span>
+                    <button onClick={() => incrementRugFavorites(rug.id)} className="flex items-center gap-1.5 text-xs text-rose-500 font-bold bg-rose-50 px-2 py-1 rounded-sm hover:bg-rose-100 transition"><Heart size={12} fill={rug.favorites && rug.favorites > 0 ? "currentColor" : "none"} /> {rug.favorites || 0} Favorites</button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-3 py-3 border-y border-editorial-border justify-between">

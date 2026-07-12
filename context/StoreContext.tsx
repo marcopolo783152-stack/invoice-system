@@ -78,6 +78,7 @@ interface StoreContextType {
   updateRug: (id: string, rug: Partial<Rug>) => void;
   deleteRug: (id: string) => void;
   incrementRugViews: (id: string) => void;
+  incrementRugFavorites: (id: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus, shipping?: ShippingDetails) => void;
   updateOrder: (orderId: string, updates: Partial<Order>) => void;
   deleteOrderPaymentDetails: (orderId: string) => void;
@@ -489,6 +490,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const rug = rugs.find(r => r.id === id);
     if (!rug) return;
     updateRug(id, { views: (rug.views || 0) + 1 });
+  };
+
+  const incrementRugFavorites = (id: string) => {
+    const rug = rugs.find(r => r.id === id);
+    if (!rug) return;
+    updateRug(id, { favorites: (rug.favorites || 0) + 1 });
   };
 
   const deleteRug = async (id: string) => {
@@ -949,6 +956,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateRug,
         deleteRug,
         incrementRugViews,
+        incrementRugFavorites,
         updateOrderStatus,
         updateOrder,
         deleteOrderPaymentDetails,

@@ -21,7 +21,21 @@ import { Instagram, Facebook, Youtube, Twitter, Globe } from "lucide-react";
 function AppContent() {
   const { activeView, showroomAnnouncement, socialLinks, setActiveView, logoutUser } = useStore();
   const [currentTab, setCurrentTab] = useState("home");
-  const [selectedRugId, setSelectedRugId] = useState<string | null>(null);
+  const [selectedRugId, setSelectedRugIdState] = useState<string | null>(null);
+
+  // Wrapper to update URL when opening/closing a rug
+  const setSelectedRugId = (id: string | null) => {
+    setSelectedRugIdState(id);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (id) {
+        url.searchParams.set("item", id);
+      } else {
+        url.searchParams.delete("item");
+      }
+      window.history.pushState({}, "", url.toString());
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -30,6 +44,9 @@ function AppContent() {
 
       if (urlParams.get("track")) {
         setCurrentTab("track");
+      } else if (urlParams.get("item")) {
+        setCurrentTab("shop");
+        setSelectedRugIdState(urlParams.get("item"));
       } else if (path === "/shop") {
         setCurrentTab("shop");
       } else if (path === "/cart") {

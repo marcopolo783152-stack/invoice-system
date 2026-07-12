@@ -845,7 +845,7 @@ export const AdminDashboard: React.FC = () => {
         )}
       
       {/* 1. Sidebar Nav */}
-      <aside className="w-full md:w-64 bg-editorial-text text-white flex flex-col justify-between border-r border-editorial-border p-5 gap-6">
+      <aside className="w-full md:w-64 bg-editorial-text text-white flex flex-col justify-between border-r border-editorial-border p-5 gap-6 md:sticky md:top-0 md:h-screen overflow-y-auto">
         <div className="space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-white/10">
             <div className="h-9 w-9 bg-editorial-accent rounded-none text-white flex items-center justify-center font-bold text-sm">
@@ -2140,10 +2140,16 @@ export const AdminDashboard: React.FC = () => {
                           )}
                         </td>
                         <td className="py-3 px-4">
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-editorial-text bg-stone-100 px-2 py-1 rounded-sm border border-stone-200">
-                            <Eye className="h-3 w-3 text-editorial-accent" />
-                            {r.views || 0}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-editorial-text bg-stone-100 px-2 py-1 rounded-sm border border-stone-200">
+                              <Eye className="h-3 w-3 text-editorial-accent" />
+                              {r.views || 0}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-editorial-text bg-stone-100 px-2 py-1 rounded-sm border border-stone-200">
+                              <Heart className="h-3 w-3 text-rose-500" fill={r.favorites && r.favorites > 0 ? "currentColor" : "none"} />
+                              {r.favorites || 0}
+                            </span>
+                          </div>
                         </td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${

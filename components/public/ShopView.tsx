@@ -20,7 +20,8 @@ import {
   Eye, 
   Info,
   Compass,
-  Sparkles
+  Sparkles,
+  Heart
 } from "lucide-react";
 
 interface ShopViewProps {
@@ -28,7 +29,7 @@ interface ShopViewProps {
 }
 
 export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
-  const { rugs, addToCart } = useStore();
+  const { rugs, addToCart, incrementRugFavorites, incrementRugViews } = useStore();
   
   // Search and Sort State
   const [searchQuery, setSearchQuery] = useState("");
@@ -437,7 +438,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left Column: Filters Sidebar (Desktop only) */}
-          <aside className="hidden lg:block lg:col-span-3 bg-white p-6 rounded-none border border-editorial-border shadow-sm">
+          <aside className="hidden lg:block lg:col-span-3 bg-white p-6 rounded-none border border-editorial-border shadow-sm lg:sticky lg:top-24 max-h-[calc(100vh-6rem)] overflow-y-auto">
             <RenderFiltersSidebar />
           </aside>
 
@@ -518,7 +519,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                     {/* Visual Panel */}
                     <div className={`relative flex items-center justify-center bg-stone-100 overflow-hidden cursor-pointer animate-fadeIn p-2 ${
                       viewMode === 'list' ? 'w-full sm:w-1/3 aspect-[4/3] sm:aspect-square' : 'aspect-[4/3]'
-                    }`} onClick={() => onSelectRugId(rug.id)}>
+                    }`} onClick={() => { incrementRugViews(rug.id); onSelectRugId(rug.id); }}>
                       <img
                         src={rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"}
                         alt={rug.name}
@@ -563,10 +564,14 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                         <div className="flex items-center gap-1.5 text-editorial-accent">
                           <Star className="h-3 w-3 fill-editorial-accent" />
                           <span className="text-xs font-bold text-editorial-text">{rug.rating.toFixed(1)} / 5</span>
-                          <span className="text-sm text-gray-400">| Certified Origin</span>
+                          <span className="text-xs text-gray-400">| Certified Origin</span>
+                          <div className="flex gap-2 ml-auto">
+                            <span className="flex items-center gap-1 text-xs text-gray-500"><Eye size={12} /> {rug.views || 0}</span>
+                            <button onClick={(e) => { e.stopPropagation(); incrementRugFavorites(rug.id); }} className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-600 transition-colors"><Heart size={12} fill={rug.favorites && rug.favorites > 0 ? "currentColor" : "none"} /> {rug.favorites || 0}</button>
+                          </div>
                         </div>
                         <h3 
-                          onClick={() => onSelectRugId(rug.id)}
+                          onClick={() => { incrementRugViews(rug.id); onSelectRugId(rug.id); }}
                           className="font-serif font-light text-sm text-editorial-text group-hover:text-editorial-accent transition truncate cursor-pointer"
                         >
                           {rug.name}
