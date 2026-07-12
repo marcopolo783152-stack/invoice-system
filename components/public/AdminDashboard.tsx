@@ -872,7 +872,7 @@ export const AdminDashboard: React.FC = () => {
         adminAvailabilityFilter === "All" ||
         (adminAvailabilityFilter === "Available" && r.availability === "In Stock") ||
         (adminAvailabilityFilter === "On Hold" && r.availability === "Reserved") ||
-        (adminAvailabilityFilter === "Sold" && r.availability === "Sold Out");
+        (adminAvailabilityFilter === "Sold" && r.availability === "Sold");
       
       return matchesSearch && matchesSize && matchesType && matchesAvailability;
     });

@@ -21,6 +21,7 @@ import {
 } from "@/types";
 import { INITIAL_RUGS } from "@/data/rugs";
 import { INITIAL_BLOGS } from "@/data/blogs";
+import { getAllInvoicesSync } from "@/lib/invoice-storage";
 import { 
   seedShowroomDataIfEmpty, 
   subscribeToCollection, 
@@ -368,26 +369,34 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const hasSyncedRetroactive = useRef(false);
 
-  // Retroactive sync: mark existing rugs as Sold Out if they appear in any past invoice
+  // Retroactive sync: mark existing rugs as Sold if they appear in any past invoice
   useEffect(() => {
-    if (rugs.length > 0 && invoices.length > 0 && !hasSyncedRetroactive.current) {
+    if (typeof window === "undefined") return;
+
+    if (rugs.length > 0 && !hasSyncedRetroactive.current) {
       hasSyncedRetroactive.current = true;
       
-      const allInvoiceItems = invoices.flatMap(inv => inv.items || []);
-      const rugsToUpdate = rugs.filter(rug => {
-        if (rug.availability !== "Sold Out" && rug.sku) {
-          return allInvoiceItems.some(item => item.sku === rug.sku);
-        }
-        return false;
-      });
-
-      if (rugsToUpdate.length > 0) {
-        rugsToUpdate.forEach(rug => {
-          updateRug(rug.id, { availability: "Sold Out" });
+      try {
+        const storedInvoices = getAllInvoicesSync() || [];
+        const allInvoiceItems = storedInvoices.flatMap((inv: any) => inv.items || []);
+        
+        const rugsToUpdate = rugs.filter(rug => {
+          if (rug.availability !== "Sold" && rug.sku) {
+            return allInvoiceItems.some((item: any) => item.sku === rug.sku);
+          }
+          return false;
         });
+
+        if (rugsToUpdate.length > 0) {
+          rugsToUpdate.forEach(rug => {
+            updateRug(rug.id, { availability: "Sold" });
+          });
+        }
+      } catch (e) {
+        console.error("Failed to retroactively sync invoices", e);
       }
     }
-  }, [rugs.length, invoices.length]);
+  }, [rugs.length]);
 
   // Auto-delete chats older than 24 hours on mount and periodically
   useEffect(() => {
