@@ -98,6 +98,15 @@ export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
 
   useEffect(() => {
+    // Request notification permissions silently on mount
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission().catch(e => console.error(e));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("adminTab") as any;
@@ -823,29 +832,6 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="bg-[#F9F7F5] min-h-screen font-sans text-xs text-editorial-text flex flex-col md:flex-row">
-        
-        {/* Audio Autoplay Override Banner */}
-        {!audioEnabled && (
-          <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-600 text-white p-3 flex flex-col sm:flex-row items-center justify-center gap-4 shadow-md animate-fadeIn">
-            <span className="font-bold uppercase tracking-wider text-sm flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" /> Audio alerts are currently muted by your browser.
-            </span>
-            <button 
-              onClick={() => {
-                const audio = new Audio("/coin.mp3");
-                audio.play().then(() => {
-                  setAudioEnabled(true);
-                }).catch(e => {
-                  console.error("Audio unlock failed", e);
-                  setAudioEnabled(true); // Hide it anyway if they at least tried to click
-                });
-              }}
-              className="px-4 py-1.5 bg-white text-amber-700 font-bold uppercase tracking-widest text-xs hover:bg-amber-50 transition-colors"
-            >
-              Enable Order Notification Sound
-            </button>
-          </div>
-        )}
       
       {/* 1. Sidebar Nav */}
       <aside className="w-full md:w-64 bg-editorial-text text-white flex flex-col justify-between border-r border-editorial-border p-5 gap-6 md:sticky md:top-0 md:h-screen overflow-y-auto">
