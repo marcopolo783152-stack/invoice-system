@@ -29,7 +29,7 @@ interface ShopViewProps {
 }
 
 export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
-  const { rugs, addToCart, incrementRugFavorites, incrementRugViews } = useStore();
+  const { rugs, addToCart, toggleRugFavorite, favoritedRugIds, incrementRugViews } = useStore();
   
   // Search and Sort State
   const [searchQuery, setSearchQuery] = useState("");
@@ -567,7 +567,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                           <span className="text-xs text-gray-400">| Certified Origin</span>
                           <div className="flex gap-2 ml-auto">
                             <span className="flex items-center gap-1 text-xs text-gray-500"><Eye size={12} /> {rug.views || 0}</span>
-                            <button onClick={(e) => { e.stopPropagation(); incrementRugFavorites(rug.id); }} className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-600 transition-colors"><Heart size={12} fill={rug.favorites && rug.favorites > 0 ? "currentColor" : "none"} /> {rug.favorites || 0}</button>
+                            <button onClick={(e) => { e.stopPropagation(); toggleRugFavorite(rug.id); }} className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-600 transition-colors"><Heart size={12} fill={favoritedRugIds.includes(rug.id) ? "currentColor" : "none"} /> {rug.favorites || 0}</button>
                           </div>
                         </div>
                         <h3 

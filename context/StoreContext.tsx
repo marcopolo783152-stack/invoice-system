@@ -78,7 +78,8 @@ interface StoreContextType {
   updateRug: (id: string, rug: Partial<Rug>) => void;
   deleteRug: (id: string) => void;
   incrementRugViews: (id: string) => void;
-  incrementRugFavorites: (id: string) => void;
+  toggleRugFavorite: (id: string) => void;
+  favoritedRugIds: string[];
   updateOrderStatus: (orderId: string, status: OrderStatus, shipping?: ShippingDetails) => void;
   updateOrder: (orderId: string, updates: Partial<Order>) => void;
   deleteOrderPaymentDetails: (orderId: string) => void;
@@ -228,6 +229,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Core collections synced to Firebase
   const [rugs, setRugs] = useState<Rug[]>([]);
+  const [favoritedRugIds, setFavoritedRugIds] = useState<string[]>([]);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -344,6 +346,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     safeSetItem("marcopolo_cart", JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    const stored = safeGetItem("marcopolo_favorites");
+    if (stored) {
+      try {
+        setFavoritedRugIds(JSON.parse(stored));
+      } catch(e) {}
+    }
+  }, []);
 
   useEffect(() => {
     sessionStorage.setItem("marcopolo_current_user", JSON.stringify(currentUser));
@@ -492,10 +503,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateRug(id, { views: (rug.views || 0) + 1 });
   };
 
-  const incrementRugFavorites = (id: string) => {
+  const toggleRugFavorite = (id: string) => {
     const rug = rugs.find(r => r.id === id);
     if (!rug) return;
-    updateRug(id, { favorites: (rug.favorites || 0) + 1 });
+    
+    setFavoritedRugIds(prev => {
+      let next;
+      if (prev.includes(id)) {
+        next = prev.filter(rId => rId !== id);
+        updateRug(id, { favorites: Math.max(0, (rug.favorites || 0) - 1) });
+      } else {
+        next = [...prev, id];
+        updateRug(id, { favorites: (rug.favorites || 0) + 1 });
+      }
+      safeSetItem("marcopolo_favorites", JSON.stringify(next));
+      return next;
+    });
   };
 
   const deleteRug = async (id: string) => {
@@ -956,7 +979,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateRug,
         deleteRug,
         incrementRugViews,
-        incrementRugFavorites,
+        toggleRugFavorite,
+        favoritedRugIds,
         updateOrderStatus,
         updateOrder,
         deleteOrderPaymentDetails,

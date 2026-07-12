@@ -18,7 +18,7 @@ interface ProductDetailProps {
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, onSelectRugId }) => {
-  const { rugs, reviews, addToCart, submitReview, deleteReview, activeView, incrementRugViews, incrementRugFavorites } = useStore();
+  const { rugs, reviews, addToCart, submitReview, deleteReview, activeView, incrementRugViews, toggleRugFavorite, favoritedRugIds } = useStore();
   
   const rug = rugs.find((r) => r.id === rugId);
   
@@ -206,7 +206,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                   </p>
                   <div className="flex gap-3">
                     <span className="flex items-center gap-1.5 text-xs text-gray-500 font-bold bg-stone-100 px-2 py-1 rounded-sm"><Eye size={12} /> {rug.views || 0} Views</span>
-                    <button onClick={() => incrementRugFavorites(rug.id)} className="flex items-center gap-1.5 text-xs text-rose-500 font-bold bg-rose-50 px-2 py-1 rounded-sm hover:bg-rose-100 transition"><Heart size={12} fill={rug.favorites && rug.favorites > 0 ? "currentColor" : "none"} /> {rug.favorites || 0} Favorites</button>
+                    <button onClick={() => toggleRugFavorite(rug.id)} className="flex items-center gap-1.5 text-xs text-rose-500 font-bold bg-rose-50 px-2 py-1 rounded-sm hover:bg-rose-100 transition"><Heart size={12} fill={favoritedRugIds.includes(rug.id) ? "currentColor" : "none"} /> {rug.favorites || 0} Favorites</button>
                   </div>
                 </div>
               </div>
