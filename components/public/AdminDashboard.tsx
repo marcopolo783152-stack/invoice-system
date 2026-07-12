@@ -89,7 +89,8 @@ export const AdminDashboard: React.FC = () => {
     socialLinks,
     setSocialLinks,
     addAdminUser,
-    referrers
+    referrers,
+    updateOrder
   } = useStore();
 
   const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
@@ -251,6 +252,15 @@ export const AdminDashboard: React.FC = () => {
   const [blogExcerpt, setBlogExcerpt] = useState("");
   const [blogCategory, setBlogCategory] = useState<any>("Interior Design Tips");
   const [blogContent, setBlogContent] = useState("");
+
+  // State for editing order details
+  const [editOrderModalOpen, setEditOrderModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [editOrderName, setEditOrderName] = useState("");
+  const [editOrderEmail, setEditOrderEmail] = useState("");
+  const [editOrderPhone, setEditOrderPhone] = useState("");
+  const [editOrderStreet, setEditOrderStreet] = useState("");
+  const [editOrderNotes, setEditOrderNotes] = useState("");
 
   // Security features state
   const [unlockedOrders, setUnlockedOrders] = useState<string[]>([]);
@@ -593,8 +603,78 @@ export const AdminDashboard: React.FC = () => {
     setShippingWeight("10");
     setShippingLength("36");
     setShippingWidth("8");
-    setShippingHeight("8");
+      setShippingHeight("8");
     setShippingModalOpen(true);
+  };
+
+  const handleGenerateLabel = async () => {
+    if (!shippingOrderId) return;
+    setIsGeneratingLabel(true);
+
+    try {
+      // Basic mock implementation or connect to your real shipping API
+      const response = await fetch('/api/shipstation/create-label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: shippingOrderId,
+          weight: shippingWeight,
+          dimensions: {
+            length: shippingLength,
+            width: shippingWidth,
+            height: shippingHeight
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate label');
+      }
+
+      const data = await response.json();
+      
+      updateOrderStatus(shippingOrderId, "Shipped", {
+        carrier: data.carrier,
+        trackingNumber: data.trackingNumber,
+        labelUrl: data.labelUrl,
+        transactionId: data.transactionId
+      });
+      
+      alert(`Label generated successfully! Tracking: ${data.trackingNumber}`);
+      setShippingModalOpen(false);
+      
+    } catch (error: any) {
+      console.error("Shipping error:", error);
+      alert("Error generating label: " + error.message);
+    } finally {
+      setIsGeneratingLabel(false);
+    }
+  };
+
+  const handleOpenEditOrderModal = (o: any) => {
+    setEditingOrder(o);
+    setEditOrderName(o.customerInfo.name || "");
+    setEditOrderEmail(o.customerInfo.email || "");
+    setEditOrderPhone(o.customerInfo.phone || "");
+    setEditOrderStreet(o.customerInfo.shippingAddress || "");
+    setEditOrderNotes(o.customerInfo.notes || "");
+    setEditOrderModalOpen(true);
+  };
+
+  const handleSaveOrderEdit = () => {
+    if (!editingOrder) return;
+    updateOrder(editingOrder.id, {
+      customerInfo: {
+        ...editingOrder.customerInfo,
+        name: editOrderName,
+        email: editOrderEmail,
+        phone: editOrderPhone,
+        shippingAddress: editOrderStreet,
+        notes: editOrderNotes
+      }
+    });
+    setEditOrderModalOpen(false);
+    setEditingOrder(null);
   };
 
   const handleDispatchShipping = async (e: React.FormEvent) => {
@@ -2184,8 +2264,19 @@ export const AdminDashboard: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-left">
                       
                       {/* Address */}
-                      <div className="space-y-1">
-                        <span className="text-sm uppercase tracking-wider text-neutral-400 font-bold block">Delivery Destination</span>
+                      <div className="space-y-1 relative group">
+                        <div className="flex justify-between items-start">
+                          <span className="text-sm uppercase tracking-wider text-neutral-400 font-bold block">Delivery Destination</span>
+                          {o.status !== "Delivered" && o.status !== "Cancelled" && !o.shippingDetails?.labelUrl && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleOpenEditOrderModal(o); }}
+                              className="text-amber-600 hover:text-amber-800 text-xs font-bold uppercase tracking-wider px-2 py-1 bg-amber-50 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
                         <p className="font-medium text-neutral-800">{o.customerInfo.shippingAddress}</p>
                         {o.customerInfo.notes && (
                           <p className="text-xs italic text-neutral-500 bg-white p-2 border border-neutral-100 rounded mt-1.5">
@@ -3616,6 +3707,81 @@ export const AdminDashboard: React.FC = () => {
                   Confirm Action
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL 6: EDIT ORDER INFO FORM --- */}
+      {editOrderModalOpen && (
+        <div className="fixed inset-0 z-50 bg-neutral-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 bg-stone-50 border-b border-neutral-200 flex justify-between items-center">
+              <h3 className="font-serif font-bold text-neutral-900 text-sm">Edit Customer & Delivery Info</h3>
+              <button onClick={() => setEditOrderModalOpen(false)} className="p-1 text-neutral-400 hover:text-neutral-600 cursor-pointer"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-neutral-500 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={editOrderName}
+                  onChange={e => setEditOrderName(e.target.value)}
+                  className="w-full border border-neutral-300 rounded px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase text-neutral-500 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editOrderEmail}
+                  onChange={e => setEditOrderEmail(e.target.value)}
+                  className="w-full border border-neutral-300 rounded px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase text-neutral-500 mb-1">Phone</label>
+                <input
+                  type="text"
+                  value={editOrderPhone}
+                  onChange={e => setEditOrderPhone(e.target.value)}
+                  className="w-full border border-neutral-300 rounded px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase text-neutral-500 mb-1">Shipping Address</label>
+                <textarea
+                  value={editOrderStreet}
+                  onChange={e => setEditOrderStreet(e.target.value)}
+                  rows={3}
+                  className="w-full border border-neutral-300 rounded px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase text-neutral-500 mb-1">Notes</label>
+                <textarea
+                  value={editOrderNotes}
+                  onChange={e => setEditOrderNotes(e.target.value)}
+                  rows={2}
+                  className="w-full border border-neutral-300 rounded px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-stone-50 border-t border-neutral-200 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setEditOrderModalOpen(false)}
+                className="px-4 py-2 bg-white border border-neutral-300 rounded-lg hover:bg-stone-100 transition text-sm cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveOrderEdit}
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition font-bold uppercase tracking-wider text-xs shadow-sm cursor-pointer"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
         </div>

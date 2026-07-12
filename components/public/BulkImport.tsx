@@ -5,7 +5,7 @@ import { downloadCsvTemplate, parseRugCsv } from '@/utils/csvParser';
 import { useStore } from '@/context/StoreContext';
 
 export const BulkImport: React.FC = () => {
-  const { addRug } = useStore();
+  const { rugs, addRug, updateRug } = useStore();
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   
@@ -97,13 +97,25 @@ export const BulkImport: React.FC = () => {
           imageUrls.push(url);
         }
 
+        // Check if rug already exists
+        const existingRug = rugs.find(r => r.sku?.toLowerCase() === item.rug.sku?.toLowerCase());
+        
         const finalRug = {
           ...item.rug,
           images: imageUrls
         };
 
-        // Write to firestore
-        await addRug(finalRug as Omit<Rug, "id">);
+        if (existingRug) {
+          // Preserve 'Sold' status if it's already sold
+          if (existingRug.availability === 'Sold') {
+            finalRug.availability = 'Sold';
+          }
+          // Write to firestore as update
+          await updateRug(existingRug.id, finalRug);
+        } else {
+          // Write to firestore as new
+          await addRug(finalRug as Omit<Rug, "id">);
+        }
         
         completed++;
         setProgress(Math.round((completed / totalOperations) * 100));

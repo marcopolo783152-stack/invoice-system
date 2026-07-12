@@ -20,6 +20,7 @@ import AdditionalChargeModal from '@/components/AdditionalChargeModal';
 import InvoiceSearch from '@/components/InvoiceSearch';
 const Login = dynamic(() => import('@/components/Login').then(mod => mod.default), { ssr: false });
 const UserManagement = dynamic(() => import('@/components/UserManagement'), { ssr: false });
+import { useStore } from '@/context/StoreContext';
 import { InvoiceData, calculateInvoice, validateInvoiceData } from '@/lib/calculations';
 import { printInvoice, generatePDF, openPDFInNewTab, isMobileDevice } from '@/lib/pdf-utils';
 import { saveInvoice, getInvoicesCount, getAllInvoices, SavedInvoice } from '@/lib/invoice-storage';
@@ -29,6 +30,7 @@ import { generateInvoiceNumber } from '@/lib/invoice-number';
 import styles from './page.module.css';
 
 function InvoicePageContent() {
+  const { rugs, updateRug } = useStore();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
   // Settings dropdown state
@@ -248,6 +250,18 @@ function InvoicePageContent() {
       const isUnpaid = data.terms !== 'Paid';
       if (data.documentType === 'INVOICE' && isUnpaid) {
         setShowPaymentModal(true);
+      }
+
+      // Mark items as sold in the shop inventory if this is a final INVOICE
+      if (data.documentType === 'INVOICE' || data.documentType === undefined) {
+        data.items.forEach(item => {
+          if (item.sku) {
+            const match = rugs.find(r => r.sku?.toLowerCase() === item.sku?.toLowerCase());
+            if (match && match.availability !== 'Sold') {
+              updateRug(match.id, { availability: 'Sold' });
+            }
+          }
+        });
       }
 
     }).catch((error) => {
