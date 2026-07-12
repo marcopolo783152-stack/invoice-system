@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import {
   Rug,
   CartItem,
@@ -365,6 +365,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [registeredUsers]);
 
 
+
+  const hasSyncedRetroactive = useRef(false);
+
+  // Retroactive sync: mark existing rugs as Sold Out if they appear in any past invoice
+  useEffect(() => {
+    if (rugs.length > 0 && invoices.length > 0 && !hasSyncedRetroactive.current) {
+      hasSyncedRetroactive.current = true;
+      
+      const allInvoiceItems = invoices.flatMap(inv => inv.items || []);
+      const rugsToUpdate = rugs.filter(rug => {
+        if (rug.availability !== "Sold Out" && rug.sku) {
+          return allInvoiceItems.some(item => item.sku === rug.sku);
+        }
+        return false;
+      });
+
+      if (rugsToUpdate.length > 0) {
+        rugsToUpdate.forEach(rug => {
+          updateRug(rug.id, { availability: "Sold Out" });
+        });
+      }
+    }
+  }, [rugs.length, invoices.length]);
 
   // Auto-delete chats older than 24 hours on mount and periodically
   useEffect(() => {
