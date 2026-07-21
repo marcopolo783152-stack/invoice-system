@@ -32,7 +32,7 @@ interface HeroProps {
 }
 
 export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
-  const { rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhotos } = useStore();
+  const { rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhotos, submitReview } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
 
   // Leave Review State
@@ -46,7 +46,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewName.trim() || !reviewText.trim()) return;
-    const { submitReview } = useStore.getState();
+    
     submitReview(reviewRugId, reviewName, reviewRating, reviewText);
     setReviewSubmitted(true);
     setTimeout(() => {
@@ -1063,7 +1063,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Your Review</label>
-                    <textarea required value={reviewText} onChange={e => setReviewText(e.target.value)} rows="4" className="w-full border border-gray-300 p-2 text-sm focus:ring-1 focus:ring-editorial-accent" placeholder="Tell us about your experience..."></textarea>
+                    <textarea required value={reviewText} onChange={e => setReviewText(e.target.value)} rows={4} className="w-full border border-gray-300 p-2 text-sm focus:ring-1 focus:ring-editorial-accent" placeholder="Tell us about your experience..."></textarea>
                   </div>
                   <button type="submit" className="w-full bg-editorial-accent text-white py-3 text-sm font-semibold uppercase tracking-wider hover:bg-neutral-800 transition">Submit Review</button>
                 </form>
