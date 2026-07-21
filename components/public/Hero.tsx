@@ -34,6 +34,30 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
   const { rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhotos } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
+
+  // Leave Review State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewName, setReviewName] = useState("");
+  const [reviewText, setReviewText] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewRugId, setReviewRugId] = useState("general");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewName.trim() || !reviewText.trim()) return;
+    const { submitReview } = useStore.getState();
+    submitReview(reviewRugId, reviewName, reviewRating, reviewText);
+    setReviewSubmitted(true);
+    setTimeout(() => {
+        setIsReviewModalOpen(false);
+        setReviewSubmitted(false);
+        setReviewName("");
+        setReviewText("");
+        setReviewRating(5);
+    }, 2000);
+  };
+
   
   useEffect(() => {
     const interval = setInterval(() => {
