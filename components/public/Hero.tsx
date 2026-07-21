@@ -944,6 +944,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
             <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-semibold block">Verified Collectors</span>
             <h2 className="font-serif text-3xl sm:text-4xl text-editorial-text font-light tracking-wide">Showroom Testimonials</h2>
             <p className="text-xs text-gray-500 max-w-xl mx-auto font-light">Real experiences from discerning interior designers and private families who trust our hand-knotted curation.</p>
+            <button onClick={() => setIsReviewModalOpen(true)} className="mt-4 px-6 py-2 bg-editorial-accent text-white font-serif text-sm hover:bg-neutral-800 transition">Leave a Review</button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -995,7 +996,58 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
         </div>
       </section>
 
-      {/* 7. Grand Finale Call-to-Action */}
+      
+      {/* Leave a Review Modal */}
+      {isReviewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white p-8 max-w-md w-full shadow-2xl relative">
+            <button
+              onClick={() => setIsReviewModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 transition"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h3 className="font-serif text-2xl text-editorial-text mb-2">Leave a Review</h3>
+            <p className="text-sm text-gray-500 mb-6">Share your experience with Marco Polo.</p>
+            
+            {reviewSubmitted ? (
+                <div className="p-4 bg-green-50 text-green-800 text-center text-sm font-medium border border-green-200">
+                    Review submitted for approval! Thank you.
+                </div>
+            ) : (
+                <form onSubmit={handleReviewSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Your Name</label>
+                    <input required type="text" value={reviewName} onChange={e => setReviewName(e.target.value)} className="w-full border border-gray-300 p-2 text-sm focus:ring-1 focus:ring-editorial-accent" placeholder="Jane Doe" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Which Rug? (Optional)</label>
+                    <select value={reviewRugId} onChange={e => setReviewRugId(e.target.value)} className="w-full border border-gray-300 p-2 text-sm focus:ring-1 focus:ring-editorial-accent">
+                        <option value="general">General Experience</option>
+                        {rugs.map(r => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Rating</label>
+                    <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                            <Star key={star} onClick={() => setReviewRating(star)} className={"w-6 h-6 cursor-pointer " + (star <= reviewRating ? "fill-editorial-accent text-editorial-accent" : "text-gray-300")} />
+                        ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Your Review</label>
+                    <textarea required value={reviewText} onChange={e => setReviewText(e.target.value)} rows="4" className="w-full border border-gray-300 p-2 text-sm focus:ring-1 focus:ring-editorial-accent" placeholder="Tell us about your experience..."></textarea>
+                  </div>
+                  <button type="submit" className="w-full bg-editorial-accent text-white py-3 text-sm font-semibold uppercase tracking-wider hover:bg-neutral-800 transition">Submit Review</button>
+                </form>
+            )}
+          </div>
+        </div>
+      )}
+{/* 7. Grand Finale Call-to-Action */}
       <section className="py-20 bg-neutral-950 text-white text-center relative overflow-hidden">
         {/* Intricate rug borders styled using CSS gradients */}
         <div className="absolute top-0 inset-x-0 h-[1px] bg-editorial-accent" />

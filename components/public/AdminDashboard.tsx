@@ -2375,7 +2375,13 @@ export const AdminDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {orders.map((o) => {
+                {(() => {
+                  const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                  const activeOrders = sortedOrders.filter(o => o.status !== "Delivered" && o.status !== "Cancelled");
+                  const deliveredOrders = sortedOrders.filter(o => o.status === "Delivered");
+                  const cancelledOrders = sortedOrders.filter(o => o.status === "Cancelled");
+                  
+                  const renderOrderCard = (o: any) => {
                   const isExpanded = expandedOrderId === o.id;
                   return (
                   <div key={o.id} className="p-5 bg-stone-50 rounded-2xl border border-neutral-200/60 shadow-sm transition-all duration-300">
@@ -2745,7 +2751,31 @@ export const AdminDashboard: React.FC = () => {
                     )}
                   </div>
                   );
-                })}
+                  };
+
+                  return (
+                    <div className="space-y-8">
+                      {activeOrders.length > 0 && (
+                        <div className="space-y-4">
+                          <h3 className="font-serif text-lg font-bold text-neutral-800 border-b border-neutral-200 pb-2">Active Orders</h3>
+                          {activeOrders.map(renderOrderCard)}
+                        </div>
+                      )}
+                      {deliveredOrders.length > 0 && (
+                        <div className="space-y-4">
+                          <h3 className="font-serif text-lg font-bold text-emerald-800 border-b border-emerald-200 pb-2">Delivered</h3>
+                          {deliveredOrders.map(renderOrderCard)}
+                        </div>
+                      )}
+                      {cancelledOrders.length > 0 && (
+                        <div className="space-y-4">
+                          <h3 className="font-serif text-lg font-bold text-red-800 border-b border-red-200 pb-2">Cancelled</h3>
+                          {cancelledOrders.map(renderOrderCard)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
