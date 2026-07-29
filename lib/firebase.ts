@@ -36,8 +36,11 @@ if (typeof window !== 'undefined' && isFirebaseConfigured()) {
     const auth = getAuth(appInstance);
     signInAnonymously(auth).catch(e => console.warn("Anon Auth failed:", e));
   } catch(e) {}
+} else if (isFirebaseConfigured()) {
+  // SSR Database Init
+  appInstance = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  dbInstance = getFirestore(appInstance);
 } else {
-  // SSR Dummy
   appInstance = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 }
 

@@ -517,9 +517,9 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                   >
                     
                     {/* Visual Panel */}
-                    <div className={`relative flex items-center justify-center bg-stone-100 overflow-hidden cursor-pointer animate-fadeIn p-2 ${
+                    <a href={`/shop/${rug.id}`} className={`block relative flex items-center justify-center bg-stone-100 overflow-hidden cursor-pointer animate-fadeIn p-2 ${
                       viewMode === 'list' ? 'w-full sm:w-1/3 aspect-[4/3] sm:aspect-square' : 'aspect-[4/3]'
-                    }`} onClick={() => { incrementRugViews(rug.id); onSelectRugId(rug.id); }}>
+                    }`} onClick={(e) => { e.preventDefault(); incrementRugViews(rug.id); onSelectRugId(rug.id); }}>
                       <img
                         src={rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"}
                         alt={rug.name}
@@ -554,7 +554,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                       <div className="absolute bottom-2 inset-x-2 bg-neutral-900/75 backdrop-blur-xs text-white p-1 rounded-none text-center text-xs font-mono font-semibold tracking-wider opacity-0 group-hover:opacity-100 transition-all">
                         Dimensions: {rug.dimensions}
                       </div>
-                    </div>
+                    </a>
 
                     {/* Information Panel */}
                     <div className={`p-5 space-y-4 flex flex-col justify-between ${
@@ -570,12 +570,13 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                             <button onClick={(e) => { e.stopPropagation(); toggleRugFavorite(rug.id); }} className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-600 transition-colors"><Heart size={12} fill={favoritedRugIds.includes(rug.id) ? "currentColor" : "none"} /> {rug.favorites || 0}</button>
                           </div>
                         </div>
-                        <h3 
-                          onClick={() => { incrementRugViews(rug.id); onSelectRugId(rug.id); }}
-                          className="font-serif font-light text-sm text-editorial-text group-hover:text-editorial-accent transition truncate cursor-pointer"
+                        <a 
+                          href={`/shop/${rug.id}`}
+                          onClick={(e) => { e.preventDefault(); incrementRugViews(rug.id); onSelectRugId(rug.id); }}
+                          className="block font-serif font-light text-sm text-editorial-text group-hover:text-editorial-accent transition truncate cursor-pointer"
                         >
                           {rug.name}
-                        </h3>
+                        </a>
                         <p className="text-xs text-gray-400 font-medium font-sans font-light">
                           Age: {rug.age} | Size: {rug.dimensions} ({rug.sizeCategory}) | {rug.material}
                         </p>
