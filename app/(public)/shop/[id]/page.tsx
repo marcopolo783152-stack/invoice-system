@@ -75,8 +75,33 @@ export default async function ProductPage({ params }: { params: { id: string } }
 
   // Googlebot will see this static HTML with all the important keywords!
   // Human users will run ClientRedirect and instantly load the beautiful SPA modal.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": rug.name,
+    "image": rug.images?.[0] || '',
+    "description": rug.description || `Beautiful ${rug.style} rug from ${rug.origin}. Size: ${rug.dimensions}.`,
+    "sku": rug.sku || rug.id,
+    "offers": {
+      "@type": "Offer",
+      "url": `https://www.marcopolorugs.com/shop/${rug.id}`,
+      "priceCurrency": "USD",
+      "price": rug.price,
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": rug.availability === "In Stock" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Marco Polo Oriental Rugs"
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-editorial-bg text-editorial-text p-4 md:p-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Client Component that immediately redirects humans to the SPA view */}
       <ClientRedirect rugId={params.id} />
       
