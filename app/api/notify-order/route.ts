@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     // 1. EmailJS Notification (Replaced SendGrid to bypass DMARC issues)
     const EMAILJS_SERVICE_ID = emailConfig?.serviceId || 'marcopolo2';
-    const EMAILJS_TEMPLATE_ID = emailConfig?.templateIdInvoice || 'marcopolo2'; // confirmation email can use invoice template if needed, or we can use a specific one
+    const EMAILJS_TEMPLATE_ID = type === 'confirmation' ? 'marcopolo2' : (emailConfig?.templateIdInvoice || 'rm8govh');
     const EMAILJS_PUBLIC_KEY = emailConfig?.publicKey || 'Anj9zrEUo-VEWvMVw';
     const EMAILJS_PRIVATE_KEY = emailConfig?.privateKey || 'ZgV1UYxVUy0UQKBmgj3I5';
 
