@@ -324,9 +324,17 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     }
   }
 
+  // Calculate sold amount discount for consignments
+  let soldDiscount = 0;
+  if (discountType === 'percentage') {
+    soldDiscount = soldAmount * (discountValue / 100);
+  } else {
+    soldDiscount = Math.min(discountValue, soldAmount);
+  }
+
   // For Consignments, the "Revenue" or "Paid" part is the soldAmount
   // For standard Sales, it's the netTotalDue
-  const netTotalDueFinal = isConsignment ? soldAmount : netTotalDue;
+  const netTotalDueFinal = isConsignment ? (soldAmount - soldDiscount + totalAdditionalCharges) : netTotalDue;
 
   // Calculate Total Paid
   const payments = data.payments || [];
@@ -339,9 +347,9 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
   let balanceDue: number;
   if (isConsignment) {
     // For Consignment:
-    // Total Value of Sold items + Additional Charges is what they owe us.
+    // Total Value of Sold items - discount + Additional Charges is what they owe us.
     // If they paid us (payments + downpayment), we subtract that.
-    balanceDue = (soldAmount + totalAdditionalCharges) - totalPaid;
+    balanceDue = (soldAmount - soldDiscount + totalAdditionalCharges) - totalPaid;
   } else {
     // For Retail/Wash:
     // Total Due is what they owe (excluding returns)
