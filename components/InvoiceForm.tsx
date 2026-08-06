@@ -498,11 +498,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate signature is present
-    if (!signature) {
-      alert('Customer signature is required. Please add a signature before generating the invoice.');
-      return;
-    }
+    // Customer signature is now optional for admin creation
 
     const invoiceData: InvoiceData & { servedBy?: string } = {
       ...initialData, // Preserve existing fields like payments, returned, etc.
