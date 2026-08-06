@@ -432,7 +432,9 @@ function InvoicePageContent() {
         customerEmail,
         invoiceData.soldTo.name,
         invoiceData.invoiceNumber,
-        link // Pass LINK, not HTML
+        link, // Pass LINK, not HTML
+        undefined, // configOverride
+        calculations?.totalDue || 0
       );
 
       if (success) {
