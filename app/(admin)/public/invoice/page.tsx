@@ -3,9 +3,10 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Download, Printer } from 'lucide-react';
-import { getInvoiceByIdAsync, SavedInvoice } from '@/lib/invoice-storage';
+import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
+import SignaturePad from '@/components/SignaturePad';
 import { businessConfig } from '@/config/business';
 import { generatePDF, openPDFInNewTab, viewPDFInCurrentTab } from '@/lib/pdf-utils';
 
@@ -18,6 +19,7 @@ function PublicInvoiceContent() {
     const [loading, setLoading] = useState(true);
     const invoiceRef = useRef<HTMLDivElement>(null);
     const [isPrinting, setIsPrinting] = useState(false);
+    const [isSavingSignature, setIsSavingSignature] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -72,12 +74,34 @@ function PublicInvoiceContent() {
     };
 
     const handleDownloadPDF = async () => {
-        if (invoiceRef.current && invoice) {
+        if (invoiceRef.current && invoice && invoice.data.signature) {
             try {
                 await generatePDF(invoiceRef.current, invoice.data.invoiceNumber);
             } catch (error) {
                 alert('Failed to generate PDF.');
             }
+        }
+    };
+
+    const handleSaveSignature = async (signatureData: string) => {
+        if (!invoice) return;
+        setIsSavingSignature(true);
+        try {
+            const updatedInvoiceData = {
+                ...invoice.data,
+                signature: signatureData,
+                signatureDate: new Date().toISOString()
+            };
+
+            await saveInvoice(updatedInvoiceData, invoice.id);
+            
+            // Update local state to immediately show the invoice
+            setInvoice({ ...invoice, data: updatedInvoiceData });
+        } catch (err) {
+            console.error('Error saving signature:', err);
+            alert('Failed to save signature. Please try again.');
+        } finally {
+            setIsSavingSignature(false);
         }
     };
 
@@ -88,6 +112,37 @@ function PublicInvoiceContent() {
             <div style={{ padding: 40, fontFamily: 'sans-serif', textAlign: 'center' }}>
                 <h2 style={{ color: '#ef4444' }}>Invoice Not Found</h2>
                 <p style={{ color: '#666' }}>This invoice may have been deleted or does not exist.</p>
+            </div>
+        );
+    }
+
+    const isSigned = !!invoice.data.signature;
+
+    if (!isSigned) {
+        return (
+            <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh', background: '#f3f4f6', padding: '40px 10px' }}>
+                <div style={{ maxWidth: 600, margin: '0 auto', background: 'white', borderRadius: 16, padding: 32, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', position: 'relative' }}>
+                    <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                        <h2 style={{ fontSize: 24, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>Signature Required</h2>
+                        <p style={{ color: '#64748b' }}>Please sign below to view and download your completed invoice #{invoice.data.invoiceNumber}.</p>
+                    </div>
+
+                    {isSavingSignature && (
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.8)', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: 16 }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+                                <p style={{ fontWeight: 600, color: '#1e293b' }}>Saving signature...</p>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <SignaturePad
+                        onSave={handleSaveSignature}
+                        onCancel={() => {}}
+                        variant="inline"
+                    />
+                </div>
+                <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }

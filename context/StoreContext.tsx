@@ -21,6 +21,7 @@ import {
 } from "@/types";
 import { INITIAL_RUGS } from "@/data/rugs";
 import { INITIAL_BLOGS } from "@/data/blogs";
+import { getEmailConfig } from "@/lib/email-service";
 import { getAllInvoicesSync } from "@/lib/invoice-storage";
 import { 
   seedShowroomDataIfEmpty, 
@@ -488,10 +489,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addShowroomDoc(SHOWROOM_ORDERS, newOrder);
     
     // Trigger Email/SMS notifications automatically
+    const emailConfig = getEmailConfig();
     fetch('/api/notify-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order: newOrder, shopProfile })
+      body: JSON.stringify({ order: newOrder, shopProfile, emailConfig })
     }).catch(err => console.error('Notification trigger failed:', err));
     
     if (appliedPromo && appliedPromo.oneTimeUse) {

@@ -220,6 +220,16 @@ function InvoicesListContent() {
         const isReturned = (inv.data?.returned === true) ||
             (inv.data?.items?.length > 0 && inv.data.items.every(item => item.returned));
 
+        // Signature Status
+        const needsSignature = inv.data?.documentType !== 'CONSIGNMENT' && inv.data?.documentType !== 'WASH' && !inv.data?.isDraft;
+        if (needsSignature) {
+            if (inv.data?.signature) {
+                statuses.push({ bg: 'rgba(34, 197, 94, 0.1)', text: 'var(--accent-emerald)', label: 'Signed' });
+            } else {
+                statuses.push({ bg: 'rgba(245, 158, 11, 0.1)', text: 'var(--accent-gold)', label: 'Signature Required' });
+            }
+        }
+
         // 1. Kind / Document Type Status
         if (isReturned) {
             statuses.push({ bg: 'rgba(244, 63, 94, 0.1)', text: 'var(--accent-rose)', label: 'Returned' });

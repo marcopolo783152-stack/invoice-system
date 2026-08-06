@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { order, shopProfile, type = 'confirmation' } = await request.json();
+    const { order, shopProfile, type = 'confirmation', emailConfig } = await request.json();
     
     if (!order || !order.customerInfo) {
       return NextResponse.json({ error: 'Invalid order data' }, { status: 400 });
@@ -12,10 +12,10 @@ export async function POST(request: Request) {
     const results: any = { email: null, sms: null };
 
     // 1. EmailJS Notification (Replaced SendGrid to bypass DMARC issues)
-    const EMAILJS_SERVICE_ID = 'marcopolo2'; // From your default config
-    const EMAILJS_TEMPLATE_ID = 'marcopolo2'; // Explicitly requested by user
-    const EMAILJS_PUBLIC_KEY = 'Anj9zrEUo-VEWvMVw';
-    const EMAILJS_PRIVATE_KEY = 'ZgV1UYxVUy0UQKBmgj3I5';
+    const EMAILJS_SERVICE_ID = emailConfig?.serviceId || 'marcopolo2';
+    const EMAILJS_TEMPLATE_ID = emailConfig?.templateIdInvoice || 'marcopolo2'; // confirmation email can use invoice template if needed, or we can use a specific one
+    const EMAILJS_PUBLIC_KEY = emailConfig?.publicKey || 'Anj9zrEUo-VEWvMVw';
+    const EMAILJS_PRIVATE_KEY = emailConfig?.privateKey || 'ZgV1UYxVUy0UQKBmgj3I5';
 
     if (customerInfo.email) {
       try {
