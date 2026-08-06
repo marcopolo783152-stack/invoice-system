@@ -898,8 +898,7 @@ function InvoiceViewContent() {
                                 invoice.data.soldTo.name,
                                 invoice.data.invoiceNumber,
                                 link,
-                                config,
-                                calculations?.totalDue || 0
+                                config
                             );
                         }}
                     />

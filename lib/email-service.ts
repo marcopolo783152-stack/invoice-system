@@ -85,40 +85,43 @@ export async function sendInvoiceEmail(
   customerName: string,
   invoiceNumber: string,
   invoiceLink: string,
-  configOverride?: EmailConfig,
-  totalAmount?: number
+  configOverride?: EmailConfig
 ): Promise<boolean> {
   const config = configOverride || getEmailConfig();
 
+  // Basic validation
+  if (!config.serviceId || !config.templateIdInvoice || !config.publicKey) {
+    throw new Error('Email service not configured. Please check settings.');
+  }
+
   try {
-    const payload = {
-      order: {
-        id: invoiceNumber,
-        total: totalAmount || 0,
-        customerInfo: {
-          email: customerEmail,
-          name: customerName
-        }
-      },
-      type: 'invoice',
-      shopProfile: { name: 'Marco Polo Oriental Rugs' },
-      emailConfig: config,
-      invoiceLink: invoiceLink
+    // Initialize just in case (e.g. first run)
+    emailjs.init(config.publicKey);
+
+    const templateParams: Record<string, any> = {
+      to_email: customerEmail,
+      to_name: customerName,
+      from_name: 'Marco Polo Oriental Rugs',
+      invoice_number: invoiceNumber,
+      // Updated message with Direct Link
+      message: `Dear ${customerName},\n\nYou can view and download your invoice #${invoiceNumber} at the link below:\n\n${invoiceLink}\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
+      invoice_link: invoiceLink, // Sending as separate param too just in case template uses it
+      // invoice_html: removed to save size
     };
 
-    const res = await fetch('/api/notify-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    const response = await emailjs.send(
+      config.serviceId,
+      config.templateIdInvoice,
+      templateParams
+    );
 
-    if (res.ok) {
+    if (response.status === 200) {
       return true;
     }
     return false;
   } catch (error) {
-    console.error('Error sending invoice email via API:', error);
-    throw error;
+    console.error('Error sending invoice email:', error);
+    throw error; // Throw so UI can handle it
   }
 }
 
