@@ -69,6 +69,29 @@ export async function POST(request: Request) {
             <h2 style="color: #2c3e50; border-bottom: 2px solid #8E7453; padding-bottom: 10px; font-family: sans-serif;">Thank you for your order!</h2>
             <p>Dear ${customerInfo.name},</p>
             <p>What a wonderful choice! We are absolutely thrilled to confirm that we have successfully received your order <strong>${order.id}</strong>. Our expert curators are currently reviewing the inventory holds and will begin preparing it for you shortly.</p>
+            
+            ${order.cartItems && order.cartItems.length > 0 ? `
+            <div style="margin: 30px 0;">
+              <h3 style="color: #2c3e50; font-family: sans-serif; font-size: 16px; border-bottom: 1px solid #eaeaea; padding-bottom: 8px;">Order Details</h3>
+              <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                ${order.cartItems.map((item: any) => `
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f5f5f5;">
+                      <img src="${item.rug?.images?.[0] || 'https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=200'}" alt="${item.rug?.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+                    </td>
+                    <td style="padding: 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle;">
+                      <strong style="color: #333; font-size: 14px;">${item.rug?.name || 'Rug'}</strong>
+                      ${item.quantity > 1 ? `<span style="color: #888; font-size: 12px; margin-left: 5px;">x ${item.quantity}</span>` : ''}
+                    </td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f5f5f5; vertical-align: middle; text-align: right;">
+                      <strong style="color: #8E7453;">$${(item.rug?.price * item.quantity)?.toLocaleString() || item.rug?.price?.toLocaleString() || ''}</strong>
+                    </td>
+                  </tr>
+                `).join('')}
+              </table>
+            </div>
+            ` : ''}
+
             <p style="font-size: 22px; font-weight: bold; color: #8E7453; text-align: center; margin: 25px 0;">Total amount: $${order.total?.toLocaleString()}</p>
             
             <div style="background-color: #faf9f7; padding: 20px; border-radius: 5px; border-left: 4px solid #8E7453; margin: 25px 0; font-family: sans-serif;">
