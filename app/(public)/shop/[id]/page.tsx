@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { INITIAL_RUGS } from '@/lib/data';
 import { Rug } from '@/types';
 import Link from 'next/link';
 import { ArrowLeft, ShoppingBag } from 'lucide-react';
@@ -11,19 +10,7 @@ import { ClientRedirect } from './ClientRedirect';
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  let rug: Rug | null = null;
-  
-  try {
-    if (db) {
-      const docRef = doc(db, 'rugs', params.id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        rug = docSnap.data() as Rug;
-      }
-    }
-  } catch (error) {
-    console.error("Metadata fetch error:", error);
-  }
+  const rug = INITIAL_RUGS.find(r => r.id === params.id) || null;
 
   if (!rug) {
     return { title: 'Rug Not Found | Marco Polo Rugs' };
@@ -48,19 +35,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
-  let rug: Rug | null = null;
-
-  try {
-    if (db) {
-      const docRef = doc(db, 'rugs', params.id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        rug = docSnap.data() as Rug;
-      }
-    }
-  } catch (error) {
-    console.error("Page fetch error:", error);
-  }
+  const rug = INITIAL_RUGS.find(r => r.id === params.id) || null;
 
   if (!rug) {
     return (
