@@ -142,9 +142,11 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
     } else if (sortOption === "rating") {
       result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else {
-      // featured/default: interleave handmade and machine-made
-      const handmade = result.filter(r => r.construction !== "Machine-made");
-      const machineMade = result.filter(r => r.construction === "Machine-made");
+      // featured/default: mix handmade and machine-made deterministically not based on upload order
+      const deterministicShuffle = [...result].sort((a, b) => a.id.localeCompare(b.id));
+      
+      const handmade = deterministicShuffle.filter(r => r.construction !== "Machine-made");
+      const machineMade = deterministicShuffle.filter(r => r.construction === "Machine-made");
       
       const interleaved = [];
       const maxLength = Math.max(handmade.length, machineMade.length);

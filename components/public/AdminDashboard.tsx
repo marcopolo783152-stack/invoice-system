@@ -2319,13 +2319,23 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                            r.availability === "In Stock" ? "bg-green-100 text-green-700" :
-                            r.availability === "Reserved" ? "bg-amber-100 text-amber-700 animate-pulse" :
-                            "bg-red-100 text-red-700"
-                          }`}>
-                            {r.availability}
-                          </span>
+                          <select
+                            value={r.availability}
+                            onChange={(e) => updateRug(r.id, { availability: e.target.value as any })}
+                            className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider outline-none cursor-pointer border-none appearance-none ${
+                              r.availability === "In Stock" ? "bg-green-100 text-green-700" :
+                              r.availability === "Reserved" ? "bg-amber-100 text-amber-700 animate-pulse" :
+                              r.availability === "On Hold" ? "bg-amber-100 text-amber-700 animate-pulse" :
+                              r.availability === "Sold" ? "bg-neutral-800 text-white" :
+                              "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            <option value="In Stock">In Stock</option>
+                            <option value="On Hold">On Hold</option>
+                            <option value="Reserved">Reserved</option>
+                            <option value="Sold">Sold</option>
+                            <option value="Unavailable">Unavailable</option>
+                          </select>
                         </td>
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1">
