@@ -233,7 +233,8 @@ export const AdminDashboard: React.FC = () => {
   const [rugWeight, setRugWeight] = useState<number | "">("");
     const [rugIsFreeShipping, setRugIsFreeShipping] = useState<boolean>(false);
   const [rugShape, setRugShape] = useState<Rug["shape"] | "">("");
-  const [rugAvailability, setRugAvailability] = useState<Rug["availability"] | "">("In Stock");
+  const [rugAvailability, setRugAvailability] = useState<Rug["availability"]>("In Stock");
+  const [rugConstruction, setRugConstruction] = useState<"Handmade" | "Machine-made">("Handmade");
   const [rugDescription, setRugDescription] = useState("");
   const [rugImageUrl, setRugImageUrl] = useState("");
   const [rugImages, setRugImages] = useState<string[]>([]);
@@ -440,6 +441,7 @@ export const AdminDashboard: React.FC = () => {
         setRugIsFreeShipping(r.isFreeShipping || false);
       setRugShape(r.shape);
       setRugAvailability(r.availability);
+      setRugConstruction(r.construction || "Handmade");
       setRugDescription(r.description);
       setRugImageUrl(r.images?.[0] || "");
       setRugImages(r.images && r.images.length > 0 ? [...r.images] : ["https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"]);
@@ -462,6 +464,7 @@ export const AdminDashboard: React.FC = () => {
         setRugIsFreeShipping(false);
       setRugShape("");
       setRugAvailability("In Stock");
+      setRugConstruction("Handmade");
       setRugDescription("");
       setRugImageUrl("");
       setRugImages([]);
@@ -492,6 +495,7 @@ export const AdminDashboard: React.FC = () => {
         isFreeShipping: rugIsFreeShipping,
       shape: rugShape as Rug["shape"],
       availability: rugAvailability as Rug["availability"],
+      construction: rugConstruction,
       description: rugDescription,
       images: finalImages
     };
@@ -3444,13 +3448,26 @@ export const AdminDashboard: React.FC = () => {
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500"
                   >
                     <option value="In Stock">In Stock Showroom</option>
+                    <option value="On Hold">On Hold</option>
                     <option value="Reserved">Reserved Hold</option>
                     <option value="Sold">Sold out</option>
+                    <option value="Unavailable">Unavailable</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase">Construction</label>
+                  <select
+                    value={rugConstruction}
+                    onChange={(e) => setRugConstruction(e.target.value as any)}
+                    className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500"
+                  >
+                    <option value="Handmade">Handmade</option>
+                    <option value="Machine-made">Machine-made</option>
+                  </select>
+                </div>
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Dominant Dye Colors</label>
                   <input

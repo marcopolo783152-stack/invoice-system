@@ -91,7 +91,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
       return size; // fallback
     };
 
-    return rugs.filter((rug) => {
+    let result = rugs.filter((rug) => {
       // If a rug got sold out, do not show in inventory
       if (rug.availability === "Sold") {
         return false;
@@ -102,7 +102,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
       if (activeMfgType === "Handmade" && isRugMachineMade) return false;
       if (activeMfgType === "Machine-made" && !isRugMachineMade) return false;
 
-      // Search Text Match
+      // Search Query Match (Title, Origin, SKU, Color)
       const matchesSearch = 
         searchQuery === "" ||
         rug.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -113,7 +113,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
       // Category Lists Match
       const matchesSize = selectedSizes.length === 0 || selectedSizes.some(sel => {
         const genRugSize = getGeneralSizeCategory(rug.sizeCategory);
-        return genRugSize === sel || rug.sizeCategory === sel || rug.shape === sel;
+        return genRugSize === sel || rug.sizeCategory === sel;
       });
 
       // Specific Sizes Match
@@ -133,13 +133,29 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
       const matchesPrice = rug.price <= maxPrice;
 
       return matchesSearch && matchesSize && matchesSpecificSize && matchesOrigin && matchesStyle && matchesMaterial && matchesColor && matchesShape && matchesAvailability && matchesPrice;
-    }).sort((a, b) => {
-      // Sorting options
-      if (sortOption === "price-low-high") return a.price - b.price;
-      if (sortOption === "price-high-low") return b.price - a.price;
-      if (sortOption === "rating") return b.rating - a.rating;
-      return 0; // featured/default
     });
+
+    if (sortOption === "price-low-high") {
+      result.sort((a, b) => a.price - b.price);
+    } else if (sortOption === "price-high-low") {
+      result.sort((a, b) => b.price - a.price);
+    } else if (sortOption === "rating") {
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else {
+      // featured/default: interleave handmade and machine-made
+      const handmade = result.filter(r => r.construction !== "Machine-made");
+      const machineMade = result.filter(r => r.construction === "Machine-made");
+      
+      const interleaved = [];
+      const maxLength = Math.max(handmade.length, machineMade.length);
+      for (let i = 0; i < maxLength; i++) {
+        if (i < handmade.length) interleaved.push(handmade[i]);
+        if (i < machineMade.length) interleaved.push(machineMade[i]);
+      }
+      result = interleaved;
+    }
+
+    return result;
   }, [
     rugs, searchQuery, sortOption, selectedSizes, selectedSpecificSizes, selectedOrigins, selectedStyles, selectedMaterials, selectedColors, selectedShapes, selectedAvailability, maxPrice, activeMfgType
   ]);
