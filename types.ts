@@ -18,7 +18,8 @@ export interface Rug {
   condition: "Excellent" | "Pristine" | "Very Good" | "Good (Minor Wear)" | "Antique Wear";
   colors: string[]; // list of dominant colors
   shape: "Rectangular" | "Runner" | "Round" | "Square" | "Oval";
-  availability: "In Stock" | "Sold" | "Reserved";
+  availability: "In Stock" | "Sold" | "Reserved" | "On Hold" | "Unavailable";
+  construction?: "Handmade" | "Machine-made";
   description: string;
   images: string[]; // list of image URLs (up to 15)
   rating: number; // average rating

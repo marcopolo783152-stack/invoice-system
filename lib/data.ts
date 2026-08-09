@@ -22,6 +22,7 @@ export const INITIAL_RUGS: Rug[] = [
     colors: ["Imperial Red", "Royal Blue", "Antique Cream", "Sage Green"],
     shape: "Rectangular",
     availability: "In Stock",
+    construction: "Handmade",
     description: "An extraordinary masterwork from the historic weaving center of Kashan. This museum-quality rug features an intricate double-medallion layout surrounded by thousands of hand-tied floral patterns and sweeping arabesques. Knotted with incredibly dense, hand-spun Kork wool and highlighted by luminous pure silk thread, its luster shines naturally under ambient lighting. A true heirloom piece representing the pinnacle of Persian artistry.",
     images: [
       "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1200", // main full rug
@@ -46,6 +47,7 @@ export const INITIAL_RUGS: Rug[] = [
     colors: ["Terracotta", "Indigo Blue", "Camel", "Saffron Yellow"],
     shape: "Rectangular",
     availability: "In Stock",
+    construction: "Handmade",
     description: "Woven by nomadic craftspeople in the rugged mountains of northwest Persia, this Serapi-style Heriz rug is a showcase of bold, geometric design. It features a majestic, oversized central medallion with step-edged profiles and highly stylized palmettes. The vibrant terracotta and deep indigo dyes are fully organic, derived from local madder root and wild indigo. Renowned for their exceptional durability and bold artistic expression, Serapi rugs are highly sought after by designers worldwide.",
     images: [
       "https://images.unsplash.com/photo-1543248939-ff40856f65d4?auto=format&fit=crop&q=80&w=1200", // main rug
@@ -70,6 +72,7 @@ export const INITIAL_RUGS: Rug[] = [
     colors: ["Ivory", "Crimson", "Pale Turquoise", "Liquid Gold"],
     shape: "Rectangular",
     availability: "In Stock",
+    construction: "Handmade",
     description: "An incredibly rare, fully-silk masterpiece from the workshop of Isfahan's elite weavers. Rendering the classical 'Tree of Life' motif, it symbolizes eternal beauty, growth, and connection, populated by beautifully drawn exotic songbirds and nesting animals. Woven with an exceptionally tight density exceeding 1,000,000 knots per square meter, every vine, leaf, and feather is outlined with breathtaking precision. The silk pile catches and reflects light in a mesmerizing dance, shifting colors beautifully from different angles.",
     images: [
       "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1200", // silk weave detail
@@ -94,6 +97,7 @@ export const INITIAL_RUGS: Rug[] = [
     colors: ["Brick Red", "Mustard Gold", "Forest Green", "Ivory"],
     shape: "Rectangular",
     availability: "In Stock",
+    construction: "Handmade",
     description: "Woven in northern Afghanistan by traditional craftspeople, this Kazak rug exhibits bold tribal geometric medallions (known as 'guls') and striking borders. The hand-spun wool is exceptionally soft and chunky, giving it a delightful texture underfoot. All colors are derived strictly from native mountain plants, herbs, and walnut husks, creating unique horizontal color variations (abrash) that give this rug its rich, rustic character.",
     images: [
       "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=1200", // main
@@ -117,6 +121,7 @@ export const INITIAL_RUGS: Rug[] = [
     colors: ["Sage Green", "Peach Blossom", "Soft Cream", "Warm Sand"],
     shape: "Rectangular",
     availability: "In Stock",
+    construction: "Handmade",
     description: "Blending ancient Anatolian Turkish weaving methods with contemporary design palettes, this Oushak rug is perfect for today's luxury interiors. It showcases spacious, highly stylized floral motifs set against a serene pastel backdrop. Hand-knotted with premium sheep wool that has been double-washed for an incredibly soft pile and a subtle vintage sheen. It bridges classical elegance and modern sophistication effortlessly.",
     images: [
       "https://images.unsplash.com/photo-1500336624444-0e6e225a3ee5?auto=format&fit=crop&q=80&w=1200", // main
@@ -140,6 +145,7 @@ export const INITIAL_RUGS: Rug[] = [
     colors: ["Deep Rust", "Midnight Navy", "Terracotta", "Forest Green"],
     shape: "Runner",
     availability: "In Stock",
+    construction: "Handmade",
     description: "An incredibly charming runner from the nomadic tribal federations of Shiraz. It features a repeated series of 'Tree of Life' panels flanked by stylized birds and animal totems representing good luck and prosperity. Knotted entirely out of pure, high-lanolin sheep wool (both pile and warp), this rug is heavy, supple, and warm. Its rich rust and midnight colors have mellowed beautifully into a warm, saturated vintage patina.",
     images: [
       "https://images.unsplash.com/photo-1562577309-4932fdd64cd1?auto=format&fit=crop&q=80&w=1200", // runner details
@@ -163,6 +169,7 @@ export const INITIAL_RUGS: Rug[] = [
     colors: ["Navy Blue", "Crimson Red", "Champagne Gold", "Olive"],
     shape: "Rectangular",
     availability: "Reserved",
+    construction: "Handmade",
     description: "Woven in the world-famous workshops of Tabriz, this semi-antique rug displays the highly sought-after classical 'Mahi' (Herati) design. It incorporates thousands of tiny, diamond-shaped leaf structures encircling a perfectly circular central medallion. Silk highlights are woven into the floral borders, providing a gorgeous tactile contrast. It is currently reserved for a private client evaluation.",
     images: [
       "https://images.unsplash.com/photo-1543248939-ff40856f65d4?auto=format&fit=crop&q=80&w=1200", // main
@@ -186,6 +193,7 @@ export const INITIAL_RUGS: Rug[] = [
     colors: ["Antique Ochre", "Terracotta Rust", "Sage", "Faded Indigo"],
     shape: "Rectangular",
     availability: "Sold",
+    construction: "Handmade",
     description: "An majestic, palace-size antique Sultanabad rug, woven around the early 1900s. It features a grand scale floral design, known for its open, spacious layout and large botanical palmettes. Free of a central medallion, the design repeats continuously, making it ideal for large majestic dining tables or grand living spaces. The rug exhibits gentle, authentic antique wear (distressed pile in some fields) that adds infinite prestige and historic soul to any luxury room.",
     images: [
       "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=1200", // main
