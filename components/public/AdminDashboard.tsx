@@ -2322,12 +2322,12 @@ export const AdminDashboard: React.FC = () => {
                           <select
                             value={r.availability}
                             onChange={(e) => updateRug(r.id, { availability: e.target.value as any })}
-                            className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider outline-none cursor-pointer border-none appearance-none ${
-                              r.availability === "In Stock" ? "bg-green-100 text-green-700" :
-                              r.availability === "Reserved" ? "bg-amber-100 text-amber-700 animate-pulse" :
-                              r.availability === "On Hold" ? "bg-amber-100 text-amber-700 animate-pulse" :
-                              r.availability === "Sold" ? "bg-neutral-800 text-white" :
-                              "bg-red-100 text-red-700"
+                            className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider outline-none cursor-pointer border shadow-sm ${
+                              r.availability === "In Stock" ? "bg-green-100 text-green-700 border-green-200" :
+                              r.availability === "Reserved" ? "bg-amber-100 text-amber-700 animate-pulse border-amber-200" :
+                              r.availability === "On Hold" ? "bg-amber-100 text-amber-700 animate-pulse border-amber-200" :
+                              r.availability === "Sold" ? "bg-neutral-800 text-white border-neutral-700" :
+                              "bg-red-100 text-red-700 border-red-200"
                             }`}
                           >
                             <option value="In Stock">In Stock</option>
