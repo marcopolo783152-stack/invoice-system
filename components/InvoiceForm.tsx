@@ -150,13 +150,21 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [isLumpSum, setIsLumpSum] = useState(initialData?.isLumpSum || false);
   const [lumpSumAmount, setLumpSumAmount] = useState(initialData?.lumpSumAmount || 0);
 
-  // Auto-switch to Wholesale for Consignment
+  // Auto-switch to Wholesale for Consignment and auto-SKU for Wash
   useEffect(() => {
     if (documentType === 'CONSIGNMENT') {
       // Only switch if not already a wholesale mode to preserve specific wholesale choices if any
       if (!mode.includes('wholesale')) {
         setMode('wholesale');
       }
+    } else if (documentType === 'WASH') {
+      // Auto-assign MPW SKUs to items if they don't already have one
+      setItems(prev => prev.map(item => {
+        if (!item.sku || !item.sku.startsWith('MPW')) {
+          return { ...item, sku: `MPW${Math.floor(100000 + Math.random() * 900000)}` };
+        }
+        return item;
+      }));
     }
   }, [documentType]);
 
@@ -171,7 +179,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   function createEmptyItem(): InvoiceItem {
     return {
       id: Math.random().toString(36).substr(2, 9),
-      sku: '',
+      sku: documentType === 'WASH' ? `MPW${Math.floor(100000 + Math.random() * 900000)}` : '',
       description: '',
       shape: 'rectangle',
       widthFeet: 0,
@@ -936,7 +944,9 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     onChange={(e) => handleSkuChange(item.id, e.target.value)}
                     onBlur={() => setTimeout(() => setShowSkuSuggestions(prev => ({ ...prev, [item.id]: false })), 200)}
                     required
+                    readOnly={isWash}
                     className={styles.input}
+                    style={isWash ? { backgroundColor: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed', borderColor: '#d1d5db' } : undefined}
                     autoComplete="off"
                   />
                   <button
