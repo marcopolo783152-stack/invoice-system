@@ -145,8 +145,9 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
       // featured/default: mix handmade and machine-made deterministically not based on upload order
       const deterministicShuffle = [...result].sort((a, b) => a.id.localeCompare(b.id));
       
-      const handmade = deterministicShuffle.filter(r => r.construction !== "Machine-made");
-      const machineMade = deterministicShuffle.filter(r => r.construction === "Machine-made");
+      const isMachine = (r: any) => (r.manufacturingType || r.construction || "").toLowerCase().includes("machine");
+      const handmade = deterministicShuffle.filter(r => !isMachine(r));
+      const machineMade = deterministicShuffle.filter(r => isMachine(r));
       
       const interleaved = [];
       const maxLength = Math.max(handmade.length, machineMade.length);
