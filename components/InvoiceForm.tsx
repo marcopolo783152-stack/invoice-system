@@ -18,8 +18,8 @@ import * as XLSX from 'xlsx'; // Import SheetJS
 import dynamic from 'next/dynamic';
 
 function getNextWashSku(): string {
-  if (typeof window === 'undefined') return `MPW${Math.floor(1000 + Math.random() * 9000)}`;
-  let counter = parseInt(localStorage.getItem('mp_wash_sku_counter') || '1000', 10);
+  if (typeof window === 'undefined') return `MPW${Math.floor(1234 + Math.random() * 8000)}`;
+  let counter = parseInt(localStorage.getItem('mp_wash_sku_counter') || '1234', 10);
   const sku = `MPW${counter}`;
   localStorage.setItem('mp_wash_sku_counter', (counter + 1).toString());
   return sku;
