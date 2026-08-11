@@ -138,7 +138,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     }
   };
   const [items, setItems] = useState<InvoiceItem[]>(
-    initialData?.items || [createEmptyItem()]
+    () => initialData?.items || [createEmptyItem()]
   );
   const [discountPercentage, setDiscountPercentage] = useState(
     initialData?.discountPercentage || 0
@@ -166,13 +166,21 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         setMode('wholesale');
       }
     } else if (documentType === 'WASH') {
-      // Auto-assign MPW SKUs to items if they don't already have one
-      setItems(prev => prev.map(item => {
-        if (!item.sku || !item.sku.startsWith('MPW')) {
-          return { ...item, sku: getNextWashSku() };
-        }
-        return item;
-      }));
+      // Find how many items need SKUs
+      const neededCount = items.filter(i => !i.sku || !i.sku.startsWith('MPW')).length;
+      if (neededCount > 0) {
+        // Pre-generate SKUs outside the state updater to avoid React double-invocation bugs
+        const newSkus = Array.from({ length: neededCount }).map(() => getNextWashSku());
+        setItems(prev => {
+          let skuIndex = 0;
+          return prev.map(item => {
+            if (!item.sku || !item.sku.startsWith('MPW')) {
+              return { ...item, sku: newSkus[skuIndex++] };
+            }
+            return item;
+          });
+        });
+      }
     }
   }, [documentType]);
 
