@@ -191,205 +191,88 @@ export default function ClockPage() {
                                 );
                                 if (distance < lowestDistance) {
                                     lowestDistance = distance;
-'use client';
-
-import React, { useState, useEffect, useRef } from 'react';
-import { clockInOut, Employee, checkAutoClockOut, getTimeLogs, getEmployees } from '@/lib/employee-storage';
-import Link from 'next/link';
-import * as faceapi from 'face-api.js';
-
-export default function ClockPage() {
-    const [identifier, setIdentifier] = useState('');
-    const [status, setStatus] = useState<'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR' | 'SCANNING'>('IDLE');
-    const [message, setMessage] = useState('');
-    const [lastAction, setLastAction] = useState<{ type: string, name: string } | null>(null);
-    const [isModelsLoaded, setIsModelsLoaded] = useState(false);
-
-    // Geofencing coordinates (Precision Shop Location)
-    const SHOP_LAT = 38.808028;
-    const SHOP_LNG = -77.087056;
-    const MAX_DISTANCE_FT = 1500;
-
-    const [isSyncing, setIsSyncing] = useState(false);
-    const [pendingSyncCount, setPendingSyncCount] = useState(0);
-
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const scanInterval = useRef<any>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-    const isClockingInRef = useRef(false);
-
-    const checkPendingSyncs = () => {
-        if (typeof window === 'undefined') return;
-        const localLogs = JSON.parse(localStorage.getItem('mns_timelogs_local') || '[]');
-        const orphans = localLogs.filter((l: any) => l.id && l.id.length < 15);
-        setPendingSyncCount(orphans.length);
-    };
-
-    const speak = (text: string) => {
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            window.speechSynthesis.speak(utterance);
-        }
-    };
-
-    useEffect(() => {
-        // Load face-api models
-        const loadModels = async () => {
-            try {
-                await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-                    faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-                    faceapi.nets.faceRecognitionNet.loadFromUri('/models')
-                ]);
-                setIsModelsLoaded(true);
-            } catch (error) {
-                console.error("Failed to load models:", error);
-            }
-        };
-        loadModels();
-
-        // Handle storeId and employee id from URL
-        const params = new URLSearchParams(window.location.search);
-        const storeId = params.get('storeId');
-        const empId = params.get('id');
-        
-        if (storeId) {
-            localStorage.setItem('currentStoreId', storeId);
-            console.log('Switching to store:', storeId);
-        }
-
-        if (empId) {
-            setIdentifier(empId);
-        }
-
-        checkAutoClockOut();
-
-        const runSync = async () => {
-            setIsSyncing(true);
-            try {
-                await getTimeLogs(1);
-                checkPendingSyncs();
-            } catch (e) {
-                console.error("Auto-sync failed", e);
-            } finally {
-                setIsSyncing(false);
-            }
-        };
-        runSync();
-
-        const auditInterval = setInterval(() => {
-            checkAutoClockOut();
-            runSync();
-        }, 2 * 60 * 1000);
-
-        return () => {
-            clearInterval(auditInterval);
-            stopCamera();
-        };
-    }, []);
-
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 20902231; 
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    };
-
-    const startCamera = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            streamRef.current = stream;
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
-        } catch (err) {
-            console.error('Camera access denied:', err);
-            setMessage('Failed to access camera.');
-            setStatus('ERROR');
-            setTimeout(() => setStatus('IDLE'), 3000);
-        }
-    };
-
-    const stopCamera = () => {
-        if (scanInterval.current) clearInterval(scanInterval.current);
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
-    };
-
-    const handleStartScan = async () => {
-        if (!isModelsLoaded) {
-            setMessage('AI Models are still loading. Please wait a moment.');
-            setStatus('ERROR');
-            setTimeout(() => setStatus('IDLE'), 3000);
-            return;
-        }
-        
-        isClockingInRef.current = false;
-        setStatus('SCANNING');
-        setMessage('Looking for face... Please look at the camera.');
-        await startCamera();
-    };
-
-    const handleVideoPlay = () => {
-        if (!videoRef.current || !canvasRef.current || status !== 'SCANNING') return;
-        
-        const displaySize = { 
-            width: videoRef.current.videoWidth, 
-            height: videoRef.current.videoHeight 
-        };
-        faceapi.matchDimensions(canvasRef.current, displaySize);
-
-        scanInterval.current = setInterval(async () => {
-            if (!videoRef.current || !canvasRef.current || isClockingInRef.current) return;
-            
-            try {
-                const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
-                                               .withFaceLandmarks()
-                                               .withFaceDescriptor();
-
-                const ctx = canvasRef.current.getContext('2d');
-                if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-                if (detection) {
-                    const resizedDetection = faceapi.resizeResults(detection, displaySize);
-                    faceapi.draw.drawDetections(canvasRef.current, resizedDetection);
-                    
-                    const box = resizedDetection.detection.box;
-                    const faceArea = box.width * box.height;
-                    const screenArea = displaySize.width * displaySize.height;
-                    const ratio = faceArea / screenArea;
-
-                    if (ratio < 0.05) {
-                        setMessage('Move closer to the camera');
-                    } else if (detection.detection.score < 0.7) {
-                        setMessage('Hold still...');
-                    } else {
-                        // High confidence face detected, attempt match
-                        const employees = await getEmployees();
-                        let bestMatch: Employee | null = null;
-                        let lowestDistance = 1.0;
-
-                        for (const emp of employees) {
-                            if (emp.faceDescriptor) {
-                                const distance = faceapi.euclideanDistance(
-                                    detection.descriptor,
-                                    new Float32Array(emp.faceDescriptor)
-                                );
-                                if (distance < lowestDistance) {
-                                    lowestDistance = distance;
                                     bestMatch = emp;
                                 }
                             }
                         }
 
                         if (bestMatch && lowestDistance < 0.55) {
+                            if (isClockingInRef.current) return;
+
+                            // Capture low-quality snapshot before stopping camera
+                            let capturedPhoto = undefined;
+                            if (videoRef.current) {
+                                const tmpCanvas = document.createElement('canvas');
+                                tmpCanvas.width = 160;
+                                tmpCanvas.height = 120;
+                                const ctx = tmpCanvas.getContext('2d');
+                                if (ctx) {
+                                    // Mirror the context so the saved photo isn't flipped
+                                    ctx.translate(160, 0);
+                                    ctx.scale(-1, 1);
+                                    ctx.drawImage(videoRef.current, 0, 0, 160, 120);
+                                    capturedPhoto = tmpCanvas.toDataURL('image/jpeg', 0.5);
+                                }
+                            }
+
+                            // MATCH FOUND! Trigger clock in automatically.
+                            isClockingInRef.current = true;
+                            stopCamera();
+                            setMessage(`Match found! Hello, ${bestMatch.name}. Verifying location...`);
+                            const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                            await handleClock(fakeEvent, bestMatch.id, capturedPhoto);
+                        } else {
+                            setMessage('Face not recognized in the system.');
+                        }
+                    }
+                } else {
+                    setMessage('No face detected. Look directly at the camera.');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }, 300); // Scan ~3 times a second
+    };
+
+    const handleClock = async (e: React.FormEvent, overrideIdentifier?: string, facePhotoUrl?: string) => {
+        e.preventDefault();
+        const activeIdentifier = overrideIdentifier || identifier.trim();
+        if (!activeIdentifier) return;
+
+        setStatus('LOADING');
+        setMessage('Verifying location...');
+
+        try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+            });
+
+            const distance = calculateDistance(
+                position.coords.latitude,
+                position.coords.longitude,
+                SHOP_LAT,
+                SHOP_LNG
+            );
+
+            let geoStatus = 'IN_ZONE';
+            if (distance > MAX_DISTANCE_FT) {
+                geoStatus = `OUT_OF_ZONE (${Math.round(distance)}ft away)`;
+                console.warn(`User clocked in out of zone. Distance: ${distance}ft`);
+            }
+
+            setMessage('Recording timestamp...');
+
+            const result = await clockInOut(
+                activeIdentifier, 
+                undefined, 
+                facePhotoUrl, 
+                { lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy }
+            );
+
+            setStatus('SUCCESS');
+            setIdentifier('');
+            setLastAction({ type: result.log.type, name: result.employee.name });
+            
             speak(`${result.employee.name} clocked ${result.log.type.toLowerCase()} successfully`);
 
             setTimeout(() => {
