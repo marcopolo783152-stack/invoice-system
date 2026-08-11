@@ -17,6 +17,14 @@ import { logActivity } from '@/lib/audit-logger';
 import * as XLSX from 'xlsx'; // Import SheetJS
 import dynamic from 'next/dynamic';
 
+function getNextWashSku(): string {
+  if (typeof window === 'undefined') return `MPW${Math.floor(1000 + Math.random() * 9000)}`;
+  let counter = parseInt(localStorage.getItem('mp_wash_sku_counter') || '1000', 10);
+  const sku = `MPW${counter}`;
+  localStorage.setItem('mp_wash_sku_counter', (counter + 1).toString());
+  return sku;
+}
+
 const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
 
 import SignaturePad from './SignaturePad';
@@ -161,7 +169,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       // Auto-assign MPW SKUs to items if they don't already have one
       setItems(prev => prev.map(item => {
         if (!item.sku || !item.sku.startsWith('MPW')) {
-          return { ...item, sku: `MPW${Math.floor(100000 + Math.random() * 900000)}` };
+          return { ...item, sku: getNextWashSku() };
         }
         return item;
       }));
@@ -179,7 +187,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   function createEmptyItem(): InvoiceItem {
     return {
       id: Math.random().toString(36).substr(2, 9),
-      sku: documentType === 'WASH' ? `MPW${Math.floor(100000 + Math.random() * 900000)}` : '',
+      sku: documentType === 'WASH' ? getNextWashSku() : '',
       description: '',
       shape: 'rectangle',
       widthFeet: 0,
