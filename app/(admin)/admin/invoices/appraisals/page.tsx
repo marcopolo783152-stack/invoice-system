@@ -4,8 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getAppraisals, deleteAppraisal, Appraisal } from '@/lib/appraisals-storage';
-import { Search, Plus, Trash2, Printer, ArrowLeft, Edit } from 'lucide-react';
+import { Search, Plus, Trash2, Printer, ArrowLeft, Edit, Download } from 'lucide-react';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
+import AppraisalTemplate from '@/components/AppraisalTemplate';
+import { getInvoicePDFBlob } from '@/lib/pdf-utils';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 export default function AppraisalsPage() {
     const router = useRouter();
@@ -13,6 +17,7 @@ export default function AppraisalsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isGeneratingZip, setIsGeneratingZip] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -87,6 +92,34 @@ export default function AppraisalsPage() {
         window.location.href = '/admin/invoices/invoices/new';
     };
 
+    const handleBulkDownload = async () => {
+        setIsGeneratingZip(true);
+        try {
+            const zip = new JSZip();
+            const selectedAppraisals = appraisals.filter(app => selectedIds.has(app.id));
+            
+            // Wait briefly to ensure images inside hidden templates load
+            await new Promise(r => setTimeout(r, 1000));
+            
+            for (const app of selectedAppraisals) {
+                const element = document.getElementById(`hidden-appraisal-${app.id}`);
+                if (element) {
+                    const blob = await getInvoicePDFBlob(element, app.id);
+                    zip.file(`Appraisal_${app.id}_${app.rugNumber}.pdf`, blob);
+                }
+            }
+            
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            saveAs(zipBlob, `Appraisals_Bulk_Download.zip`);
+            setSelectedIds(new Set());
+        } catch (error) {
+            console.error('Failed to generate zip', error);
+            alert('Failed to generate PDF bundle.');
+        } finally {
+            setIsGeneratingZip(false);
+        }
+    };
+
     return (
         <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
@@ -109,6 +142,21 @@ export default function AppraisalsPage() {
                             }}
                         >
                             🧾 Invoice Selected ({selectedIds.size})
+                        </button>
+                    )}
+                    {selectedIds.size > 0 && (
+                        <button 
+                            onClick={handleBulkDownload}
+                            disabled={isGeneratingZip}
+                            style={{ 
+                                background: isGeneratingZip ? '#94a3b8' : '#10b981', color: 'white', 
+                                padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
+                                border: 'none', cursor: isGeneratingZip ? 'not-allowed' : 'pointer',
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                boxShadow: isGeneratingZip ? 'none' : '0 4px 6px -1px rgba(16, 185, 129, 0.2)'
+                            }}
+                        >
+                            <Download size={18} /> {isGeneratingZip ? 'Generating...' : `Download PDFs (${selectedIds.size})`}
                         </button>
                     )}
                     <Link 
@@ -230,6 +278,15 @@ export default function AppraisalsPage() {
                         </tbody>
                     </table>
                 )}
+            </div>
+
+            {/* Hidden templates for PDF generation */}
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+                {appraisals.filter(app => selectedIds.has(app.id)).map(app => (
+                    <div key={app.id} id={`hidden-appraisal-${app.id}`}>
+                        <AppraisalTemplate appraisal={app} />
+                    </div>
+                ))}
             </div>
         </div>
     );
