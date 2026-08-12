@@ -15,7 +15,7 @@ export default function ClockPage() {
     // Geofencing coordinates (Precision Shop Location)
     const SHOP_LAT = 38.808028;
     const SHOP_LNG = -77.087056;
-    const MAX_DISTANCE_FT = 1500;
+    const MAX_DISTANCE_FT = 200;
 
     const [isSyncing, setIsSyncing] = useState(false);
     const [pendingSyncCount, setPendingSyncCount] = useState(0);
