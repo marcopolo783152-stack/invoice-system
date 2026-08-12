@@ -35,7 +35,7 @@ export default function AppraisalsPage() {
 
     const handlePrint = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        window.open(`/appraisals/print?id=${id}`, '_blank');
+        window.open(`/admin/invoices/appraisals/print?id=${id}`, '_blank');
     };
 
     const filtered = appraisals.filter(app => 
@@ -84,7 +84,7 @@ export default function AppraisalsPage() {
             }))
         };
         sessionStorage.setItem('convert_invoice_data', JSON.stringify(invoiceData));
-        window.location.href = '/invoices/new';
+        window.location.href = '/admin/invoices/invoices/new';
     };
 
     return (
