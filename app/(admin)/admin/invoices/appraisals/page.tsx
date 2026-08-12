@@ -57,6 +57,14 @@ export default function AppraisalsPage() {
         setSelectedIds(newSet);
     };
 
+    const handleSelectAll = () => {
+        if (selectedIds.size === appraisals.length) {
+            setSelectedIds(new Set()); // Deselect all
+        } else {
+            setSelectedIds(new Set(appraisals.map(app => app.id))); // Select all
+        }
+    };
+
     const handleBulkInvoice = () => {
         const selectedAppraisals = appraisals.filter(app => selectedIds.has(app.id));
         if (selectedAppraisals.length === 0) return;
@@ -129,7 +137,19 @@ export default function AppraisalsPage() {
                     </Link>
                     <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Certificates & Appraisals</h1>
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <button 
+                        onClick={handleSelectAll}
+                        style={{ 
+                            background: '#f1f5f9', color: '#475569', 
+                            padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
+                            border: '1px solid #cbd5e1', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                        }}
+                    >
+                        {selectedIds.size === appraisals.length && appraisals.length > 0 ? 'Unselect All' : 'Select All'}
+                    </button>
                     {selectedIds.size > 0 && (
                         <button 
                             onClick={handleBulkInvoice}
@@ -284,7 +304,9 @@ export default function AppraisalsPage() {
             <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, pointerEvents: 'none' }}>
                 {appraisals.filter(app => selectedIds.has(app.id)).map(app => (
                     <div key={app.id} id={`hidden-appraisal-${app.id}`}>
-                        <AppraisalTemplate appraisal={app} />
+                        <div className="pdf-page" style={{ background: 'white' }}>
+                            <AppraisalTemplate appraisal={app} />
+                        </div>
                     </div>
                 ))}
             </div>
