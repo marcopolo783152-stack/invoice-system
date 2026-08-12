@@ -112,7 +112,7 @@ export default function AppraisalsPage() {
                         </button>
                     )}
                     <Link 
-                        href="/appraisals/new" 
+                        href="/admin/invoices/appraisals/new" 
                         style={{ 
                             background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', color: 'white', 
                             padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
