@@ -254,10 +254,9 @@ export default function ClockPage() {
                 SHOP_LNG
             );
 
-            let geoStatus = 'IN_ZONE';
             if (distance > MAX_DISTANCE_FT) {
-                geoStatus = `OUT_OF_ZONE (${Math.round(distance)}ft away)`;
-                console.warn(`User clocked in out of zone. Distance: ${distance}ft`);
+                console.warn(`User attempted to clock in out of zone. Distance: ${distance}ft`);
+                throw new Error(`You must be at the shop to clock in. You are ${Math.round(distance)}ft away.`);
             }
 
             setMessage('Recording timestamp...');
