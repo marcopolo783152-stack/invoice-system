@@ -12,6 +12,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import { compressImage } from "@/lib/imageUtils";
 import LiveTrackingButton from "./LiveTrackingButton";
+import { EstimatesAdminTab } from "./EstimatesAdminTab";
 import { 
   BarChart3, 
   Layers, 
@@ -53,7 +54,9 @@ import {
   Store,
   List,
   LayoutGrid,
-  Search
+  Search,
+  Brush,
+  Calculator
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
@@ -96,7 +99,7 @@ export const AdminDashboard: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -115,7 +118,7 @@ export const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "reviews" | "messages" | "blogs" | "promotions" | "settings") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "reviews" | "messages" | "blogs" | "promotions" | "settings") => {
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -962,13 +965,23 @@ export const AdminDashboard: React.FC = () => {
                 activeTab === "cleaning" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
-              <Heart className="h-4.5 w-4.5" />
+              <Brush className="h-4.5 w-4.5" />
               <span>Specialty Care</span>
               {cleaningBookings.filter(b => b.status === "Pending").length > 0 && (
                 <span className="absolute right-3 bg-amber-500 text-neutral-900 text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
                   {cleaningBookings.filter(b => b.status === "Pending").length}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab("estimates")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "estimates" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Calculator className="h-4.5 w-4.5" />
+              <span>Service Estimates</span>
             </button>
             
             <button
@@ -1058,6 +1071,8 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === "inventory" && "Manage Showroom Inventory"}
               {activeTab === "bulk_import" && "Bulk Importer"}
               {activeTab === "orders" && "Customer Orders & Dispatch Logs"}
+              {activeTab === "cleaning" && "Cleaning & Repair Bookings"}
+              {activeTab === "estimates" && "Service Estimate Requests"}
               {activeTab === "transactions" && "System Transactions Ledger"}
               {activeTab === "reviews" && "Advisor Review Moderation"}
               {activeTab === "messages" && "Live Concierge Inbox Thread"}
@@ -1126,6 +1141,13 @@ export const AdminDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* --- TAB: ESTIMATES --- */}
+        {activeTab === "estimates" && (
+          <div className="bg-white border border-editorial-border p-8 shadow-sm">
+             <EstimatesAdminTab />
           </div>
         )}
 

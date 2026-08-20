@@ -36,7 +36,8 @@ import {
   SHOWROOM_ORDERS,
   SHOWROOM_REVIEWS,
   SHOWROOM_CHAT, SHOWROOM_PROMOCODES,
-  SHOWROOM_CLEANING
+  SHOWROOM_CLEANING,
+  SHOWROOM_ESTIMATES
 } from "@/lib/showroom-firebase";
 
 interface StoreContextType {
@@ -65,6 +66,9 @@ interface StoreContextType {
   addCleaningBooking: (booking: Omit<CleaningBooking, "id" | "status" | "createdAt">) => CleaningBooking;
   updateCleaningBookingStatus: (id: string, status: CleaningBooking["status"]) => void;
   deleteCleaningBooking: (id: string) => void;
+  estimates: any[];
+  updateEstimateStatus: (id: string, status: string) => void;
+  deleteEstimate: (id: string) => void;
   
   // Cart operations
   addToCart: (rug: Rug) => void;
@@ -228,6 +232,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const local = safeGetItem("marcopolo_cleaning_bookings");
     return local ? JSON.parse(local) : [];
   });
+  const [estimates, setEstimates] = useState<any[]>([]);
 
   // Core collections synced to Firebase
   const [rugs, setRugs] = useState<Rug[]>([]);
@@ -302,6 +307,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubs.push(subscribeToCollection<Review>(SHOWROOM_REVIEWS, setReviews));
       unsubs.push(subscribeToCollection<ChatMessage>(SHOWROOM_CHAT, setChatMessages));
       unsubs.push(subscribeToCollection<CleaningBooking>(SHOWROOM_CLEANING, setCleaningBookings));
+      unsubs.push(subscribeToCollection<any>(SHOWROOM_ESTIMATES, setEstimates));
       unsubs.push(subscribeToCollection<PromoCode>(SHOWROOM_PROMOCODES, setPromoCodes));
       
       unsubs.push(subscribeToSettings({
@@ -919,6 +925,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
+  const updateEstimateStatus = (id: string, status: string) => {
+    updateShowroomDoc(SHOWROOM_ESTIMATES, id, { status });
+  };
+
+  const deleteEstimate = (id: string) => {
+    setEstimates(prev => prev.filter(e => e.id !== id));
+    deleteShowroomDoc(SHOWROOM_ESTIMATES, id).catch(err => {
+      console.error("Failed to delete estimate:", err);
+    });
+  };
 
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -1004,6 +1020,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addCleaningBooking,
         updateCleaningBookingStatus,
         deleteCleaningBooking,
+        estimates,
+        updateEstimateStatus,
+        deleteEstimate,
         addToCart,
         removeFromCart,
         updateCartQuantity,

@@ -17,6 +17,7 @@ import { CartView } from "@/components/public/CartView";
 import { ChatWidget } from "@/components/public/ChatWidget";
 import { AdminDashboard } from "@/components/public/AdminDashboard";
 import { Instagram, Facebook, Youtube, Twitter, Globe } from "lucide-react";
+import Link from "next/link";
 
 function AppContent() {
   const { activeView, showroomAnnouncement, socialLinks, setActiveView, logoutUser } = useStore();
@@ -82,6 +83,14 @@ function AppContent() {
         </div>
       )}
 
+      {/* Hidden SEO H1 and local content for Googlebot */}
+      <div className="sr-only">
+        <h1>Handmade Oriental &amp; Persian Rugs in Alexandria, Virginia</h1>
+        <p>
+          Marco Polo Oriental Rugs is your premier destination for authentic, handmade Persian rugs, antique carpets, and fine oriental rugs in Alexandria, VA. We proudly serve the Washington, D.C. area and Northern Virginia with curated selections, expert rug cleaning, repair, and restoration services.
+        </p>
+      </div>
+
       {/* Luxury sticky Header Navigation bar */}
       <Navbar currentTab={currentTab} setCurrentTab={setCurrentTab} />
 
@@ -139,9 +148,9 @@ function AppContent() {
           <div className="space-y-3">
             <h4 className="uppercase tracking-[0.2em] text-xs text-editorial-text font-bold">Design Services</h4>
             <ul className="space-y-1.5 text-gray-500 text-sm font-light">
-              <li><a href="#services" className="hover:text-editorial-accent transition-colors duration-200">Organic Deep Lanolin Washing</a></li>
-              <li><a href="#services" className="hover:text-editorial-accent transition-colors duration-200">Fringe Bindings & Repair Restoration</a></li>
-              <li><a href="#services" className="hover:text-editorial-accent transition-colors duration-200">Complimentary Virtual Room Rendering</a></li>
+              <li><Link href="/services/rug-cleaning-alexandria-va" className="hover:text-editorial-accent transition-colors duration-200">Professional Rug Cleaning</Link></li>
+              <li><Link href="/services/rug-repair-restoration-alexandria-va" className="hover:text-editorial-accent transition-colors duration-200">Repair &amp; Restoration</Link></li>
+              <li><Link href="/services" className="hover:text-editorial-accent transition-colors duration-200">All Services &amp; Care</Link></li>
               <li><a href="#services" className="hover:text-editorial-accent transition-colors duration-200">In-Home Curation Approvals</a></li>
             </ul>
           </div>

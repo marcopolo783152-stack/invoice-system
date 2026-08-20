@@ -202,3 +202,7 @@ export interface ShopProfile {
   address: string;
   logoUrl?: string;
 }
+
+export interface ServiceEstimate { id: string; name: string; phone: string; email: string; zip: string; service: string; rugType: string; dimensions: string; description: string; pickupPreference: string; appointmentDate: string; status: 'New' | 'Contacted' | 'Estimate Provided' | 'Pickup Scheduled' | 'In Service' | 'Ready' | 'Delivered' | 'Cancelled'; createdAt: string; images: string[]; notes?: string; }
+
+export interface ServiceEstimate { id: string; name: string; phone: string; email: string; zip: string; service: string; rugType: string; dimensions: string; description: string; pickupPreference: string; appointmentDate: string; status: 'New' | 'Contacted' | 'Estimate Provided' | 'Pickup Scheduled' | 'In Service' | 'Ready' | 'Delivered' | 'Cancelled'; createdAt: string; images: string[]; notes?: string; }

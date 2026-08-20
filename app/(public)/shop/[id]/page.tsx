@@ -57,6 +57,25 @@ export default async function ProductPage({ params }: { params: { id: string } }
     "image": rug.images?.[0] || '',
     "description": rug.description || `Beautiful ${rug.style} rug from ${rug.origin}. Size: ${rug.dimensions}.`,
     "sku": rug.sku || rug.id,
+    "color": rug.colors?.[0] || 'Multi',
+    "material": rug.material || 'Wool',
+    "additionalProperty": [
+      {
+        "@type": "PropertyValue",
+        "name": "Dimensions",
+        "value": rug.dimensions
+      },
+      {
+        "@type": "PropertyValue",
+        "name": "Style",
+        "value": rug.style
+      },
+      {
+        "@type": "PropertyValue",
+        "name": "Origin",
+        "value": rug.origin
+      }
+    ],
     "offers": {
       "@type": "Offer",
       "url": `https://www.marcopolorugs.com/shop/${rug.id}`,
@@ -71,11 +90,25 @@ export default async function ProductPage({ params }: { params: { id: string } }
     }
   };
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.marcopolorugs.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Shop", "item": "https://www.marcopolorugs.com/" },
+      { "@type": "ListItem", "position": 3, "name": rug.name, "item": `https://www.marcopolorugs.com/shop/${rug.id}` }
+    ]
+  };
+
   return (
     <div className="min-h-screen bg-editorial-bg text-editorial-text p-4 md:p-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       {/* Client Component that immediately redirects humans to the SPA view */}
       <ClientRedirect rugId={params.id} />

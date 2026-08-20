@@ -24,6 +24,25 @@ const nextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      {
+        source: '/:year(\\d{4})/:month(\\d{2})/:day(\\d{2})/:slug',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/product/:slug',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/product-category/:slug*',
+        destination: '/shop',
+        permanent: true,
+      },
+    ]
+  }
 }
 
 module.exports = nextConfig
