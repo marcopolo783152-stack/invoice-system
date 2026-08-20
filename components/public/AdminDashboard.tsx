@@ -13,6 +13,9 @@ import { storage } from "@/lib/firebase";
 import { compressImage } from "@/lib/imageUtils";
 import LiveTrackingButton from "./LiveTrackingButton";
 import { EstimatesAdminTab } from "./EstimatesAdminTab";
+import AppraisalsAdminTab from "./AppraisalsAdminTab";
+import { EmployeesAdminTab } from "./EmployeesAdminTab";
+import { ClockAdminTab } from "./ClockAdminTab";
 import { 
   BarChart3, 
   Layers, 
@@ -56,7 +59,9 @@ import {
   LayoutGrid,
   Search,
   Brush,
-  Calculator
+  Calculator,
+  Users,
+  Clock
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
@@ -99,7 +104,7 @@ export const AdminDashboard: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -118,7 +123,7 @@ export const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "reviews" | "messages" | "blogs" | "promotions" | "settings") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings") => {
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -984,6 +989,33 @@ export const AdminDashboard: React.FC = () => {
               <span>Service Estimates</span>
             </button>
             
+            <button 
+                onClick={() => setActiveTab("appraisals")}
+                className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                  activeTab === "appraisals" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+                }`}
+              >
+                <FileText size={18} /> Appraisals
+              </button>
+              
+              <button 
+                onClick={() => setActiveTab("employees")}
+                className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                  activeTab === "employees" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+                }`}
+              >
+                <Users size={18} /> HR / Employees
+              </button>
+
+              <button 
+                onClick={() => setActiveTab("clock")}
+                className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                  activeTab === "clock" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+                }`}
+              >
+                <Clock size={18} /> Time Clock
+              </button>
+            
             <button
               onClick={() => setActiveTab("reviews")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
@@ -1073,6 +1105,9 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === "orders" && "Customer Orders & Dispatch Logs"}
               {activeTab === "cleaning" && "Cleaning & Repair Bookings"}
               {activeTab === "estimates" && "Service Estimate Requests"}
+              {activeTab === "appraisals" && "Certificates of Authenticity & Appraisals"}
+              {activeTab === "employees" && "HR & Employee Management"}
+              {activeTab === "clock" && "Time Clock & Geofencing"}
               {activeTab === "transactions" && "System Transactions Ledger"}
               {activeTab === "reviews" && "Advisor Review Moderation"}
               {activeTab === "messages" && "Live Concierge Inbox Thread"}
@@ -1148,6 +1183,27 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === "estimates" && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <EstimatesAdminTab />
+          </div>
+        )}
+
+        {/* --- TAB: APPRAISALS --- */}
+        {activeTab === "appraisals" && (
+          <div className="bg-white border border-editorial-border p-8 shadow-sm">
+             <AppraisalsAdminTab />
+          </div>
+        )}
+
+        {/* --- TAB: EMPLOYEES --- */}
+        {activeTab === "employees" && (
+          <div className="bg-white border border-editorial-border p-8 shadow-sm">
+             <EmployeesAdminTab />
+          </div>
+        )}
+
+        {/* --- TAB: CLOCK --- */}
+        {activeTab === "clock" && (
+          <div className="bg-white border border-editorial-border p-8 shadow-sm">
+             <ClockAdminTab />
           </div>
         )}
 
