@@ -8,12 +8,13 @@ import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCT5ukPxCXfMI3j8PgJCGdF5AvN6RnX0Y8",
+  apiKey: "AIzaSyCtSukPxCXfHl3jBPg5JC6dF5AvbG8nX0Y",
   authDomain: "marcopolo-invoice.firebaseapp.com",
   projectId: "marcopolo-invoice",
   storageBucket: "marcopolo-invoice.firebasestorage.app",
-  messagingSenderId: "257585408766",
-  appId: "1:257585408766:web:6309ba28477926e86c796f"
+  messagingSenderId: "257585608766",
+  appId: "1:257585608766:web:6309ba28477926e86c796f",
+  measurementId: "G-BMPL0XNPQ4"
 };
 
 export function isFirebaseConfigured(): boolean {
