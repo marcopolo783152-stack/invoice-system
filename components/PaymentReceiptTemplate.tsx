@@ -35,18 +35,18 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
         const periodStart = previousPayment ? new Date(previousPayment.date) : new Date(employee.joinedDate);
         const periodEnd = new Date(payment.date);
 
-        // Calculate balances up to this payment
-        // We need to calculate what the balance was BEFORE this payment was made, and AFTER.
-        const priorPayments = sortedPayments.slice(0, currentIndex);
-        const priorPaidAmount = priorPayments.reduce((sum, p) => sum + p.amount, 0);
-
-        // Find logs up to the end of the day of the payment to match dashboard
-        const endOfDay = new Date(periodEnd);
-        endOfDay.setHours(23, 59, 59, 999);
-        const logsUpToNow = logs.filter(l => new Date(l.timestamp) <= endOfDay && l.type === 'IN');
-        const daysWorked = logsUpToNow.length;
+        // Calculate balances to perfectly match the dashboard's current state
+        // The dashboard uses ALL logs, regardless of date, so we will too.
+        const daysWorked = logs.filter(l => l.type === 'IN').length;
         const dailyRate = employee.dailyRate || 100;
         const totalEarned = daysWorked * dailyRate;
+
+        // The dashboard uses ALL payments.
+        const totalPaidAllTime = allPayments.reduce((sum, p) => sum + p.amount, 0);
+
+        // Since THIS payment is included in allPayments, the "Prior Paid" is:
+        const priorPaidAmount = totalPaidAllTime - payment.amount;
+        const priorPaymentsCount = allPayments.length - 1;
 
         // Current Balance BEFORE this payment
         const priorBalance = totalEarned - priorPaidAmount;
@@ -62,14 +62,20 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
         return (
             <div ref={ref} className="pdf-page" style={{
                 width: '8.5in',
-                minHeight: '11in',
-                padding: '40px',
+                minHeight: '10.5in',
+                padding: '30px',
                 background: 'white',
                 margin: '0 auto',
                 boxSizing: 'border-box',
                 fontFamily: '"Courier New", Courier, monospace',
                 color: '#1e293b'
             }}>
+                <style>{`
+                    @media print {
+                        @page { margin: 0; size: auto; }
+                        body { margin: 0; }
+                    }
+                `}</style>
                 {/* --- CHECK SECTION --- */}
                 <div style={{
                     border: '1px solid #94a3b8',
@@ -199,7 +205,7 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
                             <tr>
                                 <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0' }}>Less: Prior Payments / Advances</td>
                                 <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#64748b' }}>
-                                    {priorPayments.length} previous transactions
+                                    {priorPaymentsCount} previous transactions
                                 </td>
                                 <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>
                                     - ${priorPaidAmount.toFixed(2)}
