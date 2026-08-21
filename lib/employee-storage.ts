@@ -64,6 +64,7 @@ export interface EmployeePayment {
     amount: number;
     date: string;
     notes?: string;
+    type?: 'PAYMENT' | 'LOAN';
 }
 
 const BASE_EMP_COLLECTION = 'employees';
@@ -858,7 +859,8 @@ export async function recordPayment(payment: Partial<EmployeePayment>): Promise<
         employeeId: payment.employeeId!,
         amount: payment.amount || 0,
         date: payment.date || new Date().toISOString(),
-        notes: payment.notes || ''
+        notes: payment.notes || '',
+        type: payment.type || 'PAYMENT'
     };
 
     if (isFirebaseConfigured() && db) {

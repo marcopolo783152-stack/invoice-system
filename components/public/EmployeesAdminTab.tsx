@@ -310,16 +310,26 @@ export function EmployeesAdminTab() {
         }
     };
 
-    const handlePayment = async (empId: string, amount: number) => {
+    const handlePayment = async (empId: string, amount: number, type: 'PAYMENT' | 'LOAN') => {
         if (!amount || amount <= 0) return;
-        if (!confirm(`Confirm payment of $${amount} to employee?`)) return;
+        
+        let customNote = '';
+        if (type === 'LOAN') {
+            const notePrompt = prompt(`Enter a note for this $${amount} loan:`, 'Advance loan');
+            if (notePrompt === null) return; // User cancelled
+            customNote = notePrompt;
+        } else {
+            if (!confirm(`Confirm payment of $${amount} to employee?`)) return;
+            customNote = 'Manual payment from dashboard';
+        }
 
         setIsPaying(empId);
         try {
             await recordPayment({
                 employeeId: empId,
                 amount: amount,
-                notes: 'Manual payment from dashboard'
+                notes: customNote,
+                type: type
             });
             await loadData();
             // Refresh payment list if modal is open
@@ -1222,12 +1232,23 @@ export function EmployeesAdminTab() {
                                                 disabled={isPaying === emp.id}
                                                 onClick={() => {
                                                     const input = document.getElementById(`pay-${emp.id}`) as HTMLInputElement;
-                                                    handlePayment(emp.id, parseFloat(input.value));
+                                                    handlePayment(emp.id, parseFloat(input.value), 'PAYMENT');
                                                     input.value = '';
                                                 }}
                                                 style={{ padding: '10px 20px', borderRadius: 10, background: '#1e293b', color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                                             >
                                                 {isPaying === emp.id ? '...' : 'Pay Staff'}
+                                            </button>
+                                            <button
+                                                disabled={isPaying === emp.id}
+                                                onClick={() => {
+                                                    const input = document.getElementById(`pay-${emp.id}`) as HTMLInputElement;
+                                                    handlePayment(emp.id, parseFloat(input.value), 'LOAN');
+                                                    input.value = '';
+                                                }}
+                                                style={{ padding: '10px 20px', borderRadius: 10, background: '#f59e0b', color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                                            >
+                                                Give Loan
                                             </button>
                                             <button
                                                 onClick={() => handleViewPayments(emp.id, emp.name)}
@@ -1274,17 +1295,30 @@ export function EmployeesAdminTab() {
                                     {employeePaymentsList.map(pay => (
                                         <div key={pay.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 15, border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc' }}>
                                             <div>
-                                                <div style={{ fontWeight: 800, color: '#1e293b', fontSize: 16 }}>${pay.amount.toFixed(2)}</div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <div style={{ fontWeight: 800, color: '#1e293b', fontSize: 16 }}>${pay.amount.toFixed(2)}</div>
+                                                    {pay.type === 'LOAN' && <span style={{ fontSize: 10, background: '#fef3c7', color: '#d97706', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>LOAN</span>}
+                                                </div>
                                                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
                                                     {formatDate(pay.date)} • {pay.notes || 'No notes'}
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => handleDeletePayment(pay.id)}
-                                                style={{ border: 'none', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
-                                            >
-                                                Delete
-                                            </button>
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                <button
+                                                    onClick={() => {
+                                                        window.open(`/admin/invoices/employees/print?type=receipt&id=${viewingPaymentsFor.empId}&paymentId=${pay.id}`, '_blank');
+                                                    }}
+                                                    style={{ border: '1px solid #6366f1', background: '#fff', color: '#6366f1', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                                                >
+                                                    🖨️ Receipt
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeletePayment(pay.id)}
+                                                    style={{ border: 'none', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

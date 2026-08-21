@@ -7,15 +7,18 @@ import { getCurrentStoreId } from '@/lib/user-storage';
 import { Loader2 } from 'lucide-react';
 import { generatePDFBlobUrl, generateReportPDFBlobUrl } from '@/lib/pdf-utils';
 import { HistoryReportTemplate } from '@/components/HistoryReportTemplate';
+import { PaymentReceiptTemplate } from '@/components/PaymentReceiptTemplate';
 
 function EmployeePrintContent() {
     const searchParams = useSearchParams();
     const type = searchParams.get('type'); // 'badge' or 'poster'
     const range = searchParams.get('range') || 'ALL';
     const id = searchParams.get('id'); // employee id or empId
+    const paymentId = searchParams.get('paymentId'); // for receipt
     const [employee, setEmployee] = useState<Employee | null>(null);
     const [historyLogs, setHistoryLogs] = useState<TimeLog[]>([]);
     const [historyPayments, setHistoryPayments] = useState<EmployeePayment[]>([]);
+    const [receiptPayment, setReceiptPayment] = useState<EmployeePayment | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [qrUrl, setQrUrl] = useState('');
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -67,6 +70,19 @@ function EmployeePrintContent() {
                     setImageLoaded(true); // No specific large image to wait for other than profile which is usually small
                 }
                 setIsLoading(false);
+            } else if (type === 'receipt' && id && paymentId) {
+                const emps = await getEmployees();
+                const emp = emps.find(e => e.id === id || e.empId === id);
+                if (emp) {
+                    setEmployee(emp);
+                    const empPayments = await getEmployeePayments(emp.id);
+                    const pay = empPayments.find(p => p.id === paymentId);
+                    if (pay) {
+                        setReceiptPayment(pay);
+                        setImageLoaded(true);
+                    }
+                }
+                setIsLoading(false);
             } else {
                 setIsLoading(false);
             }
@@ -83,6 +99,8 @@ function EmployeePrintContent() {
                     let blobUrl = '';
                     if (type === 'history') {
                         blobUrl = await generateReportPDFBlobUrl(printRef.current!, `History_${employee?.name || 'Report'}`);
+                    } else if (type === 'receipt') {
+                        blobUrl = await generateReportPDFBlobUrl(printRef.current!, `Receipt_${employee?.name || 'Payment'}`);
                     } else {
                         blobUrl = await generatePDFBlobUrl(printRef.current!, id || 'QR');
                     }
@@ -299,6 +317,14 @@ function EmployeePrintContent() {
                     logs={historyLogs}
                     payments={historyPayments}
                     range={range as any}
+                />
+            )}
+
+            {type === 'receipt' && employee && receiptPayment && (
+                <PaymentReceiptTemplate
+                    ref={printRef}
+                    employee={employee}
+                    payment={receiptPayment}
                 />
             )}
 
