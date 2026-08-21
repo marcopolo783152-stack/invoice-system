@@ -186,13 +186,6 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
                             </tr>
                         </thead>
                         <tbody>
-                            <tr style={{ background: '#f1f5f9' }}>
-                                <td style={{ padding: '10px', borderBottom: '2px solid #cbd5e1', fontWeight: 700 }}>BALANCE DUE BEFORE THIS PAYMENT</td>
-                                <td style={{ padding: '10px', borderBottom: '2px solid #cbd5e1', textAlign: 'right' }}></td>
-                                <td style={{ padding: '10px', borderBottom: '2px solid #cbd5e1', textAlign: 'right', fontWeight: 800 }}>
-                                    ${priorBalance.toFixed(2)}
-                                </td>
-                            </tr>
                             <tr>
                                 <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, color: isLoan ? '#d97706' : '#10b981' }}>
                                     THIS {isLoan ? 'LOAN / ADVANCE' : 'PAYMENT'} AMOUNT
@@ -202,8 +195,8 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
                                     - ${payment.amount.toFixed(2)}
                                 </td>
                             </tr>
-                            <tr>
-                                <td style={{ padding: '10px', fontWeight: 700 }}>REMAINING BALANCE DUE</td>
+                            <tr style={{ background: '#f1f5f9' }}>
+                                <td style={{ padding: '10px', fontWeight: 700 }}>CURRENT DUE BALANCE</td>
                                 <td style={{ padding: '10px', textAlign: 'right' }}></td>
                                 <td style={{ padding: '10px', textAlign: 'right', fontWeight: 900, fontSize: '16px' }}>
                                     ${newBalance.toFixed(2)}
