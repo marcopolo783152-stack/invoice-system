@@ -36,8 +36,13 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
         const periodEnd = new Date(payment.date);
 
         // Calculate balances to perfectly match the dashboard's current state
-        // The dashboard uses ALL logs, regardless of date, so we will too.
-        const daysWorked = logs.filter(l => l.type === 'IN').length;
+        // The dashboard uses unique days for logs, regardless of date, so we will too.
+        const inLogs = logs.filter(l => l.type === 'IN');
+        const uniqueDays = new Set(inLogs.map(l => {
+            const date = new Date(l.timestamp);
+            return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+        }));
+        const daysWorked = uniqueDays.size;
         const dailyRate = employee.dailyRate || 100;
         const totalEarned = daysWorked * dailyRate;
 
