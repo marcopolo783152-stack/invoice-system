@@ -49,7 +49,7 @@ function EmployeePrintContent() {
                 if (emp) {
                     setEmployee(emp);
                     const [allLogs, empPayments] = await Promise.all([
-                        getTimeLogs(1000),
+                        getTimeLogs(2000),
                         getEmployeePayments(emp.id)
                     ]);
 
@@ -76,7 +76,7 @@ function EmployeePrintContent() {
                 if (emp) {
                     setEmployee(emp);
                     const [allLogs, empPayments] = await Promise.all([
-                        getTimeLogs(1000),
+                        getTimeLogs(2000),
                         getEmployeePayments(emp.id)
                     ]);
                     
