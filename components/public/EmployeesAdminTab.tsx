@@ -315,13 +315,16 @@ export function EmployeesAdminTab() {
         
         let customNote = '';
         if (type === 'LOAN') {
-            const notePrompt = prompt(`Enter a note for this $${amount} loan:`, 'Advance loan');
+            const notePrompt = prompt(`Enter a note for this $${amount} loan (optional):`, 'Advance loan');
             if (notePrompt === null) return; // User cancelled
             customNote = notePrompt;
         } else {
-            if (!confirm(`Confirm payment of $${amount} to employee?`)) return;
-            customNote = 'Manual payment from dashboard';
+            const notePrompt = prompt(`Enter a note for this $${amount} payment (optional):`, 'Salary payment');
+            if (notePrompt === null) return; // User cancelled
+            customNote = notePrompt;
         }
+
+        if (!confirm(`Confirm ${type.toLowerCase()} of $${amount} to employee?`)) return;
 
         setIsPaying(empId);
         try {
@@ -1221,12 +1224,12 @@ export function EmployeesAdminTab() {
                                     </div>
 
                                     <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
-                                        <div style={{ display: 'flex', gap: 10 }}>
+                                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                                             <input
                                                 type="number"
                                                 placeholder="Amount to pay..."
                                                 id={`pay-${emp.id}`}
-                                                style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                                                style={{ flex: '1 1 120px', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
                                             />
                                             <button
                                                 disabled={isPaying === emp.id}

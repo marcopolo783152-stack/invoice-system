@@ -75,10 +75,20 @@ function EmployeePrintContent() {
                 const emp = emps.find(e => e.id === id || e.empId === id);
                 if (emp) {
                     setEmployee(emp);
-                    const empPayments = await getEmployeePayments(emp.id);
+                    const [allLogs, empPayments] = await Promise.all([
+                        getTimeLogs(1000),
+                        getEmployeePayments(emp.id)
+                    ]);
+                    
+                    let empLogs = allLogs
+                        .filter(l => l.employeeId === emp.id || l.employeeName === emp.name)
+                        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
                     const pay = empPayments.find(p => p.id === paymentId);
                     if (pay) {
                         setReceiptPayment(pay);
+                        setHistoryPayments(empPayments);
+                        setHistoryLogs(empLogs);
                         setImageLoaded(true);
                     }
                 }
@@ -325,6 +335,8 @@ function EmployeePrintContent() {
                     ref={printRef}
                     employee={employee}
                     payment={receiptPayment}
+                    allPayments={historyPayments}
+                    logs={historyLogs}
                 />
             )}
 
