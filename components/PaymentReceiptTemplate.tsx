@@ -192,6 +192,27 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
                         </thead>
                         <tbody>
                             <tr>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>TOTAL EARNED TO DATE</td>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}></td>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#64748b' }}>
+                                    ${totalEarned.toFixed(2)}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', color: '#ef4444' }}>TOTAL PREVIOUSLY PAID</td>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}></td>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#ef4444' }}>
+                                    - ${priorPaidAmount.toFixed(2)}
+                                </td>
+                            </tr>
+                            <tr style={{ background: '#f8fafc' }}>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, color: '#334155' }}>PRIOR DUE BALANCE</td>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}></td>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 700, color: '#334155' }}>
+                                    ${priorBalance.toFixed(2)}
+                                </td>
+                            </tr>
+                            <tr>
                                 <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, color: isLoan ? '#d97706' : '#10b981' }}>
                                     THIS {isLoan ? 'LOAN / ADVANCE' : 'PAYMENT'} AMOUNT
                                 </td>
