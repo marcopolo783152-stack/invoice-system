@@ -40,8 +40,10 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
         const priorPayments = sortedPayments.slice(0, currentIndex);
         const priorPaidAmount = priorPayments.reduce((sum, p) => sum + p.amount, 0);
 
-        // Find logs up to periodEnd
-        const logsUpToNow = logs.filter(l => new Date(l.timestamp) <= periodEnd && l.type === 'IN');
+        // Find logs up to the end of the day of the payment to match dashboard
+        const endOfDay = new Date(periodEnd);
+        endOfDay.setHours(23, 59, 59, 999);
+        const logsUpToNow = logs.filter(l => new Date(l.timestamp) <= endOfDay && l.type === 'IN');
         const daysWorked = logsUpToNow.length;
         const dailyRate = employee.dailyRate || 100;
         const totalEarned = daysWorked * dailyRate;
@@ -146,8 +148,7 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
                     </div>
                 </div>
 
-                {/* --- TEAR LINE --- */}
-                <div style={{ borderTop: '2px dashed #cbd5e1', margin: '40px 0', position: 'relative' }}>
+                <div style={{ borderTop: '2px dashed #cbd5e1', margin: '20px 0', position: 'relative' }}>
                     <span style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#fff', padding: '0 10px', fontSize: '12px', color: '#94a3b8' }}>
                         DETACH AND RETAIN FOR YOUR RECORDS
                     </span>
@@ -155,82 +156,82 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
 
                 {/* --- PAY STUB SECTION --- */}
                 <div style={{ fontFamily: 'sans-serif' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e293b', paddingBottom: '15px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e293b', paddingBottom: '10px', marginBottom: '15px' }}>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 900, color: '#0f172a' }}>REMITTANCE ADVICE</h2>
-                            <div style={{ color: '#64748b', fontSize: '14px', marginTop: '5px' }}>
+                            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>REMITTANCE ADVICE</h2>
+                            <div style={{ color: '#64748b', fontSize: '12px', marginTop: '5px' }}>
                                 Employee ID: <strong>{employee.empId}</strong>
                             </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '14px', color: '#64748b' }}>Payment Date</div>
-                            <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>Payment Date</div>
+                            <div style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>
                                 {periodEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </div>
                         </div>
                     </div>
 
-                    <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', marginBottom: '30px' }}>
-                        <h3 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#0f172a' }}>Period Covered</h3>
-                        <p style={{ margin: 0, fontSize: '18px', color: '#334155', fontWeight: 600 }}>
+                    <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#0f172a' }}>Period Covered</h3>
+                        <p style={{ margin: 0, fontSize: '16px', color: '#334155', fontWeight: 600 }}>
                             {periodStart.toLocaleDateString('en-US')} &nbsp; &mdash; &nbsp; {periodEnd.toLocaleDateString('en-US')}
                         </p>
                     </div>
 
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                         <thead>
                             <tr style={{ background: '#1e293b', color: '#fff' }}>
-                                <th style={{ padding: '12px 15px', textAlign: 'left', borderRadius: '6px 0 0 6px' }}>DESCRIPTION</th>
-                                <th style={{ padding: '12px 15px', textAlign: 'right' }}>RATE/DAYS</th>
-                                <th style={{ padding: '12px 15px', textAlign: 'right', borderRadius: '0 6px 6px 0' }}>AMOUNT</th>
+                                <th style={{ padding: '8px 10px', textAlign: 'left', borderRadius: '6px 0 0 6px' }}>DESCRIPTION</th>
+                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>RATE/DAYS</th>
+                                <th style={{ padding: '8px 10px', textAlign: 'right', borderRadius: '0 6px 6px 0' }}>AMOUNT</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td style={{ padding: '15px', borderBottom: '1px solid #e2e8f0' }}>Gross Earnings (Total to Date)</td>
-                                <td style={{ padding: '15px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#64748b' }}>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0' }}>Gross Earnings (Total to Date)</td>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#64748b' }}>
                                     {daysWorked} days @ ${dailyRate.toFixed(2)}/day
                                 </td>
-                                <td style={{ padding: '15px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 600 }}>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 600 }}>
                                     ${totalEarned.toFixed(2)}
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ padding: '15px', borderBottom: '1px solid #e2e8f0' }}>Less: Prior Payments / Advances</td>
-                                <td style={{ padding: '15px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#64748b' }}>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0' }}>Less: Prior Payments / Advances</td>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#64748b' }}>
                                     {priorPayments.length} previous transactions
                                 </td>
-                                <td style={{ padding: '15px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>
                                     - ${priorPaidAmount.toFixed(2)}
                                 </td>
                             </tr>
                             <tr style={{ background: '#f1f5f9' }}>
-                                <td style={{ padding: '15px', borderBottom: '2px solid #cbd5e1', fontWeight: 700 }}>BALANCE DUE BEFORE THIS PAYMENT</td>
-                                <td style={{ padding: '15px', borderBottom: '2px solid #cbd5e1', textAlign: 'right' }}></td>
-                                <td style={{ padding: '15px', borderBottom: '2px solid #cbd5e1', textAlign: 'right', fontWeight: 800 }}>
+                                <td style={{ padding: '10px', borderBottom: '2px solid #cbd5e1', fontWeight: 700 }}>BALANCE DUE BEFORE THIS PAYMENT</td>
+                                <td style={{ padding: '10px', borderBottom: '2px solid #cbd5e1', textAlign: 'right' }}></td>
+                                <td style={{ padding: '10px', borderBottom: '2px solid #cbd5e1', textAlign: 'right', fontWeight: 800 }}>
                                     ${priorBalance.toFixed(2)}
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ padding: '15px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, color: isLoan ? '#d97706' : '#10b981' }}>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, color: isLoan ? '#d97706' : '#10b981' }}>
                                     THIS {isLoan ? 'LOAN / ADVANCE' : 'PAYMENT'} AMOUNT
                                 </td>
-                                <td style={{ padding: '15px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}></td>
-                                <td style={{ padding: '15px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 800, fontSize: '18px', color: isLoan ? '#d97706' : '#10b981' }}>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}></td>
+                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 800, fontSize: '14px', color: isLoan ? '#d97706' : '#10b981' }}>
                                     - ${payment.amount.toFixed(2)}
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ padding: '15px', fontWeight: 700 }}>REMAINING BALANCE DUE</td>
-                                <td style={{ padding: '15px', textAlign: 'right' }}></td>
-                                <td style={{ padding: '15px', textAlign: 'right', fontWeight: 900, fontSize: '18px' }}>
+                                <td style={{ padding: '10px', fontWeight: 700 }}>REMAINING BALANCE DUE</td>
+                                <td style={{ padding: '10px', textAlign: 'right' }}></td>
+                                <td style={{ padding: '10px', textAlign: 'right', fontWeight: 900, fontSize: '16px' }}>
                                     ${newBalance.toFixed(2)}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
 
-                    <div style={{ marginTop: '40px', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
+                    <div style={{ marginTop: '20px', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
                         <p>This statement constitutes a full accounting of wages and advances up to the date specified.</p>
                         <p>If you have any questions about this statement, please contact management immediately.</p>
                     </div>

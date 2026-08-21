@@ -310,19 +310,10 @@ export function EmployeesAdminTab() {
         }
     };
 
-    const handlePayment = async (empId: string, amount: number, type: 'PAYMENT' | 'LOAN') => {
+    const handlePayment = async (empId: string, amount: number, type: 'PAYMENT' | 'LOAN', note?: string) => {
         if (!amount || amount <= 0) return;
         
-        let customNote = '';
-        if (type === 'LOAN') {
-            const notePrompt = prompt(`Enter a note for this $${amount} loan (optional):`, 'Advance loan');
-            if (notePrompt === null) return; // User cancelled
-            customNote = notePrompt;
-        } else {
-            const notePrompt = prompt(`Enter a note for this $${amount} payment (optional):`, 'Salary payment');
-            if (notePrompt === null) return; // User cancelled
-            customNote = notePrompt;
-        }
+        const customNote = note?.trim() || (type === 'LOAN' ? 'Advance loan' : 'Salary payment');
 
         if (!confirm(`Confirm ${type.toLowerCase()} of $${amount} to employee?`)) return;
 
@@ -1224,19 +1215,29 @@ export function EmployeesAdminTab() {
                                     </div>
 
                                     <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
-                                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
                                             <input
                                                 type="number"
                                                 placeholder="Amount to pay..."
                                                 id={`pay-${emp.id}`}
                                                 style={{ flex: '1 1 120px', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
                                             />
+                                            <input
+                                                type="text"
+                                                placeholder="Note (optional)"
+                                                id={`note-${emp.id}`}
+                                                style={{ flex: '1 1 120px', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 14 }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                                             <button
                                                 disabled={isPaying === emp.id}
                                                 onClick={() => {
                                                     const input = document.getElementById(`pay-${emp.id}`) as HTMLInputElement;
-                                                    handlePayment(emp.id, parseFloat(input.value), 'PAYMENT');
+                                                    const noteInput = document.getElementById(`note-${emp.id}`) as HTMLInputElement;
+                                                    handlePayment(emp.id, parseFloat(input.value), 'PAYMENT', noteInput.value);
                                                     input.value = '';
+                                                    noteInput.value = '';
                                                 }}
                                                 style={{ padding: '10px 20px', borderRadius: 10, background: '#1e293b', color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                                             >
@@ -1246,8 +1247,10 @@ export function EmployeesAdminTab() {
                                                 disabled={isPaying === emp.id}
                                                 onClick={() => {
                                                     const input = document.getElementById(`pay-${emp.id}`) as HTMLInputElement;
-                                                    handlePayment(emp.id, parseFloat(input.value), 'LOAN');
+                                                    const noteInput = document.getElementById(`note-${emp.id}`) as HTMLInputElement;
+                                                    handlePayment(emp.id, parseFloat(input.value), 'LOAN', noteInput.value);
                                                     input.value = '';
+                                                    noteInput.value = '';
                                                 }}
                                                 style={{ padding: '10px 20px', borderRadius: 10, background: '#f59e0b', color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                                             >
