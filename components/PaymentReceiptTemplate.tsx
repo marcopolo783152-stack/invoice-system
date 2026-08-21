@@ -177,40 +177,15 @@ export const PaymentReceiptTemplate = forwardRef<HTMLDivElement, PaymentReceiptP
                         </div>
                     </div>
 
-                    <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-                        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#0f172a' }}>Period Covered</h3>
-                        <p style={{ margin: 0, fontSize: '16px', color: '#334155', fontWeight: 600 }}>
-                            {periodStart.toLocaleDateString('en-US')} &nbsp; &mdash; &nbsp; {periodEnd.toLocaleDateString('en-US')}
-                        </p>
-                    </div>
-
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                         <thead>
                             <tr style={{ background: '#1e293b', color: '#fff' }}>
                                 <th style={{ padding: '8px 10px', textAlign: 'left', borderRadius: '6px 0 0 6px' }}>DESCRIPTION</th>
-                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>RATE/DAYS</th>
+                                <th style={{ padding: '8px 10px', textAlign: 'right' }}></th>
                                 <th style={{ padding: '8px 10px', textAlign: 'right', borderRadius: '0 6px 6px 0' }}>AMOUNT</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0' }}>Gross Earnings (Total to Date)</td>
-                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#64748b' }}>
-                                    {daysWorked} days @ ${dailyRate.toFixed(2)}/day
-                                </td>
-                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 600 }}>
-                                    ${totalEarned.toFixed(2)}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0' }}>Less: Prior Payments / Advances</td>
-                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#64748b' }}>
-                                    {priorPaymentsCount} previous transactions
-                                </td>
-                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>
-                                    - ${priorPaidAmount.toFixed(2)}
-                                </td>
-                            </tr>
                             <tr style={{ background: '#f1f5f9' }}>
                                 <td style={{ padding: '10px', borderBottom: '2px solid #cbd5e1', fontWeight: 700 }}>BALANCE DUE BEFORE THIS PAYMENT</td>
                                 <td style={{ padding: '10px', borderBottom: '2px solid #cbd5e1', textAlign: 'right' }}></td>
