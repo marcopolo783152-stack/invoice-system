@@ -326,11 +326,12 @@ export default function InvoiceTemplate(props: any) {
                         </>
                       )}
                       <td className={styles.numeric}>
-                        {data.isLumpSum ? '-' : (
-                          item.pricingMethod === 'sqft'
-                            ? (item.pricePerSqFt ? `${formatCurrency(item.pricePerSqFt)}/sf` : '-')
-                            : (item.fixedPrice ? formatCurrency(item.fixedPrice) : '-')
-                        )}
+                        {data.isLumpSum ? '-' : (() => {
+                          const effectivePricingMethod = item.pricingMethod || (data.mode?.includes('per-sqft') ? 'sqft' : 'piece');
+                          return effectivePricingMethod === 'sqft'
+                            ? (item.pricePerSqFt ? `${formatCurrency(item.pricePerSqFt)}/sqft` : '-')
+                            : (item.fixedPrice ? `${formatCurrency(item.fixedPrice)}/item` : '-');
+                        })()}
                       </td>
                       <td className={styles.numeric}>{data.isLumpSum ? 'Included' : formatCurrency(item.amount)}</td>
                     </tr>
