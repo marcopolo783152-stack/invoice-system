@@ -2,10 +2,10 @@
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useStore } from "@/context/StoreContext";
+import { useStore, StoreProvider } from "@/context/StoreContext";
 import { LogOut, User as UserIcon, Package, MapPin, Heart } from "lucide-react";
 
-export default function AccountPage() {
+function AccountContent() {
   const { currentUser, orders, rugs, logoutUser } = useStore();
   const router = useRouter();
 
@@ -129,5 +129,14 @@ export default function AccountPage() {
         
       </div>
     </div>
+  );
+}
+
+
+export default function AccountPage() {
+  return (
+    <StoreProvider>
+      <AccountContent />
+    </StoreProvider>
   );
 }
