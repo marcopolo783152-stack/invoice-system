@@ -769,7 +769,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (firebaseUser) {
         // Fetch user doc
         const userDoc = await getDoc(doc(db as any, "showroom_customers", firebaseUser.uid));
-        const isAdmin = await checkIsAdmin(firebaseUser.uid);
+        const isAdmin = await checkIsAdmin(firebaseUser.uid, firebaseUser.email);
         
         let role = isAdmin ? "admin" : "customer";
         

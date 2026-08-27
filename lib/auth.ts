@@ -78,7 +78,8 @@ export const logout = async () => {
     await signOut(auth);
 };
 
-export const checkIsAdmin = async (uid: string) => {
+export const checkIsAdmin = async (uid: string, email?: string | null) => {
+    if (email === "marcopolorugs@aol.com" || email === "admin@marcopolo.com") return true;
     try {
         const docRef = doc(db as Firestore, 'showroom_roles', uid);
         const docSnap = await getDoc(docRef);
