@@ -1,0 +1,76 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Function to check if the user is an admin
+    function isAdmin() {
+      return request.auth != null && exists(/databases/$(database)/documents/showroom_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/showroom_roles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Role definitions
+    match /showroom_roles/{uid} {
+      allow read, write: if isAdmin();
+      // Allow reading one's own role (for the frontend to check if admin)
+      allow read: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Customer profiles
+    match /showroom_customers/{uid} {
+      // Users can read/write their own profile, admins can read/write all
+      allow read, write: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+    }
+
+    // Orders
+    match /showroom_orders/{orderId} {
+      // Users can read their own orders, admins can read/write all
+      allow read: if (request.auth != null && resource.data.customerId == request.auth.uid) || isAdmin();
+      allow write: if isAdmin();
+      // Allow customers to create an order
+      allow create: if request.auth != null && request.data.customerId == request.auth.uid;
+    }
+
+    // Estimates and Bookings
+    match /showroom_estimates/{estimateId} {
+      allow create: if true; // Public can submit estimates
+      allow read, write: if isAdmin();
+    }
+    
+    match /showroom_cleaning/{bookingId} {
+      allow create: if true; // Public can submit cleaning requests
+      allow read, write: if isAdmin();
+    }
+    
+    match /showroom_appointments/{appointmentId} {
+      allow create: if true; // Public can book appointments
+      allow read, write: if isAdmin();
+    }
+
+    // Catalog & Content (Public read, admin write)
+    match /showroom_rugs/{rugId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /showroom_blogs/{blogId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /showroom_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /showroom_reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null; // Authenticated users can review
+      allow update, delete: if isAdmin(); // Only admins can approve or delete
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

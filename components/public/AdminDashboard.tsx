@@ -1,3 +1,4 @@
+import WebsiteBuilder from "./WebsiteBuilder";
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -104,7 +105,7 @@ export const AdminDashboard: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -123,7 +124,7 @@ export const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder") => {
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -1512,6 +1513,13 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {/* --- TAB: BUILDER --- */}
+        {activeTab === "builder" && (
+          <div className="h-[800px]">
+             <WebsiteBuilder />
+          </div>
+        )}
+        
 {/* --- TAB: SETTINGS --- */}
         {activeTab === "settings" && (
           <div className="space-y-6">
@@ -1984,13 +1992,13 @@ export const AdminDashboard: React.FC = () => {
                   
                   <form 
                     className="space-y-2"
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
                       const form = e.target as HTMLFormElement;
                       const name = (form.elements.namedItem('adminName') as HTMLInputElement).value;
                       const email = (form.elements.namedItem('adminEmail') as HTMLInputElement).value;
                       const pass = (form.elements.namedItem('adminPass') as HTMLInputElement).value;
-                      const res = addAdminUser(name, email, pass);
+                      const res = await addAdminUser(name, email, pass);
                       alert(res.message);
                       if (res.success) form.reset();
                     }}

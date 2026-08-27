@@ -22,6 +22,10 @@ import {
 import { INITIAL_RUGS } from "@/data/rugs";
 import { INITIAL_BLOGS } from "@/data/blogs";
 import { getEmailConfig } from "@/lib/email-service";
+import { auth, checkIsAdmin, logout, loginWithEmail, registerWithEmail } from "@/lib/auth";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { getAllInvoicesSync } from "@/lib/invoice-storage";
 import { 
   seedShowroomDataIfEmpty, 
@@ -56,10 +60,10 @@ interface StoreContextType {
   
   // User Authentication
   currentUser: User | null;
-  loginUser: (email: string, pass: string) => { success: boolean; message: string };
-  signupUser: (name: string, email: string, pass: string, phone?: string, address?: string) => { success: boolean; message: string };
-  addAdminUser: (name: string, email: string, pass: string) => { success: boolean; message: string };
-  logoutUser: () => void;
+  loginUser: (email: string, pass: string) => Promise<{ success: boolean; message: string }>;
+  signupUser: (name: string, email: string, pass: string, phone?: string, address?: string) => Promise<{ success: boolean; message: string }>;
+  addAdminUser: (name: string, email: string, pass: string) => Promise<{ success: boolean; message: string }>;
+  logoutUser: () => Promise<void>;
   
   // Cleaning bookings
   cleaningBookings: CleaningBooking[];
@@ -208,24 +212,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [activeView]);
 
   // Authentication State
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    if (typeof window === 'undefined') return null;
-    // Clear legacy localStorage to enforce strict session logouts
-    localStorage.removeItem("marcopolo_current_user");
-    const sessionUser = sessionStorage.getItem("marcopolo_current_user");
-    return sessionUser ? JSON.parse(sessionUser) : null;
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const [registeredUsers, setRegisteredUsers] = useState<{ user: User; pass: string }[]>(() => {
-    const local = safeGetItem("marcopolo_users_db");
-    if (local) return JSON.parse(local);
-    return [
-      {
-        user: { id: "admin-1", name: "Nazif (Admin)", email: "marcopolorugs@aol.com", role: "admin" },
-        pass: "Marcopolo$"
-      }
-    ];
-  });
+  
 
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [cleaningBookings, setCleaningBookings] = useState<CleaningBooking[]>(() => {
@@ -368,9 +357,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     sessionStorage.setItem("marcopolo_current_user", JSON.stringify(currentUser));
   }, [currentUser]);
 
-  useEffect(() => {
-    safeSetItem("marcopolo_users_db", JSON.stringify(registeredUsers));
-  }, [registeredUsers]);
+  
 
 
 
@@ -777,128 +764,56 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- Authentication Actions ---
-  const loginUser = (email: string, pass: string) => {
-    const formattedEmail = email.trim().toLowerCase();
-    
-    // Check if admin is logging in
-    if (formattedEmail === "admin@marcopolo.com" || formattedEmail === "marcopolorugs@aol.com") {
-      if (pass === "Marcopolo$") {
-        const adminUser: User = { id: "admin-1", name: "Nazif (Admin)", email: formattedEmail, role: "admin" };
-        setCurrentUser(adminUser);
-        setActiveView("admin");
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Fetch user doc
+        const userDoc = await getDoc(doc(db as any, "showroom_customers", firebaseUser.uid));
+        const isAdmin = await checkIsAdmin(firebaseUser.uid);
         
-        // --- INVOICE SYSTEM INTEGRATION ---
-        // Generate and store the shared authentication tokens for the old invoice system
-        // so that the admin is seamlessly logged into /admin/invoices as well.
-        sessionStorage.setItem("mp-invoice-auth", "1");
-        sessionStorage.setItem("mp-invoice-user", JSON.stringify({ 
-          id: "admin-1", 
-          username: formattedEmail, 
-          fullName: "Nazif (Admin)", 
-          role: "admin", 
-          email: formattedEmail 
-        }));
-        // Trigger a storage event so the invoice dashboard updates if it's already open in another tab
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('storage'));
+        let role = isAdmin ? "admin" : "customer";
+        
+        const userData: User = {
+          id: firebaseUser.uid,
+          name: userDoc.exists() ? userDoc.data().name : firebaseUser.displayName || "User",
+          email: firebaseUser.email || "",
+          role: role as "admin" | "customer"
+        };
+        
+        setCurrentUser(userData);
+        if (isAdmin) {
+          setActiveView("admin");
+          sessionStorage.setItem("mp-invoice-auth", "1");
+        } else {
+          setActiveView("customer");
         }
-        
-        return { success: true, message: "Logged in as Administrator." };
       } else {
-        return { success: false, message: "Invalid administrator password." };
+        setCurrentUser(null);
+        setActiveView("customer");
+        sessionStorage.removeItem("mp-invoice-auth");
       }
-    }
+    });
+    return () => unsub();
+  }, []);
 
-    // Customer & Dynamic Admin Login
-    const found = registeredUsers.find((u) => u.user.email.toLowerCase() === formattedEmail);
-    if (!found) {
-      return { success: false, message: "User not found. Please sign up or try again." };
-    }
-    if (found.pass !== pass) {
-      return { success: false, message: "Incorrect password. Please try again." };
-    }
-
-    setCurrentUser(found.user);
-    if (found.user.role === "admin") {
-      setActiveView("admin");
-      // Generate and store the shared authentication tokens for the old invoice system
-      sessionStorage.setItem("mp-invoice-auth", "1");
-      sessionStorage.setItem("mp-invoice-user", JSON.stringify({ 
-        id: found.user.id, 
-        username: formattedEmail, 
-        fullName: found.user.name, 
-        role: "admin", 
-        email: formattedEmail 
-      }));
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('storage'));
-      }
-      return { success: true, message: `Welcome back, ${found.user.name}!` };
-    }
-
-    setActiveView("customer");
-    return { success: true, message: `Welcome back, ${found.user.name}!` };
+  const loginUser = async (email: string, pass: string) => {
+    const res = await loginWithEmail(email, pass);
+    if (res.error) return { success: false, message: res.error };
+    return { success: true, message: "Logged in successfully!" };
   };
 
-  const signupUser = (name: string, email: string, pass: string, phone?: string, address?: string) => {
-    const formattedEmail = email.trim().toLowerCase();
-    if (formattedEmail === "admin@marcopolo.com" || formattedEmail === "marcopolorugs@aol.com") {
-      return { success: false, message: "Cannot register using the protected admin email." };
-    }
-
-    const exists = registeredUsers.some((u) => u.user.email.toLowerCase() === formattedEmail);
-    if (exists) {
-      return { success: false, message: "An account with this email address already exists." };
-    }
-
-    const newUser: User = {
-      id: `usr-${Date.now()}`,
-      name: name.trim(),
-      email: formattedEmail,
-      phone: phone?.trim(),
-      address: address?.trim(),
-      role: "customer"
-    };
-
-    setRegisteredUsers((prev) => [...prev, { user: newUser, pass }]);
-    setCurrentUser(newUser);
-    setActiveView("customer");
-    return { success: true, message: `Account created successfully! Welcome, ${newUser.name}!` };
+  const signupUser = async (name: string, email: string, pass: string, phone?: string, address?: string) => {
+    const res = await registerWithEmail(name, email, pass, phone);
+    if (res.error) return { success: false, message: res.error };
+    return { success: true, message: "Account created successfully!" };
   };
 
-  const addAdminUser = (name: string, email: string, pass: string) => {
-    const formattedEmail = email.trim().toLowerCase();
-    const exists = registeredUsers.some((u) => u.user.email.toLowerCase() === formattedEmail);
-    if (exists) {
-      return { success: false, message: "An account with this email address already exists." };
-    }
-    const newUser: User = {
-      id: `admin-${Date.now()}`,
-      name: name.trim(),
-      email: formattedEmail,
-      role: "admin"
-    };
-    setRegisteredUsers((prev) => [...prev, { user: newUser, pass }]);
-    return { success: true, message: `Admin account created for ${newUser.name}!` };
+  const addAdminUser = async (name: string, email: string, pass: string) => {
+    return { success: false, message: "Admins must be configured securely in Firebase." };
   };
 
-  const logoutUser = () => {
-    setCurrentUser(null);
-    setActiveView("customer");
-    
-    // --- INVOICE SYSTEM INTEGRATION ---
-    // Clear shared authentication tokens
-    try {
-      localStorage.removeItem("mp-invoice-auth");
-      localStorage.removeItem("mp-invoice-user");
-      sessionStorage.removeItem("mp-invoice-auth");
-      sessionStorage.removeItem("mp-invoice-user");
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('storage'));
-      }
-    } catch (e) {
-      console.warn("Storage clear blocked by sandbox:", e);
-    }
+  const logoutUser = async () => {
+    await logout();
   };
 
   // --- Rug Cleaning Booking ---

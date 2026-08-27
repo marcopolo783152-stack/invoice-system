@@ -1,3 +1,4 @@
+import { loginWithGoogle, resetPassword } from "@/lib/auth";
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -25,11 +26,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   
   // Feedback
   const [error, setError] = useState("");
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [success, setSuccess] = useState("");
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -39,7 +41,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         setError("Please fill out all required fields.");
         return;
       }
-      const res = signupUser(name, email, password, phone, address);
+      const res = await signupUser(name, email, password, phone, address);
       if (res.success) {
         setSuccess(res.message);
         setTimeout(() => {
@@ -55,7 +57,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         setError("Please enter your email and password.");
         return;
       }
-      const res = loginUser(email, password);
+      const res = await loginUser(email, password);
       if (res.success) {
         setSuccess(res.message);
         setTimeout(() => {
@@ -303,7 +305,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </>
               )}
 
-              <button
+                            <button
                 type="submit"
                 className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold uppercase tracking-widest text-xs rounded-none transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
               >
@@ -311,7 +313,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <span>{isSignUp ? "Register Account" : "Access Curator Vault"}</span>
               </button>
 
-              <div className="text-center pt-2.5 border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await loginWithGoogle();
+                  if (res.error) setError(res.error);
+                  else setSuccess("Google Sign-In successful!");
+                }}
+                className="w-full py-3 bg-white border border-neutral-200 hover:bg-stone-50 text-neutral-800 font-bold uppercase tracking-widest text-xs rounded-none transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-4 h-4" alt="Google" />
+                <span>Continue with Google</span>
+              </button>
+
+              <div className="text-center pt-2.5 border-t border-neutral-100 flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -322,6 +337,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 >
                   {isSignUp ? "Already have an account? Sign In" : "New Curator? Establish Credentials"}
                 </button>
+                
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!email) return setError("Please enter your email address to reset password.");
+                      const res = await resetPassword(email);
+                      if (res.success) setSuccess("Password reset email sent! Check your inbox.");
+                      else setError(res.error || "Failed to send reset email.");
+                    }}
+                    className="text-xs text-stone-500 hover:text-editorial-accent uppercase tracking-wider font-semibold underline cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                )}
               </div>
 
               {/* Admin note snippet inside the sign in page */}

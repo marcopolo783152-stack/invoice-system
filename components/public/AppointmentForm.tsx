@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Calendar, Clock, User, CheckCircle2, Loader2, Send } from 'lucide-react';
+import { addShowroomDoc, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
 
 export default function AppointmentForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,13 +41,15 @@ export default function AppointmentForm() {
         setIsSubmitting(true);
 
         try {
-            // In a real app, this would save to Firebase/backend
-            // For now, we simulate a network delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
+            await addShowroomDoc(SHOWROOM_APPOINTMENTS, {
+                ...formData,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            });
             setIsSuccess(true);
         } catch (err) {
             console.error(err);
+            alert("Failed to book appointment. Please try again or call us.");
         } finally {
             setIsSubmitting(false);
         }

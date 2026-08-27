@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import ServicePageLayout from '@/components/public/ServicePageLayout';
 import Link from 'next/link';
 import { ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
+import EstimateForm from '@/components/public/EstimateForm';
 
 export const metadata: Metadata = {
   title: 'Professional Area Rug Cleaning in Alexandria, VA | Marco Polo Oriental Rugs',
@@ -104,6 +105,16 @@ export default function ServicePage() {
               <li>Runners</li>
             </ul>
           </div>
+        </section>
+
+        <hr className="border-neutral-100" />
+
+        <section>
+          <h2 className="text-2xl font-serif mb-4 flex items-center">
+            <Sparkles className="w-5 h-5 mr-3 text-editorial-accent" />
+            Request an Estimate
+          </h2>
+          <EstimateForm />
         </section>
       </ServicePageLayout>
     </>
