@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { Camera, Send, CheckCircle2, UploadCloud, X, Loader2 } from 'lucide-react';
 import { addShowroomDoc, SHOWROOM_ESTIMATES } from '@/lib/showroom-firebase';
 import { ServiceEstimate } from '@/types';
+import { calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -22,11 +23,21 @@ export default function EstimateForm() {
     service: 'Rug Cleaning',
     rugType: 'Persian / Oriental',
     dimensions: '',
+    widthFeet: 0,
+    widthInches: 0,
+    lengthFeet: 0,
+    lengthInches: 0,
     description: '',
     pickupPreference: 'Pickup & Delivery',
     appointmentDate: '',
     notes: ''
   });
+
+  const sqft = calculateSquareFoot(
+    formData.widthFeet, formData.widthInches,
+    formData.lengthFeet, formData.lengthInches,
+    'rectangle'
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +52,12 @@ export default function EstimateForm() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const target = e.target;
+    if (target.type === 'number') {
+      setFormData(prev => ({ ...prev, [target.name]: Number(target.value) || 0 }));
+    } else {
+      setFormData(prev => ({ ...prev, [target.name]: target.value }));
+    }
   };
 
   const uploadImages = async () => {
@@ -154,9 +170,38 @@ export default function EstimateForm() {
             <option>Unsure</option>
           </select>
         </div>
-        <div>
+        <div className="col-span-1 md:col-span-2">
           <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Approx. Dimensions</label>
-          <input type="text" name="dimensions" placeholder="e.g. 8x10" value={formData.dimensions} onChange={handleChange} className="w-full border border-neutral-200 p-3 outline-none focus:border-editorial-accent text-sm" />
+          <div className="grid grid-cols-2 gap-4 bg-neutral-50 p-4 border border-neutral-200">
+            <div>
+              <span className="block text-[10px] font-bold uppercase text-neutral-500 mb-1">Width</span>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <input type="number" min="0" name="widthFeet" value={formData.widthFeet || ''} onChange={handleChange} className="w-full border border-neutral-200 p-2 outline-none focus:border-editorial-accent text-sm" placeholder="ft" />
+                </div>
+                <div className="flex-1">
+                  <input type="number" min="0" max="11" name="widthInches" value={formData.widthInches || ''} onChange={handleChange} className="w-full border border-neutral-200 p-2 outline-none focus:border-editorial-accent text-sm" placeholder="in" />
+                </div>
+              </div>
+            </div>
+            <div>
+              <span className="block text-[10px] font-bold uppercase text-neutral-500 mb-1">Length</span>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <input type="number" min="0" name="lengthFeet" value={formData.lengthFeet || ''} onChange={handleChange} className="w-full border border-neutral-200 p-2 outline-none focus:border-editorial-accent text-sm" placeholder="ft" />
+                </div>
+                <div className="flex-1">
+                  <input type="number" min="0" max="11" name="lengthInches" value={formData.lengthInches || ''} onChange={handleChange} className="w-full border border-neutral-200 p-2 outline-none focus:border-editorial-accent text-sm" placeholder="in" />
+                </div>
+              </div>
+            </div>
+            {sqft > 0 && (
+              <div className="col-span-2 mt-2 flex justify-between items-center border-t border-neutral-200 pt-3">
+                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Total Area:</span>
+                <span className="text-lg font-serif font-bold text-editorial-accent">{formatSquareFoot(sqft)} sq. ft.</span>
+              </div>
+            )}
+          </div>
         </div>
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Logistics Preference</label>

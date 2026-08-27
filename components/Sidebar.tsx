@@ -146,7 +146,6 @@ export default function Sidebar({
         { label: 'Notifications', icon: AlertTriangle, type: 'button' as const, onClick: onShowNotifications, badge: notificationCount },
         { label: 'Outstanding', href: '/admin/invoices/outstanding', icon: DollarSign, badge: outstandingBalances.length > 0 ? outstandingBalances.length : undefined },
         { label: 'Reports', href: '/admin/invoices/reports', icon: BarChart },
-        { label: 'HR Management', href: '/admin/invoices/employees', icon: Clock },
         { label: 'Recycle Bin', href: '/admin/invoices/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
         { label: 'Service Tracking', href: '/admin/invoices/service-tracking', icon: Truck },
         { label: 'Service Vendors', href: '/admin/invoices/service-vendors', icon: Wrench },

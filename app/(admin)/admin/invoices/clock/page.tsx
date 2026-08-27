@@ -4,12 +4,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { clockInOut, Employee, checkAutoClockOut, getTimeLogs, getEmployees } from '@/lib/employee-storage';
 import Link from 'next/link';
 import * as faceapi from 'face-api.js';
+import EmployeeDashboard from '@/components/EmployeeDashboard';
 
 export default function ClockPage() {
     const [identifier, setIdentifier] = useState('');
-    const [status, setStatus] = useState<'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR' | 'SCANNING'>('IDLE');
+    const [status, setStatus] = useState<'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR' | 'SCANNING' | 'DASHBOARD'>('IDLE');
     const [message, setMessage] = useState('');
     const [lastAction, setLastAction] = useState<{ type: string, name: string } | null>(null);
+    const [activeEmployee, setActiveEmployee] = useState<Employee | null>(null);
     const [isModelsLoaded, setIsModelsLoaded] = useState(false);
 
     // Geofencing coordinates (Precision Shop Location)
@@ -271,13 +273,17 @@ export default function ClockPage() {
             setStatus('SUCCESS');
             setIdentifier('');
             setLastAction({ type: result.log.type, name: result.employee.name });
+            setActiveEmployee(result.employee);
             
             speak(`${result.employee.name} clocked ${result.log.type.toLowerCase()} successfully`);
 
             setTimeout(() => {
-                setStatus('IDLE');
+                setStatus(prev => {
+                    if (prev === 'SUCCESS') return 'IDLE';
+                    return prev;
+                });
                 setLastAction(null);
-            }, 4000);
+            }, 6000); // give them slightly more time to click view dashboard
 
         } catch (error: any) {
             console.error(error);
@@ -337,6 +343,14 @@ export default function ClockPage() {
         );
     }
 
+    if (status === 'DASHBOARD' && activeEmployee) {
+        return (
+            <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f172a', padding: 20 }}>
+                <EmployeeDashboard employee={activeEmployee} onClose={() => setStatus('IDLE')} />
+            </div>
+        );
+    }
+
     if (status === 'SUCCESS' && lastAction) {
         return (
             <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
@@ -345,7 +359,13 @@ export default function ClockPage() {
                 </div>
                 <h1 style={{ color: '#fff', fontSize: 36, marginBottom: 10 }}>Clocked {lastAction.type}</h1>
                 <p style={{ color: '#cbd5e1', fontSize: 24 }}>{lastAction.name}</p>
-                <div style={{ color: '#64748b', marginTop: 20, fontSize: 14 }}>Returning to start...</div>
+                <button
+                    onClick={() => setStatus('DASHBOARD')}
+                    style={{ marginTop: 24, padding: '16px 32px', background: 'transparent', border: '2px solid #3b82f6', color: '#3b82f6', borderRadius: 12, cursor: 'pointer', fontSize: 18, fontWeight: 700 }}
+                >
+                    View My Dashboard
+                </button>
+                <div style={{ color: '#64748b', marginTop: 20, fontSize: 14 }}>Returning to start shortly...</div>
             </div>
         );
     }

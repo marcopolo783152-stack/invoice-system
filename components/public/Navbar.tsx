@@ -24,7 +24,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
     { id: "home", label: "Home" },
     { id: "shop", label: "Shop Collection" },
     { id: "blog", label: "Interior Blog" },
-    { id: "track", label: "Track Order" }
+    { id: "track", label: "Track Order" },
+    { id: "book", label: "Book Appointment" }
   ];
 
   const handleNavClick = (tabId: string) => {

@@ -226,6 +226,41 @@ export default function SettingsPage() {
 
 
 
+            {/* Invoice Counter Section */}
+            {user?.role === 'admin' && (
+                <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', marginBottom: 32 }}>
+                    <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1f3c', marginBottom: 24 }}>Invoice Counter Sync</h2>
+                    <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+                        <div style={{ flex: 1 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>Set Next Invoice Number</h3>
+                            <p style={{ fontSize: 14, color: '#666', margin: 0 }}>If your invoice numbers got out of sync, enter the LAST invoice number you generated here (e.g. 1245). The next generated invoice will automatically start at 1246.</p>
+                        </div>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const form = e.target as HTMLFormElement;
+                            const newNumberStr = (form.elements.namedItem('counterValue') as HTMLInputElement).value;
+                            const newNumber = parseInt(newNumberStr, 10);
+                            
+                            if (isNaN(newNumber) || newNumber < 1) {
+                                alert("Please enter a valid number");
+                                return;
+                            }
+                            
+                            if (confirm(`Are you sure you want to set the last invoice number to ${newNumber}? The next invoice will be ${newNumber + 1}.`)) {
+                                localStorage.setItem('lastInvoiceNumber', String(newNumber));
+                                alert("Counter updated successfully! The next time you create an invoice, it will use this new sequence.");
+                                form.reset();
+                            }
+                        }} style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                            <div>
+                                <input type="number" name="counterValue" placeholder="e.g. 1245" required style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #ddd', width: '120px' }} />
+                            </div>
+                            <button type="submit" style={{ padding: '10px 20px', background: '#1a1f3c', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Sync Counter</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Data Management Section */}
             {user?.role === 'admin' && (
                 <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.04)', marginBottom: 32 }}>

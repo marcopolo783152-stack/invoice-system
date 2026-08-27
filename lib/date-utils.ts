@@ -5,6 +5,12 @@
 export function formatDateMMDDYYYY(dateInput: string | Date | undefined | null): string {
     if (!dateInput) return '';
 
+    // If it's a standard HTML date string (YYYY-MM-DD), parse it directly to avoid timezone shift
+    if (typeof dateInput === 'string' && dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = dateInput.split('-');
+        return `${month}/${day}/${year}`;
+    }
+
     const date = new Date(dateInput);
 
     // Check for invalid date

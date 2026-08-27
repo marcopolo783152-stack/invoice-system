@@ -16,6 +16,7 @@ import { ProductDetail } from "@/components/public/ProductDetail";
 import { CartView } from "@/components/public/CartView";
 import { ChatWidget } from "@/components/public/ChatWidget";
 import { AdminDashboard } from "@/components/public/AdminDashboard";
+import AppointmentForm from "@/components/public/AppointmentForm";
 import { Instagram, Facebook, Youtube, Twitter, Globe } from "lucide-react";
 import Link from "next/link";
 
@@ -121,6 +122,12 @@ function AppContent() {
         
         {currentTab === "track" && (
           <TrackingView />
+        )}
+        
+        {currentTab === "book" && (
+          <div className="bg-neutral-50 py-16 px-4 sm:px-6 lg:px-8 min-h-screen">
+            <AppointmentForm />
+          </div>
         )}
       </div>
 
