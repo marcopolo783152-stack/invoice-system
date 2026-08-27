@@ -186,7 +186,7 @@ export function calculateLineAmount(item: InvoiceItem, mode: InvoiceMode): numbe
 
   // New logic: Use item's pricingMethod if available
   const effectivePricingMethod = item.pricingMethod ||
-    (mode.includes('per-sqft') ? 'sqft' : 'piece');
+    ((item.pricePerSqFt && !item.fixedPrice) ? 'sqft' : (mode.includes('per-sqft') ? 'sqft' : 'piece'));
 
   if (effectivePricingMethod === 'sqft') {
     const price = item.pricePerSqFt || 0;
@@ -433,7 +433,7 @@ export function validateInvoiceData(data: InvoiceData): string[] {
       errors.push(`Item ${index + 1}: Description is required`);
     }
 
-    const effectivePricingMethod = item.pricingMethod || (data.mode.includes('per-sqft') ? 'sqft' : 'piece');
+    const effectivePricingMethod = item.pricingMethod || ((item.pricePerSqFt && !item.fixedPrice) ? 'sqft' : (data.mode.includes('per-sqft') ? 'sqft' : 'piece'));
     if (effectivePricingMethod === 'sqft') {
       if (item.pricePerSqFt === undefined || isNaN(item.pricePerSqFt) || item.pricePerSqFt < 0) {
         errors.push(`Item ${index + 1}: Valid price per sq.ft is required`);
