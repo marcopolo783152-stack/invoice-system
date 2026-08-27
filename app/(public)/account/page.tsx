@@ -18,7 +18,7 @@ export default function AccountPage() {
 
   if (!currentUser) return null;
 
-  const customerOrders = orders.filter(o => o.customerId === currentUser.id);
+  const customerOrders = orders.filter(o => o.customerInfo && o.customerInfo.email.toLowerCase() === currentUser.email.toLowerCase());
 
   return (
     <div className="min-h-screen bg-stone-50 py-12 px-6">
@@ -103,7 +103,7 @@ export default function AccountPage() {
                       <div className="text-sm space-y-1">
                         <div className="flex justify-between">
                           <span className="text-neutral-600">Total Items:</span>
-                          <span className="font-bold">{order.items.length}</span>
+                          <span className="font-bold">{order.cartItems.length}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-neutral-600">Total Amount:</span>
