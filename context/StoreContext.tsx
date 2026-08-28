@@ -866,7 +866,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const logoutUser = async () => {
-    await logout();
+    try {
+      await logout();
+    } catch (e) {
+      console.error(e);
+    }
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem("mp-invoice-auth");
+      sessionStorage.removeItem("marcopolo_active_view");
+    }
+    setCurrentUser(null);
+    setActiveView("customer");
   };
 
   // --- Rug Cleaning Booking ---

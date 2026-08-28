@@ -13,6 +13,8 @@ export default function TopAdminBar() {
     localStorage.removeItem('mp-invoice-auth');
     localStorage.removeItem('mp-invoice-user');
     localStorage.removeItem('marcopolo_active_view');
+    sessionStorage.removeItem('marcopolo_active_view');
+    sessionStorage.removeItem('marcopolo_current_user');
     window.location.href = '/';
   };
 
