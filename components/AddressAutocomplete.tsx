@@ -61,12 +61,12 @@ export default function AddressAutocomplete({
 
         let isMounted = true;
 
-        const initGoogle = async () => {
+                        const initGoogle = async () => {
             try {
                 // @ts-ignore
-                if (!window.google) {
+                if (!window.google || !window.google.maps || !window.google.maps.places) {
                     const script = document.createElement('script');
-                    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly`;
+                    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
                     script.async = true;
                     script.defer = true;
 
@@ -83,7 +83,10 @@ export default function AddressAutocomplete({
 
                 // @ts-ignore
                 const google = window.google;
-                const { AutocompleteService, PlacesService } = await google.maps.importLibrary("places") as any;
+                
+                // Direct access instead of importLibrary which conflicts with ?libraries=places
+                const AutocompleteService = google.maps.places.AutocompleteService;
+                const PlacesService = google.maps.places.PlacesService;
 
                 autocompleteService.current = new AutocompleteService();
 
