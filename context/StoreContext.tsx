@@ -60,6 +60,11 @@ interface StoreContextType {
   
   // User Authentication
   currentUser: User | null;
+    isEditMode: boolean;
+    setIsEditMode: (v: boolean) => void;
+    websiteContent: any;
+    setWebsiteContent: (content: any) => void;
+    saveWebsiteContent: () => Promise<void>;
   loginUser: (email: string, pass: string) => Promise<{ success: boolean; message: string }>;
   signupUser: (name: string, email: string, pass: string, phone?: string, address?: string) => Promise<{ success: boolean; message: string }>;
   addAdminUser: (name: string, email: string, pass: string) => Promise<{ success: boolean; message: string }>;
@@ -766,6 +771,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // --- Authentication Actions ---
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Check for hardcoded admin bypass first
+      if (typeof window !== 'undefined') {
+        const localEmail = sessionStorage.getItem("mp-invoice-auth");
+        if (localEmail === "admin@marcopolo.com" || localEmail === "1") {
+          setCurrentUser({
+            id: "admin-bypass",
+            name: "Administrator",
+            email: "admin@marcopolo.com",
+            role: "admin"
+          });
+          setActiveView("admin");
+          return;
+        }
+      }
+
       if (firebaseUser) {
         // Fetch user doc
         const userDoc = await getDoc(doc(db as any, "showroom_customers", firebaseUser.uid));
@@ -775,7 +795,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         const userData: User = {
           id: firebaseUser.uid,
-          name: userDoc.exists() ? userDoc.data().name : firebaseUser.displayName || "User",
+          name: userDoc.exists() && userDoc.data() ? userDoc.data().name : firebaseUser.displayName || "User",
           email: firebaseUser.email || "",
           role: role as "admin" | "customer"
         };
@@ -783,14 +803,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setCurrentUser(userData);
         if (isAdmin) {
           setActiveView("admin");
-          sessionStorage.setItem("mp-invoice-auth", "1");
+          if (typeof window !== 'undefined') sessionStorage.setItem("mp-invoice-auth", "1");
         } else {
           setActiveView("customer");
+          if (typeof window !== 'undefined') sessionStorage.removeItem("mp-invoice-auth");
         }
       } else {
         setCurrentUser(null);
         setActiveView("customer");
-        sessionStorage.removeItem("mp-invoice-auth");
+        if (typeof window !== 'undefined') sessionStorage.removeItem("mp-invoice-auth");
       }
     });
     return () => unsub();
@@ -806,6 +827,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         role: "admin"
       });
       sessionStorage.setItem("mp-invoice-auth", "admin@marcopolo.com");
+      setActiveView("admin");
       return { success: true, message: "Logged in as Administrator!" };
     }
 
@@ -939,6 +961,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         adminTab,
         setAdminTab,
         currentUser,
+        isEditMode,
+        setIsEditMode,
+        websiteContent,
+        setWebsiteContent,
+        saveWebsiteContent,
         loginUser,
         signupUser,
         addAdminUser,

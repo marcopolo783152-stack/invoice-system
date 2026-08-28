@@ -155,25 +155,25 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
 
   const slides = [
     {
-      title: "Imperial Hand-Knotted Treasures",
-      subtitle: "Persian, Afghan & Turkish Masterpieces",
-      desc: "Each rug is an investment-grade work of art, hand-knotted with premium organic-dyed highland wool and silk. Curated with museum-grade certification.",
+      title: <EditableText id="hero_1_title" defaultText="Imperial Hand-Knotted Treasures" className="text-inherit" />,
+      subtitle: <EditableText id="hero_1_subtitle" defaultText="Persian, Afghan & Turkish Masterpieces" className="text-inherit" />,
+      desc: <EditableText id="hero_1_desc" type="textarea" defaultText="Each rug is an investment-grade work of art, hand-knotted with premium organic-dyed highland wool and silk. Curated with museum-grade certification." className="text-inherit" />,
       image: heroCoverPhotos?.[0] || "",
-      cta: "Explore Fine Rugs"
+      cta: <EditableText id="hero_1_cta" defaultText="Explore Fine Rugs" className="text-inherit" />
     },
     {
-      title: "The Ultimate Silk Harmony",
-      subtitle: "Exquisite Isfahan Tree of Life Series",
-      desc: "Experience 1,000,000+ knots per square meter. Luminous natural silk pile reflecting majestic shades under ambient home lights.",
+      title: <EditableText id="hero_2_title" defaultText="The Ultimate Silk Harmony" className="text-inherit" />,
+      subtitle: <EditableText id="hero_2_subtitle" defaultText="Exquisite Isfahan Tree of Life Series" className="text-inherit" />,
+      desc: <EditableText id="hero_2_desc" type="textarea" defaultText="Experience 1,000,000+ knots per square meter. Luminous natural silk pile reflecting majestic shades under ambient home lights." className="text-inherit" />,
       image: heroCoverPhotos?.[1] || "",
-      cta: "View Luminous Silk"
+      cta: <EditableText id="hero_2_cta" defaultText="View Luminous Silk" className="text-inherit" />
     },
     {
-      title: "Generations of Handwoven Craft",
-      subtitle: "Curated Antique & Modern Rug Collections",
-      desc: "Bridging ancient Mesopotamian symbols with contemporary palettes, made for luxury villas and upscale urban designs.",
+      title: <EditableText id="hero_3_title" defaultText="Generations of Handwoven Craft" className="text-inherit" />,
+      subtitle: <EditableText id="hero_3_subtitle" defaultText="Curated Antique & Modern Rug Collections" className="text-inherit" />,
+      desc: <EditableText id="hero_3_desc" type="textarea" defaultText="Bridging ancient Mesopotamian symbols with contemporary palettes, made for luxury villas and upscale urban designs." className="text-inherit" />,
       image: heroCoverPhotos?.[2] || "",
-      cta: "Shop The Curation"
+      cta: <EditableText id="hero_3_cta" defaultText="Shop The Curation" className="text-inherit" />
     }
   ];
 

@@ -17,7 +17,8 @@ import { CartView } from "@/components/public/CartView";
 import { ChatWidget } from "@/components/public/ChatWidget";
 import { AdminDashboard } from "@/components/public/AdminDashboard";
 import AppointmentForm from "@/components/public/AppointmentForm";
-import { Instagram, Facebook, Youtube, Twitter, Globe } from "lucide-react";
+import EstimateForm from "@/components/public/EstimateForm";
+import { Instagram, Facebook, Youtube, Twitter, Globe, Edit2, Save } from "lucide-react";
 import Link from "next/link";
 
 function AppContent() {
@@ -96,6 +97,27 @@ function AppContent() {
       <Navbar currentTab={currentTab} setCurrentTab={setCurrentTab} />
 
       {/* Main Content Router */}
+      
+      {/* Floating Edit Mode Bar for Admins */}
+      {currentUser?.role === 'admin' && activeView !== 'admin' && (
+        <div className="fixed bottom-4 left-4 z-[9999] bg-neutral-900 text-white p-3 rounded-lg shadow-2xl flex items-center gap-4 border border-neutral-700">
+            <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${isEditMode ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-500'}`} />
+                <span className="font-bold uppercase tracking-wider text-xs">Live Edit Mode</span>
+            </div>
+            
+            <button onClick={() => setIsEditMode(!isEditMode)} className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition ${isEditMode ? 'bg-neutral-700 text-white' : 'bg-editorial-accent text-white'}`}>
+                <Edit2 size={14} className="inline mr-1" /> {isEditMode ? 'Exit Edit Mode' : 'Enter Edit Mode'}
+            </button>
+            
+            {isEditMode && (
+                <button onClick={saveWebsiteContent} className="px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition bg-emerald-600 hover:bg-emerald-500 text-white">
+                    <Save size={14} className="inline mr-1" /> Publish Changes
+                </button>
+            )}
+        </div>
+      )}
+      
       <div className="flex-1">
         {currentTab === "home" && (
           <Hero 

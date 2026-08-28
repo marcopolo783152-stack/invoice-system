@@ -1,9 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { subscribeToCollection, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
-import { Calendar, User, Clock, CheckCircle2 } from 'lucide-react';
+import { subscribeToCollection, SHOWROOM_APPOINTMENTS, updateShowroomDoc, deleteShowroomDoc } from '@/lib/showroom-firebase';
+import { Calendar, User, Clock, CheckCircle2, XCircle, Trash2, Plus } from 'lucide-react';
+import AppointmentForm from './AppointmentForm';
 
 export default function AppointmentsAdminTab() {
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    await updateShowroomDoc(SHOWROOM_APPOINTMENTS, id, { status: newStatus });
+  };
+  
+  const handleDelete = async (id: string) => {
+    if(confirm('Are you sure you want to delete this appointment?')) {
+      await deleteShowroomDoc(SHOWROOM_APPOINTMENTS, id);
+    }
+  };
+
 
   useEffect(() => {
     const unsub = subscribeToCollection(SHOWROOM_APPOINTMENTS, (data) => {
@@ -16,9 +29,21 @@ export default function AppointmentsAdminTab() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-serif text-neutral-900">Scheduled Appointments</h2>
-        <div className="text-sm text-neutral-500">Total requests: {appointments.length}</div>
+        <div>
+            <h2 className="text-xl font-serif text-neutral-900">Scheduled Appointments</h2>
+            <div className="text-sm text-neutral-500">Total requests: {appointments.length}</div>
+        </div>
+        <button onClick={() => setShowAddForm(!showAddForm)} className="bg-editorial-accent text-white px-4 py-2 text-sm uppercase font-bold tracking-wider flex items-center gap-2">
+            <Plus size={16} /> {showAddForm ? 'Close Form' : 'Add Appointment'}
+        </button>
       </div>
+      
+      {showAddForm && (
+        <div className="bg-white p-6 border border-neutral-200 shadow-sm rounded-lg">
+            <h3 className="font-serif text-lg mb-4">Book New Appointment</h3>
+            <AppointmentForm />
+        </div>
+      )}
 
       {appointments.length === 0 ? (
         <div className="py-12 text-center text-neutral-400 bg-stone-50 border border-neutral-100 rounded-lg">
@@ -64,6 +89,22 @@ export default function AppointmentsAdminTab() {
                   "{appt.notes}"
                 </div>
               )}
+              
+              <div className="mt-5 flex gap-2">
+                {appt.status !== 'confirmed' && (
+                    <button onClick={() => handleStatusChange(appt.id, 'confirmed')} className="flex-1 bg-emerald-600 text-white py-2 text-xs uppercase font-bold tracking-wider rounded-sm hover:bg-emerald-700 flex items-center justify-center gap-1">
+                        <CheckCircle2 size={14} /> Accept
+                    </button>
+                )}
+                {appt.status !== 'rejected' && (
+                    <button onClick={() => handleStatusChange(appt.id, 'rejected')} className="flex-1 bg-neutral-200 text-neutral-700 py-2 text-xs uppercase font-bold tracking-wider rounded-sm hover:bg-neutral-300 flex items-center justify-center gap-1">
+                        <XCircle size={14} /> Reject
+                    </button>
+                )}
+                <button onClick={() => handleDelete(appt.id)} className="px-3 bg-red-100 text-red-600 py-2 text-xs uppercase font-bold tracking-wider rounded-sm hover:bg-red-200 flex items-center justify-center gap-1">
+                    <Trash2 size={14} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
