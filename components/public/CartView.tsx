@@ -5,6 +5,7 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
+import AddressAutocomplete from "../AddressAutocomplete";
 import { X, Trash2, ShieldCheck, CreditCard, ChevronRight, CheckCircle2, Truck, HelpCircle, FileText, AlertTriangle, Printer, Download, Camera, Lock } from "lucide-react";
 import { jsPDF } from "jspdf";
 

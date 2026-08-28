@@ -6,6 +6,7 @@ import { loginWithGoogle, resetPassword } from "@/lib/auth";
 
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
+import AddressAutocomplete from "../AddressAutocomplete";
 import { X, ShieldAlert, KeyRound, UserPlus, LogIn, ClipboardList, MapPin, Phone, LogOut, CheckCircle, HelpCircle } from "lucide-react";
 
 interface AuthModalProps {

@@ -17,7 +17,7 @@ interface AddressAutocompleteProps {
     required?: boolean;
 }
 
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyBgXUkb-grbRjoicn0fefg1cyNHW4jd27w';
 
 /**
  * CUSTOM UI ADDRESS AUTOCOMPLETE
