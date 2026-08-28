@@ -120,7 +120,7 @@ export default function AddressAutocomplete({
             return;
         }
 
-        autocompleteService.current.getPlacePredictions(
+                        autocompleteService.current.getPlacePredictions(
             {
                 input: val,
                 sessionToken: sessionToken.current,
@@ -130,6 +130,36 @@ export default function AddressAutocomplete({
                 // @ts-ignore
                 if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
                     setPredictions(results);
+                    setShowDropdown(true);
+                    setError(null);
+                } else {
+                    setPredictions([]);
+                    setShowDropdown(false);
+                    // @ts-ignore
+                    if (status === 'REQUEST_DENIED') {
+                        setError('Google Maps Error: Billing must be enabled in Google Cloud Console.');
+                    } else if (status !== window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS && status !== window.google.maps.places.PlacesServiceStatus.INVALID_REQUEST) {
+                        setError(`Google API Error: ${status}`);
+                    } else {
+                        setError(null);
+                    }
+                }
+            }
+        );
+                    setShowDropdown(true);
+                    setError(null);
+                } else {
+                    setPredictions([]);
+                    setShowDropdown(false);
+                    // @ts-ignore
+                    if (status !== window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS && status !== window.google.maps.places.PlacesServiceStatus.INVALID_REQUEST) {
+                        setError(`Google API Error: ${status}`);
+                    } else {
+                        setError(null);
+                    }
+                }
+            }
+        );
                     setShowDropdown(true);
                 } else {
                     setPredictions([]);
