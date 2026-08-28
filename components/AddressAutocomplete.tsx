@@ -120,11 +120,10 @@ export default function AddressAutocomplete({
             return;
         }
 
-                        autocompleteService.current.getPlacePredictions(
+        autocompleteService.current.getPlacePredictions(
             {
                 input: val,
                 sessionToken: sessionToken.current,
-                // No country restriction for global support
             },
             (results: any, status: any) => {
                 // @ts-ignore
@@ -143,27 +142,6 @@ export default function AddressAutocomplete({
                     } else {
                         setError(null);
                     }
-                }
-            }
-        );
-                    setShowDropdown(true);
-                    setError(null);
-                } else {
-                    setPredictions([]);
-                    setShowDropdown(false);
-                    // @ts-ignore
-                    if (status !== window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS && status !== window.google.maps.places.PlacesServiceStatus.INVALID_REQUEST) {
-                        setError(`Google API Error: ${status}`);
-                    } else {
-                        setError(null);
-                    }
-                }
-            }
-        );
-                    setShowDropdown(true);
-                } else {
-                    setPredictions([]);
-                    setShowDropdown(false);
                 }
             }
         );
