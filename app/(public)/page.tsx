@@ -17,7 +17,7 @@ import { CartView } from "@/components/public/CartView";
 import { ChatWidget } from "@/components/public/ChatWidget";
 import { AdminDashboard } from "@/components/public/AdminDashboard";
 import AppointmentForm from "@/components/public/AppointmentForm";
-import EstimateForm from "@/components/public/EstimateForm";
+import { InlineRugCalculator } from "@/components/public/InlineRugCalculator";
 import { Instagram, Facebook, Youtube, Twitter, Globe, Edit2, Save } from "lucide-react";
 import Link from "next/link";
 

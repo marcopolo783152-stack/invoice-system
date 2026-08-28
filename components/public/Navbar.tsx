@@ -5,7 +5,8 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
-import { ShoppingBag, Menu, X, Landmark, User, Settings, Phone, LogIn, ShieldAlert, Instagram, Facebook, Youtube, Twitter, Globe } from "lucide-react";
+import { ShoppingBag, Menu, X, Landmark, User, Settings, Phone, LogIn, ShieldAlert, Instagram, Facebook, Youtube, Twitter, Globe, Calculator } from "lucide-react";
+import RugCalculatorModal from "../RugCalculatorModal";
 import { AuthModal } from "./AuthModal";
 
 interface NavbarProps {
@@ -16,6 +17,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => {
   const { cart, activeView, setActiveView, setCartOpen, currentUser, logoutUser, socialLinks, logoUrl } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -141,6 +143,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               <span>+1 (703) 461-0207</span>
             </a>
 
+            {/* Calculator Button */}
+            <button
+                onClick={() => setCalculatorOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-editorial-accent text-white hover:bg-neutral-800 text-sm transition border border-editorial-accent font-sans uppercase tracking-wider font-bold cursor-pointer"
+            >
+                <Calculator className="h-3.5 w-3.5" />
+                <span>Calculator</span>
+            </button>
+            
             {/* Account access button */}
             {!currentUser ? (
               <button
