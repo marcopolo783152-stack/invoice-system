@@ -177,7 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-stone-100 text-stone-900 hover:text-editorial-accent text-sm transition border border-editorial-border font-sans uppercase tracking-wider font-bold cursor-pointer"
               >
                 <User className="h-3.5 w-3.5" />
-                <span>{currentUser.name.split(" ")[0]}</span>
+                <span>My Dashboard</span>
               </button>
             )}
 
@@ -290,7 +290,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                   }}
                   className="py-1 px-3 bg-stone-200 text-stone-800 text-xs uppercase font-bold tracking-widest underline"
                 >
-                  View Portal
+                  My Dashboard
                 </button>
               </div>
             )}
