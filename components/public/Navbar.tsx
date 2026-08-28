@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
-import { ShoppingBag, Menu, X, Landmark, User, Settings, Phone, LogIn, ShieldAlert, Instagram, Facebook, Youtube, Twitter, Globe, Calculator } from "lucide-react";
+import { ChevronDown, ShoppingBag, Menu, X, Landmark, User, Settings, Phone, LogIn, ShieldAlert, Instagram, Facebook, Youtube, Twitter, Globe, Calculator } from "lucide-react";
 import RugCalculatorModal from "../RugCalculatorModal";
 import { AuthModal } from "./AuthModal";
 
@@ -88,11 +88,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
       </div>
 
       <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-editorial-border text-editorial-text w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-[1920px] mx-auto px-4 lg:px-12">
           <div className="flex items-center justify-between h-20">
             
             {/* Logo Brand */}
-            <div className="flex-shrink-0 flex items-center gap-3 cursor-pointer" onClick={() => handleNavClick("home")}>
+            <div className="flex-shrink-0 flex items-center gap-3 cursor-pointer lg:w-[250px]" onClick={() => handleNavClick("home")}>
               {logoUrl ? (
                 <img src={logoUrl} alt="Store Logo" className="h-10 w-auto object-contain" referrerPolicy="no-referrer" />
               ) : (
@@ -112,28 +112,38 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               )}
             </div>
 
-          {/* Desktop Navigation links */}
-          <div className="hidden md:flex space-x-8 font-sans text-xs uppercase tracking-widest font-medium">
-            {navItems.map((item) => (
+            <div className="hidden lg:flex items-center justify-center gap-8 font-sans text-xs uppercase tracking-widest font-medium flex-1 px-4">
               <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`relative py-2 transition-all duration-300 hover:text-editorial-accent ${
-                  currentTab === item.id
-                    ? "text-editorial-text font-medium italic"
-                    : "text-gray-400"
-                }`}
+                  onClick={() => handleNavClick('home')}
+                  className={`relative py-2 transition-all duration-300 hover:text-editorial-accent ${currentTab === 'home' ? 'text-editorial-text font-medium italic' : 'text-gray-400'}`}
               >
-                {item.label}
-                {currentTab === item.id && (
-                  <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-editorial-accent" />
-                )}
+                  Home
+                  {currentTab === 'home' && <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-editorial-accent" />}
               </button>
-            ))}
-          </div>
+              <button
+                  onClick={() => handleNavClick('shop')}
+                  className={`relative py-2 transition-all duration-300 hover:text-editorial-accent ${currentTab === 'shop' ? 'text-editorial-text font-medium italic' : 'text-gray-400'}`}
+              >
+                  Shop Collection
+                  {currentTab === 'shop' && <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-editorial-accent" />}
+              </button>
+              
+              <div className="group relative">
+                <button className={`relative py-2 transition-all duration-300 hover:text-editorial-accent flex items-center gap-1 ${['blog', 'track', 'book'].includes(currentTab) ? 'text-editorial-text font-medium italic' : 'text-gray-400'}`}>
+                  Categories
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  {['blog', 'track', 'book'].includes(currentTab) && <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-editorial-accent" />}
+                </button>
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-0 w-56 bg-white border border-editorial-border shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 flex flex-col z-50">
+                  <button onClick={() => handleNavClick('blog')} className="text-left px-5 py-3.5 hover:bg-stone-50 hover:text-editorial-accent border-b border-stone-100 text-gray-500 transition tracking-widest font-bold">Interior Blog</button>
+                  <button onClick={() => handleNavClick('track')} className="text-left px-5 py-3.5 hover:bg-stone-50 hover:text-editorial-accent border-b border-stone-100 text-gray-500 transition tracking-widest font-bold">Track Order</button>
+                  <button onClick={() => handleNavClick('book')} className="text-left px-5 py-3.5 hover:bg-stone-50 hover:text-editorial-accent text-gray-500 transition tracking-widest font-bold">Book Appointment</button>
+                </div>
+              </div>
+            </div>
 
           {/* Action buttons (Right side) */}
-          <div className="hidden sm:flex items-center space-x-3">
+          <div className="hidden lg:flex items-center gap-2">
             {/* Direct Line Badge */}
             <a
               href="tel:+17034610207"
