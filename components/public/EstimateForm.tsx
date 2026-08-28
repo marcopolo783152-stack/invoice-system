@@ -7,6 +7,7 @@ import { ServiceEstimate } from '@/types';
 import { calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import AddressAutocomplete from '../AddressAutocomplete';
 
 export default function EstimateForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,6 +20,9 @@ export default function EstimateForm() {
     name: '',
     phone: '',
     email: '',
+    address: '',
+    city: '',
+    state: '',
     zip: '',
     service: 'Rug Cleaning',
     rugType: 'Persian / Oriental',

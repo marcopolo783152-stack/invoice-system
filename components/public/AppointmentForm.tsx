@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, User, CheckCircle2, Loader2, Send } from 'lucide-react';
 import { addShowroomDoc, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
+import AddressAutocomplete from '../AddressAutocomplete';
 
 export default function AppointmentForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -15,7 +16,11 @@ export default function AppointmentForm() {
         manager: 'Mr. M. Nazif Manager of Marco Polo',
         date: '',
         time: '',
-        notes: ''
+        notes: '',
+        address: '',
+        city: '',
+        state: '',
+        zip: ''
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

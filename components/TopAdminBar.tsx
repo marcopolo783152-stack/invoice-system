@@ -20,7 +20,13 @@ export default function TopAdminBar() {
 
   useEffect(() => {
     const checkAuth = () => {
+      if (pathname === '/admin/invoices/clock') {
+        setIsAdmin(false);
+        return;
+      }
+      
       const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
+      const activeView = localStorage.getItem('marcopolo_active_view');
       const activeView = localStorage.getItem('marcopolo_active_view');
       
       if (auth === '1' && (pathname?.startsWith('/admin') || activeView === 'admin')) {

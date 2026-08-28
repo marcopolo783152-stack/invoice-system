@@ -447,9 +447,7 @@ export default function ClockPage() {
             </div>
 
             <div style={{ padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Link href="/admin/invoices/employees" style={{ color: '#64748b', textDecoration: 'none', fontSize: 14 }}>
-                    ← Back to Admin
-                </Link>
+                
                 <div style={{ color: '#64748b', fontSize: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
                     {isSyncing ? (
                         <>

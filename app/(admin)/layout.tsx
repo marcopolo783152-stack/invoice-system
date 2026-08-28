@@ -157,7 +157,7 @@ export default function RootLayout({
         <TopAdminBar />
         <div className="admin-layout-wrapper" style={{ display: 'flex', minHeight: '100vh', position: 'relative', width: '100%' }}>
           {/* Global Modals */}
-          {isAuthenticated && !isPublicPage && (
+          {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
             <>
               <AddressBookModal
                 isOpen={showAddressBook}
@@ -178,7 +178,7 @@ export default function RootLayout({
             </>
           )}
 
-          {isAuthenticated && !isPublicPage && (
+          {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
             <div
               style={{
                 width: isCollapsed ? 80 : 260,
