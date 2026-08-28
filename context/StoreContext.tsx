@@ -218,6 +218,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [websiteContent, setWebsiteContent] = useState<any>({});
+  
+  // Load website content
+  useEffect(() => {
+    const unsub = subscribeToCollection('showroom_settings', (docs) => {
+        const contentDoc = docs.find((d: any) => d.id === 'live_website_content');
+        if (contentDoc) {
+            setWebsiteContent((contentDoc as any).data || {});
+        }
+    });
+    return () => unsub();
+  }, []);
+  
+  const saveWebsiteContent = async () => {
+    // Save to firebase
+    await updateShowroomDoc('showroom_settings', 'live_website_content', { data: websiteContent });
+    alert("Website changes published successfully!");
+  };
 
   
 

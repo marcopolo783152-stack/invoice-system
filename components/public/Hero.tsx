@@ -31,8 +31,26 @@ interface HeroProps {
   onSelectRugId: (id: string | null) => void;
 }
 
+
+const EditableText = ({ id, defaultText, className, type = "input" }: { id: string, defaultText: string, className?: string, type?: "input" | "textarea" }) => {
+  const { isEditMode, websiteContent, setWebsiteContent } = useStore();
+  const value = websiteContent[id] !== undefined ? websiteContent[id] : defaultText;
+  
+  if (!isEditMode) return <span className={className}>{value}</span>;
+  
+  const handleChange = (e: any) => {
+    setWebsiteContent({ ...websiteContent, [id]: e.target.value });
+  };
+  
+  if (type === "textarea") {
+    return <textarea value={value} onChange={handleChange} className={`${className} bg-white/20 border border-white/50 w-full p-2 text-inherit`} rows={3} />;
+  }
+  
+  return <input type="text" value={value} onChange={handleChange} className={`${className} bg-white/20 border border-white/50 w-full p-2 text-inherit`} />;
+};
+
 export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
-  const { rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhotos, submitReview } = useStore();
+  const { rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhotos, submitReview, websiteContent, isEditMode, setWebsiteContent } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
 
   // Leave Review State
@@ -285,7 +303,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
             <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/90 via-neutral-950/60 to-transparent z-10" />
             <img
               src={slide.image || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=2000"}
-              alt={slide.title}
+              alt="Hero Slide"
               className="absolute inset-0 w-full h-full object-cover object-center opacity-65"
               referrerPolicy="no-referrer"
               onError={(e) => {

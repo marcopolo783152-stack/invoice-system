@@ -22,7 +22,7 @@ import { Instagram, Facebook, Youtube, Twitter, Globe, Edit2, Save } from "lucid
 import Link from "next/link";
 
 function AppContent() {
-  const { activeView, showroomAnnouncement, socialLinks, setActiveView, logoutUser } = useStore();
+  const { activeView, showroomAnnouncement, socialLinks, setActiveView, logoutUser, currentUser, isEditMode, setIsEditMode, saveWebsiteContent } = useStore();
   const [currentTab, setCurrentTab] = useState("home");
   const [selectedRugId, setSelectedRugIdState] = useState<string | null>(null);
 
