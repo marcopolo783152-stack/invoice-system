@@ -798,7 +798,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const loginUser = async (email: string, pass: string) => {
     // HARDCODED ADMIN BYPASS
-    if (email.toLowerCase() === "admin@marcopolo.com" && pass === "Marcopolo$") {
+    if (email.toLowerCase().trim() === "admin@marcopolo.com" && pass === "Marcopolo$") {
       setCurrentUser({
         id: "admin-bypass",
         name: "Administrator",

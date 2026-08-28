@@ -1,3 +1,4 @@
+import AppointmentsAdminTab from "./AppointmentsAdminTab";
 import WebsiteBuilder from "./WebsiteBuilder";
 /**
  * @license
@@ -63,6 +64,7 @@ import {
   Calculator,
   Users,
   Clock
+  , Calendar, Layout
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
@@ -105,7 +107,7 @@ export const AdminDashboard: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -124,7 +126,7 @@ export const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder") => {
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -937,7 +939,7 @@ export const AdminDashboard: React.FC = () => {
               }`}
             >
               <Layers className="h-4.5 w-4.5" />
-              <span>Weaves Catalog</span>
+              <span>Inventory</span>
             </button>
             
             <button
@@ -988,6 +990,16 @@ export const AdminDashboard: React.FC = () => {
             >
               <Calculator className="h-4.5 w-4.5" />
               <span>Service Estimates</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab("appointments")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "appointments" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Calendar className="h-4.5 w-4.5" />
+              <span>Appointments</span>
             </button>
             
             <button 
@@ -1073,6 +1085,16 @@ export const AdminDashboard: React.FC = () => {
                 <span>Invoice System</span>
               </div>
             </a>
+            
+            <button
+              onClick={() => setActiveTab("builder")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "builder" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Layout className="h-4.5 w-4.5" />
+              <span>Website Editor</span>
+            </button>
             
             <button
               onClick={() => setActiveTab("settings")}
@@ -1187,7 +1209,12 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* --- TAB: APPRAISALS --- */}
+                {/* --- TAB: APPOINTMENTS --- */}
+        {activeTab === "appointments" && (
+          <AppointmentsAdminTab />
+        )}
+        
+{/* --- TAB: APPRAISALS --- */}
         {activeTab === "appraisals" && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <AppraisalsAdminTab />
