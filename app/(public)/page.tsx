@@ -99,7 +99,7 @@ function AppContent() {
       {/* Main Content Router */}
       
       {/* Floating Edit Mode Bar for Admins */}
-      {currentUser?.role === 'admin' && activeView !== 'admin' && (
+      {currentUser?.role === 'admin' && (
         <div className="fixed bottom-4 left-4 z-[9999] bg-neutral-900 text-white p-3 rounded-lg shadow-2xl flex items-center gap-4 border border-neutral-700">
             <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${isEditMode ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-500'}`} />
