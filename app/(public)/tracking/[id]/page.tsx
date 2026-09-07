@@ -5,7 +5,7 @@ import { getInvoiceByIdAsync } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import { CheckCircle2, Circle, Loader2, Package, Truck, Droplets, MapPin, Search } from 'lucide-react';
 import Link from 'next/link';
-import { SavedInvoice } from '@/lib/firebase-storage';
+import { SavedInvoice } from '@/lib/invoice-storage';
 
 export default function TrackingPage({ params }: { params: { id: string } }) {
   const [invoice, setInvoice] = useState<SavedInvoice | null>(null);

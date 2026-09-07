@@ -12,6 +12,42 @@ interface InventoryModalProps {
 }
 
 export default function InventoryModal({ isOpen, onClose, onSave, initialData }: InventoryModalProps) {
+        const [isScanning, setIsScanning] = useState(false);
+    
+    const handleAiScan = async () => {
+        const imgs = formData.images || (formData.image ? [formData.image] : []);
+        if (imgs.length === 0) {
+            alert('Please upload a rug image first to use the AI Scanner.');
+            return;
+        }
+        
+        setIsScanning(true);
+        try {
+            const res = await fetch('/api/analyze-rug', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64: imgs[0] })
+            });
+            
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to analyze rug');
+            
+            setFormData(prev => ({
+                ...prev,
+                design: data.style || prev.design,
+                colorBg: data.colors || prev.colorBg,
+                description: data.description || prev.description,
+                lengthFeet: data.estimatedLengthFeet || prev.lengthFeet,
+                widthFeet: data.estimatedWidthFeet || prev.widthFeet
+            }));
+            alert('AI Analysis Complete! Fields have been auto-filled.');
+        } catch (error: any) {
+            alert('AI Scanner Error: ' + error.message);
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
     const [formData, setFormData] = useState<Partial<InventoryItem>>({
         sku: '',
         description: '',
@@ -465,6 +501,25 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData }:
                                 <option value="WHOLESALE">WHOLESALE</option>
                             </select>
                         </div>
+
+                        
+                            {/* AI Scanner Button */}
+                            <div style={{ gridColumn: 'span 2', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', padding: 16, borderRadius: 12, border: '1px solid #bae6fd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <h4 style={{ margin: 0, color: '#0369a1', fontSize: 14, fontWeight: 700 }}>AI Rug Scanner</h4>
+                                    <p style={{ margin: 0, color: '#0ea5e9', fontSize: 12, marginTop: 4 }}>Upload an image below, then click scan to auto-fill details.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleAiScan}
+                                    disabled={isScanning || !(formData.images?.length || formData.image)}
+                                    style={{
+                                        background: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', opacity: isScanning ? 0.7 : 1
+                                    }}
+                                >
+                                    {isScanning ? 'Scanning...' : 'Scan with AI'}
+                                </button>
+                            </div>
 
                         {/* Images Section */}
                         <div style={{ gridColumn: 'span 2', marginTop: 8 }}>
