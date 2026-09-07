@@ -227,7 +227,7 @@ export const CartView: React.FC = () => {
                 disabled
                 className={`py-3.5 transition-colors cursor-default ${checkoutStep === "payment" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"}`}
               >
-                3. Card Escrow
+                3. Review & Reserve
               </button>
             </div>
           )}
@@ -460,113 +460,56 @@ export const CartView: React.FC = () => {
                 <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none flex items-start gap-3">
                   <ShieldCheck className="h-5 w-5 text-editorial-accent mt-0.5 flex-shrink-0 animate-pulse" />
                   <div>
-                    <h5 className="font-serif font-light text-editorial-text text-sm">Escrow Curation Protocol</h5>
+                    <h5 className="font-serif font-light text-editorial-text text-sm">Reserve Your Rugs</h5>
                     <p className="text-xs text-gray-500 leading-relaxed mt-0.5 font-light">
-                      Your settlement is fully authorized through zero-knowledge Stripe tokenization. Funds are safely held in escrow and your card is **NOT** debited until a showroom curator reviews inventory holds and manually marks the order as <strong>Confirmed</strong>.
+                      Since our rugs are one-of-a-kind masterpieces, we do not require immediate payment online. Complete this reservation request, and our showroom team will place your rugs on hold and contact you to arrange payment and delivery.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between border-b border-editorial-border pb-2">
-                  <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold">Secure Payment Method</h4>
+                  <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold">Contact Information Confirmation</h4>
                   <div className="flex items-center gap-1.5 text-[10px] text-green-700 font-bold uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded">
                     <Lock className="h-3 w-3" />
-                    <span>256-bit SSL Encrypted</span>
+                    <span>Secure Request</span>
                   </div>
                 </div>
                 
-
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Cardholder Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={cardName} autoComplete="cc-name"
-                      onChange={(e) => setCardName(e.target.value)}
-                      placeholder="e.g. Elena Rostov"
-                      className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none focus:border-editorial-accent text-xs text-editorial-text"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Credit Card Number</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                        <CreditCard className="h-4 w-4" />
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        value={cardNumber} autoComplete="cc-number"
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-                          const matches = val.match(/\d{4,16}/g);
-                          const match = (matches && matches[0]) || "";
-                          const parts = [];
-                          for (let i = 0, len = match.length; i < len; i += 4) {
-                            parts.push(match.substring(i, i + 4));
-                          }
-                          if (parts.length > 0) {
-                            setCardNumber(parts.join(" "));
-                          } else {
-                            setCardNumber(val);
-                          }
-                        }}
-                        maxLength={19}
-                        placeholder="4242 4242 4242 4242"
-                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 pl-10 pr-3 outline-none focus:border-editorial-accent text-xs font-mono tracking-wider text-editorial-text"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Expiration Date</label>
-                      <input
-                        type="text"
-                        required
-                        value={cardExpiry} autoComplete="cc-exp"
-                        onChange={(e) => {
-                          let val = e.target.value.replace(/[^0-9]/g, "");
-                          if (val.length >= 2) {
-                            setCardExpiry(val.slice(0, 2) + "/" + val.slice(2, 4));
-                          } else {
-                            setCardExpiry(val);
-                          }
-                        }}
-                        maxLength={5}
-                        placeholder="MM/YY"
-                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none focus:border-editorial-accent text-xs font-mono text-editorial-text"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">CVV / CVC Security</label>
-                      <input
-                        type="password"
-                        required
-                        value={cardCVC} autoComplete="cc-csc"
-                        onChange={(e) => setCardCVC(e.target.value.replace(/[^0-9]/g, ""))}
-                        maxLength={4}
-                        placeholder="•••"
-                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none focus:border-editorial-accent text-xs font-mono text-editorial-text"
-                      />
-                    </div>
-                  </div>
+                <div className="space-y-3 bg-neutral-50 p-4 border border-editorial-border">
+                  <p className="text-sm"><strong>Name:</strong> {name}</p>
+                  <p className="text-sm"><strong>Email:</strong> {email}</p>
+                  <p className="text-sm"><strong>Phone:</strong> {phone}</p>
+                  {deliveryOption === 'Delivery' && (
+                    <p className="text-sm"><strong>Delivery To:</strong> {shippingStreet}, {shippingCity}, {shippingState} {shippingZip}</p>
+                  )}
+                  {deliveryOption === 'Pickup' && (
+                    <p className="text-sm"><strong>Method:</strong> Showroom Pickup</p>
+                  )}
+                  {notes && <p className="text-sm text-gray-500 mt-2 italic">"{notes}"</p>}
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-4 space-y-3 border-t border-editorial-border">
                   <button
                     type="submit"
-                    className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-xs rounded-none shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
+                    disabled={isProcessing}
+                    className="w-full py-4 bg-[#1a1a1a] hover:bg-black text-white font-bold uppercase tracking-widest text-sm rounded-none shadow transition flex justify-center items-center gap-2"
                   >
-                    <ShieldCheck className="h-4.5 w-4.5" />
-                    <span>Authorize Escrow ${total.toLocaleString()}</span>
+                    {isProcessing ? (
+                      <span className="animate-pulse flex items-center gap-2">Processing Hold...</span>
+                    ) : (
+                      <>
+                        <Lock className="h-4 w-4" />
+                        <span>Confirm Reservation Request</span>
+                      </>
+                    )}
                   </button>
+                  <p className="text-xs text-gray-400 font-light text-center">
+                    Need assistance? Use our floating concierge support chat.
+                  </p>
                 </div>
               </form>
             )}
-
+            
             {/* --- STEP 4: SUCCESS RECEIPT --- */}
             {checkoutStep === "success" && createdOrder && (
               <div className="space-y-6 text-center py-6 animate-fadeIn">
@@ -578,9 +521,9 @@ export const CartView: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="font-serif text-2xl font-light text-editorial-text">Escrow Authorized!</h3>
+                  <h3 className="font-serif text-2xl font-light text-editorial-text">Reservation Confirmed!</h3>
                   <p className="text-xs text-gray-500 leading-relaxed max-w-sm mx-auto font-light">
-                    Your purchase invoice has been registered successfully. Our showroom advisors will immediately inspect your selected wool fibers, issue the lifetime authentication documents, and confirm holds.
+                    Your request has been sent to our showroom successfully. A Marco Polo advisor will contact you shortly to confirm your hold, answer any questions, and arrange payment and final delivery.
                   </p>
                 </div>
 
@@ -756,7 +699,7 @@ export const CartView: React.FC = () => {
                   disabled={!name || !phone || !email || ((!shippingStreet || !shippingCity || !shippingState || !shippingZip) && deliveryOption === "Delivery")}
                   className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-xs rounded-none shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Proceed to Escrow Settlement</span>
+                  <span>Proceed to Final Review</span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
               )}

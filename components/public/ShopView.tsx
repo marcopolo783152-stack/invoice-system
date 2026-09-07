@@ -30,7 +30,7 @@ interface ShopViewProps {
 }
 
 export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
-  const { rugs, addToCart, toggleRugFavorite, favoritedRugIds, incrementRugViews } = useStore();
+  const { rugs, addToCart, setCartOpen, toggleRugFavorite, favoritedRugIds, incrementRugViews } = useStore();
   
   // Search and Sort State
   const [searchQuery, setSearchQuery] = useState("");
@@ -602,7 +602,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                         </p>
                       </div>
 
-                      <div className="pt-3 border-t border-editorial-border flex items-center justify-between">
+                      <div className="pt-3 border-t border-editorial-border flex flex-col gap-3">
                         <div>
                           <span className="block text-xs uppercase tracking-wider text-gray-400 font-semibold">Concierge Value</span>
                           <div className="flex flex-wrap items-center gap-2">
