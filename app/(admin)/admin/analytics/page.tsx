@@ -90,7 +90,7 @@ export default function AnalyticsDashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{fontSize: 12, fill: '#888'}} />
                 <YAxis tickFormatter={(val) => '$'+val} tickLine={false} axisLine={false} tick={{fontSize: 12, fill: '#888'}} />
-                <RechartsTooltip formatter={(value: number) => ['$' + value.toLocaleString(), 'Revenue']} />
+                <RechartsTooltip formatter={(value: any) => ['$' + Number(value).toLocaleString(), 'Revenue']} />
                 <Area type="monotone" dataKey="Total" stroke="#171717" fill="#f5f5f5" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
