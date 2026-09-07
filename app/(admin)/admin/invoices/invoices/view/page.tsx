@@ -814,6 +814,13 @@ function InvoiceViewContent() {
                                             <Edit size={16} /> Edit Invoice
                                         </button>
 
+                                                                                <button onClick={() => { 
+                                            navigator.clipboard.writeText(`${window.location.origin}/tracking/${invoice.id}`);
+                                            alert('Tracking link copied to clipboard!');
+                                            setShowMoreMenu(false); 
+                                        }} className="dropdown-item">
+                                            <Package size={16} /> Copy Tracking Link
+                                        </button>
                                         <button onClick={() => { handleEmail(); setShowMoreMenu(false); }} className="dropdown-item">
                                             <Mail size={16} /> Email Invoice
                                         </button>
