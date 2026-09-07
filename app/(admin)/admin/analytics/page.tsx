@@ -35,7 +35,7 @@ export default function AnalyticsDashboard() {
       // Only count actual sales (not quotes)
       if (inv.data.documentType === 'INVOICE') {
         totalRevenue += calc.subtotal; // Pre-tax revenue
-        totalTax += calc.taxAmount;
+        totalTax += calc.salesTax;
         
         monthlyData[monthYear] = (monthlyData[monthYear] || 0) + calc.subtotal;
 
