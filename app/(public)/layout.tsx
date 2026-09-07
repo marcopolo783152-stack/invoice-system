@@ -12,8 +12,8 @@ export async function generateMetadata(): Promise<Metadata> {
   let seoDesc = 'Discover our premium collection of authentic handmade rugs, Persian rugs, vintage runners, and luxurious carpets. Visit our Alexandria showroom for rug cleaning and restoration.';
   
   try {
-    const docSnap = await getDoc(doc(db, 'showroom_settings', 'live_website_content'));
-    if (docSnap.exists()) {
+    const docSnap = db ? await getDoc(doc(db, 'showroom_settings', 'live_website_content')) : null;
+    if (docSnap && docSnap.exists()) {
       const data = docSnap.data().data || {};
       if (data.seo_title) seoTitle = data.seo_title;
       if (data.seo_description) seoDesc = data.seo_description;
