@@ -50,7 +50,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
 
   // Mobile filters sidebar drawer open state
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'large' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'large' | 'list'>('large');
 
   // Constants lists for filtering
   const sizeCategories = ["Small", "Medium", "Large", "Runner", "Oversized", "Palace-size"];

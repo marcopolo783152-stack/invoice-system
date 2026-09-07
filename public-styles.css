@@ -6,9 +6,9 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
   
-  --color-editorial-bg: #F9F7F5;
+  --color-editorial-bg: #FCFBF9;
   --color-editorial-text: #1A1A1A;
-  --color-editorial-accent: #A68B67;
+  --color-editorial-accent: #8E7453;
   --color-editorial-border: #E5E1DA;
   --color-editorial-aside: #F4F1EE;
   
@@ -18,3 +18,5 @@
   --color-amber-500: #A68B67;
   --color-amber-600: #8E7453;
 }
+
+html { font-size: 16.5px; }
