@@ -30,13 +30,11 @@ function AppContent() {
   const setSelectedRugId = (id: string | null) => {
     setSelectedRugIdState(id);
     if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
       if (id) {
-        url.searchParams.set("item", id);
+        window.history.pushState({}, "", `/shop/${id}`);
       } else {
-        url.searchParams.delete("item");
+        window.history.pushState({}, "", `/`);
       }
-      window.history.pushState({}, "", url.toString());
     }
   };
 
