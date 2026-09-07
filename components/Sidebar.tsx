@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup, RefreshCw, Clock, DollarSign, Truck, Wrench } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, Settings, LogOut, Package, Users, FileDown, Trash2, History, X, Menu, Calendar, ChevronLeft, ChevronRight, TrendingUp, BarChart, HelpCircle, AlertTriangle, DatabaseBackup, RefreshCw, Clock, DollarSign, Truck, Wrench } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { exportAddressBook, getAllInvoices, getOutstandingBalances, getUnbackedData, confirmSmartBackupComplete } from '@/lib/invoice-storage';
 import AddressBookModal from './AddressBookModal';
@@ -139,6 +139,7 @@ export default function Sidebar({
         { label: 'Dashboard', href: '/admin/invoices', icon: LayoutDashboard, exact: true },
         { label: 'Analytics', href: '/admin/analytics', icon: BarChart },
         { label: 'Client CRM', href: '/admin/crm', icon: Users },
+        { label: 'Calendar', href: '/admin/calendar', icon: Calendar },
         { label: 'Invoices', href: '/admin/invoices/invoices', icon: FileText, activeCondition: pathname === '/admin/invoices/invoices' && !isRecycleBin },
         { label: 'New Invoice', href: '/admin/invoices/invoices/new', icon: PlusCircle },
         { label: 'Inventory DB', href: '/admin/invoices/inventory', icon: Package },

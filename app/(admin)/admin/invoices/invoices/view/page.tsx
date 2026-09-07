@@ -896,7 +896,10 @@ function InvoiceViewContent() {
                             if (!invoice) throw new Error('Invoice content missing');
 
                             // Generate Link
-                            const link = `${window.location.origin}/public/invoice?id=${invoice.id}&pdf=true`;
+                            const isService = invoice.data.mode === 'wash' || invoice.data.mode === 'repair';
+                            const link = isService 
+                                ? `${window.location.origin}/tracking/${invoice.id}`
+                                : `${window.location.origin}/public/invoice?id=${invoice.id}&pdf=true`;
 
                             // Send Link (Client Side - Free Tier Compatible)
                             const { sendInvoiceEmail } = await import('@/lib/email-service');
