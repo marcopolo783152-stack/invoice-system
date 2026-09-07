@@ -19,7 +19,7 @@ import {
   CleaningBooking,
   SocialMediaLink, PromoCode, ShopProfile
 } from "@/types";
-import { INITIAL_RUGS } from "@/data/rugs";
+import { INITIAL_RUGS } from "@/lib/data";
 import { INITIAL_BLOGS } from "@/data/blogs";
 import { getEmailConfig } from "@/lib/email-service";
 import { auth, checkIsAdmin, logout, loginWithEmail, registerWithEmail } from "@/lib/auth";
@@ -206,7 +206,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [activeView, setActiveView] = useState<"customer" | "admin">(() => {
     if (typeof window === 'undefined') return "customer";
     // Clear legacy localStorage to enforce strict session logouts
-    localStorage.removeItem("marcopolo_active_view");
+    
     const sessionView = sessionStorage.getItem("marcopolo_active_view");
     return (sessionView === "admin") ? "admin" : "customer";
   });
@@ -839,13 +839,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const loginUser = async (email: string, pass: string) => {
     // HARDCODED ADMIN BYPASS
     if (email.toLowerCase().trim() === "admin@marcopolo.com" && pass === "Marcopolo$") {
-      setCurrentUser({
+      const adminUser = {
         id: "admin-bypass",
         name: "Administrator",
         email: "admin@marcopolo.com",
         role: "admin"
-      });
-      sessionStorage.setItem("mp-invoice-auth", "admin@marcopolo.com");
+      };
+      setCurrentUser(adminUser as any);
+      sessionStorage.setItem("mp-invoice-auth", "1");
+      sessionStorage.setItem("mp-invoice-user", JSON.stringify(adminUser));
       setActiveView("admin");
       return { success: true, message: "Logged in as Administrator!" };
     }
