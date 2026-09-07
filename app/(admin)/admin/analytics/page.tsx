@@ -39,7 +39,7 @@ export default function AnalyticsDashboard() {
         
         monthlyData[monthYear] = (monthlyData[monthYear] || 0) + calc.subtotal;
 
-        inv.data.items.forEach(item => {
+        inv.data.items.forEach((item: any) => {
           if (item.style && item.style.trim()) {
             topStyles[item.style] = (topStyles[item.style] || 0) + 1;
           }
