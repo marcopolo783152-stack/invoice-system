@@ -241,10 +241,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
 
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
-  const [cleaningBookings, setCleaningBookings] = useState<CleaningBooking[]>(() => {
+  const [cleaningBookings, setCleaningBookings] = useState<CleaningBooking[]>([]);
+  useEffect(() => {
     const local = safeGetItem("marcopolo_cleaning_bookings");
-    return local ? JSON.parse(local) : [];
-  });
+    if (local) {
+      try {
+        setCleaningBookings(JSON.parse(local));
+      } catch(e){}
+    }
+  }, []);
   const [estimates, setEstimates] = useState<any[]>([]);
 
   // Core collections synced to Firebase
@@ -255,10 +260,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [reviews, setReviews] = useState<Review[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   
-  const [cart, setCart] = useState<CartItem[]>(() => {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  useEffect(() => {
     const local = safeGetItem("marcopolo_cart");
-    return local ? JSON.parse(local) : [];
-  });
+    if (local) {
+      try {
+        setCart(JSON.parse(local));
+      } catch(e){}
+    }
+  }, []);
 
   const [heroCoverPhotos, setHeroCoverPhotosState] = useState<string[]>([]);
   const [showroomAnnouncement, setShowroomAnnouncementState] = useState<string>("");

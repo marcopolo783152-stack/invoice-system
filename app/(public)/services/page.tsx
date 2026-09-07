@@ -5,6 +5,7 @@ import { ArrowRight, Star } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Rug Cleaning, Repair & Restoration Services in Alexandria, VA | Marco Polo',
   description: 'Expert handmade rug cleaning, repair, restoration, and pet odor removal in Alexandria, VA. Trusted master artisans serving Washington, D.C. and Northern Virginia.',
+  keywords: 'rug cleaning Alexandria VA, persian rug washing, oriental rug repair near me, pet stain removal for rugs, fringe replacement, antique rug restoration, moth treatment for wool rugs, water damaged rug repair, color run correction, custom rug pads',
   alternates: {
     canonical: '/services',
   }
