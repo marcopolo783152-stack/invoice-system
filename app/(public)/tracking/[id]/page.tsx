@@ -52,7 +52,7 @@ export default function TrackingPage({ params }: { params: { id: string } }) {
   }
 
   const { data } = invoice;
-  const isService = data.mode === 'wash' || data.mode === 'repair';
+  const isService = (data.mode as any) === 'wash' || (data.mode as any) === 'repair';
   const calc = calculateInvoice(data as any);
   
   // Determine current step index

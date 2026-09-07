@@ -896,7 +896,7 @@ function InvoiceViewContent() {
                             if (!invoice) throw new Error('Invoice content missing');
 
                             // Generate Link
-                            const isService = invoice.data.mode === 'wash' || invoice.data.mode === 'repair';
+                            const isService = (invoice.data.mode as any) === 'wash' || (invoice.data.mode as any) === 'repair';
                             const link = isService 
                                 ? `${window.location.origin}/tracking/${invoice.id}`
                                 : `${window.location.origin}/public/invoice?id=${invoice.id}&pdf=true`;
