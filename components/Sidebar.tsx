@@ -137,10 +137,6 @@ export default function Sidebar({
 
     const navItems = [
         { label: 'Dashboard', href: '/admin/invoices', icon: LayoutDashboard, exact: true },
-        { label: 'Analytics', href: '/admin/analytics', icon: BarChart },
-        { label: 'Client CRM', href: '/admin/crm', icon: Users },
-        { label: 'Calendar', href: '/admin/calendar', icon: Calendar },
-        { label: 'Website CMS', href: '/admin/cms', icon: Settings },
         { label: 'Invoices', href: '/admin/invoices/invoices', icon: FileText, activeCondition: pathname === '/admin/invoices/invoices' && !isRecycleBin },
         { label: 'New Invoice', href: '/admin/invoices/invoices/new', icon: PlusCircle },
         { label: 'Inventory DB', href: '/admin/invoices/inventory', icon: Package },

@@ -1,3 +1,4 @@
+import CRMAdminTab from "./CRMAdminTab";
 import AppointmentsAdminTab from "./AppointmentsAdminTab";
 import WebsiteBuilder from "./WebsiteBuilder";
 /**
@@ -952,12 +953,24 @@ export const AdminDashboard: React.FC = () => {
               <span>Bulk Import</span>
             </button>
             
+            
+            <button
+              onClick={() => setActiveTab("crm")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "crm" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Users className="h-4.5 w-4.5" />
+              <span>Client CRM</span>
+            </button>
+            
             <button
               onClick={() => setActiveTab("orders")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "orders" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
+
               <ClipboardList className="h-4.5 w-4.5" />
               <span>Customer Orders</span>
               {dynamicAnalytics.pendingOrders > 0 && (
@@ -1125,6 +1138,7 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === "analytics" && "Analytical Insights"}
               {activeTab === "inventory" && "Manage Showroom Inventory"}
               {activeTab === "bulk_import" && "Bulk Importer"}
+              {activeTab === "crm" && "Client Relationship Management"}
               {activeTab === "orders" && "Customer Orders & Dispatch Logs"}
               {activeTab === "cleaning" && "Cleaning & Repair Bookings"}
               {activeTab === "estimates" && "Service Estimate Requests"}
@@ -2487,7 +2501,13 @@ export const AdminDashboard: React.FC = () => {
           <BulkImport />
         )}
 
+        
+        {activeTab === "crm" && (
+          <CRMAdminTab />
+        )}
+        
         {/* --- TAB C: ORDER MANAGEMENT (CUSTOMER ORDERS) --- */}
+
         {activeTab === "orders" && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
