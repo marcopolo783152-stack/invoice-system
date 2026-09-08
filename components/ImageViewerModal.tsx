@@ -19,10 +19,13 @@ export default function ImageViewerModal({ images, initialIndex = 0, isOpen, onC
         } else {
             document.body.style.overflow = 'auto';
         }
-        return () => { document.body.style.overflow = 'auto'; };
+
+
+
+    return () => { document.body.style.overflow = 'auto'; };
     }, [isOpen, initialIndex]);
 
-    if (!isOpen || images.length === 0) return null;
+    // Moved down
 
     const handlePrev = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -42,8 +45,14 @@ export default function ImageViewerModal({ images, initialIndex = 0, isOpen, onC
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+
+
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
     }, [images.length]);
+
+
+    if (!isOpen || images.length === 0) return null;
 
     return (
         <div

@@ -590,6 +590,16 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                             <button onClick={(e) => { e.stopPropagation(); toggleRugFavorite(rug.id); }} className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-600 transition-colors"><Heart size={12} fill={favoritedRugIds.includes(rug.id) ? "currentColor" : "none"} /> {rug.favorites || 0}</button>
                           </div>
                         </div>
+                        {/* Distinct SKU Badge on Shopping Page */}
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-neutral-100 text-neutral-800 text-[11px] font-mono font-semibold tracking-wider border border-neutral-200">
+                            <span className="text-[9px] uppercase font-bold text-neutral-400 font-sans tracking-normal">SKU:</span>
+                            {rug.sku || "N/A"}
+                          </span>
+                          <span className="text-[11px] text-neutral-400 font-sans uppercase tracking-wider font-medium">
+                            {rug.condition || "Authentic"}
+                          </span>
+                        </div>
                         <Link 
                           href={`/shop/${rug.id}`}
                           onClick={(e) => { e.preventDefault(); incrementRugViews(rug.id); onSelectRugId(rug.id); }}

@@ -555,7 +555,7 @@ export async function validateSignatureToken(tokenId: string): Promise<{ invoice
 /**
  * Mark a signature token as used
  */
-export async function useSignatureToken(tokenId: string): Promise<void> {
+export async function markSignatureTokenUsed(tokenId: string): Promise<void> {
   if (!isFirebaseConfigured() || !db) return;
 
   try {

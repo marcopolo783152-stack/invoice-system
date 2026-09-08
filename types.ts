@@ -205,4 +205,70 @@ export interface ShopProfile {
 
 export interface ServiceEstimate { id: string; name: string; phone: string; email: string; zip: string; service: string; rugType: string; dimensions: string; description: string; pickupPreference: string; appointmentDate: string; status: 'New' | 'Contacted' | 'Estimate Provided' | 'Pickup Scheduled' | 'In Service' | 'Ready' | 'Delivered' | 'Cancelled'; createdAt: string; images: string[]; notes?: string; }
 
-export interface ServiceEstimate { id: string; name: string; phone: string; email: string; zip: string; service: string; rugType: string; dimensions: string; description: string; pickupPreference: string; appointmentDate: string; status: 'New' | 'Contacted' | 'Estimate Provided' | 'Pickup Scheduled' | 'In Service' | 'Ready' | 'Delivered' | 'Cancelled'; createdAt: string; images: string[]; notes?: string; }
+export interface AuctionBid {
+  id: string;
+  auctionId: string;
+  bidderName: string;
+  bidderEmail: string;
+  bidderPaddleNumber: string;
+  amount: number;
+  timestamp: string;
+}
+
+export interface AuctionRegistration {
+  id: string;
+  paddleNumber: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  billingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+  shippingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+  paymentMethod: {
+    cardLast4: string;
+    cardBrand: string;
+    expiryDate: string;
+  };
+  idVerified: boolean;
+  status: "Approved" | "Pending Review";
+  registeredAt: string;
+}
+
+export interface AuctionItem {
+  id: string;
+  lotNumber: number;
+  rugId?: string;
+  title: string;
+  sku: string;
+  origin: string;
+  dimensions: string;
+  material: string;
+  age: string;
+  condition: string;
+  estimatedLow: number;
+  estimatedHigh: number;
+  startingBid: number;
+  reservePrice: number;
+  currentBid: number;
+  totalBids: number;
+  bids: AuctionBid[];
+  images: string[];
+  description: string;
+  provenance?: string;
+  startDate: string;
+  endDate: string;
+  status: "live" | "upcoming" | "ended";
+  minBidIncrement: number;
+}
+

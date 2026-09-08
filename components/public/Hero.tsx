@@ -25,6 +25,8 @@ import {
   Printer
 } from "lucide-react";
 import { motion } from "motion/react";
+import { ProfessionalServices } from "./ProfessionalServices";
+import { GoogleReviewsSection } from "./GoogleReviewsSection";
 
 interface HeroProps {
   setCurrentTab: (tab: string) => void;
@@ -610,8 +612,18 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
         </div>
       </section>
 
-      {/* 5. Rug Cleaning & Repair Service Section */}
-      <section className="py-16 md:py-24 bg-neutral-950 text-white relative overflow-hidden">
+      {/* 5. Comprehensive Professional Rug Wash & Restoration (Modeled after rugwash.com) */}
+      <ProfessionalServices 
+        onOpenBookingModal={() => {
+          const el = document.getElementById("schedule-service-form");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth" });
+          }
+        }} 
+      />
+
+      {/* 5B. Rug Cleaning Booking Console & Lab Specifications */}
+      <section className="py-16 md:py-24 bg-neutral-950 text-white relative overflow-hidden" id="schedule-service-form">
         {/* Subtle patterned rug texture background */}
         <div className="absolute inset-0 bg-[radial-gradient(#A68B67_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-15 z-0" />
         
@@ -978,65 +990,8 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
         </div>
       </section>
 
-      {/* 6. Customer Reviews Board (Fully Responsive) */}
-      <section className="py-16 md:py-24 bg-editorial-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
-          <div className="text-center space-y-3">
-            <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-semibold block">Verified Collectors</span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-editorial-text font-light tracking-wide">Showroom Testimonials</h2>
-            <p className="text-xs text-gray-500 max-w-xl mx-auto font-light">Real experiences from discerning interior designers and private families who trust our hand-knotted curation.</p>
-            <button onClick={() => setIsReviewModalOpen(true)} className="mt-4 px-6 py-2 bg-editorial-accent text-white font-serif text-sm hover:bg-neutral-800 transition">Leave a Review</button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {approvedReviews.map((rev) => {
-              const r = rugs.find(rug => rug.id === rev.rugId);
-              return (
-                <div
-                  key={rev.id}
-                  className="bg-white p-8 rounded-none border border-editorial-border shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between"
-                >
-                  <div className="space-y-4">
-                    {/* Stars */}
-                    <div className="flex items-center gap-1 text-editorial-accent">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 ${
-                            i < rev.rating ? "fill-editorial-accent" : "text-gray-200"
-                          }`}
-                        />
-                      ))}
-                    </div>
-
-                    <p className="text-sm text-gray-600 leading-relaxed italic font-light">
-                      "{rev.reviewText}"
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-editorial-border">
-                    <div>
-                      <h4 className="font-serif font-medium text-editorial-text text-sm">{rev.reviewerName}</h4>
-                      <p className="text-sm text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Verified Art Buyer</p>
-                    </div>
-                    {r && (
-                      <div className="text-right text-xs">
-                        <span className="block text-gray-400 font-semibold text-xs">Purchased Product:</span>
-                        <span className="text-editorial-accent hover:underline font-serif font-medium cursor-pointer" onClick={() => {
-                          onSelectRugId(r.id);
-                          setCurrentTab("shop");
-                        }}>{r.name}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-        </div>
-      </section>
+      {/* 6. Professional Google Reviews Showcase (Newest First, 1-by-1 Presentation) */}
+      <GoogleReviewsSection onOpenReviewModal={() => setIsReviewModalOpen(true)} />
 
       
       {/* Leave a Review Modal */}

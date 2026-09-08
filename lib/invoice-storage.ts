@@ -854,4 +854,4 @@ export async function getOutstandingBalances(): Promise<{
 /**
  * SIGNATURE TOKEN WRAPPERS
  */
-export { createSignatureToken, validateSignatureToken, useSignatureToken } from './firebase-storage';
+export { createSignatureToken, validateSignatureToken, markSignatureTokenUsed } from './firebase-storage';

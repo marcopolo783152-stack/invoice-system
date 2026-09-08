@@ -22,9 +22,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
   
   const rug = rugs.find((r) => r.id === rugId);
   
-  if (!rug) return null;
+  // if (!rug) return null;
 
-  const [activeImage, setActiveImage] = useState(rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800");
+  const [activeImage, setActiveImage] = useState(rug?.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -69,6 +69,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
       localStorage.setItem("mp_recently_viewed", JSON.stringify(updated));
     } catch (e) {}
   }, [rugId, rugs, activeView]);
+
+  if (!rug) return null;
 
   const handleInquireRug = () => {
     const inquiryText = `Hello Marco Polo team! I would like to inquire about the showroom piece: "${rug.name}" (SKU: ${rug.sku}, Size: ${rug.dimensions}, price: $${rug.price.toLocaleString()}). Could you please share more details about its origin, weaves, and certificate?`;

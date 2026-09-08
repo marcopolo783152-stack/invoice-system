@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { validateSignatureToken, useSignatureToken, getInvoiceByIdAsync, saveInvoice } from '@/lib/invoice-storage';
+import { validateSignatureToken, markSignatureTokenUsed, getInvoiceByIdAsync, saveInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import SignaturePad from '@/components/SignaturePad';
@@ -69,7 +69,7 @@ function SignatureContent() {
             };
 
             await saveInvoice(updatedInvoiceData, invoice.id);
-            await useSignatureToken(token);
+            await markSignatureTokenUsed(token);
 
             setSuccess(true);
             setShowSignaturePad(false);

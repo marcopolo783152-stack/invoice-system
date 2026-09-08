@@ -17,6 +17,7 @@ import { CartView } from "@/components/public/CartView";
 import { ChatWidget } from "@/components/public/ChatWidget";
 import { AdminDashboard } from "@/components/public/AdminDashboard";
 import AppointmentForm from "@/components/public/AppointmentForm";
+import { AuctionView } from "@/components/public/AuctionView";
 import { InlineRugCalculator } from "@/components/public/InlineRugCalculator";
 import { Instagram, Facebook, Youtube, Twitter, Globe, Edit2, Save } from "lucide-react";
 import Link from "next/link";
@@ -50,6 +51,8 @@ function AppContent() {
         setSelectedRugIdState(urlParams.get("item"));
       } else if (path === "/shop") {
         setCurrentTab("shop");
+      } else if (path === "/auction" || path === "/auctions") {
+        setCurrentTab("auction");
       } else if (path === "/cart") {
         setCurrentTab("shop"); // or home, then open cart? We'll just set shop.
       } else if (path === "/about") {
@@ -161,6 +164,10 @@ function AppContent() {
           <div className="bg-neutral-50 py-16 px-4 sm:px-6 lg:px-8 min-h-screen">
             <AppointmentForm />
           </div>
+        )}
+
+        {currentTab === "auction" && (
+          <AuctionView />
         )}
       </div>
 

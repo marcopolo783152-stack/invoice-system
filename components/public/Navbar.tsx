@@ -25,6 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
   const navItems = [
     { id: "home", label: "Home" },
     { id: "shop", label: "Shop Collection" },
+    { id: "auction", label: "Live Auctions" },
     { id: "blog", label: "Interior Blog" },
     { id: "track", label: "Track Order" },
     { id: "book", label: "Book Appointment" }
@@ -126,6 +127,14 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               >
                   Shop Collection
                   {currentTab === 'shop' && <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-editorial-accent" />}
+              </button>
+              <button
+                  onClick={() => handleNavClick('auction')}
+                  className={`relative py-2 transition-all duration-300 hover:text-editorial-accent flex items-center gap-1.5 ${currentTab === 'auction' ? 'text-editorial-text font-medium italic' : 'text-gray-400'}`}
+              >
+                  <span>Auctions</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  {currentTab === 'auction' && <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-editorial-accent" />}
               </button>
               
               <div className="group relative">
