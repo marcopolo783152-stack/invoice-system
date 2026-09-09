@@ -9,6 +9,7 @@ import React, { useState, useEffect } from "react";
 import { StoreProvider, useStore } from "@/context/StoreContext";
 import { Navbar } from "@/components/public/Navbar";
 import { Hero } from "@/components/public/Hero";
+import { DynamicPageRenderer } from "@/components/public/DynamicPageRenderer";
 import { ShopView } from "@/components/public/ShopView";
 import { BlogView } from "@/components/public/BlogView";
 import { TrackingView } from "@/components/public/TrackingView";
@@ -134,12 +135,17 @@ function AppContent() {
       
       <div className="flex-1">
         {currentTab === "home" && (
-          <Hero 
-            onSelectRugId={(id) => {
-              setSelectedRugId(id);
-              setCurrentTab("shop");
-            }} 
-            setCurrentTab={setCurrentTab}
+          <DynamicPageRenderer 
+            slug="home" 
+            fallback={
+              <Hero 
+                onSelectRugId={(id) => {
+                  setSelectedRugId(id);
+                  setCurrentTab("shop");
+                }} 
+                setCurrentTab={setCurrentTab}
+              />
+            } 
           />
         )}
         

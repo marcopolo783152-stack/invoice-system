@@ -46,7 +46,7 @@ if (typeof window !== 'undefined' && isFirebaseConfigured()) {
 }
 
 export const app = appInstance;
-export const db = dbInstance;
+export const db = dbInstance as Firestore;
 export const storage = storageInstance;
 
 export function checkFirebaseQuotaError(error: any) {

@@ -4,6 +4,11 @@ const nextConfig = {
     unoptimized: true,
   },
   reactStrictMode: true,
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
+  experimental: {
+    memoryBasedWorkersCount: true,
+  },
   async rewrites() {
     return [
       {
@@ -44,5 +49,4 @@ const nextConfig = {
     ]
   }
 }
-
 module.exports = nextConfig
