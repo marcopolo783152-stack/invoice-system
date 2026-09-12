@@ -1,0 +1,10 @@
+{
+	"appId": "com.rugbusiness.invoice",
+	"appName": "Rug Invoice System",
+	"webDir": "out",
+	"bundledWebRuntime": false,
+	"server": {
+		"androidScheme": "https"
+	},
+	"android": {}
+}

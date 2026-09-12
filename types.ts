@@ -147,6 +147,7 @@ export interface Order {
   shippingDetails?: ShippingDetails;
   createdAt: string;
   totalWeightLbs?: number;
+  cancellationReason?: string;
 }
 
 export interface Review {

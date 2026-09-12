@@ -580,8 +580,26 @@ function InvoiceViewContent() {
         }
     };
 
-    // deleted handleUndoConversion
-
+    const handleServiceStatusChange = async (newStatus: string) => {
+        if (!invoice) return;
+        try {
+            const updatedInvoice = {
+                ...invoice,
+                data: {
+                    ...invoice.data,
+                    status: newStatus as any
+                },
+                updatedAt: new Date().toISOString()
+            };
+            await saveInvoice(updatedInvoice.data, invoice.id);
+            await loadInvoice(invoice.id);
+            logActivity('Status Update', `Changed status to ${newStatus} for Invoice #${invoice.data.invoiceNumber}`);
+            alert(`Status updated to ${newStatus}`);
+        } catch (error) {
+            console.error('Failed to update status:', error);
+            alert('Failed to update status.');
+        }
+    };
 
     if (loading) return <div style={{ padding: 40 }}>Loading...</div>;
 
@@ -668,17 +686,38 @@ function InvoiceViewContent() {
                                     </button>
                                 )}
                                 {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && (
-                                    <button
-                                        onClick={() => setShowPickupModal(true)}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: 8,
-                                            padding: '10px 20px', background: '#059669', color: 'white',
-                                            border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
-                                            boxShadow: '0 2px 4px rgba(5, 150, 105, 0.3)'
-                                        }}
-                                    >
-                                        <ShoppingCart size={18} /> Process Pickup
-                                    </button>
+                                    <>
+                                        <select
+                                            value={invoice.data.status || 'received'}
+                                            onChange={(e) => handleServiceStatusChange(e.target.value)}
+                                            style={{
+                                                padding: '10px 14px',
+                                                background: '#f8fafc',
+                                                border: '1px solid #cbd5e1',
+                                                borderRadius: 8,
+                                                fontWeight: 600,
+                                                color: '#334155',
+                                                outline: 'none',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <option value="received">Received</option>
+                                            <option value="washing">In Washing</option>
+                                            <option value="repairing">In Repair</option>
+                                            <option value="ready">Ready for Pickup</option>
+                                        </select>
+                                        <button
+                                            onClick={() => setShowPickupModal(true)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 8,
+                                                padding: '10px 20px', background: '#059669', color: 'white',
+                                                border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',
+                                                boxShadow: '0 2px 4px rgba(5, 150, 105, 0.3)'
+                                            }}
+                                        >
+                                            <ShoppingCart size={18} /> Process Pickup
+                                        </button>
+                                    </>
                                 )}
                                 <button
                                     onClick={handlePrint}

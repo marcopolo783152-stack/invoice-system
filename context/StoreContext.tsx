@@ -95,7 +95,7 @@ interface StoreContextType {
   incrementRugViews: (id: string) => void;
   toggleRugFavorite: (id: string) => void;
   favoritedRugIds: string[];
-  updateOrderStatus: (orderId: string, status: OrderStatus, shipping?: ShippingDetails) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus, shipping?: ShippingDetails, cancellationReason?: string) => void;
   updateOrder: (orderId: string, updates: Partial<Order>) => void;
   deleteOrderPaymentDetails: (orderId: string) => void;
   approveReview: (reviewId: string) => void;
@@ -457,7 +457,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       return [...prevCart, { rug, quantity: 1 }];
     });
-    setCartOpen(true);
   };
 
   const removeFromCart = (rugId: string) => {
@@ -620,7 +619,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateOrderStatus = (
     orderId: string,
     status: OrderStatus,
-    shipping?: ShippingDetails
+    shipping?: ShippingDetails,
+    cancellationReason?: string
   ) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;

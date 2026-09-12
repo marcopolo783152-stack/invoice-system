@@ -268,8 +268,12 @@ export const TrackingView: React.FC = () => {
                   {/* Visual Timeline Stepper */}
                   {activeOrder.status === "Cancelled" ? (
                     <div className="p-4 bg-red-50 border border-red-200 rounded-none text-red-800 space-y-1">
-                      <p className="font-bold">Order Cancelled</p>
-                      <p className="text-xs">This transaction has been cancelled. For details or custom refund processing, contact our master advisors.</p>
+                      <p className="font-bold text-sm">Order Cancelled</p>
+                      {activeOrder.cancellationReason ? (
+                        <p className="text-xs text-red-700 italic">Reason: {activeOrder.cancellationReason}</p>
+                      ) : (
+                        <p className="text-xs">This transaction has been cancelled. For details or custom refund processing, contact our master advisors.</p>
+                      )}
                     </div>
                   ) : (
                     <div className="py-4 space-y-6">

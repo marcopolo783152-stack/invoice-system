@@ -2809,7 +2809,12 @@ export const AdminDashboard: React.FC = () => {
 
                           {o.status !== "Delivered" && o.status !== "Cancelled" && (
                             <button
-                              onClick={() => updateOrderStatus(o.id, "Cancelled")}
+                              onClick={() => {
+                                const reason = prompt("Enter reason for cancellation (customer will see this on their tracking page):");
+                                if (reason !== null) {
+                                  updateOrderStatus(o.id, "Cancelled", undefined, reason);
+                                }
+                              }}
                               className="py-1.5 px-2 bg-red-100 hover:bg-red-200 text-red-600 font-bold uppercase tracking-wider text-sm rounded transition"
                             >
                               Cancel
