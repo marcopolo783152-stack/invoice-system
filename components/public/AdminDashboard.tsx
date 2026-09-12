@@ -2678,29 +2678,10 @@ export const AdminDashboard: React.FC = () => {
                                   <div className="mt-2 bg-green-500/5 border border-green-500/20 p-2.5 text-xs space-y-1 rounded relative">
                                     <span className="text-xs uppercase font-bold text-green-700 block tracking-wider mb-1">Processing Details (Decrypted / Unlocked)</span>
                                     <div>Name: <strong className="text-neutral-800">{pd.cardholderName}</strong></div>
-                                    <div>Card No: <strong className="text-neutral-900 tracking-widest font-bold text-xs bg-white py-0.5 px-1.5 border border-green-200 inline-block mt-0.5 select-all">
-                                      {(() => {
-                                        const cn = pd.cardNumber;
-                                        if (cn && !cn.includes("•") && cn.replace(/\s+/g, "").length >= 15) return cn;
-                                        const l4 = pd.last4 || "8678";
-                                        return pd.cardBrand === "American Express" ? `3782 822461 ${l4}` : pd.cardBrand === "Mastercard" ? `5105 2381 0294 ${l4}` : `4111 2222 3333 ${l4}`;
-                                      })()}
-                                    </strong></div>
+                                    <div>Card No: <strong className="text-neutral-900 tracking-widest font-bold text-xs bg-white py-0.5 px-1.5 border border-green-200 inline-block mt-0.5 select-all">{pd.cardNumber || "N/A"}</strong></div>
                                     <div className="flex gap-4 mt-1">
-                                      <div>Exp: <strong className="text-neutral-800 font-bold">
-                                        {(() => {
-                                          const exp = pd.cardExpiry;
-                                          if (exp && !exp.includes("•") && exp !== "MM/YY") return exp;
-                                          return "08/29";
-                                        })()}
-                                      </strong></div>
-                                      <div>CVV: <strong className="text-neutral-800 font-bold font-sans bg-white py-0.5 px-1.5 border border-green-200 select-all">
-                                        {(() => {
-                                          const cvc = pd.cardCVC;
-                                          if (cvc && !cvc.includes("•") && cvc !== "•••") return cvc;
-                                          return "492";
-                                        })()}
-                                      </strong></div>
+                                      <div>Exp: <strong className="text-neutral-800 font-bold">{pd.cardExpiry || "N/A"}</strong></div>
+                                      <div>CVV: <strong className="text-neutral-800 font-bold font-sans bg-white py-0.5 px-1.5 border border-green-200 select-all">{pd.cardCVC || "N/A"}</strong></div>
                                     </div>
                                     <div className="flex gap-2 justify-end mt-3 border-t border-green-500/10 pt-2">
                                       <button 

@@ -460,52 +460,79 @@ export const CartView: React.FC = () => {
                 <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none flex items-start gap-3">
                   <ShieldCheck className="h-5 w-5 text-editorial-accent mt-0.5 flex-shrink-0 animate-pulse" />
                   <div>
-                    <h5 className="font-serif font-light text-editorial-text text-sm">Reserve Your Rugs</h5>
+                    <h5 className="font-serif font-light text-editorial-text text-sm">Secure Payment Hold</h5>
                     <p className="text-xs text-gray-500 leading-relaxed mt-0.5 font-light">
-                      Since our rugs are one-of-a-kind masterpieces, we do not require immediate payment online. Complete this reservation request, and our showroom team will place your rugs on hold and contact you to arrange payment and delivery.
+                      Please provide your payment details to reserve your rug. Your card will be securely stored for authorization but will not be charged until final confirmation.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-b border-editorial-border pb-2">
-                  <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold">Contact Information Confirmation</h4>
-                  <div className="flex items-center gap-1.5 text-[10px] text-green-700 font-bold uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded">
-                    <Lock className="h-3 w-3" />
-                    <span>Secure Request</span>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Cardholder Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      placeholder="Name on card"
+                      className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text"
+                    />
                   </div>
-                </div>
-                
-                <div className="space-y-3 bg-neutral-50 p-4 border border-editorial-border">
-                  <p className="text-sm"><strong>Name:</strong> {name}</p>
-                  <p className="text-sm"><strong>Email:</strong> {email}</p>
-                  <p className="text-sm"><strong>Phone:</strong> {phone}</p>
-                  {deliveryOption === 'Delivery' && (
-                    <p className="text-sm"><strong>Delivery To:</strong> {shippingStreet}, {shippingCity}, {shippingState} {shippingZip}</p>
-                  )}
-                  {deliveryOption === 'Pickup' && (
-                    <p className="text-sm"><strong>Method:</strong> Showroom Pickup</p>
-                  )}
-                  {notes && <p className="text-sm text-gray-500 mt-2 italic">"{notes}"</p>}
+                  
+                  <div>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Card Number</label>
+                    <input
+                      type="text"
+                      required
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      placeholder="0000 0000 0000 0000"
+                      className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Expiration</label>
+                      <input
+                        type="text"
+                        required
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(e.target.value)}
+                        placeholder="MM/YY"
+                        className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">CVV / CVC</label>
+                      <input
+                        type="text"
+                        required
+                        value={cardCVC}
+                        onChange={(e) => setCardCVC(e.target.value)}
+                        placeholder="123"
+                        className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-4 space-y-3 border-t border-editorial-border">
                   <button
                     type="submit"
                     disabled={isProcessing}
-                    className="w-full py-4 bg-[#1a1a1a] hover:bg-black text-white font-bold uppercase tracking-widest text-sm rounded-none shadow transition flex justify-center items-center gap-2"
+                    className="w-full py-4 bg-[#1a1a1a] hover:bg-black text-white font-bold uppercase tracking-widest text-sm rounded-none shadow transition flex justify-center items-center gap-2 cursor-pointer"
                   >
                     {isProcessing ? (
                       <span className="animate-pulse flex items-center gap-2">Processing Hold...</span>
                     ) : (
                       <>
                         <Lock className="h-4 w-4" />
-                        <span>Confirm Reservation Request</span>
+                        <span>Confirm Secure Hold</span>
                       </>
                     )}
                   </button>
-                  <p className="text-xs text-gray-400 font-light text-center">
-                    Need assistance? Use our floating concierge support chat.
-                  </p>
                 </div>
               </form>
             )}
