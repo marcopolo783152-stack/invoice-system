@@ -133,6 +133,23 @@ export const CartView: React.FC = () => {
     }
   };
 
+  
+  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '').substring(0, 16);
+    const parts = v.match(/.{1,4}/g);
+    setCardNumber(parts ? parts.join(' ') : v);
+  };
+
+  const getCardBrand = (number: string) => {
+    const clean = number.replace(/\s+/g, '');
+    if (clean.startsWith('34') || clean.startsWith('37')) return 'American Express';
+    if (clean.startsWith('4')) return 'Visa';
+    if (clean.startsWith('5')) return 'Mastercard';
+    if (clean.startsWith('6')) return 'Discover';
+    return '';
+  };
+  const currentBrand = getCardBrand(cardNumber);
+
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isProcessing) return;
@@ -480,16 +497,22 @@ export const CartView: React.FC = () => {
                     />
                   </div>
                   
-                  <div>
+                  <div className="relative">
                     <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Card Number</label>
                     <input
                       type="text"
                       required
                       value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
+                      onChange={handleCardChange}
                       placeholder="0000 0000 0000 0000"
+                      maxLength={19}
                       className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
                     />
+                    {currentBrand && (
+                      <div className="absolute right-2 top-[34px] text-[10px] font-bold uppercase tracking-wider text-editorial-accent bg-amber-50 px-2 py-0.5 border border-editorial-border">
+                        {currentBrand}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3">
@@ -499,7 +522,7 @@ export const CartView: React.FC = () => {
                         type="text"
                         required
                         value={cardExpiry}
-                        onChange={(e) => setCardExpiry(e.target.value)}
+                        onChange={(e) => setCardExpiry(e.target.value.substring(0, 5))} maxLength={5}
                         placeholder="MM/YY"
                         className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
                       />
@@ -510,7 +533,7 @@ export const CartView: React.FC = () => {
                         type="text"
                         required
                         value={cardCVC}
-                        onChange={(e) => setCardCVC(e.target.value)}
+                        onChange={(e) => setCardCVC(e.target.value.replace(/[^0-9]/gi, "").substring(0, 4))} maxLength={4}
                         placeholder="123"
                         className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
                       />
