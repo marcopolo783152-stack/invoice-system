@@ -125,24 +125,43 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
             {/* Left side: Images & Magnifier */}
             <div className="lg:col-span-6 space-y-4">
               
-              {/* Interactive Zoom box */}
+              {/* Interactive Hover-to-Zoom box */}
               <div 
-                className="relative aspect-square rounded-none bg-[#F4F1EE] overflow-hidden border border-editorial-border group flex items-center justify-center cursor-pointer"
+                className="relative aspect-square rounded-none bg-[#F4F1EE] overflow-hidden border border-editorial-border group cursor-crosshair"
+                onMouseMove={(e) => {
+                  const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+                  const x = ((e.clientX - left) / width) * 100;
+                  const y = ((e.clientY - top) / height) * 100;
+                  e.currentTarget.style.setProperty('--x', `${x}%`);
+                  e.currentTarget.style.setProperty('--y', `${y}%`);
+                }}
                 onClick={() => {
                   setLightboxIndex(Math.max(0, (rug.images || []).indexOf(activeImage)));
                   setLightboxOpen(true);
                 }}
               >
+                {/* Base Image */}
                 <img
                   src={activeImage}
                   alt={rug.name}
-                  className="w-full h-full object-contain object-center"
+                  className="w-full h-full object-contain object-center transition-opacity duration-300 group-hover:opacity-0"
                   referrerPolicy="no-referrer"
                 />
+                
+                {/* Zoomed Image Overlay (visible only on hover) */}
+                <div 
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                  style={{
+                    backgroundImage: `url(${activeImage})`,
+                    backgroundPosition: 'var(--x) var(--y)',
+                    backgroundSize: '250%',
+                    backgroundRepeat: 'no-repeat'
+                  }}
+                />
 
-                <div className="absolute bottom-3 right-3 pointer-events-none bg-editorial-text/90 backdrop-blur-xs text-white text-xs uppercase tracking-widest font-bold px-2.5 py-1.5 rounded-none flex items-center gap-1.5 shadow-sm">
+                <div className="absolute bottom-3 right-3 pointer-events-none bg-editorial-text/90 backdrop-blur-xs text-white text-xs uppercase tracking-widest font-bold px-2.5 py-1.5 rounded-none flex items-center gap-1.5 shadow-sm group-hover:opacity-0 transition-opacity">
                   <ZoomIn className="h-3.5 w-3.5" />
-                  <span>Tap to Fullscreen</span>
+                  <span>Hover to Inspect</span>
                 </div>
               </div>
 
@@ -227,39 +246,49 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-2.5">
-                  {rug.availability === "In Stock" ? (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-2.5 mt-2">
+                    {rug.availability === "In Stock" ? (
+                      <button
+                        onClick={() => {
+                          addToCart(rug);
+                          onClose();
+                        }}
+                        className="flex-1 min-w-[140px] px-5 py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <ShoppingBag className="h-4 w-4" />
+                        <span>Add to Cart</span>
+                      </button>
+                    ) : (
+                      <div className="flex-1 min-w-[140px] px-4 py-3 bg-editorial-aside text-gray-500 rounded-none text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 border border-editorial-border">
+                        <ShieldAlert className="h-4 w-4 text-editorial-accent" />
+                        <span>{rug.availability === "Reserved" ? "Client Reserved" : "Sold Out"}</span>
+                      </div>
+                    )}
+
                     <button
-                      onClick={() => {
-                        addToCart(rug);
-                        onClose();
-                      }}
-                      className="px-5 py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                      onClick={handleInquireRug}
+                      className="flex-1 min-w-[140px] px-5 py-3.5 border border-editorial-accent hover:bg-editorial-accent hover:text-white text-editorial-accent font-bold uppercase tracking-widest text-sm rounded-none transition flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <ShoppingBag className="h-4 w-4" />
-                      <span>Add to Cart</span>
+                      <MessageCircle className="h-4 w-4" />
+                      <span>Inquire / Negotiate</span>
                     </button>
-                  ) : (
-                    <div className="px-4 py-3 bg-editorial-aside text-gray-500 rounded-none text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 border border-editorial-border">
-                      <ShieldAlert className="h-4 w-4 text-editorial-accent" />
-                      <span>{rug.availability === "Reserved" ? "Client Reserved" : "Sold Out"}</span>
-                    </div>
-                  )}
-
+                  </div>
+                  
                   <button
-                    onClick={handleInquireRug}
-                    className="px-5 py-3.5 border border-editorial-accent hover:bg-editorial-accent hover:text-white text-editorial-accent font-bold uppercase tracking-widest text-sm rounded-none transition flex items-center gap-1.5 cursor-pointer"
+                    onClick={() => alert("Virtual Room Visualizer (AR) feature is coming soon! You will be able to upload a photo of your living room and see this rug on your floor.")}
+                    className="w-full py-3 bg-neutral-900 hover:bg-black text-white font-bold uppercase tracking-widest text-xs rounded-none transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
                   >
-                    <MessageCircle className="h-4 w-4" />
-                    <span>Inquire / Ask Details</span>
+                    <Layers className="h-4 w-4 text-emerald-400" />
+                    <span>See it in your room (AR)</span>
                   </button>
-                </div>
 
-                {/* Trust Badges */}
-                <div className="flex flex-wrap items-center gap-4 py-2 mt-4 text-xs text-gray-500 font-medium">
-                  <span className="flex items-center gap-1"><ShieldAlert className="h-3.5 w-3.5 text-emerald-600" /> Secure Checkout</span>
-                  <span className="flex items-center gap-1"><RefreshCw className="h-3.5 w-3.5 text-emerald-600" /> Free Shipping & Returns</span>
-                  <span className="flex items-center gap-1"><Award className="h-3.5 w-3.5 text-emerald-600" /> Authenticity Guaranteed</span>
+                  {/* Trust Badges */}
+                  <div className="flex flex-wrap items-center justify-center gap-6 py-3 mt-1 bg-gray-50 border border-gray-200 text-xs text-gray-600 font-bold uppercase tracking-wider rounded-none">
+                    <span className="flex items-center gap-1.5"><ShieldAlert className="h-4 w-4 text-emerald-600" /> Secure Checkout</span>
+                    <span className="flex items-center gap-1.5"><RefreshCw className="h-4 w-4 text-emerald-600" /> Free Shipping & Returns</span>
+                    <span className="flex items-center gap-1.5"><Award className="h-4 w-4 text-emerald-600" /> Official Certificate Included</span>
+                  </div>
                 </div>
               </div>
 
