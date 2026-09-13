@@ -10,7 +10,9 @@ import AddressBookModal from '@/components/AddressBookModal';
 import ExportPreviewModal from '@/components/ExportPreviewModal';
 import HelpModal from '@/components/HelpModal';
 import NotificationModal from '@/components/NotificationModal';
+import { GlobalNotificationProvider } from '@/components/GlobalNotificationProvider';
 import { useState, useEffect, Suspense } from 'react';
+import { Menu, X } from 'lucide-react';
 import { checkAutoClockOut } from '@/lib/employee-storage';
 import { StoreProvider } from '@/context/StoreContext';
 
@@ -30,6 +32,7 @@ export default function RootLayout({
   const [showExportPreview, setShowExportPreview] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -118,6 +121,10 @@ export default function RootLayout({
     };
   }, []);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('mp-invoice-auth');
@@ -141,7 +148,9 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className} style={{ background: 'white', width: '100%', minWidth: 'auto' }}>
           <StoreProvider>
-            {children}
+            <GlobalNotificationProvider>
+              {children}
+            </GlobalNotificationProvider>
           </StoreProvider>
         </body>
       </html>
@@ -155,39 +164,46 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <TopAdminBar />
-        <div className="admin-layout-wrapper" style={{ display: 'flex', minHeight: '100vh', position: 'relative', width: '100%' }}>
+        {/* Mobile Hamburger Button */}
+        {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
+          <button 
+            className="md:hidden fixed bottom-6 right-6 z-[999] bg-emerald-600 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        )}
+
+        <div className="admin-layout-wrapper flex min-h-screen relative w-full overflow-x-hidden">
           {/* Global Modals */}
           {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
             <>
-              <AddressBookModal
-                isOpen={showAddressBook}
-                onClose={() => setShowAddressBook(false)}
-              />
-              <ExportPreviewModal
-                isOpen={showExportPreview}
-                onClose={() => setShowExportPreview(false)}
-              />
-              <HelpModal
-                isOpen={showHelpModal}
-                onClose={() => setShowHelpModal(false)}
-              />
-              <NotificationModal
-                isOpen={showNotifications}
-                onClose={() => setShowNotifications(false)}
-              />
+              <AddressBookModal isOpen={showAddressBook} onClose={() => setShowAddressBook(false)} />
+              <ExportPreviewModal isOpen={showExportPreview} onClose={() => setShowExportPreview(false)} />
+              <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
+              <NotificationModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
             </>
           )}
 
+          {/* Mobile Overlay */}
+          {isMobileMenuOpen && (
+            <div 
+              className="md:hidden fixed inset-0 bg-black/50 z-[90] backdrop-blur-sm"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+
+          {/* Sidebar */}
           {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
             <div
+              className={`
+                fixed md:sticky top-0 z-[100] h-screen bg-[var(--bg-void)] border-r border-editorial-border shadow-2xl md:shadow-none
+                transition-all duration-300 ease-in-out
+                ${isMobileMenuOpen ? 'left-0 translate-x-0' : '-translate-x-full md:translate-x-0'}
+              `}
               style={{
                 width: isCollapsed ? 80 : 260,
-                flexShrink: 0,
-                height: '100vh',
-                position: 'sticky',
-                top: 0,
-                zIndex: 100,
-                transition: 'width 0.3s ease-in-out'
+                flexShrink: 0
               }}
             >
               <Sidebar
@@ -203,14 +219,16 @@ export default function RootLayout({
             </div>
           )}
 
-          <div className="main-content" style={{
+          {/* Main Content */}<div className="main-content" style={{
             flex: 1,
             minHeight: '100vh',
             background: isPublicPage ? '#fff' : 'var(--bg-void)',
             width: '100%'
           }}>
             <StoreProvider>
-              {children}
+              <GlobalNotificationProvider>
+                {children}
+              </GlobalNotificationProvider>
             </StoreProvider>
           </div>
         </div>
