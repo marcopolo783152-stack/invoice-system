@@ -734,6 +734,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- Chat / Concierge Support ---
+  const chatHandoffRef = useRef<Record<string, boolean>>({});
+
   const sendChatMessage = (
     text: string,
     sender: "customer" | "admin",
@@ -756,18 +758,44 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     addShowroomDoc(SHOWROOM_CHAT, newMessage);
 
-    // Simulate concierge response ONLY for customer messages
+    // Simulate concierge AI ONLY for customer messages
     if (sender === "customer") {
       setTimeout(() => {
-        let replyText = "I have received your message. I am currently consulting our inventory and will assist you shortly.";
         const lowerText = text.toLowerCase();
-        
-        if (lowerText.includes("order") || lowerText.includes("track") || lowerText.includes("shipping")) {
-          replyText = "I see you are asking about an order. All our hand-knotted pieces are carefully rolled and packed in moisture-resistant sleeves. Standard insured shipping takes 3-5 business days. Please provide your order number (e.g., MPR-123456) so I can check its exact location.";
-        } else if (lowerText.includes("custom") || lowerText.includes("size") || lowerText.includes("designer")) {
-          replyText = "For our elite collections, we offer competitive trade programs for interior designers and seasonal curation discounts. Please let us know which specific SKU you are evaluating so we can prepare a tailored luxury quote for you.";
-        } else if (lowerText.includes("clean") || lowerText.includes("wash") || lowerText.includes("repair")) {
-          replyText = "Marco Polo offers organic full-submersion cold water washes and master weaving restoration services. Our specialized team handles delicate silk, wool, and antique dyes. Let us know your location to schedule a white-glove pickup!";
+        let replyText = "";
+        let isHandoff = false;
+
+        // Check if currently in handoff state (waiting for phone number)
+        if (chatHandoffRef.current[sId]) {
+          // They provided their name/phone number
+          replyText = "Thank you! I have securely recorded your contact information. One of our human concierges will review your request and call you back shortly. Is there anything else you'd like me to add to your file in the meantime?";
+          chatHandoffRef.current[sId] = false; // Reset handoff state
+        } else {
+          // Standard AI knowledge base matching
+          if (lowerText.includes("order") || lowerText.includes("track") || lowerText.includes("shipping") || lowerText.includes("status")) {
+            replyText = "I can help you track your order! Standard insured shipping takes 3-5 business days. You can view your exact order status and see tracking updates here: [Track My Order](/tracking/track).";
+          } else if (lowerText.includes("clean") || lowerText.includes("wash") || lowerText.includes("stain") || lowerText.includes("odor") || lowerText.includes("pet")) {
+            replyText = "We offer professional organic cold-water hand washing for all rugs (Persian, Oriental, Wool, Silk). We also specialize in pet stain and odor removal! You can read about our process and book a pickup here: [Rug Cleaning Services](/services/rug-cleaning-alexandria-va).";
+          } else if (lowerText.includes("repair") || lowerText.includes("restore") || lowerText.includes("fringe") || lowerText.includes("hole") || lowerText.includes("edge")) {
+            replyText = "Our master weavers can perform authentic restorations, including fringe binding, reweaving holes, and edge surging. Learn more and request an estimate here: [Rug Repair & Restoration](/services/rug-repair-restoration-alexandria-va).";
+          } else if (lowerText.includes("apprais") || lowerText.includes("value") || lowerText.includes("worth")) {
+            replyText = "We provide certified rug appraisals for insurance, estate, or resale purposes. You can find out more about our appraisal services here: [Rug Appraisals](/services/rug-appraisals).";
+          } else if (lowerText.includes("pad") || lowerText.includes("slip") || lowerText.includes("cushion")) {
+            replyText = "A high-quality rug pad is essential for protecting both your rug and your floor. We custom-cut premium felt and rubber pads. Check them out here: [Custom Rug Pads](/services/rug-pads-custom-padding).";
+          } else if (lowerText.includes("hour") || lowerText.includes("time") || lowerText.includes("open") || lowerText.includes("close")) {
+            replyText = "Our showroom is generally open Monday through Saturday from 10:00 AM to 6:00 PM, and Sunday by appointment. You can find our full contact details at the bottom of the page.";
+          } else if (lowerText.includes("location") || lowerText.includes("address") || lowerText.includes("where")) {
+            replyText = "We are located at 436 South Washington St, Alexandria, VA 22314. We look forward to seeing you!";
+          } else if (lowerText.includes("custom") || lowerText.includes("size") || lowerText.includes("designer")) {
+            replyText = "For our elite collections, we offer competitive trade programs for interior designers and seasonal curation discounts. Please let us know which specific SKU you are evaluating!";
+          } else if (lowerText.includes("return") || lowerText.includes("refund")) {
+            replyText = "We want you to love your rug! We offer a standard return window for most showroom purchases, provided the rug is in its original condition. Please connect with our team for specific details on your order.";
+          } else {
+            // Handoff state
+            replyText = "I couldn't find an exact automated answer for that in my database. I need to connect you to one of our human concierges for assistance.\n\nBefore I connect you, could I please get your **Name and Phone Number** just in case we lose connection?";
+            chatHandoffRef.current[sId] = true;
+            isHandoff = true;
+          }
         }
 
         const simulatedReply: ChatMessage = {
@@ -778,6 +806,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           sessionId: sId,
           customerName: cName
         };
+        
         addShowroomDoc(SHOWROOM_CHAT, simulatedReply);
       }, 1500);
     }

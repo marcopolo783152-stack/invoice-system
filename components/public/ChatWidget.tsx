@@ -209,13 +209,33 @@ export const ChatWidget: React.FC = () => {
                 className={`flex flex-col ${msg.sender === "customer" ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`max-w-[85%] p-3 rounded-none text-xs leading-relaxed ${
+                  className={`max-w-[85%] p-3 rounded-none text-xs leading-relaxed whitespace-pre-wrap ${
                     msg.sender === "customer"
                       ? "bg-editorial-accent text-white"
                       : "bg-white text-editorial-text border border-editorial-border shadow-xs"
                   }`}
                 >
-                  <p>{msg.text}</p>
+                  <p>
+                    {msg.text.split(/(\[.*?\]\(.*?\)|\*\*.*?\*\*|\n)/g).map((part, i) => {
+                      if (part === '\n') return <br key={i} />;
+                      
+                      const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
+                      if (linkMatch) {
+                        return (
+                          <a key={i} href={linkMatch[2]} className="font-bold underline hover:text-emerald-700 transition" target={linkMatch[2].startsWith('http') ? "_blank" : "_self"}>
+                            {linkMatch[1]}
+                          </a>
+                        );
+                      }
+                      
+                      const boldMatch = part.match(/\*\*(.*?)\*\*/);
+                      if (boldMatch) {
+                        return <strong key={i} className="font-bold">{boldMatch[1]}</strong>;
+                      }
+                      
+                      return <span key={i}>{part}</span>;
+                    })}
+                  </p>
                 </div>
                 <span className="text-sm text-gray-400 mt-1 px-1 font-mono">
                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
