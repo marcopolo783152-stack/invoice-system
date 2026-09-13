@@ -48,7 +48,8 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
     useEffect(() => {
         // Only run if authenticated
         const isAuth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
-        if (!isAuth) return;
+        const activeView = localStorage.getItem('marcopolo_active_view');
+        if (!isAuth && activeView !== 'admin') return;
 
         const now = Date.now();
         

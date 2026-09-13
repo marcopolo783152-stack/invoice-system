@@ -148,9 +148,7 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className} style={{ background: 'white', width: '100%', minWidth: 'auto' }}>
           <StoreProvider>
-            <GlobalNotificationProvider>
               {children}
-            </GlobalNotificationProvider>
           </StoreProvider>
         </body>
       </html>
@@ -209,7 +207,8 @@ export default function RootLayout({
             </div>
           )}
 
-          {/* Main Content */}<div className="main-content" style={{
+          {/* Main Content */}
+          <div className="main-content" style={{
             flex: 1,
             minHeight: '100vh',
             background: isPublicPage ? '#fff' : 'var(--bg-void)',
@@ -219,7 +218,6 @@ export default function RootLayout({
             justifyContent: 'flex-start'
           }}>
             <StoreProvider>
-              <GlobalNotificationProvider>
                 {children}
                 {/* Global Modals */}
                 {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
@@ -227,10 +225,8 @@ export default function RootLayout({
                     <AddressBookModal isOpen={showAddressBook} onClose={() => setShowAddressBook(false)} />
                     <ExportPreviewModal isOpen={showExportPreview} onClose={() => setShowExportPreview(false)} />
                     <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
-                    <NotificationModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
                   </>
                 )}
-              </GlobalNotificationProvider>
             </StoreProvider>
           </div>
         </div>
