@@ -29,7 +29,7 @@ export default function TopAdminBar() {
       const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
       const activeView = localStorage.getItem('marcopolo_active_view');
       
-      if (auth === '1' && (pathname?.startsWith('/admin') || activeView === 'admin')) {
+      if ((auth === '1' && pathname?.startsWith('/admin')) || activeView === 'admin') {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);

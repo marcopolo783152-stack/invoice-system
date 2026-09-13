@@ -12,7 +12,8 @@ export default function PublicAdminWrapper() {
   useEffect(() => {
     const checkAuth = () => {
       const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
-      setIsAdmin(auth === '1');
+      const activeView = localStorage.getItem('marcopolo_active_view');
+      setIsAdmin(auth === '1' || activeView === 'admin');
     };
     checkAuth();
     window.addEventListener('storage', checkAuth);

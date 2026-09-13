@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, Maximize2, Move, Download } from 'lucide-react';
+import { X, Upload, Move, Sparkles, Loader2 } from 'lucide-react';
 
 interface VirtualRoomVisualizerProps {
   isOpen: boolean;
@@ -9,10 +9,16 @@ interface VirtualRoomVisualizerProps {
 
 export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: VirtualRoomVisualizerProps) {
   const [roomImage, setRoomImage] = useState<string | null>(null);
+  const [foregroundImage, setForegroundImage] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [perspective, setPerspective] = useState(45);
   const [smartBlend, setSmartBlend] = useState(false);
+  const [aiLayering, setAiLayering] = useState(true);
+  
   const [position, setPosition] = useState({ x: 50, y: 70 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; initPosX: number; initPosY: number } | null>(null);
@@ -22,9 +28,35 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setErrorMsg(null);
+      setIsProcessing(true);
+      
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         setRoomImage(event.target?.result as string);
+        setForegroundImage(null);
+        
+        try {
+          const formData = new FormData();
+          formData.append('image', file);
+          
+          const response = await fetch('/api/photoroom', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const data = await response.json();
+          if (data.foreground) {
+            setForegroundImage(data.foreground);
+          } else {
+            setErrorMsg(data.error || 'Failed to process AI layering.');
+          }
+        } catch (error) {
+          console.error('AI Processing Error:', error);
+          setErrorMsg('AI service unavailable. Using standard layering.');
+        } finally {
+          setIsProcessing(false);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -71,9 +103,17 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
         <div className="text-center p-8 max-w-md w-full bg-neutral-800 rounded-none shadow-2xl border border-neutral-700">
           <Upload className="w-12 h-12 text-editorial-accent mx-auto mb-4" />
           <h2 className="text-2xl font-serif text-white mb-2">Virtual Room Visualizer</h2>
-          <p className="text-neutral-400 text-sm mb-8">
+          <p className="text-neutral-400 text-sm mb-6">
             Upload a photo of your living room, bedroom, or dining area to see how this rug looks in your space.
           </p>
+          <div className="bg-neutral-900/50 p-4 mb-8 border border-neutral-700 text-left">
+            <h4 className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+              <Sparkles size={14} /> AI Powered
+            </h4>
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              We use advanced AI to automatically detect your furniture and layer the rug <strong className="text-white">underneath</strong> couches and tables for ultra-realistic precision.
+            </p>
+          </div>
           <label className="block w-full px-6 py-4 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none cursor-pointer transition">
             Upload Room Photo
             <input 
@@ -103,13 +143,14 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
             {/* Draggable Rug Container for Perspective */}
             <div
               onPointerDown={handlePointerDown}
-              className="absolute z-10 origin-center cursor-move flex items-center justify-center"
+              className="absolute origin-center cursor-move flex items-center justify-center"
               style={{
                 left: `${position.x}%`,
                 top: `${position.y}%`,
                 transform: `translate(-50%, -50%) perspective(1200px) rotateX(${perspective}deg)`,
                 width: '60%',
                 maxWidth: '600px',
+                zIndex: 10
               }}
             >
               <img 
@@ -125,6 +166,30 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
                 draggable={false}
               />
             </div>
+
+            {/* AI Foreground (Furniture Layered on Top of Rug) */}
+            {aiLayering && foregroundImage && (
+               <img 
+                 src={foregroundImage} 
+                 alt="Furniture Foreground" 
+                 className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                 style={{ zIndex: 20 }}
+               />
+            )}
+            
+            {isProcessing && (
+              <div className="absolute inset-0 z-30 bg-black/60 flex flex-col items-center justify-center backdrop-blur-sm">
+                <Loader2 className="w-10 h-10 text-emerald-400 animate-spin mb-4" />
+                <p className="text-white font-bold uppercase tracking-widest text-sm">AI analyzing furniture...</p>
+                <p className="text-neutral-400 text-xs mt-2">Preparing ultra-realistic layers</p>
+              </div>
+            )}
+            
+            {errorMsg && !isProcessing && (
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30 bg-red-900/90 text-white px-4 py-2 text-xs font-bold rounded">
+                {errorMsg}
+              </div>
+            )}
           </div>
 
           {/* Controls Bar */}
@@ -176,15 +241,28 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
             
             <div className="flex items-center gap-3 border-l border-neutral-700 pl-4 shrink-0">
               <button
+                onClick={() => setAiLayering(!aiLayering)}
+                disabled={!foregroundImage}
+                className={`px-3 py-2 rounded-none text-xs font-bold uppercase tracking-wider transition border ${
+                  aiLayering && foregroundImage
+                    ? 'bg-emerald-600 border-emerald-600 text-white' 
+                    : 'bg-transparent border-neutral-600 text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed'
+                }`}
+                title="Toggle AI Furniture Layering"
+              >
+                AI Layering
+              </button>
+              
+              <button
                 onClick={() => setSmartBlend(!smartBlend)}
                 className={`px-3 py-2 rounded-none text-xs font-bold uppercase tracking-wider transition border ${
                   smartBlend 
                     ? 'bg-editorial-accent border-editorial-accent text-white' 
                     : 'bg-transparent border-neutral-600 text-neutral-400 hover:text-white'
                 }`}
-                title="Blends shadows from your furniture over the rug so it looks like it's underneath"
+                title="Blends shadows from your furniture over the rug"
               >
-                Smart Blend
+                Blend
               </button>
 
               <label className="p-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none cursor-pointer transition" title="Upload New Room">

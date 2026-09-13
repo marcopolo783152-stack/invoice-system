@@ -213,10 +213,14 @@ export default function RootLayout({
             flex: 1,
             minHeight: '100vh',
             background: isPublicPage ? '#fff' : 'var(--bg-void)',
-            width: '100%'
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start'
           }}>
             <StoreProvider>
               <GlobalNotificationProvider>
+                {children}
                 {/* Global Modals */}
                 {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
                   <>
@@ -226,7 +230,6 @@ export default function RootLayout({
                     <NotificationModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
                   </>
                 )}
-                {children}
               </GlobalNotificationProvider>
             </StoreProvider>
           </div>
