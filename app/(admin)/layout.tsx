@@ -175,16 +175,6 @@ export default function RootLayout({
         )}
 
         <div className="admin-layout-wrapper flex min-h-screen relative w-full overflow-x-hidden">
-          {/* Global Modals */}
-          {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
-            <>
-              <AddressBookModal isOpen={showAddressBook} onClose={() => setShowAddressBook(false)} />
-              <ExportPreviewModal isOpen={showExportPreview} onClose={() => setShowExportPreview(false)} />
-              <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
-              <NotificationModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
-            </>
-          )}
-
           {/* Mobile Overlay */}
           {isMobileMenuOpen && (
             <div 
@@ -227,6 +217,15 @@ export default function RootLayout({
           }}>
             <StoreProvider>
               <GlobalNotificationProvider>
+                {/* Global Modals */}
+                {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
+                  <>
+                    <AddressBookModal isOpen={showAddressBook} onClose={() => setShowAddressBook(false)} />
+                    <ExportPreviewModal isOpen={showExportPreview} onClose={() => setShowExportPreview(false)} />
+                    <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
+                    <NotificationModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
+                  </>
+                )}
                 {children}
               </GlobalNotificationProvider>
             </StoreProvider>

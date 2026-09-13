@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import '../../public-styles.css';
 
 import TopAdminBar from '@/components/TopAdminBar';
+import PublicAdminWrapper from '@/components/PublicAdminWrapper';
 import { Analytics } from "@vercel/analytics/react";
 
 import { db } from '@/lib/firebase';
@@ -69,6 +70,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   return (
     <html lang="en">
       <body>
+        <PublicAdminWrapper />
         <TopAdminBar />
         <script
           type="application/ld+json"

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { Bell } from 'lucide-react';
 
 export default function TopAdminBar() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -127,7 +128,27 @@ export default function TopAdminBar() {
         </a>
 
       </div>
-      <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+        {!pathname?.startsWith('/admin/invoices') && (
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('open-notifications'))}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              color: '#9ca3af'
+            }}
+            title="Notifications"
+            onMouseOver={(e) => (e.currentTarget.style.color = '#fff')}
+            onMouseOut={(e) => (e.currentTarget.style.color = '#9ca3af')}
+          >
+            <Bell size={18} />
+          </button>
+        )}
+
         <button 
           onClick={handleLogout} 
           style={{

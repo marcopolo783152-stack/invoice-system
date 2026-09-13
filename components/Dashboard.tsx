@@ -785,7 +785,7 @@ export default function Dashboard() {
                                     onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                                     onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 >
-                                    {name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                    {(name || '').split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                                 </Link>
                             ))}
                         </div>
