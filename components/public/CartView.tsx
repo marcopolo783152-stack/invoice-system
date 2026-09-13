@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import AddressAutocomplete from "../AddressAutocomplete";
-import { X, Trash2, ShieldCheck, CreditCard, ChevronRight, CheckCircle2, Truck, HelpCircle, FileText, AlertTriangle, Printer, Download, Camera, Lock } from "lucide-react";
+import { X, Trash2, ShieldCheck, CreditCard, ChevronRight, CheckCircle2, Truck, HelpCircle, FileText, AlertTriangle, Printer, Download, Camera, Lock, Layers } from "lucide-react";
 import { jsPDF } from "jspdf";
 
 export const CartView: React.FC = () => {
@@ -303,6 +303,49 @@ export const CartView: React.FC = () => {
                           </div>
                         </div>
                       ))}
+                    </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Smart Upsells Section */}
+                {cart.length > 0 && (
+                  <div className="mt-8 border-t border-editorial-border pt-6">
+                    <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold mb-4">Recommended for your collection</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Rug Pad Upsell */}
+                      <div className="border border-editorial-border p-4 bg-white flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Layers className="w-4 h-4 text-emerald-600" />
+                            <h5 className="font-bold text-xs uppercase tracking-wider text-editorial-text">Premium Felt Rug Pad</h5>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-3">Custom-cut to perfectly fit your rug. Prevents slipping, protects your floors, and adds luxurious cushion.</p>
+                        </div>
+                        <button 
+                          onClick={() => alert("Added Custom Rug Pad to your cart!")}
+                          className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-editorial-text text-xs uppercase tracking-widest font-bold transition"
+                        >
+                          + Add for $120
+                        </button>
+                      </div>
+                      
+                      {/* Stain Protection Upsell */}
+                      <div className="border border-editorial-border p-4 bg-white flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                            <h5 className="font-bold text-xs uppercase tracking-wider text-editorial-text">5-Year Stain Protection</h5>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-3">White-glove application of our proprietary stain repellant before shipping. Complete peace of mind.</p>
+                        </div>
+                        <button 
+                          onClick={() => alert("Added Stain Protection to your cart!")}
+                          className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-editorial-text text-xs uppercase tracking-widest font-bold transition"
+                        >
+                          + Add for $250
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

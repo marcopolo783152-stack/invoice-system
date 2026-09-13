@@ -527,14 +527,15 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                 viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
                 viewMode === 'large' ? 'grid-cols-1 sm:grid-cols-1 lg:grid-cols-2' :
                 'grid-cols-1'
-              }`}>
-                {filteredRugs.map((rug) => (
-                  <div
-                    key={rug.id}
-                    className={`group bg-white rounded-none overflow-hidden border border-editorial-border shadow-sm hover:shadow-md transition duration-300 flex ${
-                      viewMode === 'list' ? 'flex-col sm:flex-row' : 'flex-col'
-                    } justify-between`}
-                  >
+                }`}>
+                  {filteredRugs.map((rug, index) => (
+                    <div
+                      key={rug.id}
+                      className={`group bg-white rounded-none overflow-hidden border border-editorial-border shadow-sm hover:shadow-md transition duration-300 flex ${
+                        viewMode === 'list' ? 'flex-col sm:flex-row' : 'flex-col'
+                      } justify-between animate-fadeIn`}
+                      style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                    >
                     
                     {/* Visual Panel */}
                     <Link href={`/shop/${rug.id}`} className={`block relative flex items-center justify-center bg-stone-100 overflow-hidden cursor-pointer animate-fadeIn p-2 ${

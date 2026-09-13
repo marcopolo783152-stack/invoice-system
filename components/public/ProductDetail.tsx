@@ -10,6 +10,7 @@ import { X, Star, ShoppingBag, ShieldAlert, Award, Compass, RefreshCw, Layers, M
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import VirtualRoomVisualizer from "./VirtualRoomVisualizer";
 
 interface ProductDetailProps {
   rugId: string;
@@ -27,6 +28,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
   const [activeImage, setActiveImage] = useState(rug?.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [arOpen, setArOpen] = useState(false);
 
   React.useEffect(() => {
     if (rug && rug.images && rug.images.length > 0) {
@@ -276,7 +278,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                   </div>
                   
                   <button
-                    onClick={() => alert("Virtual Room Visualizer (AR) feature is coming soon! You will be able to upload a photo of your living room and see this rug on your floor.")}
+                    onClick={() => setArOpen(true)}
                     className="w-full py-3 bg-neutral-900 hover:bg-black text-white font-bold uppercase tracking-widest text-xs rounded-none transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
                   >
                     <Layers className="h-4 w-4 text-emerald-400" />
@@ -570,6 +572,12 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
           )}
         </div>
       </div>
+      
+      <VirtualRoomVisualizer 
+        isOpen={arOpen} 
+        onClose={() => setArOpen(false)} 
+        rugImage={activeImage} 
+      />
     </div>
   );
 };
