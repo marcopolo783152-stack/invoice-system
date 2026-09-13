@@ -6,23 +6,41 @@
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import AddressAutocomplete from "../AddressAutocomplete";
-import { X, Trash2, ShieldCheck, CreditCard, ChevronRight, CheckCircle2, Truck, HelpCircle, FileText, AlertTriangle, Printer, Download, Camera, Lock, Layers } from "lucide-react";
+import {
+  X,
+  Trash2,
+  ShieldCheck,
+  CreditCard,
+  ChevronRight,
+  CheckCircle2,
+  Truck,
+  HelpCircle,
+  FileText,
+  AlertTriangle,
+  Printer,
+  Download,
+  Camera,
+  Lock,
+  Layers,
+} from "lucide-react";
 import { jsPDF } from "jspdf";
 
 export const CartView: React.FC = () => {
-  const { 
-    cart, 
-    cartOpen, 
-    setCartOpen, 
-    removeFromCart, 
-    updateCartQuantity, 
+  const {
+    cart,
+    cartOpen,
+    setCartOpen,
+    removeFromCart,
+    updateCartQuantity,
     checkout,
     promoCodes,
     shopProfile,
-    logoUrl
+    logoUrl,
   } = useStore();
 
-  const [checkoutStep, setCheckoutStep] = useState<"cart" | "shipping" | "payment" | "success">("cart");
+  const [checkoutStep, setCheckoutStep] = useState<
+    "cart" | "shipping" | "payment" | "success"
+  >("cart");
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
 
@@ -43,11 +61,14 @@ export const CartView: React.FC = () => {
   const [billingAddress, setBillingAddress] = useState("");
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
   const [notes, setNotes] = useState("");
-  const [deliveryOption, setDeliveryOption] = useState<"Pickup" | "Delivery">("Delivery");
-  
-  const derivedShippingAddress = deliveryOption === "Pickup"
-    ? "Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314"
-    : `${shippingStreet}${shippingApt.trim() ? " " + shippingApt.trim() : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
+  const [deliveryOption, setDeliveryOption] = useState<"Pickup" | "Delivery">(
+    "Delivery",
+  );
+
+  const derivedShippingAddress =
+    deliveryOption === "Pickup"
+      ? "Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314"
+      : `${shippingStreet}${shippingApt.trim() ? " " + shippingApt.trim() : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
 
   // Credit Card Simulation
   const [cardName, setCardName] = useState("");
@@ -67,18 +88,26 @@ export const CartView: React.FC = () => {
       // In sandboxed browsers, print can fail, but we attempt it
       window.print();
     } catch (e) {
-      console.warn("Standard printing blocked by browser iframe restrictions:", e);
+      console.warn(
+        "Standard printing blocked by browser iframe restrictions:",
+        e,
+      );
     }
     // Always trigger the elegant PDF download as an intuitive fail-safe!
     downloadReceiptAsPDF(order);
-    setPrintFeedback("Preview Sandbox Security Notice: Printing converted to a secure offline PDF download!");
+    setPrintFeedback(
+      "Preview Sandbox Security Notice: Printing converted to a secure offline PDF download!",
+    );
     setTimeout(() => setPrintFeedback(null), 8000);
   };
 
   if (!cartOpen) return null;
 
-  const rawSubtotal = cart.reduce((sum, item) => sum + item.rug.price * item.quantity, 0);
-  
+  const rawSubtotal = cart.reduce(
+    (sum, item) => sum + item.rug.price * item.quantity,
+    0,
+  );
+
   let discount = 0;
   if (appliedPromo) {
     if (appliedPromo.discountType === "percentage") {
@@ -87,21 +116,26 @@ export const CartView: React.FC = () => {
       discount = appliedPromo.discountValue;
     }
   }
-  
+
   const subtotal = Math.max(0, rawSubtotal - discount);
-  
+
   // Calculate total weight in lbs
   const totalWeightLbs = cart.reduce((sum, item) => {
     if (item.rug.isFreeShipping) return sum; // Free shipping items don't add to freight weight
-    const rugWeight = item.rug.weightLbs || (
-      item.rug.sizeCategory.includes("8x10") ? 4.5 :
-      item.rug.sizeCategory.includes("9x12") ? 6.5 :
-      item.rug.sizeCategory.includes("6x9") ? 3.5 :
-      item.rug.sizeCategory.includes("10x13") ? 8.0 :
-      item.rug.sizeCategory.includes("Runner") ? 2.8 :
-      3.5
-    );
-    return sum + (rugWeight * item.quantity);
+    const rugWeight =
+      item.rug.weightLbs ||
+      (item.rug.sizeCategory.includes("8x10")
+        ? 4.5
+        : item.rug.sizeCategory.includes("9x12")
+          ? 6.5
+          : item.rug.sizeCategory.includes("6x9")
+            ? 3.5
+            : item.rug.sizeCategory.includes("10x13")
+              ? 8.0
+              : item.rug.sizeCategory.includes("Runner")
+                ? 2.8
+                : 3.5);
+    return sum + rugWeight * item.quantity;
   }, 0);
 
   // Calculate shipping cost based on weight & delivery option
@@ -133,20 +167,23 @@ export const CartView: React.FC = () => {
     }
   };
 
-  
   const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '').substring(0, 16);
+    const v = e.target.value
+      .replace(/\s+/g, "")
+      .replace(/[^0-9]/gi, "")
+      .substring(0, 16);
     const parts = v.match(/.{1,4}/g);
-    setCardNumber(parts ? parts.join(' ') : v);
+    setCardNumber(parts ? parts.join(" ") : v);
   };
 
   const getCardBrand = (number: string) => {
-    const clean = number.replace(/\s+/g, '');
-    if (clean.startsWith('34') || clean.startsWith('37')) return 'American Express';
-    if (clean.startsWith('4')) return 'Visa';
-    if (clean.startsWith('5')) return 'Mastercard';
-    if (clean.startsWith('6')) return 'Discover';
-    return '';
+    const clean = number.replace(/\s+/g, "");
+    if (clean.startsWith("34") || clean.startsWith("37"))
+      return "American Express";
+    if (clean.startsWith("4")) return "Visa";
+    if (clean.startsWith("5")) return "Mastercard";
+    if (clean.startsWith("6")) return "Discover";
+    return "";
   };
   const currentBrand = getCardBrand(cardNumber);
 
@@ -154,20 +191,33 @@ export const CartView: React.FC = () => {
     e.preventDefault();
     if (isProcessing) return;
     setIsProcessing(true);
-    if (!name || !phone || !email || (!shippingStreet || !shippingCity || !shippingState || !shippingZip) && deliveryOption === "Delivery") return;
+    if (
+      !name ||
+      !phone ||
+      !email ||
+      ((!shippingStreet || !shippingCity || !shippingState || !shippingZip) &&
+        deliveryOption === "Delivery")
+    )
+      return;
 
     // Secure payment simulation card masking
     const cleanCard = cardNumber.replace(/\s+/g, "");
     const last4 = cleanCard.slice(-4) || "4242";
-    const brand = cleanCard.startsWith("3") ? "American Express" : cleanCard.startsWith("5") ? "Mastercard" : "Visa";
+    const brand = cleanCard.startsWith("3")
+      ? "American Express"
+      : cleanCard.startsWith("5")
+        ? "Mastercard"
+        : "Visa";
 
     const customerInfo = {
       name,
       phone,
       email,
       shippingAddress: derivedShippingAddress,
-      billingAddress: billingSameAsShipping ? derivedShippingAddress : billingAddress,
-      notes
+      billingAddress: billingSameAsShipping
+        ? derivedShippingAddress
+        : billingAddress,
+      notes,
     };
 
     const paymentDetails = {
@@ -176,10 +226,19 @@ export const CartView: React.FC = () => {
       cardholderName: cardName || name,
       cardNumber: cardNumber,
       cardExpiry: cardExpiry,
-      cardCVC: cardCVC
+      cardCVC: cardCVC,
     };
 
-    const order = checkout(customerInfo, paymentDetails, deliveryOption, shipping, tax, totalWeightLbs, appliedPromo || undefined, discount);
+    const order = checkout(
+      customerInfo,
+      paymentDetails,
+      deliveryOption,
+      shipping,
+      tax,
+      totalWeightLbs,
+      appliedPromo || undefined,
+      discount,
+    );
     setCreatedOrder(order);
     setCheckoutStep("success");
   };
@@ -199,11 +258,12 @@ export const CartView: React.FC = () => {
 
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-lg bg-editorial-bg text-editorial-text h-full shadow-xl flex flex-col border-l border-editorial-border animate-slideLeft">
-          
           {/* Header Panel */}
           <div className="px-6 py-5 bg-editorial-aside border-b border-editorial-border flex items-center justify-between">
             <div>
-              <span className="text-sm uppercase tracking-widest text-editorial-accent font-bold block">Secure Showroom Gateway</span>
+              <span className="text-sm uppercase tracking-widest text-editorial-accent font-bold block">
+                Secure Showroom Gateway
+              </span>
               <h2 className="font-serif text-lg font-light text-editorial-text flex items-center gap-2">
                 {checkoutStep === "cart" && "Shopping Curation"}
                 {checkoutStep === "shipping" && "Shipping & Address Curation"}
@@ -222,14 +282,14 @@ export const CartView: React.FC = () => {
           {/* Stepper visual bar */}
           {checkoutStep !== "success" && (
             <div className="grid grid-cols-3 bg-white border-b border-editorial-border text-sm font-bold text-center uppercase tracking-wider">
-              <button 
+              <button
                 type="button"
                 onClick={() => setCheckoutStep("cart")}
                 className={`py-3.5 border-r border-editorial-border transition-colors cursor-pointer ${checkoutStep === "cart" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside hover:bg-neutral-100"}`}
               >
                 1. Review Cart
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => {
                   if (checkoutStep === "payment") setCheckoutStep("shipping");
@@ -239,7 +299,7 @@ export const CartView: React.FC = () => {
               >
                 2. Shipping
               </button>
-              <button 
+              <button
                 type="button"
                 disabled
                 className={`py-3.5 transition-colors cursor-default ${checkoutStep === "payment" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"}`}
@@ -251,16 +311,18 @@ export const CartView: React.FC = () => {
 
           {/* Core Body content */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            
             {/* --- STEP 1: CART DETAILS --- */}
             {checkoutStep === "cart" && (
               <>
                 {cart.length === 0 ? (
                   <div className="text-center py-20 space-y-3">
                     <Trash2 className="h-8 w-8 text-editorial-accent/60 mx-auto" />
-                    <h3 className="font-serif font-light text-editorial-text text-lg">Your Cart is Empty</h3>
+                    <h3 className="font-serif font-light text-editorial-text text-lg">
+                      Your Cart is Empty
+                    </h3>
                     <p className="text-xs text-gray-500 max-w-xs mx-auto font-light leading-relaxed">
-                      Explore our fine hand-knotted showroom catalog to select antique, Persian, or modern masterpieces.
+                      Explore our fine hand-knotted showroom catalog to select
+                      antique, Persian, or modern masterpieces.
                     </p>
                     <button
                       onClick={handleClose}
@@ -271,12 +333,20 @@ export const CartView: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Selected Rug Masterworks</h4>
+                    <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
+                      Selected Rug Masterworks
+                    </h4>
                     <div className="space-y-3">
                       {cart.map((item) => (
-                        <div key={item.rug.id} className="flex gap-4 p-4 bg-white rounded-none border border-editorial-border shadow-xs">
+                        <div
+                          key={item.rug.id}
+                          className="flex gap-4 p-4 bg-white rounded-none border border-editorial-border shadow-xs"
+                        >
                           <img
-                            src={item.rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"}
+                            src={
+                              item.rug.images?.[0] ||
+                              "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"
+                            }
                             alt={item.rug.name}
                             className="w-20 h-20 object-cover rounded-none border border-editorial-border flex-shrink-0"
                             referrerPolicy="no-referrer"
@@ -284,7 +354,9 @@ export const CartView: React.FC = () => {
                           <div className="min-w-0 flex-1 flex flex-col justify-between text-left">
                             <div>
                               <div className="flex justify-between items-start gap-2">
-                                <h5 className="font-serif text-xs font-light text-editorial-text truncate">{item.rug.name}</h5>
+                                <h5 className="font-serif text-xs font-light text-editorial-text truncate">
+                                  {item.rug.name}
+                                </h5>
                                 <button
                                   onClick={() => removeFromCart(item.rug.id)}
                                   className="text-gray-400 hover:text-red-500 transition p-1"
@@ -292,55 +364,79 @@ export const CartView: React.FC = () => {
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
-                              <p className="text-sm text-gray-400">SKU: {item.rug.sku} | Origin: {item.rug.origin}</p>
-                              <p className="text-sm text-editorial-accent mt-0.5 font-light">Dimensions: {item.rug.dimensions}</p>
+                              <p className="text-sm text-gray-400">
+                                SKU: {item.rug.sku} | Origin: {item.rug.origin}
+                              </p>
+                              <p className="text-sm text-editorial-accent mt-0.5 font-light">
+                                Dimensions: {item.rug.dimensions}
+                              </p>
                             </div>
-                            
+
                             <div className="flex justify-between items-center pt-2 border-t border-editorial-border mt-2">
-                              <span className="text-sm uppercase tracking-wider text-gray-400 font-light">Unique Unit</span>
-                              <span className="font-serif text-sm font-light text-editorial-text">${item.rug.price.toLocaleString()}</span>
+                              <span className="text-sm uppercase tracking-wider text-gray-400 font-light">
+                                Unique Unit
+                              </span>
+                              <span className="font-serif text-sm font-light text-editorial-text">
+                                ${item.rug.price.toLocaleString()}
+                              </span>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
-                    </div>
                   </div>
                 )}
-                
+
                 {/* Smart Upsells Section */}
                 {cart.length > 0 && (
                   <div className="mt-8 border-t border-editorial-border pt-6">
-                    <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold mb-4">Recommended for your collection</h4>
+                    <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold mb-4">
+                      Recommended for your collection
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Rug Pad Upsell */}
                       <div className="border border-editorial-border p-4 bg-white flex flex-col justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <Layers className="w-4 h-4 text-emerald-600" />
-                            <h5 className="font-bold text-xs uppercase tracking-wider text-editorial-text">Premium Felt Rug Pad</h5>
+                            <h5 className="font-bold text-xs uppercase tracking-wider text-editorial-text">
+                              Premium Felt Rug Pad
+                            </h5>
                           </div>
-                          <p className="text-xs text-gray-500 mb-3">Custom-cut to perfectly fit your rug. Prevents slipping, protects your floors, and adds luxurious cushion.</p>
+                          <p className="text-xs text-gray-500 mb-3">
+                            Custom-cut to perfectly fit your rug. Prevents
+                            slipping, protects your floors, and adds luxurious
+                            cushion.
+                          </p>
                         </div>
-                        <button 
-                          onClick={() => alert("Added Custom Rug Pad to your cart!")}
+                        <button
+                          onClick={() =>
+                            alert("Added Custom Rug Pad to your cart!")
+                          }
                           className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-editorial-text text-xs uppercase tracking-widest font-bold transition"
                         >
                           + Add for $120
                         </button>
                       </div>
-                      
+
                       {/* Stain Protection Upsell */}
                       <div className="border border-editorial-border p-4 bg-white flex flex-col justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                            <h5 className="font-bold text-xs uppercase tracking-wider text-editorial-text">5-Year Stain Protection</h5>
+                            <h5 className="font-bold text-xs uppercase tracking-wider text-editorial-text">
+                              5-Year Stain Protection
+                            </h5>
                           </div>
-                          <p className="text-xs text-gray-500 mb-3">White-glove application of our proprietary stain repellant before shipping. Complete peace of mind.</p>
+                          <p className="text-xs text-gray-500 mb-3">
+                            White-glove application of our proprietary stain
+                            repellant before shipping. Complete peace of mind.
+                          </p>
                         </div>
-                        <button 
-                          onClick={() => alert("Added Stain Protection to your cart!")}
+                        <button
+                          onClick={() =>
+                            alert("Added Stain Protection to your cart!")
+                          }
                           className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-editorial-text text-xs uppercase tracking-widest font-bold transition"
                         >
                           + Add for $250
@@ -355,15 +451,20 @@ export const CartView: React.FC = () => {
             {/* --- STEP 2: SHIPPING FORM --- */}
             {checkoutStep === "shipping" && (
               <div className="space-y-4 text-xs">
-                <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Consignee Coordinates</h4>
-                
+                <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
+                  Consignee Coordinates
+                </h4>
+
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Full Recipient Name</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                      Full Recipient Name
+                    </label>
                     <input
                       type="text"
                       required
-                      value={name} autoComplete="name"
+                      value={name}
+                      autoComplete="name"
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Elena Rostov"
                       className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
@@ -372,22 +473,28 @@ export const CartView: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Phone Line</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                        Phone Line
+                      </label>
                       <input
                         type="tel"
                         required
-                        value={phone} autoComplete="tel"
+                        value={phone}
+                        autoComplete="tel"
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+1 (555) 789-0122"
                         className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Email Coordinates</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                        Email Coordinates
+                      </label>
                       <input
                         type="email"
                         required
-                        value={email} autoComplete="email"
+                        value={email}
+                        autoComplete="email"
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="elena@luxury-designs.com"
                         className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
@@ -397,13 +504,19 @@ export const CartView: React.FC = () => {
 
                   {/* Pickup or Delivery Selector */}
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Fulfillment Mode</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                      Fulfillment Mode
+                    </label>
                     <div className="grid grid-cols-2 gap-2 bg-neutral-150 p-1 rounded-none border border-editorial-border">
                       <button
                         type="button"
                         onClick={() => {
                           setDeliveryOption("Delivery");
-                          setShippingStreet(""); setShippingApt(""); setShippingCity(""); setShippingState(""); setShippingZip("");
+                          setShippingStreet("");
+                          setShippingApt("");
+                          setShippingCity("");
+                          setShippingState("");
+                          setShippingZip("");
                         }}
                         className={`py-2 text-center text-xs font-bold uppercase tracking-wider transition ${
                           deliveryOption === "Delivery"
@@ -431,45 +544,108 @@ export const CartView: React.FC = () => {
                   </div>
 
                   {deliveryOption === "Delivery" ? (
-                                          <div className="space-y-3 animate-fadeIn">
+                    <div className="space-y-3 animate-fadeIn">
+                      <div>
+                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                          Street Address *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={shippingStreet}
+                          autoComplete="street-address"
+                          onChange={(e) => setShippingStreet(e.target.value)}
+                          placeholder="783 Park Avenue"
+                          className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                          Apt, Suite, Bldg (optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={shippingApt}
+                          autoComplete="address-line2"
+                          onChange={(e) => setShippingApt(e.target.value)}
+                          placeholder="Apt 14B"
+                          className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Street Address *</label>
-                          <input type="text" required value={shippingStreet} autoComplete="street-address" onChange={(e) => setShippingStreet(e.target.value)} placeholder="783 Park Avenue" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
-                        </div>
-                        <div>
-                          <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Apt, Suite, Bldg (optional)</label>
-                          <input type="text" value={shippingApt} autoComplete="address-line2" onChange={(e) => setShippingApt(e.target.value)} placeholder="Apt 14B" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                          <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                            City *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={shippingCity}
+                            autoComplete="address-level2"
+                            onChange={(e) => setShippingCity(e.target.value)}
+                            placeholder="New York"
+                            className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                          />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">City *</label>
-                            <input type="text" required value={shippingCity} autoComplete="address-level2" onChange={(e) => setShippingCity(e.target.value)} placeholder="New York" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
+                            <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                              State *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={shippingState}
+                              autoComplete="address-level1"
+                              onChange={(e) => setShippingState(e.target.value)}
+                              placeholder="NY"
+                              className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                            />
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">State *</label>
-                              <input type="text" required value={shippingState} autoComplete="address-level1" onChange={(e) => setShippingState(e.target.value)} placeholder="NY" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
-                            </div>
-                            <div>
-                              <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Zip *</label>
-                              <input type="text" required value={shippingZip} autoComplete="postal-code" onChange={(e) => setShippingZip(e.target.value)} placeholder="10021" className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent" />
-                            </div>
+                          <div>
+                            <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                              Zip *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={shippingZip}
+                              autoComplete="postal-code"
+                              onChange={(e) => setShippingZip(e.target.value)}
+                              placeholder="10021"
+                              className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                            />
                           </div>
                         </div>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Est. total shipping weight: <strong>{totalWeightLbs.toFixed(1)} lbs</strong>. Shipping cost applies: {totalWeightLbs <= 1.9 ? "$8 (under 2 lbs)" : totalWeightLbs >= 2 && totalWeightLbs <= 5 ? "$16 (2-5 lbs)" : "$45 (premium insured)"}.
-                        </p>
                       </div>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Est. total shipping weight:{" "}
+                        <strong>{totalWeightLbs.toFixed(1)} lbs</strong>.
+                        Shipping cost applies:{" "}
+                        {totalWeightLbs <= 1.9
+                          ? "$8 (under 2 lbs)"
+                          : totalWeightLbs >= 2 && totalWeightLbs <= 5
+                            ? "$16 (2-5 lbs)"
+                            : "$45 (premium insured)"}
+                        .
+                      </p>
+                    </div>
                   ) : (
                     <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none space-y-2 animate-fadeIn">
-                      <span className="text-sm uppercase tracking-wider text-editorial-accent font-bold block">Alexandria HQ Showroom Location</span>
+                      <span className="text-sm uppercase tracking-wider text-editorial-accent font-bold block">
+                        Alexandria HQ Showroom Location
+                      </span>
                       <p className="text-xs text-editorial-text font-serif italic">
-                        MARCO POLO ORIENTAL RUGS, INC.<br/>
-                        3260 DUKE ST<br/>
+                        MARCO POLO ORIENTAL RUGS, INC.
+                        <br />
+                        3260 DUKE ST
+                        <br />
                         ALEXANDRIA, VA 22314
                       </p>
                       <p className="text-xs text-gray-500 font-light">
-                        We will secure your purchase in our vault. You may pick it up at your convenience. Bring your confirmation code and ID.
+                        We will secure your purchase in our vault. You may pick
+                        it up at your convenience. Bring your confirmation code
+                        and ID.
                       </p>
                     </div>
                   )}
@@ -479,20 +655,27 @@ export const CartView: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={billingSameAsShipping}
-                        onChange={(e) => setBillingSameAsShipping(e.target.checked)}
+                        onChange={(e) =>
+                          setBillingSameAsShipping(e.target.checked)
+                        }
                         className="rounded-none accent-editorial-accent border-editorial-border h-4 w-4 cursor-pointer"
                       />
-                      <span className="font-semibold text-xs">Billing address is identical to shipping</span>
+                      <span className="font-semibold text-xs">
+                        Billing address is identical to shipping
+                      </span>
                     </label>
                   </div>
 
                   {!billingSameAsShipping && (
                     <div className="space-y-1 animate-fadeIn">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Billing Address</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                        Billing Address
+                      </label>
                       <input
                         type="text"
                         required
-                        value={billingAddress} autoComplete="street-address"
+                        value={billingAddress}
+                        autoComplete="street-address"
                         onChange={(e) => setBillingAddress(e.target.value)}
                         placeholder="Billing address..."
                         className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
@@ -501,7 +684,9 @@ export const CartView: React.FC = () => {
                   )}
 
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">Delivery instructions / Custom Padding Holds</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                      Delivery instructions / Custom Padding Holds
+                    </label>
                     <textarea
                       rows={2}
                       value={notes}
@@ -516,20 +701,29 @@ export const CartView: React.FC = () => {
 
             {/* --- STEP 3: PAYMENT ESCROW FORM --- */}
             {checkoutStep === "payment" && (
-              <form onSubmit={handleCheckoutSubmit} className="space-y-4 text-xs text-left">
+              <form
+                onSubmit={handleCheckoutSubmit}
+                className="space-y-4 text-xs text-left"
+              >
                 <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none flex items-start gap-3">
                   <ShieldCheck className="h-5 w-5 text-editorial-accent mt-0.5 flex-shrink-0 animate-pulse" />
                   <div>
-                    <h5 className="font-serif font-light text-editorial-text text-sm">Secure Payment Hold</h5>
+                    <h5 className="font-serif font-light text-editorial-text text-sm">
+                      Secure Payment Hold
+                    </h5>
                     <p className="text-xs text-gray-500 leading-relaxed mt-0.5 font-light">
-                      Please provide your payment details to reserve your rug. Your card will be securely stored for authorization but will not be charged until final confirmation.
+                      Please provide your payment details to reserve your rug.
+                      Your card will be securely stored for authorization but
+                      will not be charged until final confirmation.
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Cardholder Name</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                      Cardholder Name
+                    </label>
                     <input
                       type="text"
                       required
@@ -539,9 +733,11 @@ export const CartView: React.FC = () => {
                       className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text"
                     />
                   </div>
-                  
+
                   <div className="relative">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Card Number</label>
+                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                      Card Number
+                    </label>
                     <input
                       type="text"
                       required
@@ -557,26 +753,40 @@ export const CartView: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">Expiration</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                        Expiration
+                      </label>
                       <input
                         type="text"
                         required
                         value={cardExpiry}
-                        onChange={(e) => setCardExpiry(e.target.value.substring(0, 5))} maxLength={5}
+                        onChange={(e) =>
+                          setCardExpiry(e.target.value.substring(0, 5))
+                        }
+                        maxLength={5}
                         placeholder="MM/YY"
                         className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">CVV / CVC</label>
+                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                        CVV / CVC
+                      </label>
                       <input
                         type="text"
                         required
                         value={cardCVC}
-                        onChange={(e) => setCardCVC(e.target.value.replace(/[^0-9]/gi, "").substring(0, 4))} maxLength={4}
+                        onChange={(e) =>
+                          setCardCVC(
+                            e.target.value
+                              .replace(/[^0-9]/gi, "")
+                              .substring(0, 4),
+                          )
+                        }
+                        maxLength={4}
                         placeholder="123"
                         className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
                       />
@@ -591,7 +801,9 @@ export const CartView: React.FC = () => {
                     className="w-full py-4 bg-[#1a1a1a] hover:bg-black text-white font-bold uppercase tracking-widest text-sm rounded-none shadow transition flex justify-center items-center gap-2 cursor-pointer"
                   >
                     {isProcessing ? (
-                      <span className="animate-pulse flex items-center gap-2">Processing Hold...</span>
+                      <span className="animate-pulse flex items-center gap-2">
+                        Processing Hold...
+                      </span>
                     ) : (
                       <>
                         <Lock className="h-4 w-4" />
@@ -602,7 +814,7 @@ export const CartView: React.FC = () => {
                 </div>
               </form>
             )}
-            
+
             {/* --- STEP 4: SUCCESS RECEIPT --- */}
             {checkoutStep === "success" && createdOrder && (
               <div className="space-y-6 text-center py-6 animate-fadeIn">
@@ -612,11 +824,16 @@ export const CartView: React.FC = () => {
                     ✓
                   </span>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <h3 className="font-serif text-2xl font-light text-editorial-text">Reservation Confirmed!</h3>
+                  <h3 className="font-serif text-2xl font-light text-editorial-text">
+                    Reservation Confirmed!
+                  </h3>
                   <p className="text-xs text-gray-500 leading-relaxed max-w-sm mx-auto font-light">
-                    Your request has been sent to our showroom successfully. A Marco Polo advisor will contact you shortly to confirm your hold, answer any questions, and arrange payment and final delivery.
+                    Your request has been sent to our showroom successfully. A
+                    Marco Polo advisor will contact you shortly to confirm your
+                    hold, answer any questions, and arrange payment and final
+                    delivery.
                   </p>
                 </div>
 
@@ -625,13 +842,18 @@ export const CartView: React.FC = () => {
                   <div className="flex gap-2.5">
                     <AlertTriangle className="h-5 w-5 text-amber-700 flex-shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-amber-900 uppercase tracking-wider">CRITICAL REQUIREMENT</h4>
+                      <h4 className="text-sm font-bold text-amber-900 uppercase tracking-wider">
+                        CRITICAL REQUIREMENT
+                      </h4>
                       <p className="text-sm text-amber-850 leading-relaxed font-normal">
-                        Please **print**, **take a screenshot**, **save as a photo**, or **download** this order receipt right now. This is your official showroom escrow record and reference key.
+                        Please **print**, **take a screenshot**, **save as a
+                        photo**, or **download** this order receipt right now.
+                        This is your official showroom escrow record and
+                        reference key.
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Action row with functional buttons */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
@@ -659,10 +881,13 @@ export const CartView: React.FC = () => {
                       {printFeedback}
                     </div>
                   )}
-                  
+
                   <div className="text-sm text-amber-800/80 italic text-center border-t border-amber-200/50 pt-2 flex items-center justify-center gap-1.5 font-sans">
                     <Camera className="h-2.5 w-2.5" />
-                    <span>Tip: Press <strong>Cmd/Win + Shift + S</strong> to take a screenshot</span>
+                    <span>
+                      Tip: Press <strong>Cmd/Win + Shift + S</strong> to take a
+                      screenshot
+                    </span>
                   </div>
                 </div>
 
@@ -670,26 +895,53 @@ export const CartView: React.FC = () => {
                 <div className="p-5 border border-editorial-border rounded-none bg-editorial-aside max-w-sm mx-auto space-y-4 text-left">
                   <div className="flex flex-col items-center justify-center text-center space-y-2 pb-4 border-b border-editorial-border">
                     {logoUrl && (
-                      <img src={logoUrl} alt="Shop Logo" className="h-12 w-auto object-contain" />
+                      <img
+                        src={logoUrl}
+                        alt="Shop Logo"
+                        className="h-12 w-auto object-contain"
+                      />
                     )}
                     <div>
-                      <h4 className="font-serif font-bold text-editorial-text">{shopProfile?.name || "Marco Polo"}</h4>
-                      {shopProfile?.address && <p className="text-xs text-gray-500 mt-1">{shopProfile.address}</p>}
+                      <h4 className="font-serif font-bold text-editorial-text">
+                        {shopProfile?.name || "Marco Polo"}
+                      </h4>
+                      {shopProfile?.address && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {shopProfile.address}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-500">
-                        {[shopProfile?.phone, shopProfile?.email].filter(Boolean).join(" • ")}
+                        {[shopProfile?.phone, shopProfile?.email]
+                          .filter(Boolean)
+                          .join(" • ")}
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between border-b border-editorial-border pb-2 text-xs">
-                    <span className="text-gray-400 font-semibold uppercase tracking-wider">Tracking Reference</span>
-                    <span className="font-mono font-bold text-editorial-accent text-sm">{createdOrder.id}</span>
+                    <span className="text-gray-400 font-semibold uppercase tracking-wider">
+                      Tracking Reference
+                    </span>
+                    <span className="font-mono font-bold text-editorial-accent text-sm">
+                      {createdOrder.id}
+                    </span>
                   </div>
 
                   <div className="space-y-1.5 text-sm text-gray-500 leading-relaxed font-light">
-                    <p>• <strong>Status:</strong> <span className="px-2 py-0.5 bg-editorial-bg text-editorial-accent border border-editorial-border text-sm font-bold uppercase">Pending Confirmation</span></p>
-                    <p>• <strong>Consignee:</strong> {createdOrder.customerInfo.name}</p>
-                    <p>• <strong>Settlement Sum:</strong> ${createdOrder.total.toLocaleString()}</p>
+                    <p>
+                      • <strong>Status:</strong>{" "}
+                      <span className="px-2 py-0.5 bg-editorial-bg text-editorial-accent border border-editorial-border text-sm font-bold uppercase">
+                        Pending Confirmation
+                      </span>
+                    </p>
+                    <p>
+                      • <strong>Consignee:</strong>{" "}
+                      {createdOrder.customerInfo.name}
+                    </p>
+                    <p>
+                      • <strong>Settlement Sum:</strong> $
+                      {createdOrder.total.toLocaleString()}
+                    </p>
                   </div>
                 </div>
 
@@ -706,7 +958,6 @@ export const CartView: React.FC = () => {
                 </div>
               </div>
             )}
-
           </div>
 
           {/* Checkout Footer Totals Summary (Only if cart/shipping/payment) */}
@@ -715,50 +966,72 @@ export const CartView: React.FC = () => {
               <div className="space-y-2 text-xs text-gray-500 font-sans font-light">
                 <div className="flex justify-between">
                   <span>Showroom Subtotal:</span>
-                  <span className="font-serif font-light text-editorial-text">${rawSubtotal.toLocaleString()}</span>
+                  <span className="font-serif font-light text-editorial-text">
+                    ${rawSubtotal.toLocaleString()}
+                  </span>
                 </div>
                 {appliedPromo && (
                   <div className="flex justify-between text-[#A68B67] font-bold">
                     <span>Promo ({appliedPromo.code}):</span>
-                    <span>{appliedPromo.discountType === "free_shipping" ? "Free Shipping" : `-${discount.toLocaleString()}`}</span>
+                    <span>
+                      {appliedPromo.discountType === "free_shipping"
+                        ? "Free Shipping"
+                        : `-${discount.toLocaleString()}`}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>Sales Tax (6%):</span>
-                  <span className="font-serif font-light text-editorial-text">${tax.toFixed(2)}</span>
+                  <span className="font-serif font-light text-editorial-text">
+                    ${tax.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="flex items-center gap-1">
-                    Insured Freight ({deliveryOption === "Pickup" ? "Pickup" : `${totalWeightLbs.toFixed(1)} lbs`}):
+                    Insured Freight (
+                    {deliveryOption === "Pickup"
+                      ? "Pickup"
+                      : `${totalWeightLbs.toFixed(1)} lbs`}
+                    ):
                     <Truck className="h-3.5 w-3.5 text-gray-400" />
                   </span>
                   <span className="font-serif font-light text-editorial-text">
                     {deliveryOption === "Pickup" ? (
-                      <span className="text-green-700 font-sans uppercase text-sm font-semibold">Free Pickup</span>
+                      <span className="text-green-700 font-sans uppercase text-sm font-semibold">
+                        Free Pickup
+                      </span>
                     ) : (
                       `$${shipping.toFixed(2)}`
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-editorial-border pt-3 text-sm font-light">
-                  <span className="text-editorial-text uppercase tracking-wider">Est. Settlement:</span>
-                  <span className="font-serif text-base text-editorial-text">${total.toLocaleString()}</span>
+                  <span className="text-editorial-text uppercase tracking-wider">
+                    Est. Settlement:
+                  </span>
+                  <span className="font-serif text-base text-editorial-text">
+                    ${total.toLocaleString()}
+                  </span>
                 </div>
               </div>
 
               {checkoutStep === "cart" && (
                 <div className="border-t border-editorial-border pt-4 pb-2">
                   <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Promo code" 
-                      value={promoInput} 
-                      onChange={e => setPromoInput(e.target.value.toUpperCase())}
+                    <input
+                      type="text"
+                      placeholder="Promo code"
+                      value={promoInput}
+                      onChange={(e) =>
+                        setPromoInput(e.target.value.toUpperCase())
+                      }
                       className="w-full bg-white border border-editorial-border py-2 px-3 text-xs outline-none focus:border-editorial-accent uppercase"
                     />
-                    <button 
+                    <button
                       onClick={() => {
-                        const promo = promoCodes?.find(p => p.code === promoInput && p.isActive);
+                        const promo = promoCodes?.find(
+                          (p) => p.code === promoInput && p.isActive,
+                        );
                         if (promo) {
                           setAppliedPromo(promo);
                           setPromoError("");
@@ -771,8 +1044,16 @@ export const CartView: React.FC = () => {
                       Apply
                     </button>
                   </div>
-                  {promoError && <div className="text-red-500 text-xs mt-1">{promoError}</div>}
-                  {appliedPromo && <div className="text-green-600 text-xs mt-1">Promo applied successfully!</div>}
+                  {promoError && (
+                    <div className="text-red-500 text-xs mt-1">
+                      {promoError}
+                    </div>
+                  )}
+                  {appliedPromo && (
+                    <div className="text-green-600 text-xs mt-1">
+                      Promo applied successfully!
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -789,7 +1070,16 @@ export const CartView: React.FC = () => {
               {checkoutStep === "shipping" && (
                 <button
                   onClick={handleNextStep}
-                  disabled={!name || !phone || !email || ((!shippingStreet || !shippingCity || !shippingState || !shippingZip) && deliveryOption === "Delivery")}
+                  disabled={
+                    !name ||
+                    !phone ||
+                    !email ||
+                    ((!shippingStreet ||
+                      !shippingCity ||
+                      !shippingState ||
+                      !shippingZip) &&
+                      deliveryOption === "Delivery")
+                  }
                   className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-xs rounded-none shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Proceed to Final Review</span>
@@ -798,7 +1088,6 @@ export const CartView: React.FC = () => {
               )}
             </div>
           )}
-
         </div>
       </div>
     </div>
