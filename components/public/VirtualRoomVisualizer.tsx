@@ -36,6 +36,8 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
         setRoomImage(event.target?.result as string);
         setForegroundImage(null);
         
+        // TEMPORARILY HIDDEN: Waiting for Photoroom API billing setup
+        /*
         try {
           const formData = new FormData();
           formData.append('image', file);
@@ -57,6 +59,8 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
         } finally {
           setIsProcessing(false);
         }
+        */
+        setIsProcessing(false);
       };
       reader.readAsDataURL(file);
     }
@@ -106,14 +110,7 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
           <p className="text-neutral-400 text-sm mb-6">
             Upload a photo of your living room, bedroom, or dining area to see how this rug looks in your space.
           </p>
-          <div className="bg-neutral-900/50 p-4 mb-8 border border-neutral-700 text-left">
-            <h4 className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-              <Sparkles size={14} /> AI Powered
-            </h4>
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              We use advanced AI to automatically detect your furniture and layer the rug <strong className="text-white">underneath</strong> couches and tables for ultra-realistic precision.
-            </p>
-          </div>
+          {/* TEMPORARILY HIDDEN: AI Powered promo banner */}
           <label className="block w-full px-6 py-4 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none cursor-pointer transition">
             Upload Room Photo
             <input 
@@ -240,6 +237,7 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
             </div>
             
             <div className="flex items-center gap-3 border-l border-neutral-700 pl-4 shrink-0">
+              {/* TEMPORARILY HIDDEN
               <button
                 onClick={() => setAiLayering(!aiLayering)}
                 disabled={!foregroundImage}
@@ -252,6 +250,7 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
               >
                 AI Layering
               </button>
+              */}
               
               <button
                 onClick={() => setSmartBlend(!smartBlend)}
