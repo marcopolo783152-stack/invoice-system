@@ -15,23 +15,27 @@ export const ChatWidget: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Stable guest chat session state loaded/stored in localStorage
-  const [guestSession, setGuestSession] = useState<{ id: string; name: string }>(() => {
+  const [guestSession, setGuestSession] = useState<{ id: string; name: string }>({ id: "loading", name: "Guest Customer" });
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
     try {
       const savedId = localStorage.getItem("marcopolo_chat_session_id");
       const savedName = localStorage.getItem("marcopolo_chat_customer_name");
       if (savedId && savedName) {
-        return { id: savedId, name: savedName };
+        setGuestSession({ id: savedId, name: savedName });
+        return;
       }
       const newId = `guest-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
       const newName = `Guest Customer #${Math.floor(1000 + Math.random() * 9000)}`;
       localStorage.setItem("marcopolo_chat_session_id", newId);
       localStorage.setItem("marcopolo_chat_customer_name", newName);
-      return { id: newId, name: newName };
+      setGuestSession({ id: newId, name: newName });
     } catch {
-      const newId = `guest-${Date.now()}`;
-      return { id: newId, name: "Guest Customer" };
+      setGuestSession({ id: `guest-${Date.now()}`, name: "Guest Customer" });
     }
-  });
+  }, []);
 
   // Calculate current active session ID and customer name
   const activeSessionId = currentUser ? `user-${currentUser.id}` : guestSession.id;
@@ -216,7 +220,7 @@ export const ChatWidget: React.FC = () => {
                   }`}
                 >
                   <p>
-                    {msg.text.split(/(\[.*?\]\(.*?\)|\*\*.*?\*\*|\n)/g).map((part, i) => {
+                    {(msg.text || "").split(/(\[.*?\]\(.*?\)|\*\*.*?\*\*|\n)/g).map((part, i) => {
                       if (part === '\n') return <br key={i} />;
                       
                       const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);

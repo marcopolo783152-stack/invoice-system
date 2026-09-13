@@ -10,6 +10,9 @@ interface VirtualRoomVisualizerProps {
 export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: VirtualRoomVisualizerProps) {
   const [roomImage, setRoomImage] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [perspective, setPerspective] = useState(45);
+  const [smartBlend, setSmartBlend] = useState(false);
   const [position, setPosition] = useState({ x: 50, y: 70 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; initPosX: number; initPosY: number } | null>(null);
@@ -94,53 +97,107 @@ export default function VirtualRoomVisualizer({ isOpen, onClose, rugImage }: Vir
             <img 
               src={roomImage} 
               alt="Your room" 
-              className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
             />
             
-            {/* Draggable Rug */}
-            <img 
-              src={rugImage}
-              alt="Rug Preview"
+            {/* Draggable Rug Container for Perspective */}
+            <div
               onPointerDown={handlePointerDown}
-              className="absolute z-10 origin-center cursor-move"
+              className="absolute z-10 origin-center cursor-move flex items-center justify-center"
               style={{
                 left: `${position.x}%`,
                 top: `${position.y}%`,
-                transform: `translate(-50%, -50%) scale(${scale}) perspective(1000px) rotateX(45deg)`,
+                transform: `translate(-50%, -50%) perspective(1200px) rotateX(${perspective}deg)`,
                 width: '60%',
                 maxWidth: '600px',
-                boxShadow: '0 30px 40px rgba(0,0,0,0.4)'
               }}
-              draggable={false}
-            />
+            >
+              <img 
+                src={rugImage}
+                alt="Rug Preview"
+                className="w-full h-auto origin-center transition-all duration-200"
+                style={{
+                  transform: `scale(${scale}) rotate(${rotation}deg)`,
+                  mixBlendMode: smartBlend ? 'multiply' : 'normal',
+                  opacity: smartBlend ? 0.9 : 1,
+                  boxShadow: smartBlend ? 'none' : '0 30px 40px rgba(0,0,0,0.4)'
+                }}
+                draggable={false}
+              />
+            </div>
           </div>
 
           {/* Controls Bar */}
-          <div className="h-24 bg-neutral-900 border-t border-neutral-800 px-6 py-4 flex flex-col md:flex-row items-center justify-center gap-6">
-            <div className="flex items-center gap-4 w-full max-w-md">
-              <span className="text-neutral-400 text-xs uppercase tracking-wider font-bold w-20">Size</span>
-              <input 
-                type="range" 
-                min="0.5" 
-                max="2.5" 
-                step="0.05"
-                value={scale}
-                onChange={(e) => setScale(parseFloat(e.target.value))}
-                className="w-full accent-editorial-accent"
-              />
+          <div className="bg-neutral-900 border-t border-neutral-800 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 overflow-x-auto">
+            
+            <div className="flex items-center gap-6 w-full max-w-3xl flex-wrap md:flex-nowrap">
+              {/* Size Slider */}
+              <div className="flex items-center gap-3 flex-1 min-w-[150px]">
+                <span className="text-neutral-400 text-[10px] uppercase tracking-wider font-bold w-12">Size</span>
+                <input 
+                  type="range" 
+                  min="0.3" 
+                  max="3" 
+                  step="0.05"
+                  value={scale}
+                  onChange={(e) => setScale(parseFloat(e.target.value))}
+                  className="w-full accent-editorial-accent"
+                />
+              </div>
+
+              {/* Angle Slider */}
+              <div className="flex items-center gap-3 flex-1 min-w-[150px]">
+                <span className="text-neutral-400 text-[10px] uppercase tracking-wider font-bold w-12">Angle</span>
+                <input 
+                  type="range" 
+                  min="-180" 
+                  max="180" 
+                  step="1"
+                  value={rotation}
+                  onChange={(e) => setRotation(parseFloat(e.target.value))}
+                  className="w-full accent-editorial-accent"
+                />
+              </div>
+
+              {/* Perspective Slider */}
+              <div className="flex items-center gap-3 flex-1 min-w-[150px]">
+                <span className="text-neutral-400 text-[10px] uppercase tracking-wider font-bold w-12">Tilt</span>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="80" 
+                  step="1"
+                  value={perspective}
+                  onChange={(e) => setPerspective(parseFloat(e.target.value))}
+                  className="w-full accent-editorial-accent"
+                />
+              </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <label className="p-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-full cursor-pointer transition" title="Upload New Room">
-                <Upload size={18} />
+            <div className="flex items-center gap-3 border-l border-neutral-700 pl-4 shrink-0">
+              <button
+                onClick={() => setSmartBlend(!smartBlend)}
+                className={`px-3 py-2 rounded-none text-xs font-bold uppercase tracking-wider transition border ${
+                  smartBlend 
+                    ? 'bg-editorial-accent border-editorial-accent text-white' 
+                    : 'bg-transparent border-neutral-600 text-neutral-400 hover:text-white'
+                }`}
+                title="Blends shadows from your furniture over the rug so it looks like it's underneath"
+              >
+                Smart Blend
+              </button>
+
+              <label className="p-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none cursor-pointer transition" title="Upload New Room">
+                <Upload size={16} />
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               </label>
+              
               <button 
-                onClick={() => setPosition({ x: 50, y: 70 })}
-                className="p-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-full cursor-pointer transition" 
+                onClick={() => { setPosition({ x: 50, y: 70 }); setScale(1); setRotation(0); setPerspective(45); }}
+                className="p-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none cursor-pointer transition" 
                 title="Reset Position"
               >
-                <Move size={18} />
+                <Move size={16} />
               </button>
             </div>
           </div>
