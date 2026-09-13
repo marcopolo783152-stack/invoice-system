@@ -1,7 +1,8 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, where, orderBy, limit } from 'firebase/firestore';
-import { firestoreDb, SHOWROOM_ORDERS, SHOWROOM_REVIEWS, SHOWROOM_CHAT, SHOWROOM_CLEANING, SHOWROOM_ESTIMATES, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { SHOWROOM_ORDERS, SHOWROOM_REVIEWS, SHOWROOM_CHAT, SHOWROOM_CLEANING, SHOWROOM_ESTIMATES, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
+import { db as firestoreDb } from '@/lib/firebase';
 import { AlertCircle, CheckCircle, Bell, MessageCircle, Calendar, FileText, ShoppingBag, X } from 'lucide-react';
 import Link from 'next/link';
 
