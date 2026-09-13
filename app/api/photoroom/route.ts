@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const photoroomFormData = new FormData();
     photoroomFormData.append('image_file', image);
 
-    const response = await fetch('https://image-api.photoroom.com/v1/segment', {
+    const response = await fetch('https://sdk.photoroom.com/v1/segment', {
       method: 'POST',
       headers: {
         'x-api-key': process.env.PHOTOROOM_API_KEY || 'sk_pr_default_bab251d4eeaee5e8afc5f8bc8ef64ae03218fd4b'
