@@ -1,3 +1,5 @@
+import { useStaffAccess } from '@/hooks/useStaffAccess';
+import { canAccess } from '@/lib/access-policy';
 import React, { useMemo, useEffect, useState } from 'react';
 import { X, ShoppingBag, CheckCircle, MessageCircle, AlertCircle, Calendar, Clock, Bell, User } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
@@ -5,18 +7,20 @@ import { useStore } from '@/context/StoreContext';
 import { subscribeToCollection, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
 
 export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+    const {staff}=useStaffAccess();
     const { orders, reviews, chatMessages, cleaningBookings, estimates } = useStore();
 
     const [appointments, setAppointments] = useState<Array<{ id: string; name?: string; createdAt?: string }>>([]);
-    useEffect(() => subscribeToCollection<{ id: string; name?: string; createdAt?: string }>(
-        SHOWROOM_APPOINTMENTS, setAppointments
-    ), []);
+    useEffect(()=>{
+      setAppointments([]);
+      if(canAccess(staff,'appointments')) return subscribeToCollection<{id:string;name?:string;createdAt?:string}>(SHOWROOM_APPOINTMENTS,setAppointments);
+    },[staff]);
 
     const activityFeed = useMemo(() => {
         const feed: Array<{ id: string, type: string, title: string, subtitle: string, date: Date, link: string, icon: React.ReactNode, bgColor: string, color: string }> = [];
 
         // 1. Orders
-        orders.forEach(order => {
+        (canAccess(staff,'orders')?orders:[]).forEach(order => {
             if (!order.createdAt) return;
             feed.push({
                 id: `order-${order.id}`,
@@ -32,7 +36,7 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
         });
 
         // 2. Reviews
-        reviews.forEach(review => {
+        (canAccess(staff,'reviews')?reviews:[]).forEach(review => {
             if (!review.createdAt) return;
             feed.push({
                 id: `review-${review.id}`,
@@ -48,7 +52,7 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
         });
 
         // 3. Customer Messages
-        chatMessages.forEach(msg => {
+        (canAccess(staff,'messages')?chatMessages:[]).forEach(msg => {
             if (!msg.timestamp || msg.sender !== 'customer') return;
             feed.push({
                 id: `msg-${msg.id}`,
@@ -64,7 +68,7 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
         });
 
         // 4. Wash / Repair Bookings
-        cleaningBookings.forEach(booking => {
+        (canAccess(staff,'services')?cleaningBookings:[]).forEach(booking => {
             if (!booking.createdAt) return;
             feed.push({
                 id: `booking-${booking.id}`,
@@ -79,7 +83,7 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
             });
         });
 
-        appointments.forEach(appointment => {
+        (canAccess(staff,'appointments')?appointments:[]).forEach(appointment => {
             if (!appointment.createdAt) return;
             feed.push({
                 id: 'appointment-' + appointment.id, type: 'appointment',
@@ -89,7 +93,7 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
                 icon: <Calendar size={20} />, bgColor: 'rgba(99,102,241,0.1)', color: '#6366f1'
             });
         });
-        estimates.forEach(estimate => {
+        (canAccess(staff,'services')?estimates:[]).forEach(estimate => {
             if (!estimate.createdAt) return;
             feed.push({
                 id: 'estimate-' + estimate.id, type: 'estimate',

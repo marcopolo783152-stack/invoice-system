@@ -132,6 +132,7 @@ export interface ShippingDetails {
 }
 
 export interface Order {
+  customerId?: string;
   id: string;
   customerInfo: CustomerInfo;
   cartItems: CartItem[];
@@ -182,6 +183,7 @@ export interface BlogPost {
 }
 
 export interface ChatMessage {
+  ownerUid?: string;
   isAutomated?: boolean;
   id: string;
   sender: "customer" | "admin";

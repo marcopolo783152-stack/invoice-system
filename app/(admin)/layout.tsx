@@ -4,6 +4,11 @@ import { Inter, Cinzel, Cinzel_Decorative } from 'next/font/google';
 import { usePathname } from 'next/navigation';
 import '../globals.css';
 import '../print.css';
+import StaffGate from '@/components/StaffGate';
+import { useStaffAccess } from '@/hooks/useStaffAccess';
+import { canAccess } from '@/lib/access-policy';
+import { logout } from '@/lib/auth';
+import { syncLegacyStaffSession } from '@/lib/staff-session';
 import Sidebar from '@/components/Sidebar';
 import TopAdminBar from '@/components/TopAdminBar';
 import AddressBookModal from '@/components/AddressBookModal';
@@ -25,8 +30,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [user, setUser] = useState<any>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const {staff}=useStaffAccess();
+  const isAuthenticated=!!staff;
+  const user=staff?{id:staff.uid,fullName:staff.name,name:staff.name,email:staff.email,role:staff.role==='admin'||staff.role==='general_manager'?'admin':'employee',storeName:'Marco Polo Oriental Rugs'}:null;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showAddressBook, setShowAddressBook] = useState(false);
   const [showExportPreview, setShowExportPreview] = useState(false);
@@ -35,110 +41,16 @@ export default function RootLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  useEffect(() => {
-    // Basic auth check for sidebar user info
-    const checkAuth = () => {
-      if (typeof window !== 'undefined') {
-        const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
-        const storedUser = sessionStorage.getItem('mp-invoice-user') || localStorage.getItem('mp-invoice-user');
-
-        if (auth === '1' && storedUser) {
-          setIsAuthenticated(true);
-          try {
-            const parsedUser = JSON.parse(storedUser);
-            // Only update if data actually changed to prevent re-render loops
-            setUser((prev: any) => {
-              if (JSON.stringify(prev) !== JSON.stringify(parsedUser)) return parsedUser;
-              return prev;
-            });
-          } catch { }
-        } else {
-          setIsAuthenticated(false);
-          setUser(null);
-        }
-      }
-    };
-
-    checkAuth();
-    const interval = setInterval(checkAuth, 1000);
-    window.addEventListener('storage', checkAuth);
-
-    const handleOpenNotifications = () => setShowNotifications(true);
-    window.addEventListener('open-notifications', handleOpenNotifications);
-
-    // Global background interval to auto-clock out employees exactly at 6:00 PM
-    const clockOutInterval = setInterval(() => {
-      const now = new Date();
-      if (now.getHours() >= 18) {
-        const lastAuto = localStorage.getItem('last_auto_clock_out');
-        const todayStr = now.toDateString();
-        if (lastAuto !== todayStr) {
-            checkAutoClockOut();
-            localStorage.setItem('last_auto_clock_out', todayStr);
-        }
-      }
-    }, 30000); 
-
-    // --- INACTIVITY TIMEOUT ---
-    let inactivityTimer: NodeJS.Timeout;
-    const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes
-
-    const resetInactivity = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        // Auto-logout after 15 minutes
-        sessionStorage.removeItem('mp-invoice-auth');
-        sessionStorage.removeItem('mp-invoice-user');
-        localStorage.removeItem('mp-invoice-auth');
-        localStorage.removeItem('mp-invoice-user');
-        sessionStorage.removeItem('marcopolo_current_user');
-        sessionStorage.removeItem('marcopolo_active_view');
-        window.location.href = '/';
-      }, INACTIVITY_LIMIT);
-    };
-
-    // Attach listeners
-    window.addEventListener('mousemove', resetInactivity);
-    window.addEventListener('keypress', resetInactivity);
-    window.addEventListener('click', resetInactivity);
-    window.addEventListener('scroll', resetInactivity);
-    window.addEventListener('touchstart', resetInactivity);
-    
-    // Start initial timer
-    resetInactivity();
-
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('open-notifications', handleOpenNotifications);
-      clearInterval(interval);
-      clearInterval(clockOutInterval);
-      clearTimeout(inactivityTimer);
-      window.removeEventListener('mousemove', resetInactivity);
-      window.removeEventListener('keypress', resetInactivity);
-      window.removeEventListener('click', resetInactivity);
-      window.removeEventListener('scroll', resetInactivity);
-      window.removeEventListener('touchstart', resetInactivity);
-    };
-  }, []);
-
+  useEffect(()=>{
+    const open=()=>setShowNotifications(true);
+    window.addEventListener('open-notifications',open);
+    return ()=>window.removeEventListener('open-notifications',open);
+  },[]);
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('mp-invoice-auth');
-      sessionStorage.removeItem('mp-invoice-user');
-      localStorage.removeItem('mp-invoice-auth');
-      localStorage.removeItem('mp-invoice-user');
-        sessionStorage.removeItem('marcopolo_current_user');
-        sessionStorage.removeItem('marcopolo_active_view');
-      setIsAuthenticated(false);
-      setUser(null);
-      window.location.href = '/';
-      setTimeout(() => window.location.reload(), 100);
-    }
-  };
+  const handleLogout=async()=>{await logout();syncLegacyStaffSession(null);window.location.assign('/staff-login');};
 
   const isPrintPage = pathname?.includes('/print');
   const isPublicPage = pathname?.startsWith('/public');
@@ -147,9 +59,7 @@ export default function RootLayout({
     return (
       <html lang="en">
         <body className={inter.className} style={{ background: 'white', width: '100%', minWidth: 'auto' }}>
-          <StoreProvider>
-              {children}
-          </StoreProvider>
+          <StaffGate><StoreProvider>{children}</StoreProvider></StaffGate>
         </body>
       </html>
     );
@@ -161,6 +71,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className={inter.className}>
+        {isPublicPage ? children : <StaffGate><>
         <TopAdminBar />
         {/* Mobile Hamburger Button */}
         {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
@@ -191,7 +102,7 @@ export default function RootLayout({
                 height: 'calc(100vh - 40px)'
               }}
             >
-              <Sidebar
+              <Suspense fallback={null}><Sidebar
                 user={user}
                 onLogout={handleLogout}
                 isCollapsed={isCollapsed}
@@ -200,7 +111,7 @@ export default function RootLayout({
                 onShowExportPreview={() => setShowExportPreview(true)}
                 onShowHelp={() => setShowHelpModal(true)}
                 onShowNotifications={() => setShowNotifications(true)}
-              />
+              /></Suspense>
             </div>
           )}
 
@@ -218,8 +129,8 @@ export default function RootLayout({
                 {/* Global Modals */}
                 {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
                   <>
-                    <AddressBookModal isOpen={showAddressBook} onClose={() => setShowAddressBook(false)} />
-                    <ExportPreviewModal isOpen={showExportPreview} onClose={() => setShowExportPreview(false)} />
+                    {canAccess(staff,'customers') && <AddressBookModal isOpen={showAddressBook} onClose={() => setShowAddressBook(false)} />}
+                    {canAccess(staff,'invoices') && <ExportPreviewModal isOpen={showExportPreview} onClose={() => setShowExportPreview(false)} />}
                     <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
                     <NotificationsModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
                   </>
@@ -227,6 +138,7 @@ export default function RootLayout({
             </StoreProvider>
           </div>
         </div>
+        </></StaffGate>}
       </body>
     </html>
   );

@@ -4,6 +4,8 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { SHOWROOM_ORDERS, SHOWROOM_REVIEWS, SHOWROOM_CHAT, SHOWROOM_CLEANING, SHOWROOM_ESTIMATES, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
 import { db as firestoreDb } from '@/lib/firebase';
 import { AlertCircle, CheckCircle, Bell, MessageCircle, Calendar, FileText, ShoppingBag, X } from 'lucide-react';
+import { useStaffAccess } from '@/hooks/useStaffAccess';
+import { canAccess } from '@/lib/access-policy';
 import { AdminChatBox } from './public/AdminChatBox';
 
 // Using a custom global event or context for toasts
@@ -17,6 +19,7 @@ interface Toast {
 }
 
 export const GlobalNotificationProvider = ({ children }: { children: React.ReactNode }) => {
+    const {staff}=useStaffAccess();
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [activeAdminChatSession, setActiveAdminChatSession] = useState<string | null>(null);
     
@@ -102,17 +105,22 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
     };
 
     useEffect(() => {
-        // Only run if authenticated
-        const isAuth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
-        const activeView = localStorage.getItem('marcopolo_active_view');
-        if (!isAuth && activeView !== 'admin') return;
-
+        setToasts([]);setActiveAdminChatSession(null);
+        if(!staff)return;
+        const sectionForCollection:Record<string,string>={
+          [SHOWROOM_ORDERS]:'orders',[SHOWROOM_REVIEWS]:'reviews',[SHOWROOM_CHAT]:'messages',
+          [SHOWROOM_CLEANING]:'services',[SHOWROOM_ESTIMATES]:'services',[SHOWROOM_APPOINTMENTS]:'appointments'
+        };
+        const watch=(name:string,handler:any)=>{
+          if(!canAccess(staff,sectionForCollection[name]))return ()=>{};
+          return onSnapshot(collection(firestoreDb,name),handler,()=>{setToasts([]);setActiveAdminChatSession(null);});
+        };
         const now = Date.now();
         
         const subscriptions = [
             // Orders
-            onSnapshot(collection(firestoreDb, SHOWROOM_ORDERS), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_ORDERS, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
@@ -129,8 +137,8 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             }),
 
             // Reviews
-            onSnapshot(collection(firestoreDb, SHOWROOM_REVIEWS), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_REVIEWS, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
@@ -146,8 +154,8 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             }),
 
             // Chat Messages / Help Requests
-            onSnapshot(collection(firestoreDb, SHOWROOM_CHAT), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_CHAT, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.timestamp ? new Date(data.timestamp).getTime() : 0;
@@ -165,8 +173,8 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             }),
 
             // Estimates
-            onSnapshot(collection(firestoreDb, SHOWROOM_ESTIMATES), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_ESTIMATES, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
@@ -183,8 +191,8 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             }),
 
             // Appointments / Cleanings / Repairs
-            onSnapshot(collection(firestoreDb, SHOWROOM_CLEANING), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_CLEANING, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
@@ -201,8 +209,8 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             }),
             
             // General Appointments (if separate from cleaning)
-            onSnapshot(collection(firestoreDb, SHOWROOM_APPOINTMENTS || 'showroom_appointments'), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_APPOINTMENTS, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
@@ -220,7 +228,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
         ];
 
         return () => subscriptions.forEach(unsub => unsub());
-    }, []);
+    }, [staff]);
 
     const getIconForType = (type: string) => {
         switch (type) {

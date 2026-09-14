@@ -1,3 +1,7 @@
+import { useStaffAccess } from "@/hooks/useStaffAccess";
+import { canAccess, sectionForTab } from "@/lib/access-policy";
+import StaffGate from "@/components/StaffGate";
+import StaffUsers from "@/components/StaffUsers";
 import ActivityBadge from "@/components/ActivityBadge";
 import { subscribeToCollection, SHOWROOM_APPOINTMENTS } from "@/lib/showroom-firebase";
 import CRMAdminTab from "./CRMAdminTab";
@@ -70,7 +74,10 @@ import {
   , Calendar, Layout
 } from "lucide-react";
 
-export const AdminDashboard: React.FC = () => {
+export const AdminDashboard: React.FC = () => <StaffGate section="staff"><AdminWorkspace /></StaffGate>;
+const AdminWorkspace: React.FC = () => {
+  const {staff}=useStaffAccess();
+  const allowed=(tab:string)=>{const section=sectionForTab(tab);return !!section && canAccess(staff,section);};
   const { 
     rugs, 
     orders, 
@@ -111,7 +118,7 @@ export const AdminDashboard: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -130,7 +137,8 @@ export const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm") => {
+    if(!allowed(tab))return;
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -139,8 +147,17 @@ export const AdminDashboard: React.FC = () => {
       window.history.pushState(null, "", "?" + params.toString());
     }
   };
+  useEffect(()=>{
+    if(staff && !allowed(activeTab)){
+      const next=['analytics','orders','inventory','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','settings','users'].find(allowed);
+      if(next)setActiveTabState(next as any);
+    }
+  },[staff,activeTab]);
   const [appointmentActivity, setAppointmentActivity] = useState<Array<{ status?: string }>>([]);
-  useEffect(() => subscribeToCollection<{ status?: string }>(SHOWROOM_APPOINTMENTS, setAppointmentActivity), []);
+  useEffect(() => {
+    setAppointmentActivity([]);
+    if(canAccess(staff,'appointments'))return subscribeToCollection<{status?:string}>(SHOWROOM_APPOINTMENTS,setAppointmentActivity);
+  },[staff]);
   const pendingAppointments = appointmentActivity.filter(a => (a.status || 'pending').toLowerCase() === 'pending').length;
 
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -299,12 +316,7 @@ export const AdminDashboard: React.FC = () => {
   const [editOrderNotes, setEditOrderNotes] = useState("");
 
   // Security features state
-  const [unlockedOrders, setUnlockedOrders] = useState<string[]>([]);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  const [passwordPromptOrderId, setPasswordPromptOrderId] = useState<string | null>(null);
-  const [passwordInput, setPasswordInput] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordAction, setPasswordAction] = useState<"decrypt" | "delete" | null>(null);
   
   // Bulk select and promotions
   const [selectedRugIds, setSelectedRugIds] = useState<string[]>([]);
@@ -382,41 +394,6 @@ export const AdminDashboard: React.FC = () => {
       .map(m => new Date(m.timestamp).getTime()));
     return t.messages.some(m => m.sender === "customer" && new Date(m.timestamp).getTime() > lastStaffReply);
   }).length;
-
-  const handleUnlockCardDetails = (orderId: string) => {
-    setPasswordPromptOrderId(orderId);
-    setPasswordInput("");
-    setPasswordError("");
-  };
-
-  const verifyDecryptPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Strictly require requested administrator password
-    if (passwordInput === "Marcopolo$") {
-      if (passwordPromptOrderId) {
-        setUnlockedOrders((prev) => [...prev, passwordPromptOrderId]);
-      }
-      setPasswordPromptOrderId(null);
-      setPasswordInput("");
-      setPasswordError("");
-    } else {
-      setPasswordError("Invalid Administrator Password. Access Denied.");
-    }
-  };
-
-  const handleDeleteCardInfo = (orderId: string) => {
-    const confirmDelete = window.confirm("Are you sure you want to permanently delete this credit card data? Make sure you have fully processed the payment first.");
-    if (!confirmDelete) return;
-
-    const key = window.prompt("Enter admin key to confirm deletion:");
-    if (key === "Marcopolo$") {
-      deleteOrderPaymentDetails(orderId);
-      setUnlockedOrders(prev => prev.filter(id => id !== orderId));
-      alert("Credit card details have been securely deleted from this order.");
-    } else if (key !== null) {
-      alert("Invalid admin key. Deletion cancelled.");
-    }
-  };
 
   // --- CALCULATE DYNAMIC ANALYTICS FROM REAL CURRENT STATE ---
   const dynamicAnalytics = React.useMemo(() => {
@@ -929,7 +906,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           <nav className="space-y-1.5 text-xs">
-            <button
+            {allowed('promotions') && (<button
               onClick={() => setActiveTab("promotions")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "promotions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -937,8 +914,8 @@ export const AdminDashboard: React.FC = () => {
             >
               <Tag className="h-4.5 w-4.5" />
               <span>Promotions</span>
-            </button>
-            <button
+            </button>)}
+            {allowed('analytics') && (<button
               onClick={() => setActiveTab("analytics")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "analytics" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -946,9 +923,9 @@ export const AdminDashboard: React.FC = () => {
             >
               <BarChart3 className="h-4.5 w-4.5" />
               <span>Analytics Curation</span>
-            </button>
+            </button>)}
             
-            <button
+            {allowed('inventory') && (<button
               onClick={() => setActiveTab("inventory")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "inventory" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -956,9 +933,9 @@ export const AdminDashboard: React.FC = () => {
             >
               <Layers className="h-4.5 w-4.5" />
               <span>Inventory</span>
-            </button>
+            </button>)}
             
-            <button
+            {allowed('bulk_import') && (<button
               onClick={() => setActiveTab("bulk_import")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "bulk_import" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -966,10 +943,10 @@ export const AdminDashboard: React.FC = () => {
             >
               <UploadCloud className="h-4.5 w-4.5" />
               <span>Bulk Import</span>
-            </button>
+            </button>)}
             
             
-            <button
+            {allowed('crm') && (<button
               onClick={() => setActiveTab("crm")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "crm" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -977,9 +954,9 @@ export const AdminDashboard: React.FC = () => {
             >
               <Users className="h-4.5 w-4.5" />
               <span>Client CRM</span>
-            </button>
+            </button>)}
             
-            <button
+            {allowed('orders') && (<button
               onClick={() => setActiveTab("orders")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "orders" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -991,9 +968,9 @@ export const AdminDashboard: React.FC = () => {
               {dynamicAnalytics.pendingOrders > 0 && (
                 <ActivityBadge count={dynamicAnalytics.pendingOrders} />
               )}
-            </button>
+            </button>)}
 
-            <button
+            {allowed('cleaning') && (<button
               onClick={() => setActiveTab("cleaning")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "cleaning" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1004,9 +981,9 @@ export const AdminDashboard: React.FC = () => {
               {cleaningBookings.filter(b => b.status === "Pending").length > 0 && (
                 <ActivityBadge count={cleaningBookings.filter(b => b.status === "Pending").length} />
               )}
-            </button>
+            </button>)}
 
-            <button
+            {allowed('estimates') && (<button
               onClick={() => setActiveTab("estimates")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "estimates" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1017,9 +994,9 @@ export const AdminDashboard: React.FC = () => {
               {estimates && estimates.filter(e => e.status === "New").length > 0 && (
                 <ActivityBadge count={estimates.filter(e => e.status === "New").length} />
               )}
-            </button>
+            </button>)}
             
-            <button
+            {allowed('appointments') && (<button
               onClick={() => setActiveTab("appointments")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "appointments" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1028,36 +1005,36 @@ export const AdminDashboard: React.FC = () => {
               <Calendar className="h-4.5 w-4.5" />
               <span>Appointments</span>
               <ActivityBadge count={pendingAppointments} />
-            </button>
+            </button>)}
             
-            <button 
+            {allowed('appraisals') && (<button 
               onClick={() => setActiveTab("appraisals")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "appraisals" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <FileText size={18} /> <span>Appraisals</span>
-            </button>
+            </button>)}
               
-            <button 
+            {allowed('employees') && (<button 
               onClick={() => setActiveTab("employees")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "employees" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <Users size={18} /> <span>HR / Employees</span>
-            </button>
+            </button>)}
 
-            <button 
+            {allowed('clock') && (<button 
               onClick={() => setActiveTab("clock")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "clock" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <Clock size={18} /> <span>Time Clock</span>
-            </button>
+            </button>)}
             
-            <button
+            {allowed('reviews') && (<button
               onClick={() => setActiveTab("reviews")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "reviews" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1068,9 +1045,9 @@ export const AdminDashboard: React.FC = () => {
               {reviews.filter(r => !r.isApproved).length > 0 && (
                 <ActivityBadge count={reviews.filter(r => !r.isApproved).length} />
               )}
-            </button>
+            </button>)}
             
-            <button
+            {allowed('messages') && (<button
               onClick={() => setActiveTab("messages")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "messages" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1081,9 +1058,9 @@ export const AdminDashboard: React.FC = () => {
               {unreadMessagesCount > 0 && (
                 <ActivityBadge count={unreadMessagesCount} />
               )}
-            </button>
+            </button>)}
             
-            <button
+            {allowed('blogs') && (<button
               onClick={() => setActiveTab("blogs")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "blogs" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1091,10 +1068,10 @@ export const AdminDashboard: React.FC = () => {
             >
               <BookOpen className="h-4.5 w-4.5" />
               <span>Design Journal</span>
-            </button>
+            </button>)}
             
 
-            <button
+            {allowed('transactions') && (<button
               onClick={() => setActiveTab("transactions")}
               className={`w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "transactions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1104,7 +1081,7 @@ export const AdminDashboard: React.FC = () => {
                 <Banknote className="h-4.5 w-4.5" />
                 <span>Transactions</span>
               </div>
-            </button>
+            </button>)}
             <a
               href="/admin/invoices"
               className="w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer text-gray-300 hover:bg-white/10 hover:text-white"
@@ -1115,7 +1092,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </a>
             
-            <button
+            {allowed('builder') && (<button
               onClick={() => setActiveTab("builder")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "builder" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1123,9 +1100,9 @@ export const AdminDashboard: React.FC = () => {
             >
               <Layout className="h-4.5 w-4.5" />
               <span>Website Editor</span>
-            </button>
+            </button>)}
             
-            <button
+            {allowed('settings') && (<button
               onClick={() => setActiveTab("settings")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "settings" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1133,8 +1110,10 @@ export const AdminDashboard: React.FC = () => {
             >
               <Settings className="h-4.5 w-4.5" />
               <span>General Settings</span>
-            </button>
-          </nav>
+            </button>)}
+          {allowed('users') && <button className="w-full text-left px-4 py-3" onClick={()=>setActiveTab('users')}><Users className="inline h-4 w-4 mr-2"/>Users & Permissions</button>}
+<a className="block px-4 py-3" href="/staff-account">My account / password</a>
+</nav>
         </div>
 
         <div className="pt-4 border-t border-white/10 text-xs text-gray-400 space-y-1 text-left">
@@ -1176,8 +1155,10 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
+        {activeTab === 'users' && allowed('users') && <StaffUsers />}
+        {!allowed(activeTab) && <p>Your account has no access to this section. Ask the owner or General Manager to assign permissions.</p>}
         {/* --- TAB: TRANSACTIONS --- */}
-        {activeTab === "transactions" && (
+        {activeTab === "transactions" && allowed('transactions') && (
           <div className="space-y-6 animate-fadeIn text-left">
             <h2 className="text-xl font-serif text-editorial-text border-b border-editorial-border pb-2">Transactions Ledger</h2>
             
@@ -1233,40 +1214,40 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB: ESTIMATES --- */}
-        {activeTab === "estimates" && (
+        {activeTab === "estimates" && allowed('estimates') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <EstimatesAdminTab />
           </div>
         )}
 
                 {/* --- TAB: APPOINTMENTS --- */}
-        {activeTab === "appointments" && (
+        {activeTab === "appointments" && allowed('appointments') && (
           <AppointmentsAdminTab />
         )}
         
 {/* --- TAB: APPRAISALS --- */}
-        {activeTab === "appraisals" && (
+        {activeTab === "appraisals" && allowed('appraisals') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <AppraisalsAdminTab />
           </div>
         )}
 
         {/* --- TAB: EMPLOYEES --- */}
-        {activeTab === "employees" && (
+        {activeTab === "employees" && allowed('employees') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <EmployeesAdminTab />
           </div>
         )}
 
         {/* --- TAB: CLOCK --- */}
-        {activeTab === "clock" && (
+        {activeTab === "clock" && allowed('clock') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <ClockAdminTab />
           </div>
         )}
 
         {/* --- TAB A: ANALYTICS CURATION --- */}
-        {activeTab === "analytics" && (
+        {activeTab === "analytics" && allowed('analytics') && (
           <div className="space-y-6">
             
             {/* Real Stats Cards Grid */}
@@ -1450,7 +1431,7 @@ export const AdminDashboard: React.FC = () => {
 
         
         {/* --- TAB: PROMOTIONS --- */}
-        {activeTab === "promotions" && (
+        {activeTab === "promotions" && allowed('promotions') && (
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border">
               <h2 className="text-xl font-bold uppercase tracking-widest text-neutral-900 mb-4 flex items-center gap-2">
@@ -1571,14 +1552,14 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB: BUILDER --- */}
-        {activeTab === "builder" && (
+        {activeTab === "builder" && allowed('builder') && (
           <div className="h-[800px]">
              <WebsiteBuilder />
           </div>
         )}
         
 {/* --- TAB: SETTINGS --- */}
-        {activeTab === "settings" && (
+        {activeTab === "settings" && allowed('settings') && (
           <div className="space-y-6">
             {/* --- SHOWROOM FRONTPAGE CONTROLS & ANNOUNCEMENTS PANEL --- */}
             <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left space-y-5">
@@ -1946,169 +1927,17 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-{/* --- SECURITY & PRIVACY SETTINGS PANEL --- */}
-            <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left space-y-5">
-              <div className="border-b border-editorial-border pb-3 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-editorial-accent" />
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider">Security & Privacy Controls</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-sans">
-                
-                {/* Master Password Setting */}
-                <div className="space-y-3">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wide text-sm">Admin Access Password</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed font-light">
-                    Update the master password used to access this secure admin panel.
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Current Password</label>
-                      <input
-                        type="password"
-                        placeholder="••••••••"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">New Password</label>
-                      <input
-                        type="password"
-                        placeholder="Enter new secure password"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => alert('Security setting updated.')}
-                      
-                      className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
-                    >
-                      Update Password
-                    </button>
-                  </div>
-                </div>
-
-                {/* API Keys & External Connections */}
-                <div className="space-y-3">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wide text-sm">External API Keys & Privacy</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed font-light">
-                    Configure escrow payment gateway and tracking API integrations. Keys are encrypted at rest.
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Payment Gateway Secret Key</label>
-                      <input
-                        type="password"
-                        placeholder="sk_live_..."
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1 flex items-center justify-between pt-2">
-                      <span className="text-xs font-bold text-neutral-700">Strict Privacy Mode</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" defaultChecked />
-                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-editorial-accent"></div>
-                      </label>
-                    </div>
-                    <p className="text-sm text-neutral-400 italic">When enabled, limits customer telemetry gathering.</p>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => alert('Security setting updated.')}
-                      
-                      className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
-                    >
-                      Save Configuration
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* --- ADD ADMINISTRATOR PANEL --- */}
-            <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left space-y-5">
-              <div className="border-b border-editorial-border pb-3 flex items-center gap-2">
-                <User className="h-5 w-5 text-editorial-accent" />
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider">Create New Administrator</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-sans">
-                <div className="space-y-3">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wide text-sm">Administrator Access</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed font-light">
-                    Add a new administrator to the dashboard. They will have full access to invoices, settings, and employee records.
-                  </p>
-                  
-                  <form 
-                    className="space-y-2"
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      const form = e.target as HTMLFormElement;
-                      const name = (form.elements.namedItem('adminName') as HTMLInputElement).value;
-                      const email = (form.elements.namedItem('adminEmail') as HTMLInputElement).value;
-                      const pass = (form.elements.namedItem('adminPass') as HTMLInputElement).value;
-                      const res = await addAdminUser(name, email, pass);
-                      alert(res.message);
-                      if (res.success) form.reset();
-                    }}
-                  >
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Full Name</label>
-                      <input
-                        name="adminName"
-                        type="text"
-                        required
-                        placeholder="e.g. Cyrus (Admin)"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Email Address</label>
-                      <input
-                        name="adminEmail"
-                        type="email"
-                        required
-                        placeholder="admin@example.com"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Password</label>
-                      <input
-                        name="adminPass"
-                        type="password"
-                        required
-                        placeholder="Enter secure password"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-1">
-                      <button
-                        type="submit"
-                        className="py-1.5 px-4 bg-editorial-accent hover:bg-neutral-900 text-white font-bold uppercase tracking-wider text-xs transition cursor-pointer"
-                      >
-                        Create Administrator
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-
+<section className="bg-white p-6 border border-editorial-border space-y-3">
+              <h3>Account and staff access</h3>
+              <p>Each person uses their own verified account.</p>
+              <a className="block underline" href="/staff-account">Set or change my password</a>
+              {canAccess(staff,'users') && <a className="block underline" href="/admin/users">Manage users and permissions</a>}
+            </section>
           </div>
         )}
 
         {/* --- TAB B: INVENTORY MANAGEMENT --- */}
-        {activeTab === "inventory" && (
+        {activeTab === "inventory" && allowed('inventory') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div className="flex justify-between items-center border-b border-neutral-100 pb-4">
               <div>
@@ -2513,18 +2342,18 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB: BULK IMPORT --- */}
-        {activeTab === "bulk_import" && (
+        {activeTab === "bulk_import" && allowed('bulk_import') && (
           <BulkImport />
         )}
 
         
-        {activeTab === "crm" && (
+        {activeTab === "crm" && allowed('crm') && (
           <CRMAdminTab />
         )}
         
         {/* --- TAB C: ORDER MANAGEMENT (CUSTOMER ORDERS) --- */}
 
-        {activeTab === "orders" && (
+        {activeTab === "orders" && allowed('orders') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
               <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Customer Orders Fulfillment Logs</h2>
@@ -2669,73 +2498,14 @@ export const AdminDashboard: React.FC = () => {
                           ))}
                         </div>
                         <div className="mt-3 text-sm font-black text-green-800 bg-green-50 p-2 border border-green-200 rounded flex justify-between items-center">
-                          <span>TOTAL PAID:</span>
+                          <span>ORDER TOTAL:</span>
                           <span>${(o.total || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                         </div>
                         <div className="text-xs text-neutral-500 pt-2 font-mono space-y-1">
-                          {(() => {
-                            if (!o.paymentDetails) {
-                              return (
-                                <div className="mt-2 bg-neutral-100/50 border border-neutral-200/50 p-3 text-xs rounded text-center">
-                                  <div className="flex justify-center mb-1">
-                                    <ShieldCheck className="h-5 w-5 text-green-600" />
-                                  </div>
-                                  <strong className="text-neutral-700 block mb-0.5">Card Data Securely Deleted</strong>
-                                  <span className="text-neutral-500 text-[10px]">The payment info for this order has been permanently erased from the system.</span>
-                                </div>
-                              );
-                            }
-                            const pd = o.paymentDetails;
-                            return (
-                              <>
-                                <div>Card: {pd.cardBrand} (last 4: <strong>{pd.last4}</strong>)</div>
-                                
-                                {unlockedOrders.includes(o.id) ? (
-                                  <div className="mt-2 bg-green-500/5 border border-green-500/20 p-2.5 text-xs space-y-1 rounded relative">
-                                    <span className="text-xs uppercase font-bold text-green-700 block tracking-wider mb-1">Processing Details (Decrypted / Unlocked)</span>
-                                    <div>Name: <strong className="text-neutral-800">{pd.cardholderName}</strong></div>
-                                    <div>Card No: <strong className="text-neutral-900 tracking-widest font-bold text-xs bg-white py-0.5 px-1.5 border border-green-200 inline-block mt-0.5 select-all">{pd.cardNumber || "N/A"}</strong></div>
-                                    <div className="flex gap-4 mt-1">
-                                      <div>Exp: <strong className="text-neutral-800 font-bold">{pd.cardExpiry || "N/A"}</strong></div>
-                                      <div>CVV: <strong className="text-neutral-800 font-bold font-sans bg-white py-0.5 px-1.5 border border-green-200 select-all">{pd.cardCVC || "N/A"}</strong></div>
-                                    </div>
-                                    <div className="flex gap-2 justify-end mt-3 border-t border-green-500/10 pt-2">
-                                      <button 
-                                        onClick={() => setUnlockedOrders(prev => prev.filter(id => id !== o.id))}
-                                        className="text-[10px] text-neutral-500 hover:text-neutral-800 uppercase tracking-widest font-bold px-2 py-1 rounded bg-white/50 border border-neutral-200"
-                                      >
-                                        Lock Info
-                                      </button>
-                                      <button 
-                                        onClick={() => handleDeleteCardInfo(o.id)}
-                                        className="text-[10px] text-white hover:bg-red-700 uppercase tracking-widest font-bold px-2 py-1 rounded bg-red-600 shadow-sm"
-                                      >
-                                        Delete Card Info
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="mt-2 bg-amber-500/5 border border-amber-500/20 p-2.5 text-xs space-y-1.5 rounded">
-                                    <span className="text-xs uppercase font-bold text-amber-700 block tracking-wider">Processing Details (Secure Escrow)</span>
-                                    <div>Name: <strong className="text-neutral-400">•••• ••••••••</strong></div>
-                                    <div>Card No: <strong className="text-neutral-400 font-semibold tracking-wider">•••• •••• •••• {pd.last4}</strong></div>
-                                    <div className="flex gap-4">
-                                      <div>Exp: <strong className="text-neutral-400">••/••</strong></div>
-                                      <div>CVV: <strong className="text-neutral-400">•••</strong></div>
-                                    </div>
-                                    
-                                    <button
-                                      onClick={() => handleUnlockCardDetails(o.id)}
-                                      className="w-full mt-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                                    >
-                                      <ShieldCheck className="h-3.5 w-3.5" />
-                                      <span>Reveal Card Details</span>
-                                    </button>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
+                          <p>Payment method: {o.paymentDetails?.cardBrand || 'Confirm with showroom'}</p>
+                          {o.paymentDetails?.last4 && <p>Ending in {o.paymentDetails.last4}</p>}
+                          <p className="text-neutral-400">Payment is confirmed separately by the showroom.</p>
+
                         </div>
                       </div>
 
@@ -2899,12 +2669,8 @@ export const AdminDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              const key = window.prompt("Enter Admin Key to permanently delete this order:");
-                              if (key === "Marcopolo$") {
-                                deleteOrder(o.id);
-                              } else if (key !== null) {
-                                alert("Invalid Admin Key. Deletion blocked.");
-                              }
+                              if(!canAccess(staff,'orders','delete')){alert("You do not have permission to delete orders.");return;}
+                              if(window.confirm("Permanently delete this order?"))deleteOrder(o.id);
                             }}
                             className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded transition flex items-center justify-center cursor-pointer"
                             title="Delete Order"
@@ -2967,7 +2733,7 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB: SPECIALTY CARE --- */}
-        {activeTab === "cleaning" && (
+        {activeTab === "cleaning" && allowed('cleaning') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
               <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Specialty Care Lab Orders</h2>
@@ -3009,12 +2775,8 @@ export const AdminDashboard: React.FC = () => {
                         </select>
                         <button
                           onClick={() => {
-                            const key = window.prompt("Enter Admin Key to permanently delete this cleaning booking:");
-                            if (key === "Marcopolo$") {
-                              deleteCleaningBooking(booking.id);
-                            } else if (key !== null) {
-                              alert("Invalid Admin Key. Deletion blocked.");
-                            }
+                            if(!canAccess(staff,'services','delete')){alert("You do not have permission to delete bookings.");return;}
+                            if(window.confirm("Permanently delete this cleaning booking?"))deleteCleaningBooking(booking.id);
                           }}
                           className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                           title="Delete Cleaning Booking"
@@ -3059,7 +2821,7 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB D: REVIEW MODERATION --- */}
-        {activeTab === "reviews" && (
+        {activeTab === "reviews" && allowed('reviews') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
               <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Advisor Review Moderation</h2>
@@ -3130,7 +2892,7 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB E: INBOX CONCIERGE CHATS --- */}
-        {activeTab === "messages" && (
+        {activeTab === "messages" && allowed('messages') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
             
             {/* Sidebar with active customer threads (Left column, 4 cols) */}
@@ -3263,7 +3025,7 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB F: BLOG PUBLISHER --- */}
-        {activeTab === "blogs" && (
+        {activeTab === "blogs" && allowed('blogs') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div className="flex justify-between items-center border-b border-neutral-100 pb-4">
               <div>
@@ -3998,72 +3760,6 @@ export const AdminDashboard: React.FC = () => {
               >
                 Publish Article
               </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL 4: ADMIN PASSWORD DECRYPTION PROMPT --- */}
-      {passwordPromptOrderId !== null && (
-        <div className="fixed inset-0 z-50 bg-neutral-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-left border border-neutral-200">
-            <div className="px-6 py-4 bg-amber-50 border-b border-amber-200/50 flex justify-between items-center">
-              <div className="flex items-center gap-2 text-amber-800">
-                <ShieldCheck className="h-5 w-5 text-amber-600" />
-                <h3 className="font-serif font-bold text-sm">Security Verification</h3>
-              </div>
-              <button 
-                onClick={() => setPasswordPromptOrderId(null)} 
-                className="p-1 text-neutral-400 hover:text-neutral-600 cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={verifyDecryptPassword} className="p-6 space-y-4 text-xs font-sans">
-              <p className="text-neutral-500 leading-relaxed text-sm">
-                To view sensitive payment escrow details (full name, complete card number, expiration date, and CVV), please verify your identity with your administrator password.
-              </p>
-
-              <div className="space-y-1.5">
-                <label className="block text-neutral-600 font-bold uppercase tracking-wider text-xs">
-                  Admin Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  autoFocus
-                  value={passwordInput}
-                  onChange={(e) => {
-                    setPasswordInput(e.target.value);
-                    setPasswordError("");
-                  }}
-                  placeholder="Enter passcode (e.g., admin)"
-                  className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2.5 px-3 outline-none focus:border-amber-500 text-xs font-mono tracking-widest"
-                />
-                {passwordError && (
-                  <p className="text-red-500 text-xs mt-1 font-semibold flex items-center gap-1 animate-fadeIn">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    <span>{passwordError}</span>
-                  </p>
-                )}
-              </div>
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setPasswordPromptOrderId(null)}
-                  className="flex-1 py-2.5 border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-semibold uppercase tracking-wider text-xs rounded transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 bg-neutral-900 hover:bg-neutral-850 text-amber-400 font-bold uppercase tracking-wider text-xs rounded transition cursor-pointer"
-                >
-                  Verify & Decrypt
-                </button>
-              </div>
             </form>
           </div>
         </div>

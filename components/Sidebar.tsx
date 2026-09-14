@@ -1,4 +1,6 @@
 'use client';
+import { useStaffAccess } from '@/hooks/useStaffAccess';
+import { canAccess,invoiceSection } from '@/lib/access-policy';
 import ActivityBadge from './ActivityBadge';
 
 import React, { useState } from 'react';
@@ -35,6 +37,7 @@ export default function Sidebar({
     onShowNotifications?: () => void
 }) {
     const pathname = usePathname();
+    const {staff}=useStaffAccess();
     const searchParams = useSearchParams();
 
     // Helper to check active state safely
@@ -53,6 +56,7 @@ export default function Sidebar({
     const [outstandingBalances, setOutstandingBalances] = useState<{ name: string; balance: number; phone: string }[]>([]);
 
     React.useEffect(() => {
+        if(!canAccess(staff,'invoices'))return;
         const loadCounts = async () => {
             const data = await getAllInvoices();
             const count = data.filter(inv => {
@@ -73,7 +77,7 @@ export default function Sidebar({
         loadCounts();
         const interval = setInterval(loadCounts, 60000); // Check every minute
         return () => clearInterval(interval);
-    }, []);
+    }, [staff]);
 
     const [isBackingUp, setIsBackingUp] = useState(false);
 
@@ -191,7 +195,11 @@ export default function Sidebar({
             </div>
 
             <nav className={styles.nav}>
-                {navItems.map((item) => {
+                {navItems.filter(item=>{
+                  const section=item.label==='Address Book'?'customers':item.label==='Backup'?'settings':item.href?invoiceSection(item.href.split('?')[0]):'invoices';
+                  const action=item.label==='New Invoice'?'write':item.label==='Recycle Bin'?'delete':'read';
+                  return canAccess(staff,section,action);
+                }).map((item) => {
                     const itemIsActive = item.activeCondition !== undefined
                         ? item.activeCondition
                         : isActive(item.href || '', item.exact);

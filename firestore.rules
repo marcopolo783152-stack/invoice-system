@@ -1,138 +1,205 @@
 rules_version = '2';
-
 service cloud.firestore {
-  match /databases/{database}/documents {
-    
-    // Function to check if the user is an admin
-    function isAdmin() {
-      return request.auth != null && exists(/databases/$(database)/documents/showroom_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/showroom_roles/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Role definitions
-    match /showroom_roles/{uid} {
-      allow read, write: if isAdmin();
-      // Allow reading one's own role (for the frontend to check if admin)
-      allow read: if request.auth != null && request.auth.uid == uid;
-    }
-
-    // Customer profiles
-    match /showroom_customers/{uid} {
-      // Users can read/write their own profile, admins can read/write all
-      allow read, write: if (request.auth != null && request.auth.uid == uid) || isAdmin();
-    }
-
-    // Orders
-    match /showroom_orders/{orderId} {
-      // Users can read their own orders, admins can read/write all
-      allow read: if (request.auth != null && resource.data.customerId == request.auth.uid) || isAdmin();
-      allow write: if isAdmin();
-      // Allow customers to create an order
-      allow create: if request.auth != null && request.data.customerId == request.auth.uid;
-    }
-
-    // Estimates and Bookings
-    match /showroom_estimates/{estimateId} {
-      allow create: if true; // Public can submit estimates
-      allow read, write: if isAdmin();
-    }
-    
-    match /showroom_cleaning/{bookingId} {
-      allow create: if true; // Public can submit cleaning requests
-      allow read, write: if isAdmin();
-    }
-    
-    function validBooking(b, id) {
-      return request.auth != null
-        && b.keys().hasOnly(['id','ownerUid','staffId','manager','name','email','phone','date','time','slotTime','slotId','notes','status','createdAt'])
-        && b.id == id && b.ownerUid == request.auth.uid && b.status == 'pending'
-        && b.staffId in ['nazif', 'farid']
-        && b.name is string && b.name.size() > 0 && b.name.size() <= 150
-        && b.email is string && b.email.size() > 3 && b.email.size() <= 254
-        && b.phone is string && b.phone.size() >= 7 && b.phone.size() <= 40
-        && b.notes is string && b.notes.size() <= 2000
-        && b.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}
-
-    // Catalog & Content (Public read, admin write)
-    match /showroom_rugs/{rugId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    match /showroom_blogs/{blogId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    match /showroom_settings/{settingId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    match /showroom_reviews/{reviewId} {
-      allow read: if true;
-      allow create: if request.auth != null; // Authenticated users can review
-      allow update, delete: if isAdmin(); // Only admins can approve or delete
-    }
-
-    // Default deny
-    match /{document=**} {
-      allow read, write: if false;
-    }
+ match /databases/{database}/documents {
+  function signed() { return request.auth != null; }
+  function verified() {
+   return signed() && request.auth.token.get('email_verified',false) == true
+    && request.auth.token.get('email','') is string && request.auth.token.get('email','').size() > 0;
   }
-}
-)
-        && b.slotTime in ['10:00','10:30','11:00','11:30','12:00','12:30','13:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30']
-        && b.slotId == b.staffId + '_' + b.date + '_' + b.slotTime;
-    }
-
-    match /showroom_appointments/{appointmentId} {
-      allow create: if validBooking(request.resource.data, appointmentId)
-        && !exists(/databases/$(database)/documents/showroom_appointment_slots/$(request.resource.data.slotId))
-        && getAfter(/databases/$(database)/documents/showroom_appointment_slots/$(request.resource.data.slotId)).data.appointmentId == appointmentId;
-      allow read: if isAdmin();
-      allow update, delete: if isAdmin();
-    }
-
-    // Availability is public; customer details stay in the private booking.
-    match /showroom_appointment_slots/{slotId} {
-      allow read: if true;
-      allow create: if request.auth != null
-        && request.resource.data.keys().hasOnly(['staffId','date','time','appointmentId'])
-        && slotId == request.resource.data.staffId + '_' + request.resource.data.date + '_' + request.resource.data.time
-        && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.slotId == slotId
-        && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.staffId == request.resource.data.staffId
-        && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.date == request.resource.data.date
-        && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.slotTime == request.resource.data.time
-        && (isAdmin() || getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.ownerUid == request.auth.uid);
-      allow update: if false;
-      allow delete: if isAdmin();
-    }
-
-    // Catalog & Content (Public read, admin write)
-    match /showroom_rugs/{rugId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    match /showroom_blogs/{blogId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    match /showroom_settings/{settingId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    match /showroom_reviews/{reviewId} {
-      allow read: if true;
-      allow create: if request.auth != null; // Authenticated users can review
-      allow update, delete: if isAdmin(); // Only admins can approve or delete
-    }
-
-    // Default deny
-    match /{document=**} {
-      allow read, write: if false;
-    }
+  function ownerIdentity() {
+   return verified() && request.auth.uid == 'msQJKLOsWceWK5A75V6ZBLQRvsl2'
+    && request.auth.token.email.lower() == 'marcopolo783152@gmail.com';
   }
+  function roleData() {
+   return get(/databases/$(database)/documents/showroom_roles/$(request.auth.uid)).data;
+  }
+  function staff() {
+   return verified() && exists(/databases/$(database)/documents/showroom_roles/$(request.auth.uid))
+    && roleData().get('active',ownerIdentity()) == true
+    && roleData().get('email','').lower() == request.auth.token.email.lower()
+    && (roleData().role in ['general_manager','seller','custom'] || (roleData().role == 'admin' && ownerIdentity()));
+  }
+  function full() { return staff() && roleData().role in ['admin','general_manager']; }
+  function can(section,action) {
+   return staff() && section in ['inventory','invoices','orders','appointments','messages','services','customers','reviews','content','promotions','reports','employees','settings','users']
+    && action in ['read','write','delete']
+    && (full() || (section != 'users' && (
+     (roleData().role == 'seller' && (
+      (action == 'read' && section in ['inventory','invoices','orders','customers']) ||
+      (action == 'write' && section in ['invoices','orders','customers'])
+     )) ||
+     (roleData().role == 'custom' && roleData().get('permissions',{}).get(section + '.' + action,false) == true)
+    )));
+  }
+  function validStaff(d) {
+   return d.keys().hasOnly(['email','name','role','permissions','active'])
+    && d.keys().hasAll(['email','name','role','permissions','active'])
+    && d.email is string && d.email == d.email.lower() && d.email.size() > 3 && d.email.size() <= 254
+    && d.name is string && d.name.size() > 0 && d.name.size() <= 100
+    && d.role in ['general_manager','seller','custom']
+    && d.permissions is map && d.permissions.size() <= 42 && d.active is bool;
+  }
+  function inviteData() {
+   return get(/databases/$(database)/documents/showroom_staff_invites/$(request.auth.token.email.lower())).data;
+  }
+  function validInvite(d,email) {
+   return d.keys().hasOnly(['email','name','role','permissions','active','acceptedUid','expiresAt'])
+    && d.email == email && d.email == d.email.lower()
+    && d.name is string && d.name.size() > 0 && d.name.size() <= 100
+    && d.role in ['general_manager','seller','custom'] && d.permissions is map && d.permissions.size() <= 42
+    && d.active is bool && d.acceptedUid is string
+    && d.expiresAt is timestamp && d.expiresAt <= request.time + duration.value(8,'d');
+  }
+  function acceptsInvite(uid,d) {
+   return verified() && request.auth.uid == uid && validStaff(d) && d.active == true
+    && d.email == request.auth.token.email.lower()
+    && inviteData().active == true && inviteData().acceptedUid == '' && inviteData().expiresAt > request.time
+    && d.name == inviteData().name && d.role == inviteData().role && d.permissions == inviteData().permissions
+    && getAfter(/databases/$(database)/documents/showroom_staff_invites/$(d.email)).data.acceptedUid == uid
+    && getAfter(/databases/$(database)/documents/showroom_staff_invites/$(d.email)).data.active == false;
+  }
+  match /showroom_roles/{uid} {
+   allow get: if (verified() && request.auth.uid == uid) || full();
+   allow list: if full();
+   allow create: if uid != 'msQJKLOsWceWK5A75V6ZBLQRvsl2'
+    && ((full() && request.auth.uid != uid && validStaff(request.resource.data)) || acceptsInvite(uid,request.resource.data));
+   allow update: if full() && uid != request.auth.uid && uid != 'msQJKLOsWceWK5A75V6ZBLQRvsl2'
+    && validStaff(request.resource.data) && request.resource.data.email == resource.data.email;
+   // Disable accounts instead of deleting the record; a stale invitation must not restore access.
+   allow delete: if false;
+  }
+  match /showroom_staff_invites/{email} {
+   allow get: if full() || (verified() && request.auth.token.email.lower() == email);
+   allow list: if full();
+   allow create: if full() && validInvite(request.resource.data,email)
+    && request.resource.data.acceptedUid == '' && request.resource.data.expiresAt > request.time
+    && email != 'marcopolo783152@gmail.com';
+   allow update: if (full() && validInvite(request.resource.data,email) && email != 'marcopolo783152@gmail.com')
+    || (verified() && request.auth.token.email.lower() == email
+     && resource.data.active == true && resource.data.acceptedUid == '' && resource.data.expiresAt > request.time
+     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['acceptedUid','active'])
+     && request.resource.data.acceptedUid == request.auth.uid && request.resource.data.active == false
+     && !exists(/databases/$(database)/documents/showroom_roles/$(request.auth.uid))
+     && getAfter(/databases/$(database)/documents/showroom_roles/$(request.auth.uid)).data.email == email
+     && getAfter(/databases/$(database)/documents/showroom_roles/$(request.auth.uid)).data.role == resource.data.role
+     && getAfter(/databases/$(database)/documents/showroom_roles/$(request.auth.uid)).data.permissions == resource.data.permissions);
+   allow delete: if false;
+  }
+
+  // Explicit collection mapping: no wildcard grant for unknown collections.
+  function privateSection(c) {
+   return c in ['invoices','deletedInvoices','appraisals','marcopolo_appraisals'] ? 'invoices'
+    : c == 'inventory' ? 'inventory'
+    : c == 'customers' ? 'customers'
+    : c in ['service_orders','service_vendors','showroom_cleaning_bookings','showroom_cleaning','showroom_estimates'] ? 'services'
+    : c in ['employees','timelogs','employeepayments'] ? 'employees'
+    : c in ['audit_logs','auditLogs'] ? 'reports'
+    : c == 'showroom_promocodes' ? 'promotions'
+    : c == 'settings' ? 'settings' : '';
+  }
+  match /{c}/{id} {
+   allow read: if privateSection(c) != '' && can(privateSection(c),'read');
+   allow create,update: if privateSection(c) != '' && can(privateSection(c),'write');
+   allow delete: if privateSection(c) != '' && can(privateSection(c),'delete');
+  }
+  match /counters/{id} {
+   allow read: if can('invoices','read');
+   allow create,update: if can('invoices','write');
+   allow delete: if full();
+  }
+  // Legacy password documents are no longer a login or authorization source.
+  match /users/{id} { allow read,write: if false; }
+
+  match /showroom_customers/{uid} {
+   allow get: if (signed() && request.auth.uid == uid) || can('customers','read');
+   allow list: if can('customers','read');
+   allow create,update: if can('customers','write') || (
+    signed() && request.auth.uid == uid
+    && request.resource.data.keys().hasOnly(['name','email','phone','address','createdAt'])
+    && request.resource.data.email == request.auth.token.email
+   );
+   allow delete: if can('customers','delete');
+  }
+  match /showroom_orders/{id} {
+   allow read: if can('orders','read') || (signed() && resource.data.get('customerId','') == request.auth.uid);
+   allow create: if can('orders','write') || (signed() && request.resource.data.customerId == request.auth.uid
+    && request.resource.data.id == id && request.resource.data.status == 'Pending Confirmation');
+   allow update: if can('orders','write') && request.resource.data.get('customerId','') == resource.data.get('customerId','');
+   allow delete: if can('orders','delete');
+  }
+  match /showroom_chat/{id} {
+   allow read: if can('messages','read') || (signed() && resource.data.get('ownerUid','') == request.auth.uid);
+   allow create: if (can('messages','write') && request.resource.data.ownerUid is string)
+    || (signed() && request.resource.data.ownerUid == request.auth.uid
+     && request.resource.data.text is string && request.resource.data.text.size() <= 10000
+     && request.resource.data.sender == 'customer' && request.resource.data.isAutomated == false);
+   allow update: if can('messages','write') && request.resource.data.ownerUid == resource.data.ownerUid;
+   allow delete: if can('messages','delete');
+  }
+  match /showroom_rugs/{id} {
+   allow read: if true;
+   allow create,update: if can('inventory','write');
+   allow delete: if can('inventory','delete');
+  }
+  match /showroom_blogs/{id} {
+   allow read: if true;
+   allow create,update: if can('content','write');
+   allow delete: if can('content','delete');
+  }
+  match /showroom_settings/{id} {
+   allow read: if true;
+   allow create,update: if can('settings','write') || (id == 'live_website_content' && can('content','write'));
+   allow delete: if can('settings','delete');
+  }
+  match /showroom_reviews/{id} {
+   allow read: if true;
+   allow create: if can('reviews','write') || (signed() && request.resource.data.isApproved == false);
+   allow update: if can('reviews','write');
+   allow delete: if can('reviews','delete');
+  }
+  match /showroom_estimates/{id} {
+   allow create: if request.resource.data.id == id && request.resource.data.status == 'New'
+    && request.resource.data.name is string && request.resource.data.name.size() > 0
+    && request.resource.data.email is string && request.resource.data.phone is string;
+  }
+  match /showroom_cleaning_bookings/{id} {
+   allow create: if request.resource.data.id == id && request.resource.data.status == 'Pending';
+  }
+  function validBooking(b,id) {
+   return signed()
+    && b.keys().hasOnly(['id','ownerUid','staffId','manager','name','email','phone','date','time','slotTime','slotId','notes','status','createdAt'])
+    && b.id == id && b.ownerUid == request.auth.uid && b.status == 'pending'
+    && b.staffId in ['nazif','farid']
+    && b.name is string && b.name.size() > 0 && b.name.size() <= 150
+    && b.email is string && b.email.size() > 3 && b.email.size() <= 254
+    && b.phone is string && b.phone.size() >= 7 && b.phone.size() <= 40
+    && b.notes is string && b.notes.size() <= 2000
+    && b.date is string && b.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+    && b.slotTime in ['10:00','10:30','11:00','11:30','12:00','12:30','13:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30']
+    && b.slotId == b.staffId + '_' + b.date + '_' + b.slotTime;
+  }
+  match /showroom_appointments/{id} {
+   allow create: if validBooking(request.resource.data,id)
+    && !exists(/databases/$(database)/documents/showroom_appointment_slots/$(request.resource.data.slotId))
+    && getAfter(/databases/$(database)/documents/showroom_appointment_slots/$(request.resource.data.slotId)).data.appointmentId == id;
+   allow read: if can('appointments','read');
+   allow update: if can('appointments','write')
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+   allow delete: if can('appointments','delete');
+  }
+  match /showroom_appointment_slots/{slotId} {
+   allow read: if true;
+   allow create: if signed()
+    && request.resource.data.keys().hasOnly(['staffId','date','time','appointmentId'])
+    && slotId == request.resource.data.staffId + '_' + request.resource.data.date + '_' + request.resource.data.time
+    && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.slotId == slotId
+    && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.staffId == request.resource.data.staffId
+    && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.date == request.resource.data.date
+    && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.slotTime == request.resource.data.time
+    && (can('appointments','write') || getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.ownerUid == request.auth.uid);
+   allow update: if false;
+   allow delete: if can('appointments','write') || can('appointments','delete');
+  }
+  match /{document=**} { allow read,write: if false; }
+ }
 }

@@ -1,5 +1,5 @@
 import { 
-  collection, 
+  collection, query, where, 
   onSnapshot, 
   doc, 
   setDoc, 
@@ -147,18 +147,20 @@ export const seedShowroomDataIfEmpty = async () => {
 
 export const subscribeToCollection = <T>(
   colName: string, 
-  callback: (data: T[]) => void
+  callback: (data: T[]) => void,
+  ownerFilter?: [string,string]
 ) => {
   const firestoreDb = db; 
   if (!isFirebaseConfigured() || !firestoreDb) { console.warn("FIREBASE IS NOT CONFIGURED OR DB IS NULL in subscribe!"); return () => {}; }
   
-  return onSnapshot(collection(firestoreDb, colName), (snapshot) => {
+  return onSnapshot(ownerFilter ? query(collection(firestoreDb,colName),where(ownerFilter[0],"==",ownerFilter[1])) : collection(firestoreDb, colName), (snapshot) => {
     const items: T[] = [];
     snapshot.forEach((doc) => {
       items.push({ id: doc.id, ...doc.data() } as unknown as T);
     });
     callback(items);
   }, (error) => {
+    callback([]);
     console.error(`Error subscribing to ${colName}:`, error);
   });
 };
