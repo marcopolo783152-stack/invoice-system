@@ -5,6 +5,7 @@ export const BUSINESS={
 };
 export function helpfulFallback(text:string){
  const t=text.trim().toLowerCase();
+ if(/\b(human|person|team member|manager|speak to someone)\b/.test(t))return {replyText:'Of course. Please share your full name, email and phone in the contact form so I can submit your request to our showroom team.',requiresHandoff:true};
  if(/^(hi|hello|hey|good morning|good afternoon|good evening)[!.,\s]*$/.test(t))return {replyText:"Hello! Welcome to Marco Polo Oriental Rugs. I’m Cyrus, your AI showroom assistant. I’d be happy to help you find a rug, explore our care services or plan a visit. What can I help with?",requiresHandoff:false};
  if(/hours|open|close|lunch|sunday/.test(t))return {replyText:BUSINESS.hours+' You can book a visit at /services/book.',requiresHandoff:false};
  if(/address|location|where are|directions/.test(t))return {replyText:'You’ll find us at '+BUSINESS.address+'. You can reach our showroom at '+BUSINESS.phone+'. We’d love to welcome you.',requiresHandoff:false};

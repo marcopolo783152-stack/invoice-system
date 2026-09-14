@@ -376,6 +376,7 @@ const AdminWorkspace: React.FC = () => {
       threadsMap[sId].messages.push(msg);
       if (new Date(msg.timestamp).getTime() > new Date(threadsMap[sId].lastTimestamp).getTime()) {
         threadsMap[sId].lastTimestamp = msg.timestamp;
+        threadsMap[sId].customerName = cName;
       }
     });
 
