@@ -1,7 +1,7 @@
 name: Staff access checks
 on:
   push:
-    branches: [fix/notification-foundation-20260914]
+    branches: [main]
   pull_request:
     branches: [main]
 permissions:

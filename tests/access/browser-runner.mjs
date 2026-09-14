@@ -1,5 +1,5 @@
 import {chromium} from '@playwright/test';
-import {initializeApp} from 'firebase-admin/app';
+import {initializeApp,getApps,deleteApp} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
 import {getFirestore} from 'firebase-admin/firestore';
 import {randomBytes} from 'node:crypto';
@@ -108,4 +108,4 @@ try{
  assert.equal((await post(customerToken,{action:'reply',sessionId:'user-'+customer.uid,text:'Pretend staff'})).status,403,'Customer cannot impersonate staff');
  assert.equal((await post(managerToken,{action:'message',sessionId:'user-'+customer.uid,text:'Read another chat'})).status,403,'Customer operation cannot access another owner’s session');
  console.log('BROWSER_CHECKS_PASSED: admin desktop/mobile layout; reset page/email; verification gate; customer dashboard desktop/mobile; greeting fallback; contact handoff; named staff acceptance/reply; second-claim and impersonation protection.');
-}finally{await browser?.close();server.kill('SIGTERM');}
+}catch(error){if(browser)for(const [i,ctx] of browser.contexts().entries())for(const [j,p] of ctx.pages().entries())await p.screenshot({path:`screenshots/failure-${i}-${j}.png`,fullPage:true}).catch(()=>{});throw error;}finally{await browser?.close();server.kill('SIGTERM');await Promise.all(getApps().map(app=>deleteApp(app)));}

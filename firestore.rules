@@ -121,7 +121,8 @@ service cloud.firestore {
    allow delete: if can('customers','delete');
   }
   match /showroom_orders/{id} {
-   allow read: if can('orders','read') || (signed() && resource.data.get('customerId','') == request.auth.uid);
+   // The server returns safe order summaries. Raw legacy payment documents stay full-admin only.
+   allow read: if full();
    allow create: if can('orders','write') || (signed() && request.resource.data.customerId == request.auth.uid
     && request.resource.data.id == id && request.resource.data.status == 'Pending Confirmation');
    allow update: if can('orders','write') && request.resource.data.get('customerId','') == resource.data.get('customerId','');

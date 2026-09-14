@@ -15,7 +15,7 @@ export function AdminChatBox({activeSessionId,onClose,embedded=false}:{activeSes
  useEffect(()=>{setName(staff?.name||'');},[staff?.name]);
  useEffect(()=>{setSession(null);setError('');if(activeSessionId&&canAccess(staff,'messages'))return onSnapshot(doc(db,'showroom_chat_sessions',activeSessionId),s=>setSession(s.data()||null),()=>setError('Could not load the conversation.'));},[activeSessionId,staff]);
  const messages=chatMessages.filter(m=>m.sessionId===activeSessionId).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
- useEffect(()=>{bottom.current?.scrollIntoView({behavior:'auto'});},[messages.length]);
+ useEffect(()=>{const feed=bottom.current?.parentElement;if(feed)feed.scrollTop=feed.scrollHeight;},[messages.length]);
  if(!activeSessionId||!canAccess(staff,'messages'))return null;
  const run=async(body:Record<string,unknown>)=>{setBusy(true);setError('');try{await chatRequest({...body,sessionId:activeSessionId});setText('');}catch(e){setError(e instanceof Error?e.message:'Could not send.');}finally{setBusy(false);}};
  return <section className={styles.window+' '+(embedded?styles.embedded:'')} aria-label="Customer conversation">

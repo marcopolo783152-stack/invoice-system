@@ -6,7 +6,7 @@ import {canAccess} from '@/lib/access-policy';
 import {subscribeToCollection,SHOWROOM_APPOINTMENTS} from '@/lib/showroom-firebase';
 import styles from './Portal.module.css';
 export default function AdminOverview(){
- const {orders,rugs,chatMessages,estimates}=useStore();const {staff}=useStaffAccess();
+ const {orders,rugs,chatMessages,estimates,orderLoadError}=useStore();const {staff}=useStaffAccess();
  const [appointments,setAppointments]=useState<any[]>([]);
  useEffect(()=>{if(canAccess(staff,'appointments'))return subscribeToCollection<any>(SHOWROOM_APPOINTMENTS,setAppointments);setAppointments([]);},[staff]);
  const pending=orders.filter(o=>o.status==='Pending Confirmation');
@@ -15,6 +15,7 @@ export default function AdminOverview(){
  const stats=[['Orders to confirm',pending.length,'orders'],['Available rugs',rugs.filter(r=>r.availability==='In Stock').length,'inventory'],['Conversations awaiting reply',waiting.length,'messages'],['New estimates',estimates.filter(e=>e.status==='New').length,'services']];
  return <section className={styles.page}>
  <div className={styles.hero}><div><span className={styles.eyebrow}>Your showroom, at a glance</span><h1>Welcome, {staff?.name?.split(' ')[0]||'team'}.</h1><p>Here’s what needs your attention. Keep customers informed and make every visit feel personal.</p></div><a className={styles.button} href="/admin/invoices/invoices/new">Create an invoice →</a></div>
+ {orderLoadError&&<p role="alert" className={styles.error}>{orderLoadError}</p>}
  <div className={styles.stats}>{stats.filter(x=>canAccess(staff,String(x[2]))).map(([label,value])=><div className={styles.card} key={label}><span className={styles.muted}>{label}</span><strong className={styles.stat}>{value}</strong></div>)}</div>
  <div className={styles.grid}>
  <section className={styles.card}><div className={styles.header}><h2>Recent orders</h2><a href="/?view=admin&adminTab=orders">View all →</a></div>

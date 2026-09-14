@@ -149,3 +149,10 @@ test('customers cannot list other appointments or forge chat session ownership',
  await assertFails(getDoc(doc(identity('other'),'showroom_chat_sessions/private')));
  await assertFails(updateDoc(doc(identity('customer'),'showroom_chat_sessions/private'),{claimedBy:'gm',status:'human'}));
 });
+
+test('raw order data is not exposed directly to customers or sellers',async()=>{
+ await seed('showroom_orders/legacy',{customerId:'customer',status:'Pending Confirmation'});
+ await assertFails(getDoc(doc(identity('customer'),'showroom_orders/legacy')));
+ await assertFails(getDoc(doc(identity('seller'),'showroom_orders/legacy')));
+ await assertSucceeds(getDoc(doc(identity('gm'),'showroom_orders/legacy')));
+});

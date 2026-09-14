@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import {useStore} from '@/context/StoreContext';
+import React, { useEffect, useState, useRef } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { SHOWROOM_ORDERS, SHOWROOM_REVIEWS, SHOWROOM_CHAT, SHOWROOM_CLEANING, SHOWROOM_ESTIMATES, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
 import { db as firestoreDb } from '@/lib/firebase';
@@ -20,6 +21,9 @@ interface Toast {
 
 export const GlobalNotificationProvider = ({ children }: { children: React.ReactNode }) => {
     const {staff}=useStaffAccess();
+    const {orders}=useStore();
+    const knownOrderIds=useRef<Set<string>|null>(null);
+    useEffect(()=>{knownOrderIds.current=null;},[staff?.uid]);
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [activeAdminChatSession, setActiveAdminChatSession] = useState<string | null>(null);
     
@@ -118,24 +122,6 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
         const now = Date.now();
         
         const subscriptions = [
-            // Orders
-            watch(SHOWROOM_ORDERS, (snapshot: any) => {
-                snapshot.docChanges().forEach((change: any) => {
-                    if (change.type === 'added') {
-                        const data = change.doc.data();
-                        const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
-                        if (createdAt > now - 10000) { // Only recent (last 10 seconds)
-                            addToast({
-                                title: `New Order: ${data.id}`,
-                                message: `${data.shippingAddress?.name || 'Customer'} placed an order for $${data.total?.toLocaleString()}`,
-                                type: 'order',
-                                link: '/?view=admin&adminTab=orders'
-                            });
-                        }
-                    }
-                });
-            }),
-
             // Reviews
             watch(SHOWROOM_REVIEWS, (snapshot: any) => {
                 snapshot.docChanges().forEach((change: any) => {
@@ -230,6 +216,16 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
         return () => subscriptions.forEach(unsub => unsub());
     }, [staff]);
 
+    useEffect(()=>{
+      if(!canAccess(staff,'orders'))return;
+      if(knownOrderIds.current){
+        for(const order of orders)if(!knownOrderIds.current.has(order.id)&&new Date(order.createdAt).getTime()>Date.now()-60000){
+          addToast({title:'New order: '+order.id,message:(order.customerInfo?.name||'Customer')+' placed an order.',type:'order',link:'/?view=admin&adminTab=orders&orderId='+encodeURIComponent(order.id)});
+        }
+      }
+      knownOrderIds.current=new Set(orders.map(order=>order.id));
+    },[orders,staff]);
+
     const getIconForType = (type: string) => {
         switch (type) {
             case 'order': return <ShoppingBag className="text-emerald-500" size={24} />;
@@ -282,7 +278,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             `}</style>
 
             <AdminChatBox 
-                activeSessionId={activeAdminChatSession} 
+                activeSessionId={typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('adminTab') === 'messages' ? null : activeAdminChatSession} 
                 onClose={() => setActiveAdminChatSession(null)} 
             />
         </>
