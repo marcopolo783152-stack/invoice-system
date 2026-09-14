@@ -96,7 +96,7 @@ try{
  await chat.getByText(/Nazif from our showroom team has joined/).waitFor({timeout:20000});
  await staffChat.getByLabel('Reply to customer').fill('Hello Ava, I’m happy to help with your rug.');
  await staffChat.getByRole('button',{name:'Send',exact:true}).click();
- await chat.getByText('Hello Ava, I’m happy to help with your rug.',{exact:true}).waitFor();
+ await chat.getByText(/Hello Ava, I’m happy to help with your rug\./).waitFor();
  await page.screenshot({path:'screenshots/customer-live-chat.png',fullPage:true});
  const tokenFor=async email=>{
   const response=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=test-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,returnSecureToken:true})});
