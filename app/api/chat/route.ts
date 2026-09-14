@@ -1,3 +1,4 @@
+import {classifyFirebaseFailure} from '@/lib/server/firebase-failure.mjs';
 import {NextRequest,NextResponse} from 'next/server';
 import {serverDb,caller} from '@/lib/server/firebase-admin';
 import {BUSINESS,helpfulFallback,validContact} from '@/lib/chat-policy';
@@ -104,7 +105,9 @@ export async function POST(req:NextRequest){
   if(reason==='RATE_LIMIT')return fail('Please wait a minute before sending more messages.',429);
   if(['NOT_YOUR_CHAT','ACCEPT_FIRST','ALREADY_CLAIMED'].includes(reason))return fail(reason==='ACCEPT_FIRST'?'Accept this conversation before replying.':reason==='ALREADY_CLAIMED'?'Another team member has accepted this conversation.':'This conversation belongs to another customer.',403);
   if(reason==='SESSION_NOT_FOUND')return fail('This conversation was not found. Ask the customer to start a new chat.',404);
-  if(reason==='SIGN_IN_REQUIRED'||String(error?.code||'').startsWith('auth/'))return fail('Please refresh your connection and try again.',401);
+  const failure=classifyFirebaseFailure(error);
+  console.error('[chat]',failure.diagnostic);
+  if(failure.status===401)return fail('Please refresh your connection and try again.',401);
   return fail('Your message was not sent. Please try again or call the showroom at (703) 461-0207.',503);
  }
 }

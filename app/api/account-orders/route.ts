@@ -1,3 +1,4 @@
+import {classifyFirebaseFailure} from '@/lib/server/firebase-failure.mjs';
 import {NextRequest,NextResponse} from 'next/server';
 import {caller,serverDb} from '@/lib/server/firebase-admin';
 import {canAccess,OWNER_UID,OWNER_EMAIL,StaffAccess} from '@/lib/access-policy';
@@ -24,5 +25,9 @@ export async function GET(req:NextRequest){
    };
   });
   return NextResponse.json({orders},{headers:{'Cache-Control':'private, no-store'}});
- }catch(error){if(error instanceof Error&&(error.message==='SIGN_IN_REQUIRED'||('code' in error&&String(error.code).startsWith('auth/'))))return NextResponse.json({error:'Please sign in again.'},{status:401});return NextResponse.json({error:'Orders could not be loaded. Please try again or contact the showroom.'},{status:503});}
+ }catch(error){
+  const failure=classifyFirebaseFailure(error);
+  console.error('[account-orders]',failure.diagnostic);
+  return NextResponse.json({error:failure.status===401?'Please sign out and sign in again to load your orders.':'Orders are temporarily unavailable. Please contact the showroom.',supportCode:failure.diagnostic},{status:failure.status,headers:{'Cache-Control':'private, no-store'}});
+ }
 }

@@ -22,6 +22,8 @@ jobs:
       - name: Install isolated test tools
         working-directory: tests/access
         run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Test safe authentication diagnostics
+        run: node --test tests/access/firebase-failure.test.mjs
       - name: Check syntax of changed TypeScript and TSX
         working-directory: tests/access
         run: node syntax-check.mjs
