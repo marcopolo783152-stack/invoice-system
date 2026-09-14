@@ -213,9 +213,7 @@ export default function RootLayout({
             minHeight: '100vh',
             background: isPublicPage ? '#fff' : 'var(--bg-void)',
             width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start'
+            display: 'block'
           }}>
             <StoreProvider>
                 {children}
