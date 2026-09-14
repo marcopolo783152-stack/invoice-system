@@ -33,7 +33,7 @@ export function checkFirebaseQuotaError(error:any){
 
 export function signInErrorMessage(error:unknown){
  const message=error instanceof Error?error.message:String(error||'');
- if(/api-key-not-valid|invalid-api-key|API_KEY_INVALID|CONFIGURATION_NOT_FOUND/i.test(message))
+ if(/api-key-not-valid|invalid-api-key|api-key-invalid|API_KEY_INVALID|CONFIGURATION_NOT_FOUND/i.test(message))
   return 'Website sign-in is temporarily unavailable because its Firebase connection is not configured correctly. Please contact the showroom. Changing your password will not fix this connection problem.';
  if(/unauthorized-domain/i.test(message))return 'Sign-in is not enabled for this website address yet. Please contact the showroom.';
  if(/invalid-credential|wrong-password|user-not-found/i.test(message))return 'The email or password was not accepted. Try again or use Forgot password.';
