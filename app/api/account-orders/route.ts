@@ -24,5 +24,5 @@ export async function GET(req:NextRequest){
    };
   });
   return NextResponse.json({orders},{headers:{'Cache-Control':'private, no-store'}});
- }catch{return NextResponse.json({error:'Orders could not be loaded. Please try again or contact the showroom.'},{status:503});}
+ }catch(error){if(error instanceof Error&&(error.message==='SIGN_IN_REQUIRED'||('code' in error&&String(error.code).startsWith('auth/'))))return NextResponse.json({error:'Please sign in again.'},{status:401});return NextResponse.json({error:'Orders could not be loaded. Please try again or contact the showroom.'},{status:503});}
 }

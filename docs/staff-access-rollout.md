@@ -32,7 +32,7 @@ Do not paste these rules into the live console before addressing the following:
 
 - Run the GitHub Staff access checks workflow. It checks TS/TSX syntax, builds the website, and runs the Firebase emulator on a demo project without production credentials.
 - Perform browser checks with owner, General Manager, Seller, Custom and disabled users. Verify Google-to-password linking keeps the same UID and email verification works.
-- The current guest chatbot writes assistant messages directly from the customer browser. The reviewed rules deliberately reject customer-created staff messages. Move AI reply persistence to an authenticated server endpoint before release; migrate existing chat ownership or start new conversations.
+- Chat persistence now uses the authenticated server endpoint. Migrate existing chat ownership or start new conversations; configure server credentials and the chat history index before release.
 - Existing orders without customerId and chats without ownerUid are staff-only under the new rules. Migrate only after matching real customer identities; do not assign ownership by a browser-provided email.
 - Existing checkout also tries to reserve catalog rugs and change promo codes from the browser. Move these writes and trusted price/payment validation to server endpoints before enabling restricted production rules.
 - Public invoice/signature links currently depend on direct private Firestore access. Replace that with validated expiring server-side share tokens before release. Do not reopen all invoice reads to preserve old links.
@@ -54,7 +54,7 @@ Do not paste these rules into the live console before addressing the following:
 
 References: [Firebase provider linking](https://firebase.google.com/docs/auth/web/account-linking), [Firestore rule conditions](https://firebase.google.com/docs/firestore/security/rules-conditions), [Firebase rules tests](https://firebase.google.com/docs/rules/unit-tests).
 
-Additional payment-data blocker: existing order documents may contain raw card fields. Migrate payments to a provider and a separate safe order summary before giving Sellers order access. Reauthentication in the UI is not field-level Firestore protection. No existing payment records were deleted by this change.
+Additional payment-data blocker: existing order documents may contain raw card fields. The new safe order-summary endpoint removes those fields from customer/Seller responses. Migrate payments to a provider and deliberately reconcile existing stored payment data. Reauthentication in the UI is not field-level Firestore protection. No existing payment records were deleted by this change.
 
 ## Environment setup
 Set NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, NEXT_PUBLIC_FIREBASE_APP_ID and NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID in Vercel from Firebase Project Settings > Your apps. The Firebase browser configuration is environment-driven; this branch has no embedded live API key. Redeploy after setting it. Missing configuration uses an unconfigured demo project, not production.

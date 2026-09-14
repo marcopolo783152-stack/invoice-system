@@ -71,6 +71,7 @@ export const resetPassword = async (email: string) => {
         await sendPasswordResetEmail(auth, email);
         return { success: true, error: null };
     } catch (error: any) {
+        if (error.code === 'auth/user-not-found') return { success: true, error: null };
         return { success: false, error: error.message };
     }
 };

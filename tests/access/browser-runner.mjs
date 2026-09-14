@@ -102,8 +102,16 @@ try{
   const response=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=test-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,returnSecureToken:true})});
   return (await response.json()).idToken;
  };
+ const ordersFor=async token=>fetch('http://127.0.0.1:3000/api/account-orders',{headers:{Authorization:'Bearer '+token}});
  const post=async(token,body)=>fetch('http://127.0.0.1:3000/api/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)});
  const managerToken=await tokenFor(manager.email),customerToken=await tokenFor(customer.email);
+ await db.doc('showroom_orders/test-order').update({paymentDetails:{cardNumber:'TEST-PRIVATE-CARD',cvv:'TEST-PRIVATE-CVV',last4:'1234',cardBrand:'Test'}});
+ await db.doc('showroom_orders/other-customer-order').set({customerId:'different-customer',total:99,paymentDetails:{cardNumber:'TEST-PRIVATE-CARD'}});
+ const ownOrders=await ordersFor(customerToken);assert.equal(ownOrders.status,200);
+ const ownPayload=await ownOrders.json();assert.deepEqual(ownPayload.orders.map(o=>o.id),['test-order']);
+ assert.equal(ownPayload.orders[0].paymentDetails.last4,'1234');
+ assert.ok(!JSON.stringify(ownPayload).includes('TEST-PRIVATE'),'Order responses omit legacy payment secrets');
+ assert.equal((await fetch('http://127.0.0.1:3000/api/account-orders')).ok,false,'Anonymous request cannot load private orders');
  assert.equal((await post(managerToken,{action:'claim',sessionId:'user-'+customer.uid,name:'Other Manager'})).status,403,'Second employee cannot take an accepted chat');
  assert.equal((await post(customerToken,{action:'reply',sessionId:'user-'+customer.uid,text:'Pretend staff'})).status,403,'Customer cannot impersonate staff');
  assert.equal((await post(managerToken,{action:'message',sessionId:'user-'+customer.uid,text:'Read another chat'})).status,403,'Customer operation cannot access another owner’s session');
