@@ -359,7 +359,7 @@ export default function Dashboard() {
     if (!isAuthenticated) return <Login onLogin={onLogin} />;
 
     return (
-        <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
+        <div style={{ padding: '16px var(--dashboard-padding) var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
             <RugCalculatorModal isOpen={isRugCalcOpen} onClose={() => setIsRugCalcOpen(false)} />
             <header style={{
                 display: 'flex',

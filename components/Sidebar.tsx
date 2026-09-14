@@ -157,7 +157,7 @@ export default function Sidebar({
         <div className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}>
             <div className={styles.logo}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ position: 'relative', width: 40, height: 40 }}>
+                    <div style={{ position: 'relative', width: 40, height: 40, background: '#1A1A1A', borderRadius: 8, padding: 4 }}>
                         <Image
                             src="/LOGO.png"
                             alt="Logo"

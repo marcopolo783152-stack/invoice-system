@@ -66,60 +66,62 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, 
           )}
 
           {unreadChats.map((msg: any) => (
-            <Link key={msg.id} href="/admin/invoices/invoices?view=admin&adminTab=messages" onClick={onClose}>
+            <Link key={msg.id} href="/?view=admin&adminTab=messages" onClick={onClose}>
               <div className="p-4 hover:bg-gray-50 transition border-b border-gray-50 flex items-start gap-4">
                 <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><MessageSquare size={18} /></div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-sm">New Message from {msg.customerName || 'Customer'}</h4>
-                  <p className="text-xs text-gray-500 line-clamp-1">{msg.text}</p>
+                  <h4 className="font-bold text-sm text-gray-900">New Message</h4>
+                  <p className="text-xs text-gray-500 mt-0.5 truncate max-w-[200px]">
+                    From {msg.customerName}: {msg.content}
+                  </p>
                 </div>
               </div>
             </Link>
           ))}
 
           {pendingOrders.map(o => (
-            <Link key={o.id} href="/admin/invoices/invoices?view=admin&adminTab=orders" onClick={onClose}>
+            <Link key={o.id} href="/?view=admin&adminTab=orders" onClick={onClose}>
               <div className="p-4 hover:bg-gray-50 transition border-b border-gray-50 flex items-start gap-4">
                 <div className="p-2 bg-red-100 text-red-600 rounded-lg"><ShoppingBag size={18} /></div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-sm">Pending Order: {o.id.substring(0,6)}</h4>
-                  <p className="text-xs text-gray-500">{o.shippingDetails?.name || 'Customer'}</p>
+                  <h4 className="font-bold text-sm text-gray-900">New Order</h4>
+                  <p className="text-xs text-gray-500 mt-0.5">Order #{o.id.slice(-6).toUpperCase()}</p>
                 </div>
               </div>
             </Link>
           ))}
 
           {newEstimates.map(e => (
-            <Link key={e.id} href="/admin/invoices/invoices?view=admin&adminTab=estimates" onClick={onClose}>
+            <Link key={e.id} href="/?view=admin&adminTab=estimates" onClick={onClose}>
               <div className="p-4 hover:bg-gray-50 transition border-b border-gray-50 flex items-start gap-4">
                 <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><Calculator size={18} /></div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-sm">New Service Estimate</h4>
-                  <p className="text-xs text-gray-500">{e.firstName} {e.lastName} - {e.serviceType}</p>
+                  <h4 className="font-bold text-sm text-gray-900">New Estimate Request</h4>
+                  <p className="text-xs text-gray-500 mt-0.5">{e.name} - {e.service}</p>
                 </div>
               </div>
             </Link>
           ))}
 
           {pendingCleanings.map(b => (
-            <Link key={b.id} href="/admin/invoices/invoices?view=admin&adminTab=cleaning" onClick={onClose}>
+            <Link key={b.id} href="/?view=admin&adminTab=cleaning" onClick={onClose}>
               <div className="p-4 hover:bg-gray-50 transition border-b border-gray-50 flex items-start gap-4">
                 <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><Brush size={18} /></div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-sm">New Cleaning/Repair Booking</h4>
-                  <p className="text-xs text-gray-500">{b.customerName}</p>
+                  <h4 className="font-bold text-sm text-gray-900">Specialty Care Booking</h4>
+                  <p className="text-xs text-gray-500 mt-0.5">{b.customerName} - {b.serviceRequested}</p>
                 </div>
               </div>
             </Link>
           ))}
 
           {pendingReviews.map(r => (
-            <Link key={r.id} href="/admin/invoices/invoices?view=admin&adminTab=reviews" onClick={onClose}>
+            <Link key={r.id} href="/?view=admin&adminTab=reviews" onClick={onClose}>
               <div className="p-4 hover:bg-gray-50 transition border-b border-gray-50 flex items-start gap-4">
                 <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Star size={18} /></div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-sm">Review Awaiting Moderation</h4>
-                  <p className="text-xs text-gray-500">{r.reviewerName} left a {r.rating}-star review</p>
+                  <h4 className="font-bold text-sm text-gray-900">New Review</h4>
+                  <p className="text-xs text-gray-500 mt-0.5">{r.rating} Stars by {r.name}</p>
                 </div>
               </div>
             </Link>

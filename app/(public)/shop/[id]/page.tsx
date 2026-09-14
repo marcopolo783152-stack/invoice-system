@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const rug = INITIAL_RUGS.find(r => r.id === params.id) || null;
 
   if (!rug) {
-    return { title: 'Rug Not Found | Marco Polo Rugs' };
+    return { title: 'Rug Details | Marco Polo Rugs' };
   }
 
   return {
@@ -41,7 +41,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-editorial-bg text-editorial-text animate-pulse">
         <ClientRedirect rugId={params.id} />
-        <h1 className="text-xl font-serif text-neutral-400">Loading Rug Details...</h1>
+        <h1 className="text-xl font-serif text-neutral-400">Opening Rug Profile...</h1>
       </div>
     );
   }

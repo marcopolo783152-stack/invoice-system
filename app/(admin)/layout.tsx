@@ -27,7 +27,7 @@ export default function RootLayout({
 }) {
   const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [showAddressBook, setShowAddressBook] = useState(false);
   const [showExportPreview, setShowExportPreview] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -172,7 +172,7 @@ export default function RootLayout({
           </button>
         )}
 
-        <div className={`admin-layout-wrapper flex min-h-screen relative w-full overflow-x-hidden ${(isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock') ? 'pt-10' : ''}`}>
+        <div className={`admin-layout-wrapper flex min-h-screen relative w-full overflow-x-hidden`}>
           {/* Mobile Overlay */}
           {isMobileMenuOpen && (
             <div 

@@ -39,6 +39,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid history array' }, { status: 400 });
     }
 
+    if (!OPENAI_API_KEY) {
+      // Mock AI for demonstration when no API key is provided
+      const lastMessage = history[history.length - 1]?.content?.toLowerCase() || '';
+      let replyText = "Thank you for reaching out! I am a demonstration AI (OpenAI API key not configured). How can I assist you with Marco Polo Oriental Rugs today?";
+      let requiresHandoff = false;
+      
+      if (lastMessage.includes('cleaning') || lastMessage.includes('wash')) {
+        replyText = "We offer professional organic cold-water hand washing for all rugs. You can learn more here: [Rug Cleaning Services](/services/rug-cleaning-alexandria-va). Would you like an estimate?";
+      } else if (lastMessage.includes('repair') || lastMessage.includes('hole')) {
+        replyText = "We perform authentic restorations including fringe binding and reweaving holes. Learn more here: [Rug Repair & Restoration](/services/rug-repair-restoration-alexandria-va).";
+      } else if (lastMessage.includes('hi') || lastMessage.includes('hello')) {
+        replyText = "Hello! Welcome to Marco Polo Oriental Rugs. Are you interested in our cleaning services, repairs, or perhaps tracking an order?";
+      } else {
+        replyText = "I don't have the exact answer for that right now. Could you please provide your Name and Phone Number so a human concierge can assist you?";
+        requiresHandoff = true;
+      }
+      
+      // Artificial delay to feel like an AI
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return NextResponse.json({ replyText, requiresHandoff });
+    }
+
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
       ...history

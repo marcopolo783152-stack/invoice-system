@@ -369,6 +369,8 @@ export const AdminDashboard: React.FC = () => {
     }
   }, [chatThreads, selectedSessionId]);
 
+  const unreadMessagesCount = chatThreads.filter(t => t.messages[t.messages.length - 1].sender === "customer").length;
+
   const handleUnlockCardDetails = (orderId: string) => {
     setPasswordPromptOrderId(orderId);
     setPasswordInput("");
@@ -1004,6 +1006,11 @@ export const AdminDashboard: React.FC = () => {
             >
               <Calculator className="h-4.5 w-4.5" />
               <span>Service Estimates</span>
+              {estimates && estimates.filter(e => e.status === "New").length > 0 && (
+                <span className="absolute right-3 bg-blue-600 text-white text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
+                  {estimates.filter(e => e.status === "New").length}
+                </span>
+              )}
             </button>
             
             <button
@@ -1017,31 +1024,31 @@ export const AdminDashboard: React.FC = () => {
             </button>
             
             <button 
-                onClick={() => setActiveTab("appraisals")}
-                className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                  activeTab === "appraisals" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-                }`}
-              >
-                <FileText size={18} /> Appraisals
-              </button>
+              onClick={() => setActiveTab("appraisals")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "appraisals" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <FileText size={18} /> <span>Appraisals</span>
+            </button>
               
-              <button 
-                onClick={() => setActiveTab("employees")}
-                className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                  activeTab === "employees" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-                }`}
-              >
-                <Users size={18} /> HR / Employees
-              </button>
+            <button 
+              onClick={() => setActiveTab("employees")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "employees" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Users size={18} /> <span>HR / Employees</span>
+            </button>
 
-              <button 
-                onClick={() => setActiveTab("clock")}
-                className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                  activeTab === "clock" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-                }`}
-              >
-                <Clock size={18} /> Time Clock
-              </button>
+            <button 
+              onClick={() => setActiveTab("clock")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "clock" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Clock size={18} /> <span>Time Clock</span>
+            </button>
             
             <button
               onClick={() => setActiveTab("reviews")}
@@ -1060,12 +1067,17 @@ export const AdminDashboard: React.FC = () => {
             
             <button
               onClick={() => setActiveTab("messages")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "messages" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <MessageSquare className="h-4.5 w-4.5" />
               <span>Concierge Inbox</span>
+              {unreadMessagesCount > 0 && (
+                <span className="absolute right-3 bg-purple-600 text-white text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
+                  {unreadMessagesCount}
+                </span>
+              )}
             </button>
             
             <button
