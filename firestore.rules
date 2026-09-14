@@ -41,9 +41,71 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
+    function validBooking(b, id) {
+      return request.auth != null
+        && b.keys().hasOnly(['id','ownerUid','staffId','manager','name','email','phone','date','time','slotTime','slotId','notes','status','createdAt'])
+        && b.id == id && b.ownerUid == request.auth.uid && b.status == 'pending'
+        && b.staffId in ['nazif', 'farid']
+        && b.name is string && b.name.size() > 0 && b.name.size() <= 150
+        && b.email is string && b.email.size() > 3 && b.email.size() <= 254
+        && b.phone is string && b.phone.size() >= 7 && b.phone.size() <= 40
+        && b.notes is string && b.notes.size() <= 2000
+        && b.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}
+
+    // Catalog & Content (Public read, admin write)
+    match /showroom_rugs/{rugId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /showroom_blogs/{blogId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /showroom_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /showroom_reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null; // Authenticated users can review
+      allow update, delete: if isAdmin(); // Only admins can approve or delete
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+        && b.slotTime in ['10:00','10:30','11:00','11:30','12:00','12:30','13:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30']
+        && b.slotId == b.staffId + '_' + b.date + '_' + b.slotTime;
+    }
+
     match /showroom_appointments/{appointmentId} {
-      allow create: if true; // Public can book appointments
-      allow read, write: if isAdmin();
+      allow create: if validBooking(request.resource.data, appointmentId)
+        && !exists(/databases/$(database)/documents/showroom_appointment_slots/$(request.resource.data.slotId))
+        && getAfter(/databases/$(database)/documents/showroom_appointment_slots/$(request.resource.data.slotId)).data.appointmentId == appointmentId;
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // Availability is public; customer details stay in the private booking.
+    match /showroom_appointment_slots/{slotId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['staffId','date','time','appointmentId'])
+        && slotId == request.resource.data.staffId + '_' + request.resource.data.date + '_' + request.resource.data.time
+        && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.slotId == slotId
+        && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.staffId == request.resource.data.staffId
+        && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.date == request.resource.data.date
+        && getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.slotTime == request.resource.data.time
+        && (isAdmin() || getAfter(/databases/$(database)/documents/showroom_appointments/$(request.resource.data.appointmentId)).data.ownerUid == request.auth.uid);
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     // Catalog & Content (Public read, admin write)
