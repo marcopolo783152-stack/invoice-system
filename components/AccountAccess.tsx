@@ -1,12 +1,12 @@
 'use client';
 import {useState} from 'react';
 import {auth,loginWithEmail,loginWithGoogle,registerWithEmail} from '@/lib/auth';
-import {isFirebaseConfigured} from '@/lib/firebase';
+import {isFirebaseConfigured,signInErrorMessage} from '@/lib/firebase';
 import styles from './Portal.module.css';
 export default function AccountAccess({initialMode='login'}:{initialMode?:'login'|'register'}){
  const [mode,setMode]=useState(initialMode),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[name,setName]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
- const run=async(fn:()=>Promise<void>)=>{setBusy(true);setError('');try{if(!isFirebaseConfigured())throw Error('Sign-in is being configured. Please contact the showroom for help.');await fn();}catch(e){setError(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}};
+ const run=async(fn:()=>Promise<void>)=>{setBusy(true);setError('');try{if(!isFirebaseConfigured())throw Error('Sign-in is being configured. Please contact the showroom for help.');await fn();}catch(e){setError(signInErrorMessage(e));}finally{setBusy(false);}};
  const finish=()=>{window.location.assign(auth.currentUser?.emailVerified?'/account':'/verify-email');};
  return <div className={styles.form}>
  <a className={styles.eyebrow} href="/">Marco Polo Oriental Rugs</a>

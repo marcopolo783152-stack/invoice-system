@@ -43,6 +43,28 @@ try{
  await staffPage.setViewportSize({width:1440,height:960});
  const context=await browser.newContext({viewport:{width:1440,height:960}});
  const page=await context.newPage();
+
+ await page.goto('http://127.0.0.1:3000/');
+ await page.getByRole('button',{name:/^sign in$/i}).click();
+ const loginDialog=page.getByRole('dialog',{name:'Account sign in'});
+ await loginDialog.waitFor();
+ const assertCentered=async()=>{
+  const box=await loginDialog.boundingBox(),size=page.viewportSize();
+  assert.ok(box&&Math.abs(box.x+box.width/2-size.width/2)<3,'Login is horizontally centered');
+  assert.ok(box&&Math.abs(box.y+box.height/2-size.height/2)<3,'Login is vertically centered');
+ };
+ await assertCentered();
+ await page.screenshot({path:'screenshots/login-centered-desktop.png'});
+ await page.setViewportSize({width:390,height:844});await assertCentered();
+ await page.screenshot({path:'screenshots/login-centered-mobile.png'});
+ await page.setViewportSize({width:1440,height:960});
+ await page.route('**/accounts:signInWithPassword?*',route=>route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:{code:400,message:'API_KEY_INVALID',errors:[{message:'API_KEY_INVALID',reason:'invalid'}]}})}));
+ await loginDialog.getByLabel('Email address',{exact:true}).fill(customer.email);
+ await loginDialog.getByLabel('Password',{exact:true}).fill(password);
+ await loginDialog.getByRole('button',{name:'Sign in',exact:true}).click();
+ await loginDialog.getByRole('alert').filter({hasText:'Firebase connection is not configured correctly'}).waitFor();
+ await page.unroute('**/accounts:signInWithPassword?*');
+ await loginDialog.getByRole('button',{name:'Close sign in'}).click();
  await page.goto('http://127.0.0.1:3000/sign-in');
  await page.getByRole('link',{name:'Forgot password?',exact:true}).click();
  await page.getByRole('heading',{name:'Reset your password.'}).waitFor();
