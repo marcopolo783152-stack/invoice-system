@@ -205,11 +205,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Views
   const [activeView, setActiveView] = useState<"customer" | "admin">(() => {
     if (typeof window === 'undefined') return "customer";
-    // Clear legacy localStorage to enforce strict session logouts
     
     const sessionView = sessionStorage.getItem("marcopolo_active_view");
     return (sessionView === "admin") ? "admin" : "customer";
   });
+
+  const handleSetActiveView = (view: "customer" | "admin") => {
+    setActiveView(view);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem("marcopolo_active_view", view);
+      localStorage.setItem("marcopolo_active_view", view);
+      // Dispatch storage event so other tabs/components update
+      window.dispatchEvent(new Event('storage'));
+    }
+  };
+
   const [adminTab, setAdminTab] = useState<string>("analytics");
   const [cartOpen, setCartOpen] = useState<boolean>(false);
   useEffect(() => {
@@ -822,7 +832,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             email: "admin@marcopolo.com",
             role: "admin"
           });
-          setActiveView("admin");
+          handleSetActiveView("admin");
           return;
         }
       }
@@ -843,15 +853,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         setCurrentUser(userData);
         if (isAdmin) {
-          setActiveView("admin");
+          handleSetActiveView("admin");
           if (typeof window !== 'undefined') sessionStorage.setItem("mp-invoice-auth", "1");
         } else {
-          setActiveView("customer");
+          handleSetActiveView("customer");
           if (typeof window !== 'undefined') sessionStorage.removeItem("mp-invoice-auth");
         }
       } else {
         setCurrentUser(null);
-        setActiveView("customer");
+        handleSetActiveView("customer");
         if (typeof window !== 'undefined') sessionStorage.removeItem("mp-invoice-auth");
       }
     });
@@ -870,7 +880,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setCurrentUser(adminUser as any);
       sessionStorage.setItem("mp-invoice-auth", "1");
       sessionStorage.setItem("mp-invoice-user", JSON.stringify(adminUser));
-      setActiveView("admin");
+      handleSetActiveView("admin");
       return { success: true, message: "Logged in as Administrator!" };
     }
 
@@ -900,7 +910,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       sessionStorage.removeItem("marcopolo_active_view");
     }
     setCurrentUser(null);
-    setActiveView("customer");
+    handleSetActiveView("customer");
   };
 
   // --- Rug Cleaning Booking ---
@@ -948,12 +958,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const auth = safeGetItem('mp-invoice-auth') || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('mp-invoice-auth') : null);
     
     if (view === 'admin' && auth === '1') {
-      setActiveView('admin');
+      handleSetActiveView('admin');
     } else if (view === 'customer') {
-      setActiveView('customer');
+      handleSetActiveView('customer');
     } else if (view === 'admin') {
       // Fallback if they tried to force admin without auth
-      setActiveView('customer');
+      handleSetActiveView('customer');
     }
 
     // --- INACTIVITY TIMEOUT (SHOWROOM) ---
@@ -971,7 +981,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sessionStorage.removeItem('marcopolo_current_user');
         sessionStorage.removeItem('marcopolo_active_view');
         if (typeof window !== 'undefined') {
-          setActiveView('customer');
+          handleSetActiveView('customer');
         }
       }, INACTIVITY_LIMIT);
     };
@@ -1010,7 +1020,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         cartOpen,
         setCartOpen,
         activeView,
-        setActiveView,
+        setActiveView: handleSetActiveView,
         adminTab,
         setAdminTab,
         currentUser,

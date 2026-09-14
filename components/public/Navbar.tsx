@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
-import { ChevronDown, ShoppingBag, Menu, X, Landmark, User, Settings, Phone, LogIn, ShieldAlert, Instagram, Facebook, Youtube, Twitter, Globe, Calculator } from "lucide-react";
+import { ChevronDown, ShoppingBag, Menu, X, Landmark, User, Settings, Phone, LogIn, ShieldAlert, Instagram, Facebook, Youtube, Twitter, Globe, Calculator, Bell } from "lucide-react";
 import RugCalculatorModal from "../RugCalculatorModal";
 import { AuthModal } from "./AuthModal";
 
@@ -192,30 +192,41 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
 
             {/* Admin Toggle Switch - ONLY visible to verified administrator */}
             {isAdmin && (
-              <div className="flex items-center bg-stone-100 rounded-none p-0.5 border border-stone-200">
-                <button
-                  onClick={() => setActiveView("customer")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-sm font-bold uppercase tracking-wider transition cursor-pointer ${
-                    activeView === "customer"
-                      ? "bg-editorial-accent text-white"
-                      : "text-gray-500 hover:text-editorial-text"
-                  }`}
-                >
-                  <User className="h-2.5 w-2.5" />
-                  <span>Customer</span>
-                </button>
-                <button
-                  onClick={() => setActiveView("admin")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-sm font-bold uppercase tracking-wider transition cursor-pointer ${
-                    activeView === "admin"
-                      ? "bg-editorial-accent text-white"
-                      : "text-gray-500 hover:text-editorial-text"
-                  }`}
-                >
-                  <Settings className="h-2.5 w-2.5" />
-                  <span>Admin</span>
-                </button>
-              </div>
+              <>
+                <div className="flex items-center bg-stone-100 rounded-none p-0.5 border border-stone-200">
+                  <button
+                    onClick={() => setActiveView("customer")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-sm font-bold uppercase tracking-wider transition cursor-pointer ${
+                      activeView === "customer"
+                        ? "bg-editorial-accent text-white"
+                        : "text-gray-500 hover:text-editorial-text"
+                    }`}
+                  >
+                    <User className="h-2.5 w-2.5" />
+                    <span>Customer</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveView("admin")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-sm font-bold uppercase tracking-wider transition cursor-pointer ${
+                      activeView === "admin"
+                        ? "bg-editorial-accent text-white"
+                        : "text-gray-500 hover:text-editorial-text"
+                    }`}
+                  >
+                    <Settings className="h-2.5 w-2.5" />
+                    <span>Admin</span>
+                  </button>
+                </div>
+                {activeView === "admin" && (
+                  <button
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-notifications'))}
+                    className="p-2 bg-stone-100 text-stone-900 hover:text-editorial-accent transition border border-editorial-border cursor-pointer relative"
+                    title="Showroom Notifications"
+                  >
+                    <Bell className="h-4.5 w-4.5" />
+                  </button>
+                )}
+              </>
             )}
 
             {/* Shopping Cart Trigger */}
