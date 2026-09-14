@@ -39,11 +39,9 @@ export default async function ProductPage({ params }: { params: { id: string } }
 
   if (!rug) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-editorial-bg text-editorial-text">
-        <h1 className="text-2xl font-serif mb-4">Rug Not Found</h1>
-        <Link href="/" className="text-editorial-accent hover:underline">
-          Return to Gallery
-        </Link>
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-editorial-bg text-editorial-text animate-pulse">
+        <ClientRedirect rugId={params.id} />
+        <h1 className="text-xl font-serif text-neutral-400">Loading Rug Details...</h1>
       </div>
     );
   }

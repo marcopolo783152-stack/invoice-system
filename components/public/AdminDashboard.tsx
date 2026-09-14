@@ -76,6 +76,7 @@ export const AdminDashboard: React.FC = () => {
     chatMessages, 
     blogs,
     cleaningBookings,
+    estimates,
     addRug, 
     updateRug, 
     deleteRug, 

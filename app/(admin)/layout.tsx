@@ -6,10 +6,10 @@ import '../globals.css';
 import '../print.css';
 import Sidebar from '@/components/Sidebar';
 import TopAdminBar from '@/components/TopAdminBar';
-import AddressBookModal from '@/components/AddressBookModal';
-import ExportPreviewModal from '@/components/ExportPreviewModal';
-import HelpModal from '@/components/HelpModal';
-import NotificationModal from '@/components/NotificationModal';
+import { AddressBookModal } from '@/components/AddressBookModal';
+import { ExportPreviewModal } from '@/components/ExportPreviewModal';
+import { HelpModal } from '@/components/HelpModal';
+import { NotificationsModal } from '@/components/NotificationsModal';
 import { GlobalNotificationProvider } from '@/components/GlobalNotificationProvider';
 import { useState, useEffect, Suspense } from 'react';
 import { Menu, X } from 'lucide-react';
@@ -172,7 +172,7 @@ export default function RootLayout({
           </button>
         )}
 
-        <div className="admin-layout-wrapper flex min-h-screen relative w-full overflow-x-hidden">
+        <div className={`admin-layout-wrapper flex min-h-screen relative w-full overflow-x-hidden ${(isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock') ? 'pt-10' : ''}`}>
           {/* Mobile Overlay */}
           {isMobileMenuOpen && (
             <div 
@@ -185,13 +185,14 @@ export default function RootLayout({
           {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
             <div
               className={`
-                fixed md:sticky top-0 z-[100] h-screen bg-[var(--bg-void)] border-r border-editorial-border shadow-2xl md:shadow-none
+                fixed md:sticky top-10 z-[100] bg-[var(--bg-void)] border-r border-editorial-border shadow-2xl md:shadow-none
                 transition-all duration-300 ease-in-out
                 ${isMobileMenuOpen ? 'left-0 translate-x-0' : '-translate-x-full md:translate-x-0'}
               `}
               style={{
                 width: isCollapsed ? 80 : 260,
-                flexShrink: 0
+                flexShrink: 0,
+                height: 'calc(100vh - 40px)'
               }}
             >
               <Sidebar
@@ -223,6 +224,7 @@ export default function RootLayout({
                     <AddressBookModal isOpen={showAddressBook} onClose={() => setShowAddressBook(false)} />
                     <ExportPreviewModal isOpen={showExportPreview} onClose={() => setShowExportPreview(false)} />
                     <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
+                    <NotificationsModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
                   </>
                 )}
             </StoreProvider>

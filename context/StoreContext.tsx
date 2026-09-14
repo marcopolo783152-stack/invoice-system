@@ -787,20 +787,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
       .then(res => res.json())
       .then(data => {
-        if (data.replyText) {
-          const aiReply: ChatMessage = {
-            id: `msg-${Date.now() + 1}`,
-            sender: "admin",
-            text: data.replyText,
-            timestamp: new Date().toISOString(),
-            sessionId: sId,
-            customerName: cName
-          };
-          addShowroomDoc(SHOWROOM_CHAT, aiReply);
-        }
+        const replyMessage = data.replyText || "I'm sorry, I'm currently unavailable. A human concierge will be with you shortly.";
+        const aiReply: ChatMessage = {
+          id: `msg-${Date.now() + 1}`,
+          sender: "admin",
+          text: replyMessage,
+          timestamp: new Date().toISOString(),
+          sessionId: sId,
+          customerName: cName
+        };
+        addShowroomDoc(SHOWROOM_CHAT, aiReply);
       })
       .catch(err => {
         console.error("Chat API Error:", err);
+        const fallbackReply: ChatMessage = {
+          id: `msg-${Date.now() + 1}`,
+          sender: "admin",
+          text: "I'm sorry, my systems are currently offline. A human concierge will be with you shortly.",
+          timestamp: new Date().toISOString(),
+          sessionId: sId,
+          customerName: cName
+        };
+        addShowroomDoc(SHOWROOM_CHAT, fallbackReply);
       });
     }
   };
