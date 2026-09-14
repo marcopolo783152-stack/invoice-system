@@ -5,6 +5,7 @@ import { SHOWROOM_ORDERS, SHOWROOM_REVIEWS, SHOWROOM_CHAT, SHOWROOM_CLEANING, SH
 import { db as firestoreDb } from '@/lib/firebase';
 import { AlertCircle, CheckCircle, Bell, MessageCircle, Calendar, FileText, ShoppingBag, X } from 'lucide-react';
 import Link from 'next/link';
+import { AdminChatBox } from './public/AdminChatBox';
 
 // Using a custom global event or context for toasts
 interface Toast {
@@ -18,6 +19,7 @@ interface Toast {
 
 export const GlobalNotificationProvider = ({ children }: { children: React.ReactNode }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
+    const [activeAdminChatSession, setActiveAdminChatSession] = useState<string | null>(null);
     
     // Auto-remove toasts
     useEffect(() => {
@@ -29,6 +31,67 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
         }
     }, [toasts]);
 
+    const playNotificationSound = async (type: string) => {
+        try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            if (ctx.state === 'suspended') {
+                await ctx.resume();
+            }
+            
+            if (type === 'chat') {
+                // High double blip for chat
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+                gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.15);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.3);
+            } else if (type === 'booking' || type === 'estimate') {
+                // Pleasant chime for bookings/estimates
+                const playNote = (freq: number, start: number, dur: number) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0, start);
+                    gain.gain.linearRampToValueAtTime(0.5, start + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, start + dur);
+                    osc.start(start);
+                    osc.stop(start + dur);
+                };
+                playNote(523.25, ctx.currentTime, 0.5); // C5
+                playNote(659.25, ctx.currentTime + 0.2, 0.8); // E5
+            } else {
+                // Default ding for orders/reviews
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = 600;
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 1);
+            }
+        } catch (e) {
+            console.error("Audio play failed", e);
+        }
+    };
+
     const addToast = (toast: Omit<Toast, 'id' | 'time'>) => {
         const newToast: Toast = {
             ...toast,
@@ -36,13 +99,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             time: new Date()
         };
         setToasts(prev => [...prev, newToast]);
-        
-        // Play notification sound
-        try {
-            const audio = new Audio('/notification-ding.mp3');
-            audio.volume = 0.5;
-            audio.play().catch(e => {}); // Ignore error if sound not enabled/found
-        } catch (e) {}
+        playNotificationSound(toast.type);
     };
 
     useEffect(() => {
@@ -94,13 +151,32 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
-                        const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
+                        const createdAt = data.timestamp ? new Date(data.timestamp).getTime() : 0;
                         if (createdAt > now - 10000 && data.sender !== 'Marco Polo') {
                             addToast({
                                 title: 'New Customer Message',
                                 message: data.text?.substring(0, 50) + '...',
                                 type: 'chat',
-                                link: '/admin/invoices/crm' // Assume CRM or messages view
+                                link: undefined
+                            });
+                            setActiveAdminChatSession(data.sessionId);
+                        }
+                    }
+                });
+            }),
+
+            // Estimates
+            onSnapshot(collection(firestoreDb, SHOWROOM_ESTIMATES), (snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        const data = change.doc.data();
+                        const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
+                        if (createdAt > now - 10000) {
+                            addToast({
+                                title: 'New Service Estimate',
+                                message: `${data.firstName} ${data.lastName} requested an estimate for ${data.serviceType}.`,
+                                type: 'estimate',
+                                link: '/admin/invoices/service-tracking'
                             });
                         }
                     }
@@ -197,6 +273,11 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
                     to { transform: translateX(0); opacity: 1; }
                 }
             `}</style>
+
+            <AdminChatBox 
+                activeSessionId={activeAdminChatSession} 
+                onClose={() => setActiveAdminChatSession(null)} 
+            />
         </>
     );
 };
