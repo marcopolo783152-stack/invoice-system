@@ -64,9 +64,9 @@ export default function AppointmentForm() {
         return (
             <div className="bg-emerald-50 border border-emerald-200 p-12 text-center rounded-sm">
                 <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
-                <h3 className="text-2xl font-serif text-emerald-900 mb-4">Appointment Confirmed</h3>
+                <h3 className="text-2xl font-serif text-emerald-900 mb-4">Appointment Request Received</h3>
                 <p className="text-emerald-700 font-light max-w-md mx-auto">
-                    Thank you, {formData.name}. Your appointment with {formData.manager} is scheduled for {formData.date} at {formData.time}. We will send you a confirmation email shortly.
+                    Thank you, {formData.name}. We received your request to meet {formData.manager} on {formData.date} at {formData.time}. Your appointment is pending staff confirmation.
                 </p>
                 <button onClick={() => window.location.href = '/'} className="mt-8 px-6 py-3 bg-emerald-700 text-white font-bold uppercase tracking-wider text-sm rounded-sm hover:bg-emerald-800 transition-colors">
                     Return to Home
