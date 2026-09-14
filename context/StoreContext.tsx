@@ -52,6 +52,7 @@ interface StoreContextType {
   blogs: BlogPost[];
   orders: Order[];
   orderLoadError: string;
+  ordersLoading: boolean;
   reviews: Review[];
   chatMessages: ChatMessage[];
   cart: CartItem[];
@@ -273,6 +274,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [favoritedRugIds, setFavoritedRugIds] = useState<string[]>([]);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [orderLoadError,setOrderLoadError]=useState('');
+  const [ordersLoading,setOrdersLoading]=useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -348,6 +350,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   },[]);
   useEffect(()=>{
     setOrders([]);setChatMessages([]);setCleaningBookings([]);setEstimates([]);setPromoCodes([]);
+    setOrdersLoading(true);
     if(staffLoading)return;
     const unsubs:(()=>void)[]=[];
     setOrderLoadError('');
@@ -360,10 +363,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const data=await response.json();
         if(!response.ok)throw Error(data.error||'Orders could not load.');
         if(!stopped){setOrders(data.orders||[]);setOrderLoadError('');}
-      }catch(error){if(!stopped){setOrders([]);setOrderLoadError('Orders could not load. Please try again or contact the showroom.');}}};
+      }catch(error){if(!stopped){setOrders([]);setOrderLoadError('Orders could not load. Please try again or contact the showroom.');}}finally{if(!stopped)setOrdersLoading(false);}};
       loadOrders();const timer=setInterval(loadOrders,15000);
       unsubs.push(()=>{stopped=true;controller.abort();clearInterval(timer);});
-    }
+    }else setOrdersLoading(false);
     if(canAccess(staff,'messages')) unsubs.push(subscribeToCollection<ChatMessage>(SHOWROOM_CHAT,setChatMessages));
     else if(firebaseUser) unsubs.push(subscribeToCollection<ChatMessage>(SHOWROOM_CHAT,setChatMessages,['ownerUid',firebaseUser.uid]));
     if(canAccess(staff,'services')){
@@ -915,6 +918,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         blogs,
         orders,
         orderLoadError,
+        ordersLoading,
         reviews,
         chatMessages,
         cart,

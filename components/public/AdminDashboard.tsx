@@ -84,7 +84,9 @@ const AdminWorkspace: React.FC = () => {
   const allowed=(tab:string)=>{const section=sectionForTab(tab);return !!section && canAccess(staff,section);};
   const { 
     rugs, 
-    orders, 
+    orders,
+    orderLoadError,
+    ordersLoading,
     reviews, 
     chatMessages, 
     blogs,
@@ -1189,7 +1191,15 @@ const AdminWorkspace: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-editorial-border">
-                  {orders.length === 0 ? (
+                  {ordersLoading ? (
+              <p role="status" className="py-12 text-center">Loading your orders…</p>
+            ) : orderLoadError ? (
+              <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-6">
+                <h3 className="font-bold text-red-800">Orders could not be loaded</h3>
+                <p className="mt-2 text-sm text-red-800">The server request failed. This does not mean there are no orders. Please check the website’s Firebase server connection.</p>
+                <button type="button" onClick={()=>window.location.reload()} className="mt-4 rounded-lg bg-red-800 px-4 py-2 text-white">Retry loading orders</button>
+              </div>
+            ) : orders.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-gray-400 italic font-sans">No transactions recorded yet.</td>
                     </tr>
