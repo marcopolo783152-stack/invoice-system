@@ -102,7 +102,7 @@ export interface CustomerInfo {
 export interface PaymentDetails {
   cardBrand: string;
   last4: string;
-  cardholderName: string;
+  cardholderName?: string;
   cardNumber?: string;
   cardExpiry?: string;
   cardCVC?: string;

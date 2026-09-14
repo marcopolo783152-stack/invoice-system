@@ -126,3 +126,26 @@ test('UI permission policy denies unknown sections and matches role presets',asy
  assert.equal(exports.sectionForTab('messages'),'messages');
  assert.equal(exports.sectionForTab('untrusted-tab'),null);
 });
+
+test('chat greetings and business facts are useful without an AI API key',async()=>{
+ const source=await readFile('../../lib/chat-policy.ts','utf8');
+ const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+ const exports={};new Function('exports',js)(exports);
+ assert.equal(exports.helpfulFallback('Hi').requiresHandoff,false);
+ assert.match(exports.helpfulFallback('Are you open Sunday?').replyText,/Every day/);
+ assert.match(exports.helpfulFallback('What is your address?').replyText,/3260 Duke/);
+ assert.equal(exports.helpfulFallback('I need to speak to a person').requiresHandoff,true);
+ assert.equal(exports.validContact({name:'Test Customer',email:'test@example.com',phone:'7035550100'}),true);
+ assert.equal(exports.validContact({name:'Test Customer',email:'wrong',phone:'7035550100'}),false);
+ assert.equal(exports.validContact({name:'Test Customer',email:'test@example.com'}),false);
+});
+test('customers cannot list other appointments or forge chat session ownership',async()=>{
+ await seed('showroom_appointments/mine',booking('mine'));
+ await assertSucceeds(getDoc(doc(identity('customer'),'showroom_appointments/mine')));
+ await assertFails(getDoc(doc(identity('other'),'showroom_appointments/mine')));
+ await assertFails(getDocs(collection(identity('customer'),'showroom_appointments')));
+ await seed('showroom_chat_sessions/private',{ownerUid:'customer',status:'waiting'});
+ await assertSucceeds(getDoc(doc(identity('customer'),'showroom_chat_sessions/private')));
+ await assertFails(getDoc(doc(identity('other'),'showroom_chat_sessions/private')));
+ await assertFails(updateDoc(doc(identity('customer'),'showroom_chat_sessions/private'),{claimedBy:'gm',status:'human'}));
+});

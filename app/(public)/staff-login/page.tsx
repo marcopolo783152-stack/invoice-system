@@ -45,7 +45,7 @@ export default function StaffLogin() {
   </form>
   <button disabled={busy} onClick={()=>run(async()=>{ await signInWithPopup(auth,new GoogleAuthProvider()); await finish(); })}>Continue with Google</button>
   <button disabled={busy} onClick={()=>setRegister(!register)}>{register?'Already registered? Sign in':'Activate invited account'}</button>
-  <button disabled={busy} onClick={()=>run(async()=>{ if(!email.trim()) throw new Error('Enter your email first.'); await sendPasswordResetEmail(auth,email.trim()); setMessage('If this email has an account, a password reset link will arrive shortly.'); })}>Forgot password?</button>
+  <p><a href="/forgot-password">Forgot password?</a></p>
   <button disabled={busy} onClick={()=>run(finish)}>I verified my email</button>
   <button disabled={busy} onClick={()=>run(async()=>{ if(!auth.currentUser) throw new Error('Sign in first.'); await sendEmailVerification(auth.currentUser); setMessage('Verification email requested. Check your inbox.'); })}>Resend verification</button>
   <hr/>

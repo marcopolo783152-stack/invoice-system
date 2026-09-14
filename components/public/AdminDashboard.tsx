@@ -1,3 +1,6 @@
+import {AdminChatBox} from "./AdminChatBox";
+import portal from "@/components/Portal.module.css";
+import AdminOverview from "@/components/AdminOverview";
 import { useStaffAccess } from "@/hooks/useStaffAccess";
 import { canAccess, sectionForTab } from "@/lib/access-policy";
 import StaffGate from "@/components/StaffGate";
@@ -77,6 +80,7 @@ import {
 export const AdminDashboard: React.FC = () => <StaffGate section="staff"><AdminWorkspace /></StaffGate>;
 const AdminWorkspace: React.FC = () => {
   const {staff}=useStaffAccess();
+  const [navigationOpen,setNavigationOpen]=useState(false);
   const allowed=(tab:string)=>{const section=sectionForTab(tab);return !!section && canAccess(staff,section);};
   const { 
     rugs, 
@@ -201,14 +205,14 @@ const AdminWorkspace: React.FC = () => {
   useEffect(() => {
     if (unapprovedReviewsCount > 0) {
       setTimeout(() => {
-        alert(`🔔 You have ${unapprovedReviewsCount} unapproved customer review(s) waiting!\n\nPlease check the 'Advisor Reviews' tab to approve them.`);
+        alert(`🔔 You have ${unapprovedReviewsCount} unapproved customer review(s) waiting!\n\nPlease check the 'Customer reviews' tab to approve them.`);
       }, 500);
     }
   }, []); // Run once on mount!
 
   useEffect(() => {
     if (unapprovedReviewsCount > prevUnapprovedCount.current) {
-      alert("🔔 NEW CUSTOMER REVIEW SUBMITTED!\n\nPlease check the 'Advisor Reviews' tab to approve it.");
+      alert("🔔 NEW CUSTOMER REVIEW SUBMITTED!\n\nPlease check the 'Customer reviews' tab to approve it.");
     }
     prevUnapprovedCount.current = unapprovedReviewsCount;
   }, [unapprovedReviewsCount]);
@@ -890,10 +894,11 @@ const AdminWorkspace: React.FC = () => {
   }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter]);
 
   return (
-    <div className="bg-[#F9F7F5] min-h-screen font-sans text-xs text-editorial-text flex flex-col md:flex-row">
+    <div className={portal.shell}>
       
+      <button className={portal.mobileToggle} aria-expanded={navigationOpen} onClick={()=>setNavigationOpen(!navigationOpen)}>☰ Dashboard menu</button>
       {/* 1. Sidebar Nav */}
-      <aside className="w-full md:w-64 bg-editorial-text text-white flex flex-col justify-between border-r border-editorial-border p-5 gap-6 md:sticky md:top-0 md:h-screen overflow-y-auto">
+      <aside className={portal.sidebar} data-open={navigationOpen}>
         <div className="space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-white/10">
             <div className="h-9 w-9 bg-editorial-accent rounded-none text-white flex items-center justify-center font-bold text-sm">
@@ -901,7 +906,7 @@ const AdminWorkspace: React.FC = () => {
             </div>
             <div>
               <span className="font-serif font-light text-editorial-accent text-sm tracking-widest uppercase">Showroom Admin</span>
-              <p className="text-xs text-gray-400 uppercase tracking-widest font-mono">Marco Polo Curation</p>
+              <p className="text-xs text-gray-400 uppercase tracking-widest font-mono">Team workspace</p>
             </div>
           </div>
 
@@ -922,7 +927,7 @@ const AdminWorkspace: React.FC = () => {
               }`}
             >
               <BarChart3 className="h-4.5 w-4.5" />
-              <span>Analytics Curation</span>
+              <span>Overview</span>
             </button>)}
             
             {allowed('inventory') && (<button
@@ -953,7 +958,7 @@ const AdminWorkspace: React.FC = () => {
               }`}
             >
               <Users className="h-4.5 w-4.5" />
-              <span>Client CRM</span>
+              <span>Customers</span>
             </button>)}
             
             {allowed('orders') && (<button
@@ -977,7 +982,7 @@ const AdminWorkspace: React.FC = () => {
               }`}
             >
               <Brush className="h-4.5 w-4.5" />
-              <span>Specialty Care</span>
+              <span>Cleaning & repairs</span>
               {cleaningBookings.filter(b => b.status === "Pending").length > 0 && (
                 <ActivityBadge count={cleaningBookings.filter(b => b.status === "Pending").length} />
               )}
@@ -1022,7 +1027,7 @@ const AdminWorkspace: React.FC = () => {
                 activeTab === "employees" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
-              <Users size={18} /> <span>HR / Employees</span>
+              <Users size={18} /> <span>Employees</span>
             </button>)}
 
             {allowed('clock') && (<button 
@@ -1041,7 +1046,7 @@ const AdminWorkspace: React.FC = () => {
               }`}
             >
               <Star className="h-4.5 w-4.5" />
-              <span>Advisor Reviews</span>
+              <span>Customer reviews</span>
               {reviews.filter(r => !r.isApproved).length > 0 && (
                 <ActivityBadge count={reviews.filter(r => !r.isApproved).length} />
               )}
@@ -1054,7 +1059,7 @@ const AdminWorkspace: React.FC = () => {
               }`}
             >
               <MessageSquare className="h-4.5 w-4.5" />
-              <span>Concierge Inbox</span>
+              <span>Customer messages</span>
               {unreadMessagesCount > 0 && (
                 <ActivityBadge count={unreadMessagesCount} />
               )}
@@ -1123,14 +1128,14 @@ const AdminWorkspace: React.FC = () => {
       </aside>
 
       {/* 2. Main Workspace */}
-      <main className="flex-1 p-6 md:p-8 space-y-8 overflow-y-auto">
+      <main className={portal.main}>
         
         {/* Workspace banner info */}
         <div className="bg-white p-6 rounded-none shadow-sm border border-editorial-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-left">
           <div className="space-y-1">
-            <span className="text-xs text-editorial-accent uppercase tracking-widest font-bold block">Consolidated Showroom Dashboard</span>
+            <span className="text-xs text-editorial-accent uppercase tracking-widest font-bold block">Marco Polo Workspace</span>
             <h1 className="font-serif text-2xl font-light text-editorial-text">
-              {activeTab === "analytics" && "Analytical Insights"}
+              {activeTab === "analytics" && "Showroom overview"}
               {activeTab === "inventory" && "Manage Showroom Inventory"}
               {activeTab === "bulk_import" && "Bulk Importer"}
               {activeTab === "crm" && "Client Relationship Management"}
@@ -1142,7 +1147,7 @@ const AdminWorkspace: React.FC = () => {
               {activeTab === "clock" && "Time Clock & Geofencing"}
               {activeTab === "transactions" && "System Transactions Ledger"}
               {activeTab === "reviews" && "Advisor Review Moderation"}
-              {activeTab === "messages" && "Live Concierge Inbox Thread"}
+              {activeTab === "messages" && "Live Customer messages Thread"}
               {activeTab === "blogs" && "Design Journal Publisher"}
               {activeTab === "promotions" && "Promo Code Management"}
               {activeTab === "settings" && "General Settings & Security"}
@@ -1150,8 +1155,8 @@ const AdminWorkspace: React.FC = () => {
           </div>
           
           <div className="text-right text-xs">
-            <span className="text-gray-400 block font-semibold uppercase">Workspace Partner:</span>
-            <span className="font-bold text-editorial-text font-mono">marcopolorugs@aol.com</span>
+            <span className="text-gray-400 block font-semibold uppercase">Signed in as:</span>
+            <span className="font-bold text-editorial-text font-mono">{staff?.email}</span>
           </div>
         </div>
 
@@ -1246,190 +1251,8 @@ const AdminWorkspace: React.FC = () => {
           </div>
         )}
 
-        {/* --- TAB A: ANALYTICS CURATION --- */}
-        {activeTab === "analytics" && allowed('analytics') && (
-          <div className="space-y-6">
-            
-            {/* Real Stats Cards Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-none border border-editorial-border shadow-xs flex items-center justify-between text-left">
-                <div className="space-y-1">
-                  <span className="text-sm uppercase text-gray-450 tracking-wider font-semibold">Curation Sales Sum</span>
-                  <p className="font-serif text-xl sm:text-2xl font-light text-editorial-text">${dynamicAnalytics.totalSales.toLocaleString()}</p>
-                </div>
-                <div className="p-2 bg-editorial-aside text-emerald-700 border border-editorial-border rounded-none"><DollarSign className="h-5 w-5" /></div>
-              </div>
-              
-              <div className="bg-white p-5 rounded-none border border-editorial-border shadow-xs flex items-center justify-between text-left">
-                <div className="space-y-1">
-                  <span className="text-sm uppercase text-gray-450 tracking-wider font-semibold">Active Holds</span>
-                  <p className="font-serif text-xl sm:text-2xl font-light text-editorial-text">{dynamicAnalytics.pendingOrders} Orders</p>
-                </div>
-                <div className="p-2 bg-editorial-aside text-editorial-accent border border-editorial-border rounded-none"><Briefcase className="h-5 w-5" /></div>
-              </div>
-              
-              <div className="bg-white p-5 rounded-none border border-editorial-border shadow-xs flex items-center justify-between text-left">
-                <div className="space-y-1">
-                  <span className="text-sm uppercase text-gray-450 tracking-wider font-semibold">Dispatched Freights</span>
-                  <p className="font-serif text-xl sm:text-2xl font-light text-editorial-text">{dynamicAnalytics.shippedOrders + dynamicAnalytics.deliveredOrders} Shipments</p>
-                </div>
-                <div className="p-2 bg-editorial-aside text-editorial-text border border-editorial-border rounded-none"><Truck className="h-5 w-5" /></div>
-              </div>
+        {activeTab === 'analytics' && allowed('analytics') && <AdminOverview/>}
 
-              <div className="bg-white p-5 rounded-none border border-editorial-border shadow-xs flex items-center justify-between text-left">
-                <div className="space-y-1">
-                  <span className="text-sm uppercase text-gray-450 tracking-wider font-semibold">In-Stock Value</span>
-                  <p className="font-serif text-xl sm:text-2xl font-light text-editorial-text">${dynamicAnalytics.inventoryValue.toLocaleString()}</p>
-                </div>
-                <div className="p-2 bg-editorial-aside text-editorial-accent border border-editorial-border rounded-none"><Layers className="h-5 w-5" /></div>
-              </div>
-            </div>
-
-            {/* Visual Analytics Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
-              
-              {/* Left Box: conversion */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border space-y-4">
-                <div className="flex justify-between items-center border-b border-editorial-border pb-3">
-                  <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider">Acquisition & Conversion</h3>
-                  <span className="text-emerald-600 font-bold flex items-center gap-1">
-                    <TrendingUp className="h-4.5 w-4.5" />
-                    <span>Active</span>
-                  </span>
-                </div>
-
-                <div className="space-y-4 font-sans text-xs">
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between font-semibold">
-                      <span>Unique Showroom Visitors:</span>
-                      <span className="text-editorial-text">{dynamicAnalytics.visitors}</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-stone-100 rounded-none overflow-hidden">
-                      <div className="h-full bg-editorial-text rounded-none" style={{ width: "65%" }} />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between font-semibold">
-                      <span>Escrow Purchase Requests:</span>
-                      <span className="text-editorial-text">{orders.length}</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-stone-100 rounded-none overflow-hidden">
-                      <div className="h-full bg-editorial-accent rounded-none" style={{ width: `${(orders.length / 10) * 100}%` }} />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center bg-editorial-aside p-4 rounded-none border border-editorial-border mt-4">
-                    <div>
-                      <span className="text-sm uppercase text-gray-400 font-bold block">Conversion Ratio</span>
-                      <p className="font-serif text-xl font-light text-editorial-text">{dynamicAnalytics.conversionRate}</p>
-                    </div>
-                    <span className="text-xs text-gray-400">Industry Avg: 1.8%</span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Middle Box: Status distributions */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border space-y-4">
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3">Freight Delivery Funnel</h3>
-                
-                <div className="space-y-3 font-sans">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">• Pending Escrow Confirmation:</span>
-                    <span className="font-mono font-bold text-editorial-accent px-2 py-0.5 bg-editorial-aside border border-editorial-border rounded-none">{dynamicAnalytics.pendingOrders}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">• Confirmed Holds (Reserved):</span>
-                    <span className="font-mono font-bold text-gray-700 px-2 py-0.5 bg-stone-50 border border-stone-200 rounded-none">{dynamicAnalytics.confirmedOrders}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">• In-Route Freight Shipments:</span>
-                    <span className="font-mono font-bold text-editorial-text px-2 py-0.5 bg-editorial-aside border border-editorial-border rounded-none">{dynamicAnalytics.shippedOrders}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">• Completed Deliveries:</span>
-                    <span className="font-mono font-bold text-emerald-700 px-2 py-0.5 bg-emerald-50 border border-emerald-250 rounded-none">{dynamicAnalytics.deliveredOrders}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Box: Quick instructions */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border space-y-4">
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3">Concierge To-Do List</h3>
-                <div className="space-y-3 font-sans leading-relaxed text-sm text-gray-600">
-                  {dynamicAnalytics.pendingOrders > 0 ? (
-                    <p className="flex items-start gap-2 text-[#8F6A3D]">
-                      <AlertCircle className="h-4.5 w-4.5 flex-shrink-0 text-editorial-accent" />
-                      <span>You have <strong>{dynamicAnalytics.pendingOrders} invoice holds</strong> requiring manual verification under the "Customer Orders" tab.</span>
-                    </p>
-                  ) : (
-                    <p className="flex items-start gap-2 text-emerald-800">
-                      <Check className="h-4.5 w-4.5 flex-shrink-0 text-emerald-600" />
-                      <span>All active invoices verified and approved. Showroom holds cleared.</span>
-                    </p>
-                  )}
-
-                  {reviews.filter(r => !r.isApproved).length > 0 && (
-                    <p className="flex items-start gap-2 text-editorial-accent">
-                      <Star className="h-4.5 w-4.5 flex-shrink-0 text-editorial-accent" />
-                      <span>There are <strong>{reviews.filter(r => !r.isApproved).length} user reviews</strong> in queue awaiting curator approval before display.</span>
-                    </p>
-                  )}
-
-                  <p className="text-xs text-gray-400 italic">
-                    Tip: As a store admin, you can seamlessly simulate the customer experience. Switch to "Customer" view in the navbar, place an order, and return here to approve and ship it!
-                  </p>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              {/* Top Viewed Rugs row */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left">
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3 mb-4">Top Viewed Pieces (Product Analytics)</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  {rugs.filter(r => r.views).sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3).map(rug => (
-                    <div key={rug.id} className="flex gap-4 items-center border border-editorial-border p-3">
-                      <img src={rug.images?.[0]} className="w-16 h-16 object-cover" />
-                      <div>
-                        <p className="font-serif text-sm text-editorial-text truncate w-40">{rug.name}</p>
-                        <p className="text-xs text-editorial-accent font-bold mt-1">{rug.views} Views</p>
-                      </div>
-                    </div>
-                  ))}
-                  {rugs.filter(r => r.views).length === 0 && (
-                    <p className="text-sm text-gray-500 italic py-4">No product views recorded yet.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Traffic Sources row */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left">
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3 mb-4">Traffic Sources (Referrers)</h3>
-                <div className="flex flex-col space-y-3">
-                  {Object.entries(referrers || {})
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([source, count]) => (
-                    <div key={source} className="flex justify-between items-center border border-editorial-border p-3 bg-stone-50">
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-editorial-accent" />
-                        <span className="font-serif text-sm text-editorial-text font-bold">{source}</span>
-                      </div>
-                      <span className="text-xs font-bold bg-white border border-editorial-border px-2 py-1 rounded-sm">{count} Visitors</span>
-                    </div>
-                  ))}
-                  {Object.keys(referrers || {}).length === 0 && (
-                    <p className="text-sm text-gray-500 italic py-4">No traffic sources recorded yet.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        
         {/* --- TAB: PROMOTIONS --- */}
         {activeTab === "promotions" && allowed('promotions') && (
           <div className="space-y-6">
@@ -2736,7 +2559,7 @@ const AdminWorkspace: React.FC = () => {
         {activeTab === "cleaning" && allowed('cleaning') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
-              <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Specialty Care Lab Orders</h2>
+              <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Cleaning & repairs Lab Orders</h2>
               <p className="text-xs text-neutral-400">Review patron requests for rug washing, restoration, and schedule white-glove pickup logistics.</p>
             </div>
 
@@ -2891,138 +2714,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
         )}
 
-        {/* --- TAB E: INBOX CONCIERGE CHATS --- */}
-        {activeTab === "messages" && allowed('messages') && (
-          <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
-            
-            {/* Sidebar with active customer threads (Left column, 4 cols) */}
-            <div className="lg:col-span-4 flex flex-col h-[450px] border border-neutral-200 rounded-xl overflow-hidden bg-stone-50">
-              <div className="p-3 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between text-white">
-                <span className="font-serif font-bold text-amber-400 uppercase tracking-widest text-sm">Customer Sessions</span>
-                <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 font-bold uppercase tracking-wider">{chatThreads.length} Active</span>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto divide-y divide-neutral-200">
-                {chatThreads.length === 0 ? (
-                  <div className="p-8 text-center text-neutral-400 italic text-xs font-sans">
-                    No active support requests.
-                  </div>
-                ) : (
-                  chatThreads.map((thread) => {
-                    const lastMsg = thread.messages[thread.messages.length - 1];
-                    const isSelected = selectedSessionId === thread.sessionId;
-                    return (
-                      <div
-                        key={thread.sessionId}
-                        onClick={() => setSelectedSessionId(thread.sessionId)}
-                        className={`p-3 transition cursor-pointer flex justify-between items-start gap-2 ${
-                          isSelected ? "bg-amber-50 border-l-4 border-amber-500" : "hover:bg-stone-100"
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-bold text-xs text-neutral-900 truncate">{thread.customerName}</h4>
-                          <p className="text-xs text-neutral-500 truncate mt-0.5">{lastMsg?.text || "No messages"}</p>
-                          <span className="text-xs text-neutral-400 block font-mono mt-1">
-                            {lastMsg ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
-                          </span>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAdminEndChat(thread.sessionId);
-                          }}
-                          title="End Chat and delete all messages"
-                          className="p-1 hover:bg-red-50 text-neutral-400 hover:text-red-500 rounded transition cursor-pointer mt-1"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* Chat thread feed & reply input (Right column, 8 cols) */}
-            <div className="lg:col-span-8 flex flex-col h-[450px] border border-neutral-200 rounded-xl overflow-hidden bg-neutral-950">
-              
-              {(() => {
-                const activeThread = chatThreads.find(t => t.sessionId === (selectedSessionId || "default"));
-                const activeMsgs = activeThread ? activeThread.messages : [];
-                const displayCustomerName = activeThread ? activeThread.customerName : "No Active Conversation";
-
-                return (
-                  <>
-                    <div className="p-3 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between text-white">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span className="font-serif font-bold text-amber-400 uppercase tracking-widest text-sm truncate max-w-[200px]">
-                          Inquiry: {displayCustomerName}
-                        </span>
-                      </div>
-                      {activeThread && (
-                        <button
-                          onClick={() => handleAdminEndChat(activeThread.sessionId)}
-                          className="px-2 py-0.5 bg-red-950 hover:bg-red-900 text-red-200 border border-red-800 rounded text-xs uppercase font-bold font-mono transition"
-                        >
-                          End Chat
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Chat Feed */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {activeMsgs.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
-                          <MessageSquare className="h-8 w-8 text-neutral-600 animate-pulse" />
-                          <p className="text-neutral-400 font-sans italic text-xs">
-                            Select a customer thread from the left or trigger a guest session to start an elite live chat.
-                          </p>
-                        </div>
-                      ) : (
-                        activeMsgs.map((msg) => (
-                          <div key={msg.id} className={`flex flex-col ${msg.sender === "admin" ? "items-end" : "items-start"}`}>
-                            <div className={`max-w-[80%] p-2.5 rounded-xl text-sm leading-relaxed ${
-                              msg.sender === "admin" 
-                                ? "bg-amber-500 text-neutral-950 rounded-tr-none font-medium" 
-                                : "bg-neutral-800 text-neutral-200 rounded-tl-none border border-neutral-700/40"
-                            }`}>
-                              <p>{msg.text}</p>
-                            </div>
-                            <span className="text-xs text-neutral-500 mt-0.5 font-mono px-1">
-                              {msg.sender === "admin" ? "Concierge Reply" : `${msg.customerName || "Customer"}`} | {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Chat Input form */}
-                    <form onSubmit={handleAdminChatReply} className="p-2.5 bg-neutral-900 border-t border-neutral-800 flex gap-2">
-                      <input
-                        type="text"
-                        disabled={!activeThread}
-                        value={adminReplyText}
-                        onChange={(e) => setAdminReplyText(e.target.value)}
-                        placeholder={activeThread ? `Reply to ${activeThread.customerName}...` : "Select a thread to reply..."}
-                        className="flex-1 bg-neutral-950 text-white rounded-lg py-2 px-3 outline-none text-sm border border-neutral-700 focus:border-amber-500 disabled:opacity-50"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!activeThread}
-                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-neutral-900 font-bold uppercase tracking-widest text-sm rounded-lg transition disabled:opacity-50 cursor-pointer"
-                      >
-                        Send Reply
-                      </button>
-                    </form>
-                  </>
-                );
-              })()}
-
-            </div>
-
-          </div>
-        )}
+        {activeTab==='messages' && allowed('messages') && <div className={portal.grid}><section className={portal.card}><h2>Customer conversations</h2>{!chatThreads.length&&<p>No conversations yet.</p>}{chatThreads.map(thread=><button key={thread.sessionId} className={portal.row} style={{width:'100%',textAlign:'left'}} onClick={()=>setSelectedSessionId(thread.sessionId)}><span>{thread.customerName||'Customer'}</span><span>Open →</span></button>)}</section><AdminChatBox activeSessionId={selectedSessionId} onClose={()=>setSelectedSessionId(null)} embedded/></div>}
 
         {/* --- TAB F: BLOG PUBLISHER --- */}
         {activeTab === "blogs" && allowed('blogs') && (

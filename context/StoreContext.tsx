@@ -1,3 +1,4 @@
+import {chatRequest} from "@/lib/chat-client";
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -751,81 +752,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // --- Chat / Concierge Support ---
   const chatHandoffRef = useRef<Record<string, boolean>>({});
 
-  const sendChatMessage = (
-    text: string,
-    sender: "customer" | "admin",
-    orderId?: string,
-    sessionId?: string,
-    customerName?: string
-  ) => {
-    if(!auth.currentUser)throw new Error("Please wait for the secure connection and retry.");
-    if(sender==='admin' && !canAccess(staff,'messages','write'))throw new Error("You do not have permission to reply.");
-    const sId = sessionId || auth.currentUser.uid;
-    const ownerUid=sender==='customer'?auth.currentUser.uid:chatMessages.find(m=>m.sessionId===sId && m.sender==='customer')?.ownerUid;
-    if(!ownerUid)throw new Error("This legacy chat needs a new customer message before secure replies can continue.");
-    const cName = customerName || (sender === "customer" ? "Guest Customer" : "System");
-
-    const newMessage: ChatMessage = {
-      ownerUid,
-      isAutomated: false,
-      id: `msg-${Date.now()}`,
-      sender,
-      text,
-      timestamp: new Date().toISOString(),
-      sessionId: sId,
-      orderId,
-      customerName: cName
-    };
-
-    addShowroomDoc(SHOWROOM_CHAT, newMessage);
-
-    // Connect to ChatGPT API for customer messages
-    if (sender === "customer") {
-      const history = chatMessages
-        .filter(m => (m.sessionId || "default") === sId)
-        .map(m => ({
-          role: m.sender === "customer" ? "user" : "assistant",
-          content: m.text
-        }));
-      
-      // Append the message we just sent (since state hasn't updated yet)
-      history.push({ role: "user", content: text });
-
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const replyMessage = data.replyText || "I'm sorry, I'm currently unavailable. A human concierge will be with you shortly.";
-        const aiReply: ChatMessage = {
-          ownerUid,
-          isAutomated: true,
-          id: `msg-${Date.now() + 1}`,
-          sender: "admin",
-          text: replyMessage,
-          timestamp: new Date().toISOString(),
-          sessionId: sId,
-          customerName: cName
-        };
-        addShowroomDoc(SHOWROOM_CHAT, aiReply);
-      })
-      .catch(err => {
-        console.error("Chat API Error:", err);
-        const fallbackReply: ChatMessage = {
-          ownerUid,
-          isAutomated: true,
-          id: `msg-${Date.now() + 1}`,
-          sender: "admin",
-          text: "I'm sorry, my systems are currently offline. A human concierge will be with you shortly.",
-          timestamp: new Date().toISOString(),
-          sessionId: sId,
-          customerName: cName
-        };
-        addShowroomDoc(SHOWROOM_CHAT, fallbackReply);
-      });
-    }
+  const sendChatMessage = async (text:string,sender:"customer"|"admin",orderId?:string,sessionId?:string,customerName?:string) => {
+    await chatRequest({action:sender==='admin'?'reply':'message',text,sessionId:sessionId||auth.currentUser?.uid,customerName});
   };
 
   const clearChat = (sessionId?: string) => {

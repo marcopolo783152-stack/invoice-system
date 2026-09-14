@@ -1,136 +1,30 @@
 'use client';
-
-import React, { useState, useEffect, useRef } from "react";
-import { useStore } from "@/context/StoreContext";
-import { X, Send, Minimize2, Maximize2, User, UserSquare2 } from "lucide-react";
-import { addShowroomDoc, SHOWROOM_CHAT } from "@/lib/showroom-firebase";
-
-interface AdminChatBoxProps {
-  activeSessionId: string | null;
-  onClose: () => void;
+import {useEffect,useRef,useState} from 'react';
+import {doc,onSnapshot} from 'firebase/firestore';
+import {db} from '@/lib/firebase';
+import {useStore} from '@/context/StoreContext';
+import {useStaffAccess} from '@/hooks/useStaffAccess';
+import {canAccess} from '@/lib/access-policy';
+import {chatRequest} from '@/lib/chat-client';
+import ChatText from '@/components/ChatText';
+import styles from '@/components/Chat.module.css';
+export function AdminChatBox({activeSessionId,onClose,embedded=false}:{activeSessionId:string|null;onClose:()=>void;embedded?:boolean}){
+ const {chatMessages}=useStore();const {staff}=useStaffAccess();
+ const [session,setSession]=useState<any>(null),[name,setName]=useState(''),[text,setText]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const bottom=useRef<HTMLDivElement>(null);
+ useEffect(()=>{setName(staff?.name||'');},[staff?.name]);
+ useEffect(()=>{setSession(null);setError('');if(activeSessionId&&canAccess(staff,'messages'))return onSnapshot(doc(db,'showroom_chat_sessions',activeSessionId),s=>setSession(s.data()||null),()=>setError('Could not load the conversation.'));},[activeSessionId,staff]);
+ const messages=chatMessages.filter(m=>m.sessionId===activeSessionId).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+ useEffect(()=>{bottom.current?.scrollIntoView({behavior:'auto'});},[messages.length]);
+ if(!activeSessionId||!canAccess(staff,'messages'))return null;
+ const run=async(body:Record<string,unknown>)=>{setBusy(true);setError('');try{await chatRequest({...body,sessionId:activeSessionId});setText('');}catch(e){setError(e instanceof Error?e.message:'Could not send.');}finally{setBusy(false);}};
+ return <section className={styles.window+' '+(embedded?styles.embedded:'')} aria-label="Customer conversation">
+ <header className={styles.header}><div><strong>{session?.contact?.name||session?.customerName||'Customer conversation'}</strong><small>{session?.status==='human'?'With '+session.staffName:session?.status==='waiting'?'Waiting for our team':'AI assistant conversation'}</small></div><button onClick={onClose} aria-label="Close customer conversation">×</button></header>
+ {session?.contact&&<div className={styles.tools}><a href={'mailto:'+session.contact.email}>{session.contact.email}</a><span>{session.contact.phone}</span></div>}
+ <div className={styles.feed}>{messages.map(m=><div key={m.id} className={styles.bubble+' '+(m.sender==='admin'?styles.mine:'')}><span className={styles.label}>{m.sender==='customer'?'Customer':m.isAutomated?'AI assistant':(m as any).staffName||'Team'}</span><ChatText text={m.text}/></div>)}<div ref={bottom}/></div>
+ {error&&<p role="alert" className={styles.error}>{error}</p>}
+ {!session?.claimedBy&&canAccess(staff,'messages','write')&&<form className={styles.claim} onSubmit={e=>{e.preventDefault();run({action:'claim',name});}}><label>Your name for this customer<input required minLength={2} maxLength={100} value={name} onChange={e=>setName(e.target.value)}/></label><button disabled={busy||!session}>Accept conversation</button></form>}
+ {session?.claimedBy===staff?.uid&&<form className={styles.compose} onSubmit={e=>{e.preventDefault();run({action:'reply',text});}}><input aria-label="Reply to customer" required maxLength={2000} value={text} onChange={e=>setText(e.target.value)} placeholder="Write a kind, helpful reply…"/><button disabled={busy||!text.trim()}>Send</button></form>}
+ {session?.claimedBy&&session.claimedBy!==staff?.uid&&<p className={styles.tools}>This conversation is being handled by {session.staffName}.</p>}
+ </section>;
 }
-
-export const AdminChatBox: React.FC<AdminChatBoxProps> = ({ activeSessionId, onClose }) => {
-  const { chatMessages } = useStore();
-  const [inputText, setInputText] = useState("");
-  const [isMinimized, setIsMinimized] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  const activeMessages = chatMessages
-    .filter(m => (m.sessionId || "default") === activeSessionId)
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-  useEffect(() => {
-    if (!isMinimized && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [activeMessages, isMinimized]);
-
-  if (!activeSessionId) return null;
-
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
-
-    const newMessage = {
-      id: `msg-${Date.now()}`,
-      sender: "Marco Polo", // Identifies as admin
-      text: inputText,
-      timestamp: new Date().toISOString(),
-      sessionId: activeSessionId
-    };
-
-    try {
-      await addShowroomDoc(SHOWROOM_CHAT, newMessage);
-      setInputText("");
-    } catch (error) {
-      console.error("Failed to send reply:", error);
-    }
-  };
-
-  const customerName = activeMessages.find(m => m.sender === 'customer')?.customerName || "Customer";
-
-  if (isMinimized) {
-    return (
-      <div 
-        className="fixed bottom-4 right-4 bg-gray-900 text-white p-3 rounded-t-lg shadow-xl cursor-pointer flex items-center justify-between w-64 z-[10000]"
-        onClick={() => setIsMinimized(false)}
-      >
-        <span className="font-bold text-sm truncate">Chat: {customerName}</span>
-        <div className="flex items-center gap-2">
-          <Maximize2 size={16} />
-          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="hover:text-red-400">
-            <X size={16} />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white border border-gray-200 shadow-2xl rounded-t-lg z-[10000] flex flex-col pointer-events-auto" style={{ height: '400px' }}>
-      {/* Header */}
-      <div className="bg-gray-900 text-white p-3 rounded-t-lg flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <UserSquare2 size={18} />
-          <div>
-            <div className="font-bold text-sm uppercase tracking-wider truncate">{customerName}</div>
-            <div className="text-[10px] text-gray-400">Session: {activeSessionId.substring(0,8)}...</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 text-gray-300">
-          <button onClick={() => setIsMinimized(true)} className="hover:text-white"><Minimize2 size={16} /></button>
-          <button onClick={onClose} className="hover:text-red-400"><X size={16} /></button>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 p-3 overflow-y-auto bg-gray-50 flex flex-col gap-3">
-        {activeMessages.length === 0 ? (
-          <div className="text-center text-gray-400 text-sm mt-10">No messages found.</div>
-        ) : (
-          activeMessages.map((msg) => {
-            const isAdmin = msg.sender === 'Marco Polo' || msg.sender === 'admin';
-            return (
-              <div key={msg.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
-                <div 
-                  className={`p-2.5 rounded-lg max-w-[85%] text-sm shadow-sm ${
-                    isAdmin 
-                      ? 'bg-gray-900 text-white rounded-br-none' 
-                      : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none'
-                  }`}
-                >
-                  {msg.text}
-                </div>
-                <div className="text-[9px] text-gray-400 mt-1 px-1 uppercase tracking-wider">
-                  {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </div>
-              </div>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input */}
-      <div className="p-3 bg-white border-t border-gray-100">
-        <form onSubmit={handleSend} className="flex gap-2">
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Type a reply..."
-            className="flex-1 bg-gray-100 border-none rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 text-gray-900"
-          />
-          <button 
-            type="submit"
-            disabled={!inputText.trim()}
-            className="bg-gray-900 text-white p-2 flex items-center justify-center hover:bg-gray-800 transition disabled:opacity-50"
-          >
-            <Send size={16} />
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-};

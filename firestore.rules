@@ -129,12 +129,13 @@ service cloud.firestore {
   }
   match /showroom_chat/{id} {
    allow read: if can('messages','read') || (signed() && resource.data.get('ownerUid','') == request.auth.uid);
-   allow create: if (can('messages','write') && request.resource.data.ownerUid is string)
-    || (signed() && request.resource.data.ownerUid == request.auth.uid
-     && request.resource.data.text is string && request.resource.data.text.size() <= 10000
-     && request.resource.data.sender == 'customer' && request.resource.data.isAutomated == false);
-   allow update: if can('messages','write') && request.resource.data.ownerUid == resource.data.ownerUid;
+   // All messages are written by the authenticated server; clients cannot impersonate staff or AI.
+   allow create,update: if false;
    allow delete: if can('messages','delete');
+  }
+  match /showroom_chat_sessions/{id} {
+   allow read: if can('messages','read') || (signed() && resource.data.ownerUid == request.auth.uid);
+   allow write: if false;
   }
   match /showroom_rugs/{id} {
    allow read: if true;
@@ -182,7 +183,7 @@ service cloud.firestore {
    allow create: if validBooking(request.resource.data,id)
     && !exists(/databases/$(database)/documents/showroom_appointment_slots/$(request.resource.data.slotId))
     && getAfter(/databases/$(database)/documents/showroom_appointment_slots/$(request.resource.data.slotId)).data.appointmentId == id;
-   allow read: if can('appointments','read');
+   allow read: if can('appointments','read') || (verified() && resource.data.ownerUid == request.auth.uid);
    allow update: if can('appointments','write')
     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
    allow delete: if can('appointments','delete');
