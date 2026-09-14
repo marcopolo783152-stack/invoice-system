@@ -182,6 +182,7 @@ export interface BlogPost {
 }
 
 export interface ChatMessage {
+  isAutomated?: boolean;
   id: string;
   sender: "customer" | "admin";
   text: string;

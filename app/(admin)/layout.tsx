@@ -165,7 +165,7 @@ export default function RootLayout({
         {/* Mobile Hamburger Button */}
         {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
           <button 
-            className="md:hidden fixed bottom-6 right-6 z-[999] bg-emerald-600 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+            className="invoice-menu-toggle"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -176,7 +176,7 @@ export default function RootLayout({
           {/* Mobile Overlay */}
           {isMobileMenuOpen && (
             <div 
-              className="md:hidden fixed inset-0 bg-black/50 z-[90] backdrop-blur-sm"
+              className="invoice-menu-overlay"
               onClick={() => setIsMobileMenuOpen(false)}
             />
           )}
@@ -184,13 +184,9 @@ export default function RootLayout({
           {/* Sidebar */}
           {isAuthenticated && !isPublicPage && pathname !== '/admin/invoices/clock' && (
             <div
-              className={`
-                fixed md:sticky top-10 z-[100] bg-[var(--bg-void)] border-r border-editorial-border shadow-2xl md:shadow-none
-                transition-all duration-300 ease-in-out
-                ${isMobileMenuOpen ? 'left-0 translate-x-0' : '-translate-x-full md:translate-x-0'}
-              `}
+              className={`invoice-sidebar-shell ${isMobileMenuOpen ? "is-open" : ""}`}
               style={{
-                width: isCollapsed ? 80 : 260,
+                width: isCollapsed ? 96 : 260,
                 flexShrink: 0,
                 height: 'calc(100vh - 40px)'
               }}
@@ -211,6 +207,7 @@ export default function RootLayout({
           {/* Main Content */}
           <div className="main-content" style={{
             flex: 1,
+            minWidth: 0,
             minHeight: '100vh',
             background: isPublicPage ? '#fff' : 'var(--bg-void)',
             width: '100%',

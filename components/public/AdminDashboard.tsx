@@ -1,3 +1,5 @@
+import ActivityBadge from "@/components/ActivityBadge";
+import { subscribeToCollection, SHOWROOM_APPOINTMENTS } from "@/lib/showroom-firebase";
 import CRMAdminTab from "./CRMAdminTab";
 import AppointmentsAdminTab from "./AppointmentsAdminTab";
 import WebsiteBuilder from "./WebsiteBuilder";
@@ -137,6 +139,10 @@ export const AdminDashboard: React.FC = () => {
       window.history.pushState(null, "", "?" + params.toString());
     }
   };
+  const [appointmentActivity, setAppointmentActivity] = useState<Array<{ status?: string }>>([]);
+  useEffect(() => subscribeToCollection<{ status?: string }>(SHOWROOM_APPOINTMENTS, setAppointmentActivity), []);
+  const pendingAppointments = appointmentActivity.filter(a => (a.status || 'pending').toLowerCase() === 'pending').length;
+
   const [audioEnabled, setAudioEnabled] = useState(false);
 
   // Review notification alert
@@ -369,7 +375,13 @@ export const AdminDashboard: React.FC = () => {
     }
   }, [chatThreads, selectedSessionId]);
 
-  const unreadMessagesCount = chatThreads.filter(t => t.messages[t.messages.length - 1].sender === "customer").length;
+  const unreadMessagesCount = chatThreads.filter(t => {
+    // AI replies also use sender=admin. They must not hide customer requests.
+    const lastStaffReply = Math.max(0, ...t.messages
+      .filter(m => (m.sender as string) === "Marco Polo" || (m.sender === "admin" && m.isAutomated === false))
+      .map(m => new Date(m.timestamp).getTime()));
+    return t.messages.some(m => m.sender === "customer" && new Date(m.timestamp).getTime() > lastStaffReply);
+  }).length;
 
   const handleUnlockCardDetails = (orderId: string) => {
     setPasswordPromptOrderId(orderId);
@@ -977,9 +989,7 @@ export const AdminDashboard: React.FC = () => {
               <ClipboardList className="h-4.5 w-4.5" />
               <span>Customer Orders</span>
               {dynamicAnalytics.pendingOrders > 0 && (
-                <span className="absolute right-3 bg-[#C22E2E] text-white text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
-                  {dynamicAnalytics.pendingOrders}
-                </span>
+                <ActivityBadge count={dynamicAnalytics.pendingOrders} />
               )}
             </button>
 
@@ -992,9 +1002,7 @@ export const AdminDashboard: React.FC = () => {
               <Brush className="h-4.5 w-4.5" />
               <span>Specialty Care</span>
               {cleaningBookings.filter(b => b.status === "Pending").length > 0 && (
-                <span className="absolute right-3 bg-amber-500 text-neutral-900 text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
-                  {cleaningBookings.filter(b => b.status === "Pending").length}
-                </span>
+                <ActivityBadge count={cleaningBookings.filter(b => b.status === "Pending").length} />
               )}
             </button>
 
@@ -1007,9 +1015,7 @@ export const AdminDashboard: React.FC = () => {
               <Calculator className="h-4.5 w-4.5" />
               <span>Service Estimates</span>
               {estimates && estimates.filter(e => e.status === "New").length > 0 && (
-                <span className="absolute right-3 bg-blue-600 text-white text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
-                  {estimates.filter(e => e.status === "New").length}
-                </span>
+                <ActivityBadge count={estimates.filter(e => e.status === "New").length} />
               )}
             </button>
             
@@ -1021,6 +1027,7 @@ export const AdminDashboard: React.FC = () => {
             >
               <Calendar className="h-4.5 w-4.5" />
               <span>Appointments</span>
+              <ActivityBadge count={pendingAppointments} />
             </button>
             
             <button 
@@ -1059,9 +1066,7 @@ export const AdminDashboard: React.FC = () => {
               <Star className="h-4.5 w-4.5" />
               <span>Advisor Reviews</span>
               {reviews.filter(r => !r.isApproved).length > 0 && (
-                <span className="absolute right-3 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse shadow-md">
-                  {reviews.filter(r => !r.isApproved).length} NEW
-                </span>
+                <ActivityBadge count={reviews.filter(r => !r.isApproved).length} />
               )}
             </button>
             
@@ -1074,9 +1079,7 @@ export const AdminDashboard: React.FC = () => {
               <MessageSquare className="h-4.5 w-4.5" />
               <span>Concierge Inbox</span>
               {unreadMessagesCount > 0 && (
-                <span className="absolute right-3 bg-purple-600 text-white text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
-                  {unreadMessagesCount}
-                </span>
+                <ActivityBadge count={unreadMessagesCount} />
               )}
             </button>
             

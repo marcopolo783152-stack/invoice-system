@@ -757,6 +757,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const cName = customerName || (sender === "customer" ? "Guest Customer" : "System");
 
     const newMessage: ChatMessage = {
+      isAutomated: false,
       id: `msg-${Date.now()}`,
       sender,
       text,
@@ -789,6 +790,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       .then(data => {
         const replyMessage = data.replyText || "I'm sorry, I'm currently unavailable. A human concierge will be with you shortly.";
         const aiReply: ChatMessage = {
+          isAutomated: true,
           id: `msg-${Date.now() + 1}`,
           sender: "admin",
           text: replyMessage,
@@ -801,6 +803,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       .catch(err => {
         console.error("Chat API Error:", err);
         const fallbackReply: ChatMessage = {
+          isAutomated: true,
           id: `msg-${Date.now() + 1}`,
           sender: "admin",
           text: "I'm sorry, my systems are currently offline. A human concierge will be with you shortly.",

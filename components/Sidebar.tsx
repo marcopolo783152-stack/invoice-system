@@ -1,4 +1,5 @@
 'use client';
+import ActivityBadge from './ActivityBadge';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -206,19 +207,7 @@ export default function Sidebar({
                             >
                                 <item.icon size={isCollapsed ? 28 : 22} />
                                 <span className={styles.label}>{item.label}</span>
-                                {(item as any).badge && (
-                                    <span style={{
-                                        marginLeft: 'auto',
-                                        background: 'rgba(30, 80, 255, 0.1)',
-                                        color: 'var(--primary)',
-                                        fontSize: 10,
-                                        fontWeight: 700,
-                                        padding: '2px 6px',
-                                        borderRadius: 10
-                                    }}>
-                                        {(item as any).badge}
-                                    </span>
-                                )}
+                                <ActivityBadge count={(item as any).badge || 0} />
                             </button>
                         );
                     }
@@ -232,6 +221,7 @@ export default function Sidebar({
                         >
                             <item.icon size={22} />
                             <span className={styles.label}>{item.label}</span>
+                            <ActivityBadge count={(item as any).badge || 0} />
                         </Link>
                     );
                 })}

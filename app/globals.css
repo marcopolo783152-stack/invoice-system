@@ -325,3 +325,13 @@ input.pac-target-input,
   background-image: none !important;
   background: none !important;
 }
+/* Invoice shell does not load showroom Tailwind. Keep layout explicit. */
+.admin-layout-wrapper { display:flex; align-items:flex-start; position:relative; width:100%; min-height:calc(100vh - 40px); }
+.invoice-sidebar-shell { position:sticky; top:40px; align-self:flex-start; z-index:100; }
+.invoice-menu-toggle, .invoice-menu-overlay { display:none; }
+@media (max-width:767px) {
+ .invoice-sidebar-shell { position:fixed; left:0; top:40px; transform:translateX(-100%); transition:transform .2s; }
+ .invoice-sidebar-shell.is-open { transform:translateX(0); }
+ .invoice-menu-toggle { display:flex; position:fixed; bottom:24px; right:24px; z-index:999; background:#059669; color:white; border:0; border-radius:50%; padding:16px; }
+ .invoice-menu-overlay { display:block; position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.5); }
+}
