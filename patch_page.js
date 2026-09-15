@@ -1,24 +1,57 @@
 const fs = require('fs');
-let content = fs.readFileSync('app/(public)/page.tsx', 'utf8');
 
-content = content.replace(
-`      {/* Luxury sticky Header Navigation bar */}
-      <Navbar currentTab={currentTab} setCurrentTab={setCurrentTab} />`,
-`      {/* CMS PROMO BANNER */}
-      {websiteContent?.announcement_text && (
-        <div className="bg-neutral-900 text-white text-center py-2 px-4 text-xs font-bold uppercase tracking-widest relative z-50">
-          {websiteContent?.announcement_link ? (
-            <a href={websiteContent.announcement_link} className="hover:text-editorial-accent transition-colors">
-              {websiteContent.announcement_text}
-            </a>
-          ) : (
-            <span>{websiteContent.announcement_text}</span>
-          )}
-        </div>
-      )}
+const pageFile = 'app/(public)/page.tsx';
+let content = fs.readFileSync(pageFile, 'utf8');
 
-      {/* Luxury sticky Header Navigation bar */}
-      <Navbar currentTab={currentTab} setCurrentTab={setCurrentTab} />`
-);
+// 1. Modify the states in AppContent
+const stateDecl = `  const [currentTab, setCurrentTab] = useState("home");
+  const [selectedRugId, setSelectedRugId] = useState<string | null>(null);`;
 
-fs.writeFileSync('app/(public)/page.tsx', content);
+const newStateDecl = `  const [currentTab, setCurrentTabState] = useState("home");
+  const [selectedRugId, setSelectedRugIdState] = useState<string | null>(null);
+
+  // Initialize from URL on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      const rugId = params.get("rugId");
+      if (tab) setCurrentTabState(tab);
+      if (rugId) setSelectedRugIdState(rugId);
+    }
+  }, []);
+
+  const setCurrentTab = (tab: string) => {
+    setCurrentTabState(tab);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", tab);
+      if (tab !== "shop") params.delete("rugId");
+      window.history.pushState(null, "", "?" + params.toString());
+    }
+  };
+
+  const setSelectedRugId = (id: string | null) => {
+    setSelectedRugIdState(id);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (id) {
+        params.set("rugId", id);
+        params.set("tab", "shop");
+        setCurrentTabState("shop");
+      } else {
+        params.delete("rugId");
+      }
+      window.history.pushState(null, "", "?" + params.toString());
+    }
+  };`;
+
+content = content.replace(stateDecl, newStateDecl);
+
+// Add useEffect import if not present
+if (!content.includes('import React, { useState, useEffect }')) {
+    content = content.replace('import React, { useState }', 'import React, { useState, useEffect }');
+}
+
+fs.writeFileSync(pageFile, content);
+console.log("Patched page.tsx for URL state persistence");

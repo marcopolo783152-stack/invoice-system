@@ -1,315 +1,164 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { getAppraisals, deleteAppraisal, Appraisal } from '@/lib/appraisals-storage';
-import { Search, Plus, Trash2, Printer, ArrowLeft, Edit, Download } from 'lucide-react';
-import { formatDateMMDDYYYY } from '@/lib/date-utils';
+import React, { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { getAppraisalById, Appraisal } from '@/lib/appraisals-storage';
 import AppraisalTemplate from '@/components/AppraisalTemplate';
-import { getInvoicePDFBlob } from '@/lib/pdf-utils';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
+import { generatePDF, openPDFInNewTab } from '@/lib/pdf-utils';
 
-export default function AppraisalsPage() {
-    const router = useRouter();
-    const [appraisals, setAppraisals] = useState<Appraisal[]>([]);
-    const [searchTerm, setSearchTerm] = useState('');
+function PrintContent() {
+    const searchParams = useSearchParams();
+    const [appraisal, setAppraisal] = useState<Appraisal | null>(null);
     const [loading, setLoading] = useState(true);
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [isGeneratingZip, setIsGeneratingZip] = useState(false);
+    const [isPrinting, setIsPrinting] = useState(false);
+    const printRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        loadData();
-    }, []);
+        const id = searchParams.get('id');
+        if (id) {
+            getAppraisalById(id).then(data => {
+                setAppraisal(data);
+                setLoading(false);
+            });
+        } else {
+            setLoading(false);
+        }
+    }, [searchParams]);
 
-    async function loadData() {
-        setLoading(true);
-        const data = await getAppraisals();
-        setAppraisals(data);
-        setLoading(false);
+    if (loading) {
+        return <div style={{ padding: 40, textAlign: 'center' }}>Loading Certificate...</div>;
     }
 
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (confirm('Are you sure you want to delete this Appraisal?')) {
-            await deleteAppraisal(id);
-            await loadData();
-        }
-    };
-
-    const handlePrint = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        window.open(`/admin/invoices/appraisals/print?id=${id}`, '_blank');
-    };
-
-    const filtered = appraisals.filter(app => 
-        app.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.rugNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const toggleSelect = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        const newSet = new Set(selectedIds);
-        if (newSet.has(id)) newSet.delete(id);
-        else newSet.add(id);
-        setSelectedIds(newSet);
-    };
-
-    const handleSelectAll = () => {
-        if (selectedIds.size === appraisals.length) {
-            setSelectedIds(new Set()); // Deselect all
-        } else {
-            setSelectedIds(new Set(appraisals.map(app => app.id))); // Select all
-        }
-    };
-
-    const handleBulkInvoice = () => {
-        const selectedAppraisals = appraisals.filter(app => selectedIds.has(app.id));
-        if (selectedAppraisals.length === 0) return;
-
-        const feeStr = prompt(`Enter the appraisal fee amount to charge PER APPRAISAL (e.g. 150):`, "150");
-        if (feeStr === null) return;
-        const fee = parseFloat(feeStr) || 0;
-
-        const primaryCustomer = selectedAppraisals[0];
-
-        const invoiceData = {
-            documentType: 'APPRAISAL_RECEIPT',
-            soldTo: {
-                name: primaryCustomer.customerName,
-                address: primaryCustomer.customerAddress,
-                email: '',
-                phone: ''
-            },
-            items: selectedAppraisals.map((appraisal, idx) => ({
-                id: `item-${Date.now()}-${idx}`,
-                sku: 'APPRAISAL',
-                description: `Appraisal Services (Ref: ${appraisal.id}) - Rug #${appraisal.rugNumber}`,
-                shape: 'rectangle',
-                widthFeet: 0,
-                widthInches: 0,
-                lengthFeet: 0,
-                lengthInches: 0,
-                fixedPrice: fee,
-                pricingMethod: 'piece'
-            }))
-        };
-        sessionStorage.setItem('convert_invoice_data', JSON.stringify(invoiceData));
-        window.location.href = '/admin/invoices/invoices/new';
-    };
-
-    const handleBulkDownload = async () => {
-        setIsGeneratingZip(true);
-        try {
-            const zip = new JSZip();
-            const selectedAppraisals = appraisals.filter(app => selectedIds.has(app.id));
-            
-            // Wait briefly to ensure images inside hidden templates load
-            await new Promise(r => setTimeout(r, 1000));
-            
-            for (const app of selectedAppraisals) {
-                const element = document.getElementById(`hidden-appraisal-${app.id}`);
-                if (element) {
-                    const blob = await getInvoicePDFBlob(element, app.id);
-                    zip.file(`Appraisal_${app.id}_${app.rugNumber}.pdf`, blob);
-                }
-            }
-            
-            const zipBlob = await zip.generateAsync({ type: 'blob' });
-            saveAs(zipBlob, `Appraisals_Bulk_Download.zip`);
-            setSelectedIds(new Set());
-        } catch (error) {
-            console.error('Failed to generate zip', error);
-            alert('Failed to generate PDF bundle.');
-        } finally {
-            setIsGeneratingZip(false);
-        }
-    };
+    if (!appraisal) {
+        return <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>Appraisal not found.</div>;
+    }
 
     return (
-        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <div>
-                    <Link href="/" style={{ color: '#6366f1', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
-                        <ArrowLeft size={16} /> Back to Dashboard
-                    </Link>
-                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Certificates & Appraisals</h1>
-                </div>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <button 
-                        onClick={handleSelectAll}
-                        style={{ 
-                            background: '#f1f5f9', color: '#475569', 
-                            padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
-                            border: '1px solid #cbd5e1', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: '8px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-                        }}
-                    >
-                        {selectedIds.size === appraisals.length && appraisals.length > 0 ? 'Unselect All' : 'Select All'}
-                    </button>
-                    {selectedIds.size > 0 && (
-                        <button 
-                            onClick={handleBulkInvoice}
-                            style={{ 
-                                background: '#f59e0b', color: 'white', 
-                                padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
-                                border: 'none', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                boxShadow: '0 4px 6px -1px rgba(245, 158, 11, 0.2)'
-                            }}
-                        >
-                            🧾 Invoice Selected ({selectedIds.size})
-                        </button>
-                    )}
-                    {selectedIds.size > 0 && (
-                        <button 
-                            onClick={handleBulkDownload}
-                            disabled={isGeneratingZip}
-                            style={{ 
-                                background: isGeneratingZip ? '#94a3b8' : '#10b981', color: 'white', 
-                                padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
-                                border: 'none', cursor: isGeneratingZip ? 'not-allowed' : 'pointer',
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                boxShadow: isGeneratingZip ? 'none' : '0 4px 6px -1px rgba(16, 185, 129, 0.2)'
-                            }}
-                        >
-                            <Download size={18} /> {isGeneratingZip ? 'Generating...' : `Download PDFs (${selectedIds.size})`}
-                        </button>
-                    )}
-                    <Link 
-                        href="/admin/invoices/appraisals/new" 
-                        style={{ 
-                            background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', color: 'white', 
-                            padding: '12px 24px', borderRadius: '12px', fontWeight: 'bold', 
-                            textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px',
-                            boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
-                        }}
-                    >
-                        <Plus size={20} /> New Appraisal
-                    </Link>
+        <div style={{ background: '#525659', minHeight: '100vh', padding: '20px 0' }}>
+            {/* Top Toolbar for Printing */}
+            <div className="print-hide" style={{ textAlign: 'center', marginBottom: '20px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <button 
+                    onClick={async () => {
+                        if (printRef.current) {
+                            setIsPrinting(true);
+                            try {
+                                await openPDFInNewTab(printRef.current, `Appraisal_${appraisal.id}`);
+                            } finally {
+                                setIsPrinting(false);
+                            }
+                        }
+                    }}
+                    disabled={isPrinting}
+                    style={{ 
+                        padding: '12px 24px', 
+                        fontSize: '16px', 
+                        fontWeight: 'bold', 
+                        background: '#3b82f6', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '8px',
+                        cursor: isPrinting ? 'wait' : 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        opacity: isPrinting ? 0.7 : 1
+                    }}
+                >
+                    {isPrinting ? '⏳ Preparing...' : '🖨️ Print Certificate'}
+                </button>
+                <button 
+                    onClick={async () => {
+                        if (printRef.current) {
+                            setIsPrinting(true);
+                            try {
+                                await generatePDF(printRef.current, `Appraisal_${appraisal.id}`);
+                            } finally {
+                                setIsPrinting(false);
+                            }
+                        }
+                    }}
+                    disabled={isPrinting}
+                    style={{ 
+                        padding: '12px 24px', 
+                        fontSize: '16px', 
+                        fontWeight: 'bold', 
+                        background: '#10b981', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '8px',
+                        cursor: isPrinting ? 'wait' : 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        opacity: isPrinting ? 0.7 : 1
+                    }}
+                >
+                    {isPrinting ? '⏳ Preparing...' : '📄 Download PDF'}
+                </button>
+                <button 
+                    onClick={() => {
+                        const feeStr = prompt("Enter the appraisal fee amount to charge (e.g. 150):", "150");
+                        if (feeStr === null) return;
+                        const fee = parseFloat(feeStr) || 0;
+                        const invoiceData = {
+                            documentType: 'APPRAISAL_RECEIPT',
+                            soldTo: {
+                                name: appraisal.customerName,
+                                address: appraisal.customerAddress,
+                                email: '',
+                                phone: ''
+                            },
+                            items: [
+                                {
+                                    id: `item-${Date.now()}`,
+                                    description: `Appraisal Services (Ref: ${appraisal.id}) - Rug #${appraisal.rugNumber}`,
+                                    quantity: 1,
+                                    fixedPrice: fee,
+                                    pricingMethod: 'piece',
+                                    isTaxable: true,
+                                    isConsignment: false
+                                }
+                            ]
+                        };
+                        sessionStorage.setItem('convert_invoice_data', JSON.stringify(invoiceData));
+                        window.location.href = '/invoices/new';
+                    }}
+                    style={{ 
+                        padding: '12px 24px', 
+                        fontSize: '16px', 
+                        fontWeight: 'bold', 
+                        background: '#f59e0b', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    🧾 Generate Invoice / Receipt
+                </button>
+            </div>
+
+            {/* The A4/Letter Sized Document Container */}
+            <div style={{ boxShadow: '0 0 20px rgba(0,0,0,0.5)', width: 'max-content', margin: '0 auto' }}>
+                {/* PDF generation ref must contain the pdf-page div */}
+                <div ref={printRef}>
+                    <div className="pdf-page" style={{ background: 'white' }}>
+                        <AppraisalTemplate appraisal={appraisal} />
+                    </div>
                 </div>
             </div>
 
-            <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', background: '#f8fafc' }}>
-                    <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
-                        <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                        <input
-                            type="text"
-                            placeholder="Search by customer, id, or rug number..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{ 
-                                width: '100%', padding: '10px 12px 10px 38px', borderRadius: '8px', 
-                                border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px' 
-                            }}
-                        />
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading Appraisals...</div>
-                ) : filtered.length === 0 ? (
-                    <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
-                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📜</div>
-                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>No Appraisals Found</h3>
-                        <p>Create your first certificate of authenticity to see it here.</p>
-                    </div>
-                ) : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead style={{ background: '#f1f5f9', color: '#475569', fontSize: '12px', textTransform: 'uppercase' }}>
-                            <tr>
-                                <th style={{ padding: '16px 20px', width: '40px' }}></th>
-                                <th style={{ padding: '16px 20px', fontWeight: 'bold' }}>Date</th>
-                                <th style={{ padding: '16px 20px', fontWeight: 'bold' }}>Appraisal ID</th>
-                                <th style={{ padding: '16px 20px', fontWeight: 'bold' }}>Customer</th>
-                                <th style={{ padding: '16px 20px', fontWeight: 'bold' }}>Rug Details</th>
-                                <th style={{ padding: '16px 20px', fontWeight: 'bold' }}>Value</th>
-                                <th style={{ padding: '16px 20px', fontWeight: 'bold', textAlign: 'right' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filtered.map(app => (
-                                <tr 
-                                    key={app.id} 
-                                    onClick={() => handlePrint(app.id, { stopPropagation: () => {} } as React.MouseEvent)}
-                                    style={{ borderBottom: '1px solid #e2e8f0', cursor: 'pointer', transition: 'background 0.2s' }}
-                                    onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
-                                    onMouseOut={(e) => e.currentTarget.style.background = 'white'}
-                                >
-                                    <td style={{ padding: '16px 20px' }}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={selectedIds.has(app.id)}
-                                            onChange={(e) => toggleSelect(app.id, e as any)}
-                                            onClick={(e) => e.stopPropagation()}
-                                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                        />
-                                    </td>
-                                    <td style={{ padding: '16px 20px', fontSize: '14px', color: '#475569' }}>
-                                        {formatDateMMDDYYYY(app.date)}
-                                    </td>
-                                    <td style={{ padding: '16px 20px', fontSize: '13px', fontWeight: 'bold', color: '#3b82f6' }}>
-                                        {app.id}
-                                    </td>
-                                    <td style={{ padding: '16px 20px' }}>
-                                        <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '15px' }}>{app.customerName}</div>
-                                    </td>
-                                    <td style={{ padding: '16px 20px' }}>
-                                        <div style={{ fontSize: '13px', color: '#1e293b', fontWeight: '600' }}>#{app.rugNumber}</div>
-                                        <div style={{ fontSize: '12px', color: '#64748b' }}>{app.type} ({app.size})</div>
-                                    </td>
-                                    <td style={{ padding: '16px 20px', fontWeight: 'bold', color: '#10b981' }}>
-                                        ${app.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </td>
-                                    <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                            <button 
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    router.push(`/admin/invoices/appraisals/new?edit=${app.id}`);
-                                                }}
-                                                style={{ border: 'none', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                                                title="Edit"
-                                            >
-                                                <Edit size={16} />
-                                            </button>
-                                            <button 
-                                                onClick={(e) => handlePrint(app.id, e)}
-                                                style={{ border: 'none', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                                                title="Print Certificate"
-                                            >
-                                                <Printer size={16} />
-                                            </button>
-                                            <button 
-                                                onClick={(e) => handleDelete(app.id, e)}
-                                                style={{ border: 'none', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                                                title="Delete"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-            </div>
-
-            {/* Hidden templates for PDF generation */}
-            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, pointerEvents: 'none' }}>
-                {appraisals.filter(app => selectedIds.has(app.id)).map(app => (
-                    <div key={app.id} id={`hidden-appraisal-${app.id}`}>
-                        <div className="pdf-page" style={{ background: 'white' }}>
-                            <AppraisalTemplate appraisal={app} />
-                        </div>
-                    </div>
-                ))}
-            </div>
+            <style dangerouslySetInnerHTML={{__html: `
+                @media print {
+                    .print-hide { display: none !important; }
+                    body { background: white !important; }
+                }
+            `}} />
         </div>
+    );
+}
+
+export default function AppraisalPrintPage() {
+    return (
+        <Suspense fallback={<div style={{ padding: 40, textAlign: 'center' }}>Loading Certificate...</div>}>
+            <PrintContent />
+        </Suspense>
     );
 }
