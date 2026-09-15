@@ -45,43 +45,27 @@ export default function EmailModal({
         if (isOpen) {
             const currentConfig = getEmailConfig();
 
-            // If local config is missing, try fetching from cloud
-            if (!currentConfig.serviceId) {
-                import('@/lib/settings-storage').then(({ getSettingsFromCloud }) => {
-                    getSettingsFromCloud().then(settings => {
-                        if (settings?.emailConfig) {
-                            setConfig(settings.emailConfig);
-                            // Also save to local for next time
-                            saveEmailConfig(settings.emailConfig);
-                            setMode('SEND');
-                        } else {
-                            setConfig(currentConfig);
-                            // Auto-switch to config if basic keys missing
-                            if (!isEmailConfigured()) {
-                                setMode('CONFIG');
-                            } else {
-                                setMode('SEND');
-                            }
-                        }
-                    });
-                });
-            } else {
-                setConfig(currentConfig);
-                // Only switch to CONFIG if absolutely nothing is working (including defaults)
-                if (!isEmailConfigured()) {
-                    setMode('CONFIG');
-                } else {
-                    setMode('SEND');
-                }
-            }
+            setConfig(currentConfig);
+            setSaving(true);
+            // Defaults must not prevent another device from loading saved settings.
+            import('@/lib/settings-storage').then(({ getSettingsFromCloud }) => getSettingsFromCloud())
+                .then(settings => {
+                    const resolved = settings?.emailConfig || currentConfig;
+                    setConfig(resolved);
+                    setMode(resolved.serviceId && resolved.templateIdInvoice && resolved.publicKey ? 'SEND' : 'CONFIG');
+                })
+                .catch(() => setMode('CONFIG'))
+                .finally(() => setSaving(false));
 
             setEmailTo(customerEmail);
         }
     }, [isOpen, customerEmail]);
 
-    const handleSaveConfig = () => {
+    const handleSaveConfig = async () => {
         setSaving(true);
         try {
+            const { saveSettingsToCloud } = await import('@/lib/settings-storage');
+            await saveSettingsToCloud({ emailConfig: config });
             saveEmailConfig(config);
             setMode('SEND');
             alert('Settings saved successfully!');
@@ -93,6 +77,7 @@ export default function EmailModal({
     };
 
     const handleSendClick = async () => {
+        if (saving) return;
         setSending(true);
         try {
             // Use the provided onSend callback which has access to the Invoice Ref for PDF generation
@@ -106,7 +91,7 @@ export default function EmailModal({
             alert(`Failed to send email: ${msg}`);
 
             // If auth error, maybe suggest config?
-            if (msg.includes('configured') || msg.includes('Key') || msg.includes('user_id')) {
+            if (msg.includes('configured') || msg.includes('Key') || msg.includes('user_id') || /account.*not found/i.test(msg)) {
                 setMode('CONFIG');
             }
         } finally {
@@ -262,7 +247,7 @@ export default function EmailModal({
                             </button>
                             <button
                                 onClick={handleSendClick}
-                                disabled={sending}
+                                disabled={sending || saving}
                                 style={{
                                     padding: '8px 20px', background: '#3b82f6', color: 'white',
                                     border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer',

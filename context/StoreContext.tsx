@@ -988,6 +988,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
+// Read-only presentation components can also render outside the showroom.
+export const useOptionalStore = () => useContext(StoreContext);
+
 export const useStore = () => {
   const context = useContext(StoreContext);
   if (!context) {
