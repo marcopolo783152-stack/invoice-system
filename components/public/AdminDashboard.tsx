@@ -1,3 +1,13 @@
+import OrderPaymentControls from '@/components/OrderPaymentControls';
+import {AdminChatBox} from "./AdminChatBox";
+import portal from "@/components/Portal.module.css";
+import AdminOverview from "@/components/AdminOverview";
+import { useStaffAccess } from "@/hooks/useStaffAccess";
+import { canAccess, sectionForTab } from "@/lib/access-policy";
+import StaffGate from "@/components/StaffGate";
+import StaffUsers from "@/components/StaffUsers";
+import ActivityBadge from "@/components/ActivityBadge";
+import { subscribeToCollection, SHOWROOM_APPOINTMENTS } from "@/lib/showroom-firebase";
 import CRMAdminTab from "./CRMAdminTab";
 import AppointmentsAdminTab from "./AppointmentsAdminTab";
 import WebsiteBuilder from "./WebsiteBuilder";
@@ -68,10 +78,16 @@ import {
   , Calendar, Layout
 } from "lucide-react";
 
-export const AdminDashboard: React.FC = () => {
+export const AdminDashboard: React.FC = () => <StaffGate section="staff"><AdminWorkspace /></StaffGate>;
+const AdminWorkspace: React.FC = () => {
+  const {staff}=useStaffAccess();
+  const [navigationOpen,setNavigationOpen]=useState(false);
+  const allowed=(tab:string)=>{const section=sectionForTab(tab);return !!section && canAccess(staff,section);};
   const { 
     rugs, 
-    orders, 
+    orders,
+    orderLoadError,
+    ordersLoading,
     reviews, 
     chatMessages, 
     blogs,
@@ -109,7 +125,7 @@ export const AdminDashboard: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -128,7 +144,8 @@ export const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm") => {
+    if(!allowed(tab))return;
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -137,6 +154,19 @@ export const AdminDashboard: React.FC = () => {
       window.history.pushState(null, "", "?" + params.toString());
     }
   };
+  useEffect(()=>{
+    if(staff && !allowed(activeTab)){
+      const next=['analytics','orders','inventory','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','settings','users'].find(allowed);
+      if(next)setActiveTabState(next as any);
+    }
+  },[staff,activeTab]);
+  const [appointmentActivity, setAppointmentActivity] = useState<Array<{ status?: string }>>([]);
+  useEffect(() => {
+    setAppointmentActivity([]);
+    if(canAccess(staff,'appointments'))return subscribeToCollection<{status?:string}>(SHOWROOM_APPOINTMENTS,setAppointmentActivity);
+  },[staff]);
+  const pendingAppointments = appointmentActivity.filter(a => (a.status || 'pending').toLowerCase() === 'pending').length;
+
   const [audioEnabled, setAudioEnabled] = useState(false);
 
   // Review notification alert
@@ -178,14 +208,14 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (unapprovedReviewsCount > 0) {
       setTimeout(() => {
-        alert(`🔔 You have ${unapprovedReviewsCount} unapproved customer review(s) waiting!\n\nPlease check the 'Advisor Reviews' tab to approve them.`);
+        alert(`🔔 You have ${unapprovedReviewsCount} unapproved customer review(s) waiting!\n\nPlease check the 'Customer reviews' tab to approve them.`);
       }, 500);
     }
   }, []); // Run once on mount!
 
   useEffect(() => {
     if (unapprovedReviewsCount > prevUnapprovedCount.current) {
-      alert("🔔 NEW CUSTOMER REVIEW SUBMITTED!\n\nPlease check the 'Advisor Reviews' tab to approve it.");
+      alert("🔔 NEW CUSTOMER REVIEW SUBMITTED!\n\nPlease check the 'Customer reviews' tab to approve it.");
     }
     prevUnapprovedCount.current = unapprovedReviewsCount;
   }, [unapprovedReviewsCount]);
@@ -266,6 +296,21 @@ export const AdminDashboard: React.FC = () => {
   // State for message replies
   const [adminReplyText, setAdminReplyText] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
+  const [readMessages,setReadMessages]=useState<{uid:string;ids:string[]}>({uid:'',ids:[]});
+  useEffect(()=>{
+   if(!staff?.uid){setReadMessages({uid:'',ids:[]});return;}
+   try{const saved=JSON.parse(localStorage.getItem('chat-read:'+staff.uid)||'[]');setReadMessages({uid:staff.uid,ids:Array.isArray(saved)?saved.filter(id=>typeof id==='string'):[]});}
+   catch{setReadMessages({uid:staff.uid,ids:[]});}
+  },[staff?.uid]);
+  const openConversation=(sessionId:string)=>{
+   setSelectedSessionId(sessionId);
+   if(!staff?.uid)return;
+   setReadMessages(previous=>{
+    const ids=Array.from(new Set([...(previous.uid===staff.uid?previous.ids:[]),...chatMessages.filter(m=>m.sessionId===sessionId&&m.sender==='customer').map(m=>m.id)]));
+    try{localStorage.setItem('chat-read:'+staff.uid,JSON.stringify(ids));}catch{}
+    return {uid:staff.uid,ids};
+   });
+  };
 
   // States for inventory filters
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
@@ -293,12 +338,7 @@ export const AdminDashboard: React.FC = () => {
   const [editOrderNotes, setEditOrderNotes] = useState("");
 
   // Security features state
-  const [unlockedOrders, setUnlockedOrders] = useState<string[]>([]);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  const [passwordPromptOrderId, setPasswordPromptOrderId] = useState<string | null>(null);
-  const [passwordInput, setPasswordInput] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordAction, setPasswordAction] = useState<"decrypt" | "delete" | null>(null);
   
   // Bulk select and promotions
   const [selectedRugIds, setSelectedRugIds] = useState<string[]>([]);
@@ -354,6 +394,7 @@ export const AdminDashboard: React.FC = () => {
       threadsMap[sId].messages.push(msg);
       if (new Date(msg.timestamp).getTime() > new Date(threadsMap[sId].lastTimestamp).getTime()) {
         threadsMap[sId].lastTimestamp = msg.timestamp;
+        threadsMap[sId].customerName = cName;
       }
     });
 
@@ -363,48 +404,10 @@ export const AdminDashboard: React.FC = () => {
   }, [chatMessages]);
 
   // Auto-select first thread if none is selected
-  useEffect(() => {
-    if (chatThreads.length > 0 && !selectedSessionId) {
-      setSelectedSessionId(chatThreads[0].sessionId);
-    }
-  }, [chatThreads, selectedSessionId]);
+  // Conversations open only when selected; closing must leave the panel closed.
 
-  const unreadMessagesCount = chatThreads.filter(t => t.messages[t.messages.length - 1].sender === "customer").length;
-
-  const handleUnlockCardDetails = (orderId: string) => {
-    setPasswordPromptOrderId(orderId);
-    setPasswordInput("");
-    setPasswordError("");
-  };
-
-  const verifyDecryptPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Strictly require requested administrator password
-    if (passwordInput === "Marcopolo$") {
-      if (passwordPromptOrderId) {
-        setUnlockedOrders((prev) => [...prev, passwordPromptOrderId]);
-      }
-      setPasswordPromptOrderId(null);
-      setPasswordInput("");
-      setPasswordError("");
-    } else {
-      setPasswordError("Invalid Administrator Password. Access Denied.");
-    }
-  };
-
-  const handleDeleteCardInfo = (orderId: string) => {
-    const confirmDelete = window.confirm("Are you sure you want to permanently delete this credit card data? Make sure you have fully processed the payment first.");
-    if (!confirmDelete) return;
-
-    const key = window.prompt("Enter admin key to confirm deletion:");
-    if (key === "Marcopolo$") {
-      deleteOrderPaymentDetails(orderId);
-      setUnlockedOrders(prev => prev.filter(id => id !== orderId));
-      alert("Credit card details have been securely deleted from this order.");
-    } else if (key !== null) {
-      alert("Invalid admin key. Deletion cancelled.");
-    }
-  };
+  const readIds=new Set(readMessages.uid===staff?.uid?readMessages.ids:[]);
+  const unreadMessagesCount=chatThreads.filter(t=>t.messages.some(m=>m.sender==='customer'&&!readIds.has(m.id))).length;
 
   // --- CALCULATE DYNAMIC ANALYTICS FROM REAL CURRENT STATE ---
   const dynamicAnalytics = React.useMemo(() => {
@@ -901,10 +904,11 @@ export const AdminDashboard: React.FC = () => {
   }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter]);
 
   return (
-    <div className="bg-[#F9F7F5] min-h-screen font-sans text-xs text-editorial-text flex flex-col md:flex-row">
+    <div className={portal.shell}>
       
+      <button className={portal.mobileToggle} aria-expanded={navigationOpen} onClick={()=>setNavigationOpen(!navigationOpen)}>☰ Dashboard menu</button>
       {/* 1. Sidebar Nav */}
-      <aside className="w-full md:w-64 bg-editorial-text text-white flex flex-col justify-between border-r border-editorial-border p-5 gap-6 md:sticky md:top-0 md:h-screen overflow-y-auto">
+      <aside className={portal.sidebar} data-open={navigationOpen}>
         <div className="space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-white/10">
             <div className="h-9 w-9 bg-editorial-accent rounded-none text-white flex items-center justify-center font-bold text-sm">
@@ -912,12 +916,12 @@ export const AdminDashboard: React.FC = () => {
             </div>
             <div>
               <span className="font-serif font-light text-editorial-accent text-sm tracking-widest uppercase">Showroom Admin</span>
-              <p className="text-xs text-gray-400 uppercase tracking-widest font-mono">Marco Polo Curation</p>
+              <p className="text-xs text-gray-400 uppercase tracking-widest font-mono">Team workspace</p>
             </div>
           </div>
 
           <nav className="space-y-1.5 text-xs">
-            <button
+            {allowed('promotions') && (<button
               onClick={() => setActiveTab("promotions")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "promotions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -925,18 +929,18 @@ export const AdminDashboard: React.FC = () => {
             >
               <Tag className="h-4.5 w-4.5" />
               <span>Promotions</span>
-            </button>
-            <button
+            </button>)}
+            {allowed('analytics') && (<button
               onClick={() => setActiveTab("analytics")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "analytics" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <BarChart3 className="h-4.5 w-4.5" />
-              <span>Analytics Curation</span>
-            </button>
+              <span>Overview</span>
+            </button>)}
             
-            <button
+            {allowed('inventory') && (<button
               onClick={() => setActiveTab("inventory")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "inventory" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -944,9 +948,9 @@ export const AdminDashboard: React.FC = () => {
             >
               <Layers className="h-4.5 w-4.5" />
               <span>Inventory</span>
-            </button>
+            </button>)}
             
-            <button
+            {allowed('bulk_import') && (<button
               onClick={() => setActiveTab("bulk_import")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "bulk_import" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -954,20 +958,20 @@ export const AdminDashboard: React.FC = () => {
             >
               <UploadCloud className="h-4.5 w-4.5" />
               <span>Bulk Import</span>
-            </button>
+            </button>)}
             
             
-            <button
+            {allowed('crm') && (<button
               onClick={() => setActiveTab("crm")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "crm" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <Users className="h-4.5 w-4.5" />
-              <span>Client CRM</span>
-            </button>
+              <span>Customers</span>
+            </button>)}
             
-            <button
+            {allowed('orders') && (<button
               onClick={() => setActiveTab("orders")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "orders" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -977,28 +981,24 @@ export const AdminDashboard: React.FC = () => {
               <ClipboardList className="h-4.5 w-4.5" />
               <span>Customer Orders</span>
               {dynamicAnalytics.pendingOrders > 0 && (
-                <span className="absolute right-3 bg-[#C22E2E] text-white text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
-                  {dynamicAnalytics.pendingOrders}
-                </span>
+                <ActivityBadge count={dynamicAnalytics.pendingOrders} />
               )}
-            </button>
+            </button>)}
 
-            <button
+            {allowed('cleaning') && (<button
               onClick={() => setActiveTab("cleaning")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "cleaning" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <Brush className="h-4.5 w-4.5" />
-              <span>Specialty Care</span>
+              <span>Cleaning & repairs</span>
               {cleaningBookings.filter(b => b.status === "Pending").length > 0 && (
-                <span className="absolute right-3 bg-amber-500 text-neutral-900 text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
-                  {cleaningBookings.filter(b => b.status === "Pending").length}
-                </span>
+                <ActivityBadge count={cleaningBookings.filter(b => b.status === "Pending").length} />
               )}
-            </button>
+            </button>)}
 
-            <button
+            {allowed('estimates') && (<button
               onClick={() => setActiveTab("estimates")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "estimates" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1007,13 +1007,11 @@ export const AdminDashboard: React.FC = () => {
               <Calculator className="h-4.5 w-4.5" />
               <span>Service Estimates</span>
               {estimates && estimates.filter(e => e.status === "New").length > 0 && (
-                <span className="absolute right-3 bg-blue-600 text-white text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
-                  {estimates.filter(e => e.status === "New").length}
-                </span>
+                <ActivityBadge count={estimates.filter(e => e.status === "New").length} />
               )}
-            </button>
+            </button>)}
             
-            <button
+            {allowed('appointments') && (<button
               onClick={() => setActiveTab("appointments")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "appointments" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1021,66 +1019,63 @@ export const AdminDashboard: React.FC = () => {
             >
               <Calendar className="h-4.5 w-4.5" />
               <span>Appointments</span>
-            </button>
+              <ActivityBadge count={pendingAppointments} />
+            </button>)}
             
-            <button 
+            {allowed('appraisals') && (<button 
               onClick={() => setActiveTab("appraisals")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "appraisals" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <FileText size={18} /> <span>Appraisals</span>
-            </button>
+            </button>)}
               
-            <button 
+            {allowed('employees') && (<button 
               onClick={() => setActiveTab("employees")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "employees" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
-              <Users size={18} /> <span>HR / Employees</span>
-            </button>
+              <Users size={18} /> <span>Employees</span>
+            </button>)}
 
-            <button 
+            {allowed('clock') && (<button 
               onClick={() => setActiveTab("clock")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "clock" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <Clock size={18} /> <span>Time Clock</span>
-            </button>
+            </button>)}
             
-            <button
+            {allowed('reviews') && (<button
               onClick={() => setActiveTab("reviews")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "reviews" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <Star className="h-4.5 w-4.5" />
-              <span>Advisor Reviews</span>
+              <span>Customer reviews</span>
               {reviews.filter(r => !r.isApproved).length > 0 && (
-                <span className="absolute right-3 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse shadow-md">
-                  {reviews.filter(r => !r.isApproved).length} NEW
-                </span>
+                <ActivityBadge count={reviews.filter(r => !r.isApproved).length} />
               )}
-            </button>
+            </button>)}
             
-            <button
+            {allowed('messages') && (<button
               onClick={() => setActiveTab("messages")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "messages" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
               <MessageSquare className="h-4.5 w-4.5" />
-              <span>Concierge Inbox</span>
+              <span>Customer messages</span>
               {unreadMessagesCount > 0 && (
-                <span className="absolute right-3 bg-purple-600 text-white text-sm font-bold px-2 py-0.5 rounded-none animate-pulse">
-                  {unreadMessagesCount}
-                </span>
+                <ActivityBadge count={unreadMessagesCount} />
               )}
-            </button>
+            </button>)}
             
-            <button
+            {allowed('blogs') && (<button
               onClick={() => setActiveTab("blogs")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "blogs" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1088,10 +1083,10 @@ export const AdminDashboard: React.FC = () => {
             >
               <BookOpen className="h-4.5 w-4.5" />
               <span>Design Journal</span>
-            </button>
+            </button>)}
             
 
-            <button
+            {allowed('transactions') && (<button
               onClick={() => setActiveTab("transactions")}
               className={`w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "transactions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1101,7 +1096,7 @@ export const AdminDashboard: React.FC = () => {
                 <Banknote className="h-4.5 w-4.5" />
                 <span>Transactions</span>
               </div>
-            </button>
+            </button>)}
             <a
               href="/admin/invoices"
               className="w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer text-gray-300 hover:bg-white/10 hover:text-white"
@@ -1112,7 +1107,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </a>
             
-            <button
+            {allowed('builder') && (<button
               onClick={() => setActiveTab("builder")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "builder" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1120,9 +1115,9 @@ export const AdminDashboard: React.FC = () => {
             >
               <Layout className="h-4.5 w-4.5" />
               <span>Website Editor</span>
-            </button>
+            </button>)}
             
-            <button
+            {allowed('settings') && (<button
               onClick={() => setActiveTab("settings")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "settings" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1130,8 +1125,10 @@ export const AdminDashboard: React.FC = () => {
             >
               <Settings className="h-4.5 w-4.5" />
               <span>General Settings</span>
-            </button>
-          </nav>
+            </button>)}
+          {allowed('users') && <button className="w-full text-left px-4 py-3" onClick={()=>setActiveTab('users')}><Users className="inline h-4 w-4 mr-2"/>Users & Permissions</button>}
+<a className="block px-4 py-3" href="/staff-account">My account / password</a>
+</nav>
         </div>
 
         <div className="pt-4 border-t border-white/10 text-xs text-gray-400 space-y-1 text-left">
@@ -1141,14 +1138,14 @@ export const AdminDashboard: React.FC = () => {
       </aside>
 
       {/* 2. Main Workspace */}
-      <main className="flex-1 p-6 md:p-8 space-y-8 overflow-y-auto">
+      <main className={portal.main}>
         
         {/* Workspace banner info */}
         <div className="bg-white p-6 rounded-none shadow-sm border border-editorial-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-left">
           <div className="space-y-1">
-            <span className="text-xs text-editorial-accent uppercase tracking-widest font-bold block">Consolidated Showroom Dashboard</span>
+            <span className="text-xs text-editorial-accent uppercase tracking-widest font-bold block">Marco Polo Workspace</span>
             <h1 className="font-serif text-2xl font-light text-editorial-text">
-              {activeTab === "analytics" && "Analytical Insights"}
+              {activeTab === "analytics" && "Showroom overview"}
               {activeTab === "inventory" && "Manage Showroom Inventory"}
               {activeTab === "bulk_import" && "Bulk Importer"}
               {activeTab === "crm" && "Client Relationship Management"}
@@ -1160,7 +1157,7 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === "clock" && "Time Clock & Geofencing"}
               {activeTab === "transactions" && "System Transactions Ledger"}
               {activeTab === "reviews" && "Advisor Review Moderation"}
-              {activeTab === "messages" && "Live Concierge Inbox Thread"}
+              {activeTab === "messages" && "Live Customer messages Thread"}
               {activeTab === "blogs" && "Design Journal Publisher"}
               {activeTab === "promotions" && "Promo Code Management"}
               {activeTab === "settings" && "General Settings & Security"}
@@ -1168,13 +1165,15 @@ export const AdminDashboard: React.FC = () => {
           </div>
           
           <div className="text-right text-xs">
-            <span className="text-gray-400 block font-semibold uppercase">Workspace Partner:</span>
-            <span className="font-bold text-editorial-text font-mono">marcopolorugs@aol.com</span>
+            <span className="text-gray-400 block font-semibold uppercase">Signed in as:</span>
+            <span className="font-bold text-editorial-text font-mono">{staff?.email}</span>
           </div>
         </div>
 
+        {activeTab === 'users' && allowed('users') && <StaffUsers />}
+        {!allowed(activeTab) && <p>Your account has no access to this section. Ask the owner or General Manager to assign permissions.</p>}
         {/* --- TAB: TRANSACTIONS --- */}
-        {activeTab === "transactions" && (
+        {activeTab === "transactions" && allowed('transactions') && (
           <div className="space-y-6 animate-fadeIn text-left">
             <h2 className="text-xl font-serif text-editorial-text border-b border-editorial-border pb-2">Transactions Ledger</h2>
             
@@ -1199,7 +1198,15 @@ export const AdminDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-editorial-border">
-                  {orders.length === 0 ? (
+                  {ordersLoading ? (
+              <p role="status" className="py-12 text-center">Loading your orders…</p>
+            ) : orderLoadError ? (
+              <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-6">
+                <h3 className="font-bold text-red-800">Orders could not be loaded</h3>
+                <p className="mt-2 text-sm text-red-800">The server request failed. This does not mean there are no orders. Please check the website’s Firebase server connection.</p>
+                <button type="button" onClick={()=>window.location.reload()} className="mt-4 rounded-lg bg-red-800 px-4 py-2 text-white">Retry loading orders</button>
+              </div>
+            ) : orders.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-gray-400 italic font-sans">No transactions recorded yet.</td>
                     </tr>
@@ -1230,224 +1237,42 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB: ESTIMATES --- */}
-        {activeTab === "estimates" && (
+        {activeTab === "estimates" && allowed('estimates') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <EstimatesAdminTab />
           </div>
         )}
 
                 {/* --- TAB: APPOINTMENTS --- */}
-        {activeTab === "appointments" && (
+        {activeTab === "appointments" && allowed('appointments') && (
           <AppointmentsAdminTab />
         )}
         
 {/* --- TAB: APPRAISALS --- */}
-        {activeTab === "appraisals" && (
+        {activeTab === "appraisals" && allowed('appraisals') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <AppraisalsAdminTab />
           </div>
         )}
 
         {/* --- TAB: EMPLOYEES --- */}
-        {activeTab === "employees" && (
+        {activeTab === "employees" && allowed('employees') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <EmployeesAdminTab />
           </div>
         )}
 
         {/* --- TAB: CLOCK --- */}
-        {activeTab === "clock" && (
+        {activeTab === "clock" && allowed('clock') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <ClockAdminTab />
           </div>
         )}
 
-        {/* --- TAB A: ANALYTICS CURATION --- */}
-        {activeTab === "analytics" && (
-          <div className="space-y-6">
-            
-            {/* Real Stats Cards Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-none border border-editorial-border shadow-xs flex items-center justify-between text-left">
-                <div className="space-y-1">
-                  <span className="text-sm uppercase text-gray-450 tracking-wider font-semibold">Curation Sales Sum</span>
-                  <p className="font-serif text-xl sm:text-2xl font-light text-editorial-text">${dynamicAnalytics.totalSales.toLocaleString()}</p>
-                </div>
-                <div className="p-2 bg-editorial-aside text-emerald-700 border border-editorial-border rounded-none"><DollarSign className="h-5 w-5" /></div>
-              </div>
-              
-              <div className="bg-white p-5 rounded-none border border-editorial-border shadow-xs flex items-center justify-between text-left">
-                <div className="space-y-1">
-                  <span className="text-sm uppercase text-gray-450 tracking-wider font-semibold">Active Holds</span>
-                  <p className="font-serif text-xl sm:text-2xl font-light text-editorial-text">{dynamicAnalytics.pendingOrders} Orders</p>
-                </div>
-                <div className="p-2 bg-editorial-aside text-editorial-accent border border-editorial-border rounded-none"><Briefcase className="h-5 w-5" /></div>
-              </div>
-              
-              <div className="bg-white p-5 rounded-none border border-editorial-border shadow-xs flex items-center justify-between text-left">
-                <div className="space-y-1">
-                  <span className="text-sm uppercase text-gray-450 tracking-wider font-semibold">Dispatched Freights</span>
-                  <p className="font-serif text-xl sm:text-2xl font-light text-editorial-text">{dynamicAnalytics.shippedOrders + dynamicAnalytics.deliveredOrders} Shipments</p>
-                </div>
-                <div className="p-2 bg-editorial-aside text-editorial-text border border-editorial-border rounded-none"><Truck className="h-5 w-5" /></div>
-              </div>
+        {activeTab === 'analytics' && allowed('analytics') && <AdminOverview/>}
 
-              <div className="bg-white p-5 rounded-none border border-editorial-border shadow-xs flex items-center justify-between text-left">
-                <div className="space-y-1">
-                  <span className="text-sm uppercase text-gray-450 tracking-wider font-semibold">In-Stock Value</span>
-                  <p className="font-serif text-xl sm:text-2xl font-light text-editorial-text">${dynamicAnalytics.inventoryValue.toLocaleString()}</p>
-                </div>
-                <div className="p-2 bg-editorial-aside text-editorial-accent border border-editorial-border rounded-none"><Layers className="h-5 w-5" /></div>
-              </div>
-            </div>
-
-            {/* Visual Analytics Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
-              
-              {/* Left Box: conversion */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border space-y-4">
-                <div className="flex justify-between items-center border-b border-editorial-border pb-3">
-                  <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider">Acquisition & Conversion</h3>
-                  <span className="text-emerald-600 font-bold flex items-center gap-1">
-                    <TrendingUp className="h-4.5 w-4.5" />
-                    <span>Active</span>
-                  </span>
-                </div>
-
-                <div className="space-y-4 font-sans text-xs">
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between font-semibold">
-                      <span>Unique Showroom Visitors:</span>
-                      <span className="text-editorial-text">{dynamicAnalytics.visitors}</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-stone-100 rounded-none overflow-hidden">
-                      <div className="h-full bg-editorial-text rounded-none" style={{ width: "65%" }} />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between font-semibold">
-                      <span>Escrow Purchase Requests:</span>
-                      <span className="text-editorial-text">{orders.length}</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-stone-100 rounded-none overflow-hidden">
-                      <div className="h-full bg-editorial-accent rounded-none" style={{ width: `${(orders.length / 10) * 100}%` }} />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center bg-editorial-aside p-4 rounded-none border border-editorial-border mt-4">
-                    <div>
-                      <span className="text-sm uppercase text-gray-400 font-bold block">Conversion Ratio</span>
-                      <p className="font-serif text-xl font-light text-editorial-text">{dynamicAnalytics.conversionRate}</p>
-                    </div>
-                    <span className="text-xs text-gray-400">Industry Avg: 1.8%</span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Middle Box: Status distributions */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border space-y-4">
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3">Freight Delivery Funnel</h3>
-                
-                <div className="space-y-3 font-sans">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">• Pending Escrow Confirmation:</span>
-                    <span className="font-mono font-bold text-editorial-accent px-2 py-0.5 bg-editorial-aside border border-editorial-border rounded-none">{dynamicAnalytics.pendingOrders}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">• Confirmed Holds (Reserved):</span>
-                    <span className="font-mono font-bold text-gray-700 px-2 py-0.5 bg-stone-50 border border-stone-200 rounded-none">{dynamicAnalytics.confirmedOrders}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">• In-Route Freight Shipments:</span>
-                    <span className="font-mono font-bold text-editorial-text px-2 py-0.5 bg-editorial-aside border border-editorial-border rounded-none">{dynamicAnalytics.shippedOrders}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500">• Completed Deliveries:</span>
-                    <span className="font-mono font-bold text-emerald-700 px-2 py-0.5 bg-emerald-50 border border-emerald-250 rounded-none">{dynamicAnalytics.deliveredOrders}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Box: Quick instructions */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border space-y-4">
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3">Concierge To-Do List</h3>
-                <div className="space-y-3 font-sans leading-relaxed text-sm text-gray-600">
-                  {dynamicAnalytics.pendingOrders > 0 ? (
-                    <p className="flex items-start gap-2 text-[#8F6A3D]">
-                      <AlertCircle className="h-4.5 w-4.5 flex-shrink-0 text-editorial-accent" />
-                      <span>You have <strong>{dynamicAnalytics.pendingOrders} invoice holds</strong> requiring manual verification under the "Customer Orders" tab.</span>
-                    </p>
-                  ) : (
-                    <p className="flex items-start gap-2 text-emerald-800">
-                      <Check className="h-4.5 w-4.5 flex-shrink-0 text-emerald-600" />
-                      <span>All active invoices verified and approved. Showroom holds cleared.</span>
-                    </p>
-                  )}
-
-                  {reviews.filter(r => !r.isApproved).length > 0 && (
-                    <p className="flex items-start gap-2 text-editorial-accent">
-                      <Star className="h-4.5 w-4.5 flex-shrink-0 text-editorial-accent" />
-                      <span>There are <strong>{reviews.filter(r => !r.isApproved).length} user reviews</strong> in queue awaiting curator approval before display.</span>
-                    </p>
-                  )}
-
-                  <p className="text-xs text-gray-400 italic">
-                    Tip: As a store admin, you can seamlessly simulate the customer experience. Switch to "Customer" view in the navbar, place an order, and return here to approve and ship it!
-                  </p>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              {/* Top Viewed Rugs row */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left">
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3 mb-4">Top Viewed Pieces (Product Analytics)</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  {rugs.filter(r => r.views).sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3).map(rug => (
-                    <div key={rug.id} className="flex gap-4 items-center border border-editorial-border p-3">
-                      <img src={rug.images?.[0]} className="w-16 h-16 object-cover" />
-                      <div>
-                        <p className="font-serif text-sm text-editorial-text truncate w-40">{rug.name}</p>
-                        <p className="text-xs text-editorial-accent font-bold mt-1">{rug.views} Views</p>
-                      </div>
-                    </div>
-                  ))}
-                  {rugs.filter(r => r.views).length === 0 && (
-                    <p className="text-sm text-gray-500 italic py-4">No product views recorded yet.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Traffic Sources row */}
-              <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left">
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider border-b border-editorial-border pb-3 mb-4">Traffic Sources (Referrers)</h3>
-                <div className="flex flex-col space-y-3">
-                  {Object.entries(referrers || {})
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([source, count]) => (
-                    <div key={source} className="flex justify-between items-center border border-editorial-border p-3 bg-stone-50">
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-editorial-accent" />
-                        <span className="font-serif text-sm text-editorial-text font-bold">{source}</span>
-                      </div>
-                      <span className="text-xs font-bold bg-white border border-editorial-border px-2 py-1 rounded-sm">{count} Visitors</span>
-                    </div>
-                  ))}
-                  {Object.keys(referrers || {}).length === 0 && (
-                    <p className="text-sm text-gray-500 italic py-4">No traffic sources recorded yet.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        
         {/* --- TAB: PROMOTIONS --- */}
-        {activeTab === "promotions" && (
+        {activeTab === "promotions" && allowed('promotions') && (
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border">
               <h2 className="text-xl font-bold uppercase tracking-widest text-neutral-900 mb-4 flex items-center gap-2">
@@ -1568,14 +1393,14 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB: BUILDER --- */}
-        {activeTab === "builder" && (
+        {activeTab === "builder" && allowed('builder') && (
           <div className="h-[800px]">
              <WebsiteBuilder />
           </div>
         )}
         
 {/* --- TAB: SETTINGS --- */}
-        {activeTab === "settings" && (
+        {activeTab === "settings" && allowed('settings') && (
           <div className="space-y-6">
             {/* --- SHOWROOM FRONTPAGE CONTROLS & ANNOUNCEMENTS PANEL --- */}
             <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left space-y-5">
@@ -1943,169 +1768,17 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-{/* --- SECURITY & PRIVACY SETTINGS PANEL --- */}
-            <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left space-y-5">
-              <div className="border-b border-editorial-border pb-3 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-editorial-accent" />
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider">Security & Privacy Controls</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-sans">
-                
-                {/* Master Password Setting */}
-                <div className="space-y-3">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wide text-sm">Admin Access Password</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed font-light">
-                    Update the master password used to access this secure admin panel.
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Current Password</label>
-                      <input
-                        type="password"
-                        placeholder="••••••••"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">New Password</label>
-                      <input
-                        type="password"
-                        placeholder="Enter new secure password"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => alert('Security setting updated.')}
-                      
-                      className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
-                    >
-                      Update Password
-                    </button>
-                  </div>
-                </div>
-
-                {/* API Keys & External Connections */}
-                <div className="space-y-3">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wide text-sm">External API Keys & Privacy</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed font-light">
-                    Configure escrow payment gateway and tracking API integrations. Keys are encrypted at rest.
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Payment Gateway Secret Key</label>
-                      <input
-                        type="password"
-                        placeholder="sk_live_..."
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1 flex items-center justify-between pt-2">
-                      <span className="text-xs font-bold text-neutral-700">Strict Privacy Mode</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" defaultChecked />
-                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-editorial-accent"></div>
-                      </label>
-                    </div>
-                    <p className="text-sm text-neutral-400 italic">When enabled, limits customer telemetry gathering.</p>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => alert('Security setting updated.')}
-                      
-                      className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
-                    >
-                      Save Configuration
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* --- ADD ADMINISTRATOR PANEL --- */}
-            <div className="bg-white p-6 rounded-none shadow-xs border border-editorial-border text-left space-y-5">
-              <div className="border-b border-editorial-border pb-3 flex items-center gap-2">
-                <User className="h-5 w-5 text-editorial-accent" />
-                <h3 className="font-serif text-xs font-light text-editorial-text uppercase tracking-wider">Create New Administrator</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-sans">
-                <div className="space-y-3">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wide text-sm">Administrator Access</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed font-light">
-                    Add a new administrator to the dashboard. They will have full access to invoices, settings, and employee records.
-                  </p>
-                  
-                  <form 
-                    className="space-y-2"
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      const form = e.target as HTMLFormElement;
-                      const name = (form.elements.namedItem('adminName') as HTMLInputElement).value;
-                      const email = (form.elements.namedItem('adminEmail') as HTMLInputElement).value;
-                      const pass = (form.elements.namedItem('adminPass') as HTMLInputElement).value;
-                      const res = await addAdminUser(name, email, pass);
-                      alert(res.message);
-                      if (res.success) form.reset();
-                    }}
-                  >
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Full Name</label>
-                      <input
-                        name="adminName"
-                        type="text"
-                        required
-                        placeholder="e.g. Cyrus (Admin)"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Email Address</label>
-                      <input
-                        name="adminEmail"
-                        type="email"
-                        required
-                        placeholder="admin@example.com"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-sm text-neutral-500 font-bold uppercase tracking-wider">Password</label>
-                      <input
-                        name="adminPass"
-                        type="password"
-                        required
-                        placeholder="Enter secure password"
-                        className="w-full bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-1">
-                      <button
-                        type="submit"
-                        className="py-1.5 px-4 bg-editorial-accent hover:bg-neutral-900 text-white font-bold uppercase tracking-wider text-xs transition cursor-pointer"
-                      >
-                        Create Administrator
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-
+<section className="bg-white p-6 border border-editorial-border space-y-3">
+              <h3>Account and staff access</h3>
+              <p>Each person uses their own verified account.</p>
+              <a className="block underline" href="/staff-account">Set or change my password</a>
+              {canAccess(staff,'users') && <a className="block underline" href="/admin/users">Manage users and permissions</a>}
+            </section>
           </div>
         )}
 
         {/* --- TAB B: INVENTORY MANAGEMENT --- */}
-        {activeTab === "inventory" && (
+        {activeTab === "inventory" && allowed('inventory') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div className="flex justify-between items-center border-b border-neutral-100 pb-4">
               <div>
@@ -2510,18 +2183,18 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB: BULK IMPORT --- */}
-        {activeTab === "bulk_import" && (
+        {activeTab === "bulk_import" && allowed('bulk_import') && (
           <BulkImport />
         )}
 
         
-        {activeTab === "crm" && (
+        {activeTab === "crm" && allowed('crm') && (
           <CRMAdminTab />
         )}
         
         {/* --- TAB C: ORDER MANAGEMENT (CUSTOMER ORDERS) --- */}
 
-        {activeTab === "orders" && (
+        {activeTab === "orders" && allowed('orders') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
               <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Customer Orders Fulfillment Logs</h2>
@@ -2666,73 +2339,15 @@ export const AdminDashboard: React.FC = () => {
                           ))}
                         </div>
                         <div className="mt-3 text-sm font-black text-green-800 bg-green-50 p-2 border border-green-200 rounded flex justify-between items-center">
-                          <span>TOTAL PAID:</span>
+                          <span>ORDER TOTAL:</span>
                           <span>${(o.total || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                         </div>
                         <div className="text-xs text-neutral-500 pt-2 font-mono space-y-1">
-                          {(() => {
-                            if (!o.paymentDetails) {
-                              return (
-                                <div className="mt-2 bg-neutral-100/50 border border-neutral-200/50 p-3 text-xs rounded text-center">
-                                  <div className="flex justify-center mb-1">
-                                    <ShieldCheck className="h-5 w-5 text-green-600" />
-                                  </div>
-                                  <strong className="text-neutral-700 block mb-0.5">Card Data Securely Deleted</strong>
-                                  <span className="text-neutral-500 text-[10px]">The payment info for this order has been permanently erased from the system.</span>
-                                </div>
-                              );
-                            }
-                            const pd = o.paymentDetails;
-                            return (
-                              <>
-                                <div>Card: {pd.cardBrand} (last 4: <strong>{pd.last4}</strong>)</div>
-                                
-                                {unlockedOrders.includes(o.id) ? (
-                                  <div className="mt-2 bg-green-500/5 border border-green-500/20 p-2.5 text-xs space-y-1 rounded relative">
-                                    <span className="text-xs uppercase font-bold text-green-700 block tracking-wider mb-1">Processing Details (Decrypted / Unlocked)</span>
-                                    <div>Name: <strong className="text-neutral-800">{pd.cardholderName}</strong></div>
-                                    <div>Card No: <strong className="text-neutral-900 tracking-widest font-bold text-xs bg-white py-0.5 px-1.5 border border-green-200 inline-block mt-0.5 select-all">{pd.cardNumber || "N/A"}</strong></div>
-                                    <div className="flex gap-4 mt-1">
-                                      <div>Exp: <strong className="text-neutral-800 font-bold">{pd.cardExpiry || "N/A"}</strong></div>
-                                      <div>CVV: <strong className="text-neutral-800 font-bold font-sans bg-white py-0.5 px-1.5 border border-green-200 select-all">{pd.cardCVC || "N/A"}</strong></div>
-                                    </div>
-                                    <div className="flex gap-2 justify-end mt-3 border-t border-green-500/10 pt-2">
-                                      <button 
-                                        onClick={() => setUnlockedOrders(prev => prev.filter(id => id !== o.id))}
-                                        className="text-[10px] text-neutral-500 hover:text-neutral-800 uppercase tracking-widest font-bold px-2 py-1 rounded bg-white/50 border border-neutral-200"
-                                      >
-                                        Lock Info
-                                      </button>
-                                      <button 
-                                        onClick={() => handleDeleteCardInfo(o.id)}
-                                        className="text-[10px] text-white hover:bg-red-700 uppercase tracking-widest font-bold px-2 py-1 rounded bg-red-600 shadow-sm"
-                                      >
-                                        Delete Card Info
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="mt-2 bg-amber-500/5 border border-amber-500/20 p-2.5 text-xs space-y-1.5 rounded">
-                                    <span className="text-xs uppercase font-bold text-amber-700 block tracking-wider">Processing Details (Secure Escrow)</span>
-                                    <div>Name: <strong className="text-neutral-400">•••• ••••••••</strong></div>
-                                    <div>Card No: <strong className="text-neutral-400 font-semibold tracking-wider">•••• •••• •••• {pd.last4}</strong></div>
-                                    <div className="flex gap-4">
-                                      <div>Exp: <strong className="text-neutral-400">••/••</strong></div>
-                                      <div>CVV: <strong className="text-neutral-400">•••</strong></div>
-                                    </div>
-                                    
-                                    <button
-                                      onClick={() => handleUnlockCardDetails(o.id)}
-                                      className="w-full mt-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold uppercase tracking-wider text-sm rounded transition flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                                    >
-                                      <ShieldCheck className="h-3.5 w-3.5" />
-                                      <span>Reveal Card Details</span>
-                                    </button>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
+                          <p>Payment method: {o.paymentDetails?.cardBrand || 'Confirm with showroom'}</p>
+                          {o.paymentDetails?.last4 && <p>Ending in {o.paymentDetails.last4}</p>}
+                          <p className="text-neutral-400">Payment is confirmed separately by the showroom.</p>
+                          <OrderPaymentControls orderId={o.id}/>
+
                         </div>
                       </div>
 
@@ -2896,12 +2511,8 @@ export const AdminDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              const key = window.prompt("Enter Admin Key to permanently delete this order:");
-                              if (key === "Marcopolo$") {
-                                deleteOrder(o.id);
-                              } else if (key !== null) {
-                                alert("Invalid Admin Key. Deletion blocked.");
-                              }
+                              if(!canAccess(staff,'orders','delete')){alert("You do not have permission to delete orders.");return;}
+                              if(window.confirm("Permanently delete this order?"))deleteOrder(o.id);
                             }}
                             className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded transition flex items-center justify-center cursor-pointer"
                             title="Delete Order"
@@ -2964,10 +2575,10 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB: SPECIALTY CARE --- */}
-        {activeTab === "cleaning" && (
+        {activeTab === "cleaning" && allowed('cleaning') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
-              <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Specialty Care Lab Orders</h2>
+              <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Cleaning & repairs Lab Orders</h2>
               <p className="text-xs text-neutral-400">Review patron requests for rug washing, restoration, and schedule white-glove pickup logistics.</p>
             </div>
 
@@ -3006,12 +2617,8 @@ export const AdminDashboard: React.FC = () => {
                         </select>
                         <button
                           onClick={() => {
-                            const key = window.prompt("Enter Admin Key to permanently delete this cleaning booking:");
-                            if (key === "Marcopolo$") {
-                              deleteCleaningBooking(booking.id);
-                            } else if (key !== null) {
-                              alert("Invalid Admin Key. Deletion blocked.");
-                            }
+                            if(!canAccess(staff,'services','delete')){alert("You do not have permission to delete bookings.");return;}
+                            if(window.confirm("Permanently delete this cleaning booking?"))deleteCleaningBooking(booking.id);
                           }}
                           className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                           title="Delete Cleaning Booking"
@@ -3056,7 +2663,7 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* --- TAB D: REVIEW MODERATION --- */}
-        {activeTab === "reviews" && (
+        {activeTab === "reviews" && allowed('reviews') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
               <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Advisor Review Moderation</h2>
@@ -3126,141 +2733,10 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* --- TAB E: INBOX CONCIERGE CHATS --- */}
-        {activeTab === "messages" && (
-          <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
-            
-            {/* Sidebar with active customer threads (Left column, 4 cols) */}
-            <div className="lg:col-span-4 flex flex-col h-[450px] border border-neutral-200 rounded-xl overflow-hidden bg-stone-50">
-              <div className="p-3 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between text-white">
-                <span className="font-serif font-bold text-amber-400 uppercase tracking-widest text-sm">Customer Sessions</span>
-                <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 font-bold uppercase tracking-wider">{chatThreads.length} Active</span>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto divide-y divide-neutral-200">
-                {chatThreads.length === 0 ? (
-                  <div className="p-8 text-center text-neutral-400 italic text-xs font-sans">
-                    No active support requests.
-                  </div>
-                ) : (
-                  chatThreads.map((thread) => {
-                    const lastMsg = thread.messages[thread.messages.length - 1];
-                    const isSelected = selectedSessionId === thread.sessionId;
-                    return (
-                      <div
-                        key={thread.sessionId}
-                        onClick={() => setSelectedSessionId(thread.sessionId)}
-                        className={`p-3 transition cursor-pointer flex justify-between items-start gap-2 ${
-                          isSelected ? "bg-amber-50 border-l-4 border-amber-500" : "hover:bg-stone-100"
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-bold text-xs text-neutral-900 truncate">{thread.customerName}</h4>
-                          <p className="text-xs text-neutral-500 truncate mt-0.5">{lastMsg?.text || "No messages"}</p>
-                          <span className="text-xs text-neutral-400 block font-mono mt-1">
-                            {lastMsg ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
-                          </span>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAdminEndChat(thread.sessionId);
-                          }}
-                          title="End Chat and delete all messages"
-                          className="p-1 hover:bg-red-50 text-neutral-400 hover:text-red-500 rounded transition cursor-pointer mt-1"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* Chat thread feed & reply input (Right column, 8 cols) */}
-            <div className="lg:col-span-8 flex flex-col h-[450px] border border-neutral-200 rounded-xl overflow-hidden bg-neutral-950">
-              
-              {(() => {
-                const activeThread = chatThreads.find(t => t.sessionId === (selectedSessionId || "default"));
-                const activeMsgs = activeThread ? activeThread.messages : [];
-                const displayCustomerName = activeThread ? activeThread.customerName : "No Active Conversation";
-
-                return (
-                  <>
-                    <div className="p-3 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between text-white">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span className="font-serif font-bold text-amber-400 uppercase tracking-widest text-sm truncate max-w-[200px]">
-                          Inquiry: {displayCustomerName}
-                        </span>
-                      </div>
-                      {activeThread && (
-                        <button
-                          onClick={() => handleAdminEndChat(activeThread.sessionId)}
-                          className="px-2 py-0.5 bg-red-950 hover:bg-red-900 text-red-200 border border-red-800 rounded text-xs uppercase font-bold font-mono transition"
-                        >
-                          End Chat
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Chat Feed */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {activeMsgs.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
-                          <MessageSquare className="h-8 w-8 text-neutral-600 animate-pulse" />
-                          <p className="text-neutral-400 font-sans italic text-xs">
-                            Select a customer thread from the left or trigger a guest session to start an elite live chat.
-                          </p>
-                        </div>
-                      ) : (
-                        activeMsgs.map((msg) => (
-                          <div key={msg.id} className={`flex flex-col ${msg.sender === "admin" ? "items-end" : "items-start"}`}>
-                            <div className={`max-w-[80%] p-2.5 rounded-xl text-sm leading-relaxed ${
-                              msg.sender === "admin" 
-                                ? "bg-amber-500 text-neutral-950 rounded-tr-none font-medium" 
-                                : "bg-neutral-800 text-neutral-200 rounded-tl-none border border-neutral-700/40"
-                            }`}>
-                              <p>{msg.text}</p>
-                            </div>
-                            <span className="text-xs text-neutral-500 mt-0.5 font-mono px-1">
-                              {msg.sender === "admin" ? "Concierge Reply" : `${msg.customerName || "Customer"}`} | {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Chat Input form */}
-                    <form onSubmit={handleAdminChatReply} className="p-2.5 bg-neutral-900 border-t border-neutral-800 flex gap-2">
-                      <input
-                        type="text"
-                        disabled={!activeThread}
-                        value={adminReplyText}
-                        onChange={(e) => setAdminReplyText(e.target.value)}
-                        placeholder={activeThread ? `Reply to ${activeThread.customerName}...` : "Select a thread to reply..."}
-                        className="flex-1 bg-neutral-950 text-white rounded-lg py-2 px-3 outline-none text-sm border border-neutral-700 focus:border-amber-500 disabled:opacity-50"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!activeThread}
-                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-neutral-900 font-bold uppercase tracking-widest text-sm rounded-lg transition disabled:opacity-50 cursor-pointer"
-                      >
-                        Send Reply
-                      </button>
-                    </form>
-                  </>
-                );
-              })()}
-
-            </div>
-
-          </div>
-        )}
+        {activeTab==='messages' && allowed('messages') && <div className={portal.grid}><section className={portal.card}><h2>Customer conversations</h2>{!chatThreads.length&&<p>No conversations yet.</p>}{chatThreads.map(thread=><button key={thread.sessionId} className={portal.row} style={{width:'100%',textAlign:'left'}} onClick={()=>openConversation(thread.sessionId)}><span>{thread.customerName||'Customer'}</span><span>Open →</span></button>)}</section><AdminChatBox activeSessionId={selectedSessionId} onClose={()=>setSelectedSessionId("")} embedded/></div>}
 
         {/* --- TAB F: BLOG PUBLISHER --- */}
-        {activeTab === "blogs" && (
+        {activeTab === "blogs" && allowed('blogs') && (
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div className="flex justify-between items-center border-b border-neutral-100 pb-4">
               <div>
@@ -3995,72 +3471,6 @@ export const AdminDashboard: React.FC = () => {
               >
                 Publish Article
               </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL 4: ADMIN PASSWORD DECRYPTION PROMPT --- */}
-      {passwordPromptOrderId !== null && (
-        <div className="fixed inset-0 z-50 bg-neutral-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-left border border-neutral-200">
-            <div className="px-6 py-4 bg-amber-50 border-b border-amber-200/50 flex justify-between items-center">
-              <div className="flex items-center gap-2 text-amber-800">
-                <ShieldCheck className="h-5 w-5 text-amber-600" />
-                <h3 className="font-serif font-bold text-sm">Security Verification</h3>
-              </div>
-              <button 
-                onClick={() => setPasswordPromptOrderId(null)} 
-                className="p-1 text-neutral-400 hover:text-neutral-600 cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={verifyDecryptPassword} className="p-6 space-y-4 text-xs font-sans">
-              <p className="text-neutral-500 leading-relaxed text-sm">
-                To view sensitive payment escrow details (full name, complete card number, expiration date, and CVV), please verify your identity with your administrator password.
-              </p>
-
-              <div className="space-y-1.5">
-                <label className="block text-neutral-600 font-bold uppercase tracking-wider text-xs">
-                  Admin Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  autoFocus
-                  value={passwordInput}
-                  onChange={(e) => {
-                    setPasswordInput(e.target.value);
-                    setPasswordError("");
-                  }}
-                  placeholder="Enter passcode (e.g., admin)"
-                  className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2.5 px-3 outline-none focus:border-amber-500 text-xs font-mono tracking-widest"
-                />
-                {passwordError && (
-                  <p className="text-red-500 text-xs mt-1 font-semibold flex items-center gap-1 animate-fadeIn">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    <span>{passwordError}</span>
-                  </p>
-                )}
-              </div>
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setPasswordPromptOrderId(null)}
-                  className="flex-1 py-2.5 border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-semibold uppercase tracking-wider text-xs rounded transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 bg-neutral-900 hover:bg-neutral-850 text-amber-400 font-bold uppercase tracking-wider text-xs rounded transition cursor-pointer"
-                >
-                  Verify & Decrypt
-                </button>
-              </div>
             </form>
           </div>
         </div>

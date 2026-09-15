@@ -102,7 +102,7 @@ export interface CustomerInfo {
 export interface PaymentDetails {
   cardBrand: string;
   last4: string;
-  cardholderName: string;
+  cardholderName?: string;
   cardNumber?: string;
   cardExpiry?: string;
   cardCVC?: string;
@@ -132,6 +132,7 @@ export interface ShippingDetails {
 }
 
 export interface Order {
+  customerId?: string;
   id: string;
   customerInfo: CustomerInfo;
   cartItems: CartItem[];
@@ -182,6 +183,8 @@ export interface BlogPost {
 }
 
 export interface ChatMessage {
+  ownerUid?: string;
+  isAutomated?: boolean;
   id: string;
   sender: "customer" | "admin";
   text: string;

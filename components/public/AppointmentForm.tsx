@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, CheckCircle2, Loader2, Send } from 'lucide-react';
-import { addShowroomDoc, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { reserveAppointment } from '@/lib/appointment-booking';
+import { APPOINTMENT_STAFF, appointmentSlots, showroomNow, isFutureSlot } from '@/lib/appointment-slots';
 import AddressAutocomplete from '../AddressAutocomplete';
 
 export default function AppointmentForm() {
@@ -13,7 +16,7 @@ export default function AppointmentForm() {
         name: '',
         email: '',
         phone: '',
-        manager: 'Mr. M. Nazif Manager of Marco Polo',
+        staffId: 'nazif',
         date: '',
         time: '',
         notes: '',
@@ -23,38 +26,42 @@ export default function AppointmentForm() {
         zip: ''
     });
 
+    const [booked, setBooked] = useState<string[]>([]);
+    const [availabilityReady, setAvailabilityReady] = useState(false);
+    const [error, setError] = useState('');
+    const [refresh, setRefresh] = useState(0);
+    useEffect(() => {
+      setBooked([]);
+      setAvailabilityReady(false);
+      setError('');
+      if (!formData.date) return;
+      return onSnapshot(query(collection(db, 'showroom_appointment_slots'),
+        where('staffId', '==', formData.staffId), where('date', '==', formData.date)), snapshot => {
+          setBooked(snapshot.docs.map(d => d.data().time));
+          setAvailabilityReady(true);
+        }, () => { setError('Availability could not be checked. Please try again or call the showroom.'); setAvailabilityReady(false); });
+    }, [formData.staffId, formData.date, refresh]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value, ...(name === 'staffId' || name === 'date' ? { time: '' } : {}) }));
     };
 
-    const generateTimeSlots = () => {
-        const slots = [];
-        let current = new Date();
-        current.setHours(10, 30, 0, 0);
-        const end = new Date();
-        end.setHours(17, 30, 0, 0);
-
-        while (current <= end) {
-            slots.push(current.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-            current.setMinutes(current.getMinutes() + 30);
-        }
-        return slots;
-    };
+    const generateTimeSlots = appointmentSlots;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!availabilityReady || booked.includes(formData.time)) return;
+        setError('');
         setIsSubmitting(true);
 
         try {
-            await addShowroomDoc(SHOWROOM_APPOINTMENTS, {
-                ...formData,
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            });
+            await reserveAppointment(formData);
             setIsSuccess(true);
         } catch (err) {
             console.error(err);
-            alert("Failed to book appointment. Please try again or call us.");
+            setError(err instanceof Error ? err.message : 'Booking failed. Please try again.');
+            setRefresh(v => v + 1);
         } finally {
             setIsSubmitting(false);
         }
@@ -64,9 +71,9 @@ export default function AppointmentForm() {
         return (
             <div className="bg-emerald-50 border border-emerald-200 p-12 text-center rounded-sm">
                 <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
-                <h3 className="text-2xl font-serif text-emerald-900 mb-4">Appointment Confirmed</h3>
+                <h3 className="text-2xl font-serif text-emerald-900 mb-4">Appointment Request Received</h3>
                 <p className="text-emerald-700 font-light max-w-md mx-auto">
-                    Thank you, {formData.name}. Your appointment with {formData.manager} is scheduled for {formData.date} at {formData.time}. We will send you a confirmation email shortly.
+                    Thank you, {formData.name}. We received your request to meet {APPOINTMENT_STAFF.find(s => s.id === formData.staffId)?.name} on {formData.date} at {appointmentSlots().find(s => s.value === formData.time)?.label} (Alexandria time). Your appointment is pending staff confirmation.
                 </p>
                 <button onClick={() => window.location.href = '/'} className="mt-8 px-6 py-3 bg-emerald-700 text-white font-bold uppercase tracking-wider text-sm rounded-sm hover:bg-emerald-800 transition-colors">
                     Return to Home
@@ -79,9 +86,10 @@ export default function AppointmentForm() {
         <form onSubmit={handleSubmit} className="bg-white border border-neutral-100 p-8 shadow-sm rounded-sm max-w-3xl mx-auto space-y-6">
             <div className="text-center mb-8">
                 <h2 className="text-3xl font-serif text-neutral-900 mb-2">Book an Appointment</h2>
-                <p className="text-neutral-500">Schedule a 30-minute consultation with our management team.</p>
+                <p className="text-neutral-500">Open every day, 10:00 AM–6:00 PM. Lunch: 1:30–2:00 PM. Appointments are 30 minutes, in Alexandria time.</p>
             </div>
 
+            {error && <p role="alert" className="text-red-700">{error}</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Full Name</label>
@@ -97,21 +105,20 @@ export default function AppointmentForm() {
                 </div>
                 <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Consult with</label>
-                    <select name="manager" value={formData.manager} onChange={handleChange} className="w-full border border-neutral-200 p-3 outline-none focus:border-editorial-accent text-sm">
-                        <option value="Mr. M. Nazif Manager of Marco Polo">Mr. M. Nazif (Manager of Marco Polo)</option>
-                        <option value="Mr. Farid General Manager">Mr. Farid (General Manager)</option>
+                    <select name="staffId" value={formData.staffId} onChange={handleChange} className="w-full border border-neutral-200 p-3 outline-none focus:border-editorial-accent text-sm">
+                        {APPOINTMENT_STAFF.map(staff => <option key={staff.id} value={staff.id}>{staff.name}</option>)}
                     </select>
                 </div>
                 <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Date</label>
-                    <input required type="date" min={new Date().toISOString().split('T')[0]} name="date" value={formData.date} onChange={handleChange} className="w-full border border-neutral-200 p-3 outline-none focus:border-editorial-accent text-sm" />
+                    <input required type="date" min={showroomNow().date} name="date" value={formData.date} onChange={handleChange} className="w-full border border-neutral-200 p-3 outline-none focus:border-editorial-accent text-sm" />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Time (10:30 AM - 5:30 PM)</label>
-                    <select required name="time" value={formData.time} onChange={handleChange} className="w-full border border-neutral-200 p-3 outline-none focus:border-editorial-accent text-sm">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Time (Alexandria, Virginia)</label>
+                    <select required disabled={!availabilityReady} name="time" value={formData.time} onChange={handleChange} className="w-full border border-neutral-200 p-3 outline-none focus:border-editorial-accent text-sm">
                         <option value="">Select a time</option>
                         {generateTimeSlots().map(slot => (
-                            <option key={slot} value={slot}>{slot}</option>
+                            <option key={slot.value} value={slot.value} disabled={booked.includes(slot.value) || !isFutureSlot(formData.date, slot.value)}>{slot.label}{booked.includes(slot.value) ? " — Booked" : ""}</option>
                         ))}
                     </select>
                 </div>
@@ -124,7 +131,7 @@ export default function AppointmentForm() {
 
             <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !availabilityReady || !isFutureSlot(formData.date, formData.time) || booked.includes(formData.time)}
                 className="w-full bg-editorial-accent text-white font-bold uppercase tracking-widest text-sm py-4 flex items-center justify-center hover:bg-neutral-800 transition-colors disabled:opacity-50"
             >
                 {isSubmitting ? (

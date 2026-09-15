@@ -1,0 +1,11 @@
+.panel {max-width:1000px;margin:24px auto;padding:24px;background:white;border:1px solid #e5e7eb;border-radius:12px;color:#171717;font:15px/1.5 Arial,sans-serif;}
+.panel h1,.panel h2 {margin:0 0 16px;}
+.panel label {display:block;margin:12px 0 4px;}
+.panel input:not([type=checkbox]),.panel select {padding:10px;border:1px solid #d1d5db;border-radius:6px;width:100%;box-sizing:border-box;}
+.panel button,.link {display:inline-block;padding:10px 16px;margin:8px 8px 8px 0;background:#222;color:white;border:0;border-radius:6px;cursor:pointer;text-decoration:none;}
+.panel button:disabled {opacity:.5;cursor:wait;}
+.error {color:#b91c1c;} .status {color:#166534;}
+.row {padding:16px 0;border-top:1px solid #ddd;}
+.grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+.permissions {border-collapse:collapse;width:100%;margin-top:16px;}
+.permissions th,.permissions td {padding:8px;text-align:left;border-bottom:1px solid #eee;}

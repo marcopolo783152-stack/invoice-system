@@ -1,3 +1,4 @@
+import {chatRequest} from "@/lib/chat-client";
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -23,7 +24,9 @@ import { INITIAL_RUGS } from "@/lib/data";
 import { INITIAL_BLOGS } from "@/data/blogs";
 import { getEmailConfig } from "@/lib/email-service";
 import { auth, checkIsAdmin, logout, loginWithEmail, registerWithEmail } from "@/lib/auth";
-import { onAuthStateChanged } from "firebase/auth";
+import { useStaffAccess } from "@/hooks/useStaffAccess";
+import { canAccess } from "@/lib/access-policy";
+import { syncLegacyStaffSession } from "@/lib/staff-session";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getAllInvoicesSync } from "@/lib/invoice-storage";
@@ -48,6 +51,8 @@ interface StoreContextType {
   rugs: Rug[];
   blogs: BlogPost[];
   orders: Order[];
+  orderLoadError: string;
+  ordersLoading: boolean;
   reviews: Review[];
   chatMessages: ChatMessage[];
   cart: CartItem[];
@@ -202,6 +207,7 @@ const safeSetItem = (key: string, value: string) => {
 };
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const {staff,user:firebaseUser,loading:staffLoading}=useStaffAccess();
   // Views
   const [activeView, setActiveView] = useState<"customer" | "admin">(() => {
     if (typeof window === 'undefined') return "customer";
@@ -211,6 +217,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const handleSetActiveView = (view: "customer" | "admin") => {
+    if(view === "admin" && !staff) return;
     setActiveView(view);
     if (typeof window !== 'undefined') {
       sessionStorage.setItem("marcopolo_active_view", view);
@@ -266,6 +273,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [rugs, setRugs] = useState<Rug[]>([]);
   const [favoritedRugIds, setFavoritedRugIds] = useState<string[]>([]);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [orderLoadError,setOrderLoadError]=useState('');
+  const [ordersLoading,setOrdersLoading]=useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -329,32 +338,44 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  // Seed and Subscribe on mount
+  // Public data and private data have separate subscriptions.
   useEffect(() => {
-    let unsubs: (() => void)[] = [];
-    
-    seedShowroomDataIfEmpty().then(() => {
-      unsubs.push(subscribeToCollection<Rug>(SHOWROOM_RUGS, setRugs));
-      unsubs.push(subscribeToCollection<BlogPost>(SHOWROOM_BLOGS, setBlogs));
-      unsubs.push(subscribeToCollection<Order>(SHOWROOM_ORDERS, setOrders));
-      unsubs.push(subscribeToCollection<Review>(SHOWROOM_REVIEWS, setReviews));
-      unsubs.push(subscribeToCollection<ChatMessage>(SHOWROOM_CHAT, setChatMessages));
-      unsubs.push(subscribeToCollection<CleaningBooking>(SHOWROOM_CLEANING, setCleaningBookings));
-      unsubs.push(subscribeToCollection<any>(SHOWROOM_ESTIMATES, setEstimates));
-      unsubs.push(subscribeToCollection<PromoCode>(SHOWROOM_PROMOCODES, setPromoCodes));
-      
-      unsubs.push(subscribeToSettings({
-        onHero: setHeroCoverPhotosState,
-        onAnnouncement: setShowroomAnnouncementState,
-        onLogo: setLogoUrlState,
-        onProfile: setShopProfileState,
-        onReferrers: setReferrers,
-        onSocial: setSocialLinksState
-      }));
-    });
-
-    return () => unsubs.forEach(unsub => unsub());
-  }, []);
+    const unsubs = [
+      subscribeToCollection<Rug>(SHOWROOM_RUGS,setRugs),
+      subscribeToCollection<BlogPost>(SHOWROOM_BLOGS,setBlogs),
+      subscribeToCollection<Review>(SHOWROOM_REVIEWS,setReviews),
+      subscribeToSettings({onHero:setHeroCoverPhotosState,onAnnouncement:setShowroomAnnouncementState,onLogo:setLogoUrlState,onProfile:setShopProfileState,onReferrers:setReferrers,onSocial:setSocialLinksState})
+    ];
+    return ()=>unsubs.forEach(stop=>stop());
+  },[]);
+  useEffect(()=>{
+    setOrders([]);setChatMessages([]);setCleaningBookings([]);setEstimates([]);setPromoCodes([]);
+    setOrdersLoading(true);
+    if(staffLoading)return;
+    const unsubs:(()=>void)[]=[];
+    setOrderLoadError('');
+    if(firebaseUser && !firebaseUser.isAnonymous && firebaseUser.emailVerified){
+      let stopped=false;
+      const controller=new AbortController();
+      const loadOrders=async()=>{try{
+        const token=await firebaseUser.getIdToken();
+        const response=await fetch('/api/account-orders',{headers:{Authorization:'Bearer '+token},signal:controller.signal});
+        const data=await response.json();
+        if(!response.ok)throw Error(data.error||'Orders could not load.');
+        if(!stopped){setOrders(data.orders||[]);setOrderLoadError('');}
+      }catch(error){if(!stopped){setOrders([]);setOrderLoadError('Orders could not load. Please try again or contact the showroom.');}}finally{if(!stopped)setOrdersLoading(false);}};
+      loadOrders();const timer=setInterval(loadOrders,15000);
+      unsubs.push(()=>{stopped=true;controller.abort();clearInterval(timer);});
+    }else setOrdersLoading(false);
+    if(canAccess(staff,'messages')) unsubs.push(subscribeToCollection<ChatMessage>(SHOWROOM_CHAT,setChatMessages));
+    else if(firebaseUser) unsubs.push(subscribeToCollection<ChatMessage>(SHOWROOM_CHAT,setChatMessages,['ownerUid',firebaseUser.uid]));
+    if(canAccess(staff,'services')){
+      unsubs.push(subscribeToCollection<CleaningBooking>(SHOWROOM_CLEANING,setCleaningBookings));
+      unsubs.push(subscribeToCollection<any>(SHOWROOM_ESTIMATES,setEstimates));
+    }
+    if(canAccess(staff,'promotions'))unsubs.push(subscribeToCollection<PromoCode>(SHOWROOM_PROMOCODES,setPromoCodes));
+    return ()=>unsubs.forEach(stop=>stop());
+  },[staff, firebaseUser, staffLoading]);
 
     const setHeroCoverPhotos = (urls: string[]) => {
     // Filter out blob URLs to prevent black screen bug on reload
@@ -411,7 +432,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    if (rugs.length > 0 && !hasSyncedRetroactive.current) {
+    if (canAccess(staff,'inventory','write') && rugs.length > 0 && !hasSyncedRetroactive.current) {
       hasSyncedRetroactive.current = true;
       
       try {
@@ -434,7 +455,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error("Failed to retroactively sync invoices", e);
       }
     }
-  }, [rugs.length]);
+  }, [rugs.length,staff]);
 
   // Auto-delete chats older than 24 hours on mount and periodically
   useEffect(() => {
@@ -504,7 +525,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const subtotal = cart.reduce((sum, item) => sum + item.rug.price * item.quantity, 0);
     const total = subtotal + shipping + tax;
     
+    if(!auth.currentUser)throw new Error("Please wait for the secure connection and retry.");
     const newOrder: Order = {
+      customerId: auth.currentUser.uid,
       id: `MPR-${Math.floor(100000 + Math.random() * 90000).toString()}`,
       customerInfo: customer,
       cartItems: [...cart],
@@ -517,7 +540,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       appliedPromoCode: appliedPromo?.code,
       totalWeightLbs,
       status: "Pending Confirmation", // manual admin verification
-      paymentDetails: payment,
+      paymentDetails: {cardBrand: payment.cardBrand || "Pay at showroom",last4: payment.last4 || ""},
       createdAt: new Date().toISOString()
     };
 
@@ -746,71 +769,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // --- Chat / Concierge Support ---
   const chatHandoffRef = useRef<Record<string, boolean>>({});
 
-  const sendChatMessage = (
-    text: string,
-    sender: "customer" | "admin",
-    orderId?: string,
-    sessionId?: string,
-    customerName?: string
-  ) => {
-    const sId = sessionId || "default";
-    const cName = customerName || (sender === "customer" ? "Guest Customer" : "System");
-
-    const newMessage: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender,
-      text,
-      timestamp: new Date().toISOString(),
-      sessionId: sId,
-      orderId,
-      customerName: cName
-    };
-
-    addShowroomDoc(SHOWROOM_CHAT, newMessage);
-
-    // Connect to ChatGPT API for customer messages
-    if (sender === "customer") {
-      const history = chatMessages
-        .filter(m => (m.sessionId || "default") === sId)
-        .map(m => ({
-          role: m.sender === "customer" ? "user" : "assistant",
-          content: m.text
-        }));
-      
-      // Append the message we just sent (since state hasn't updated yet)
-      history.push({ role: "user", content: text });
-
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const replyMessage = data.replyText || "I'm sorry, I'm currently unavailable. A human concierge will be with you shortly.";
-        const aiReply: ChatMessage = {
-          id: `msg-${Date.now() + 1}`,
-          sender: "admin",
-          text: replyMessage,
-          timestamp: new Date().toISOString(),
-          sessionId: sId,
-          customerName: cName
-        };
-        addShowroomDoc(SHOWROOM_CHAT, aiReply);
-      })
-      .catch(err => {
-        console.error("Chat API Error:", err);
-        const fallbackReply: ChatMessage = {
-          id: `msg-${Date.now() + 1}`,
-          sender: "admin",
-          text: "I'm sorry, my systems are currently offline. A human concierge will be with you shortly.",
-          timestamp: new Date().toISOString(),
-          sessionId: sId,
-          customerName: cName
-        };
-        addShowroomDoc(SHOWROOM_CHAT, fallbackReply);
-      });
-    }
+  const sendChatMessage = async (text:string,sender:"customer"|"admin",orderId?:string,sessionId?:string,customerName?:string) => {
+    await chatRequest({action:sender==='admin'?'reply':'message',text,sessionId:sessionId||auth.currentUser?.uid,customerName});
   };
 
   const clearChat = (sessionId?: string) => {
@@ -827,98 +787,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     messagesToDelete.forEach(msg => deleteShowroomDoc(SHOWROOM_CHAT, msg.id));
   };
 
-  // --- Authentication Actions ---
+  // --- Verified Firebase authentication ---
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      // Check for hardcoded admin bypass first
-      if (typeof window !== 'undefined') {
-        const localEmail = sessionStorage.getItem("mp-invoice-auth");
-        if (localEmail === "admin@marcopolo.com" || localEmail === "1") {
-          setCurrentUser({
-            id: "admin-bypass",
-            name: "Administrator",
-            email: "admin@marcopolo.com",
-            role: "admin"
-          });
-          handleSetActiveView("admin");
-          return;
-        }
-      }
-
-      if (firebaseUser) {
-        // Fetch user doc
-        const userDoc = await getDoc(doc(db as any, "showroom_customers", firebaseUser.uid));
-        const isAdmin = await checkIsAdmin(firebaseUser.uid, firebaseUser.email);
-        
-        let role = isAdmin ? "admin" : "customer";
-        
-        const userData: User = {
-          id: firebaseUser.uid,
-          name: userDoc.exists() && userDoc.data() ? userDoc.data().name : firebaseUser.displayName || "User",
-          email: firebaseUser.email || "",
-          role: role as "admin" | "customer"
-        };
-        
-        setCurrentUser(userData);
-        if (isAdmin) {
-          handleSetActiveView("admin");
-          if (typeof window !== 'undefined') sessionStorage.setItem("mp-invoice-auth", "1");
-        } else {
-          handleSetActiveView("customer");
-          if (typeof window !== 'undefined') sessionStorage.removeItem("mp-invoice-auth");
-        }
-      } else {
-        setCurrentUser(null);
-        handleSetActiveView("customer");
-        if (typeof window !== 'undefined') sessionStorage.removeItem("mp-invoice-auth");
-      }
-    });
-    return () => unsub();
-  }, []);
+    if (staffLoading) return;
+    syncLegacyStaffSession(staff);
+    if (!firebaseUser || firebaseUser.isAnonymous || !firebaseUser.emailVerified) {
+      setCurrentUser(null); handleSetActiveView("customer"); return;
+    }
+    setCurrentUser({ id: firebaseUser.uid, name: staff?.name || firebaseUser.displayName || "Customer",
+      email: firebaseUser.email || "", role: staff ? "admin" : "customer" });
+    if (!staff) handleSetActiveView("customer");
+    else if (sessionStorage.getItem("marcopolo_active_view") === "admin" || new URLSearchParams(window.location.search).get("view") === "admin") handleSetActiveView("admin");
+  }, [staff, firebaseUser, staffLoading]);
 
   const loginUser = async (email: string, pass: string) => {
-    // HARDCODED ADMIN BYPASS
-    if (email.toLowerCase().trim() === "admin@marcopolo.com" && pass === "Marcopolo$") {
-      const adminUser = {
-        id: "admin-bypass",
-        name: "Administrator",
-        email: "admin@marcopolo.com",
-        role: "admin"
-      };
-      setCurrentUser(adminUser as any);
-      sessionStorage.setItem("mp-invoice-auth", "1");
-      sessionStorage.setItem("mp-invoice-user", JSON.stringify(adminUser));
-      handleSetActiveView("admin");
-      return { success: true, message: "Logged in as Administrator!" };
-    }
-
-    const res = await loginWithEmail(email, pass);
-    if (res.error) return { success: false, message: res.error };
-    return { success: true, message: "Logged in successfully!" };
+    const res = await loginWithEmail(email.trim(), pass);
+    return {success: !res.error, message: res.error || "Signed in successfully."};
   };
-
   const signupUser = async (name: string, email: string, pass: string, phone?: string, address?: string) => {
-    const res = await registerWithEmail(name, email, pass, phone);
-    if (res.error) return { success: false, message: res.error };
-    return { success: true, message: "Account created successfully!" };
+    const res = await registerWithEmail(name,email.trim(),pass,phone);
+    return {success: !res.error, message: res.error || "Account created. Check your email to verify it."};
   };
-
-  const addAdminUser = async (name: string, email: string, pass: string) => {
-    return { success: false, message: "Admins must be configured securely in Firebase." };
-  };
-
+  const addAdminUser = async (name: string, email: string, pass: string) => ({
+    success:false, message:"Use Users & Permissions to invite a staff member."
+  });
   const logoutUser = async () => {
-    try {
-      await logout();
-    } catch (e) {
-      console.error(e);
-    }
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem("mp-invoice-auth");
-      sessionStorage.removeItem("marcopolo_active_view");
-    }
-    setCurrentUser(null);
-    handleSetActiveView("customer");
+    await logout(); syncLegacyStaffSession(null);
+    setCurrentUser(null); handleSetActiveView("customer");
   };
 
   // --- Rug Cleaning Booking ---
@@ -1022,6 +917,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         rugs,
         blogs,
         orders,
+        orderLoadError,
+        ordersLoading,
         reviews,
         chatMessages,
         cart,
