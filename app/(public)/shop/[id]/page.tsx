@@ -1,20 +1,20 @@
 import { Metadata } from 'next';
-import { catalogRug } from '@/lib/server/catalog';
+import { catalogRugForPage } from '@/lib/server/catalog';
 import {notFound} from 'next/navigation';
-import { Rug } from '@/types';
+import { ClientRedirect } from './ClientRedirect';
 import Link from 'next/link';
 import { ArrowLeft, ShoppingBag } from 'lucide-react';
-import Image from 'next/image';
+
 
 
 // Revalidate this page occasionally to keep data fresh for SEO
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const rug = await catalogRug(params.id);
+  const rug = await catalogRugForPage(params.id);
 
   if (!rug) {
-    return { title: 'Rug Details | Marco Polo Rugs' };
+    return { title: 'Rug Details | Marco Polo Rugs', robots: { index: false, follow: true } };
   }
 
   return {
@@ -37,12 +37,21 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
-  const rug = await catalogRug(params.id);
+  const rug = await catalogRugForPage(params.id);
 
+  if (rug === undefined) {
+    return (
+      <main className="min-h-screen p-8 text-center">
+        <h1 className="text-2xl font-serif">Marco Polo Rugs</h1>
+        <p className="my-4">Opening this rug in our gallery…</p>
+        <Link href={`/?item=${encodeURIComponent(params.id)}`} className="underline">View rug photos and details</Link>
+        <ClientRedirect rugId={params.id} />
+      </main>
+    );
+  }
   if (!rug) notFound();
 
-  // Googlebot will see this static HTML with all the important keywords!
-  // Human users will run ClientRedirect and instantly load the beautiful SPA modal.
+  // Render the same product information for visitors and search engines.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -103,10 +112,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
       />
-      {/* Client Component that immediately redirects humans to the SPA view */}
 
-
-      {/* Static SEO Content below (humans briefly see this or not at all, bots index this!) */}
       <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
         <Link href="/" className="inline-flex items-center text-sm font-bold uppercase tracking-wider text-neutral-500 hover:text-editorial-accent">
           <ArrowLeft className="w-4 h-4 mr-2" />

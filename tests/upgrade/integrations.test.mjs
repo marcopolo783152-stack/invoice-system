@@ -73,3 +73,17 @@ test('shipping returns rates without purchase and blocks a repeated purchase ope
   assert.equal(docs.get('showroom_orders/MPR-existing').status,'Preparing for Shipping');
   assert.equal((await call({...body,selectedRate:'rate-1'})).status,409);assert.equal(purchases,1);
 });
+
+test('catalog fallback distinguishes unavailable server, missing rug and existing rug',async()=>{
+  for(const state of ['unavailable','missing','exists']) {
+    const catalog=load('lib/server/catalog.ts',{'server-only':{},react:{cache:fn=>fn},'./firebase-admin':{serverDb:()=>{
+      if(state==='unavailable')throw Error('SERVER_NOT_CONFIGURED');
+      return {collection:()=>({doc:id=>({get:async()=>({exists:state==='exists',id,data:()=>({name:'Existing rug'})})})})};
+    }}},{console:{error(){}}});
+    const result=await catalog.catalogRugForPage('rug-1783703539224');
+    if(state==='unavailable')assert.equal(result,undefined);
+    if(state==='missing')assert.equal(result,null);
+    if(state==='exists')assert.equal(result.name,'Existing rug');
+    assert.equal(await catalog.catalogRugForPage('../invalid'),null);
+  }
+});

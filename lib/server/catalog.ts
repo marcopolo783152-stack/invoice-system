@@ -12,3 +12,14 @@ export async function catalogIds() {
   const result = await serverDb().collection('showroom_rugs').select('availability').get();
   return result.docs.filter(doc => doc.data().availability === 'In Stock').map(doc => doc.id);
 }
+
+// Keep unavailable server configuration distinct from a genuinely missing rug.
+// The browser gallery uses the existing public Firebase client and read rules.
+export const catalogRugForPage = cache(async (id: string): Promise<Rug | null | undefined> => {
+  try {
+    return await catalogRug(id);
+  } catch {
+    console.error('[catalog] Server lookup unavailable; using showroom gallery');
+    return undefined;
+  }
+});
