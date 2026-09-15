@@ -70,11 +70,6 @@ export const CartView: React.FC = () => {
       ? "Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314"
       : `${shippingStreet}${shippingApt.trim() ? " " + shippingApt.trim() : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
 
-  // Credit Card Simulation
-  const [cardName, setCardName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCVC, setCardCVC] = useState("");
   const [printFeedback, setPrintFeedback] = useState<string | null>(null);
 
   const downloadReceiptAsPDF = (order: any) => {
@@ -167,30 +162,9 @@ export const CartView: React.FC = () => {
     }
   };
 
-  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value
-      .replace(/\s+/g, "")
-      .replace(/[^0-9]/gi, "")
-      .substring(0, 16);
-    const parts = v.match(/.{1,4}/g);
-    setCardNumber(parts ? parts.join(" ") : v);
-  };
-
-  const getCardBrand = (number: string) => {
-    const clean = number.replace(/\s+/g, "");
-    if (clean.startsWith("34") || clean.startsWith("37"))
-      return "American Express";
-    if (clean.startsWith("4")) return "Visa";
-    if (clean.startsWith("5")) return "Mastercard";
-    if (clean.startsWith("6")) return "Discover";
-    return "";
-  };
-  const currentBrand = getCardBrand(cardNumber);
-
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isProcessing) return;
-    setIsProcessing(true);
     if (
       !name ||
       !phone ||
@@ -200,14 +174,7 @@ export const CartView: React.FC = () => {
     )
       return;
 
-    // Secure payment simulation card masking
-    const cleanCard = cardNumber.replace(/\s+/g, "");
-    const last4 = cleanCard.slice(-4) || "4242";
-    const brand = cleanCard.startsWith("3")
-      ? "American Express"
-      : cleanCard.startsWith("5")
-        ? "Mastercard"
-        : "Visa";
+    setIsProcessing(true);
 
     const customerInfo = {
       name,
@@ -221,12 +188,8 @@ export const CartView: React.FC = () => {
     };
 
     const paymentDetails = {
-      cardBrand: brand,
-      last4,
-      cardholderName: cardName || name,
-      cardNumber: cardNumber,
-      cardExpiry: cardExpiry,
-      cardCVC: cardCVC,
+      cardBrand: "Pay by phone or in store",
+      last4: "",
     };
 
     const order = checkout(
@@ -239,6 +202,7 @@ export const CartView: React.FC = () => {
       appliedPromo || undefined,
       discount,
     );
+    setIsProcessing(false);
     setCreatedOrder(order);
     setCheckoutStep("success");
   };
@@ -262,12 +226,12 @@ export const CartView: React.FC = () => {
           <div className="px-6 py-5 bg-editorial-aside border-b border-editorial-border flex items-center justify-between">
             <div>
               <span className="text-sm uppercase tracking-widest text-editorial-accent font-bold block">
-                Secure Showroom Gateway
+                Marco Polo Oriental Rugs
               </span>
               <h2 className="font-serif text-lg font-light text-editorial-text flex items-center gap-2">
                 {checkoutStep === "cart" && "Shopping Curation"}
                 {checkoutStep === "shipping" && "Shipping & Address Curation"}
-                {checkoutStep === "payment" && "Secure Escrow Settlement"}
+                {checkoutStep === "payment" && "Review your order"}
                 {checkoutStep === "success" && "Order Submitted!"}
               </h2>
             </div>
@@ -705,93 +669,12 @@ export const CartView: React.FC = () => {
                 onSubmit={handleCheckoutSubmit}
                 className="space-y-4 text-xs text-left"
               >
-                <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none flex items-start gap-3">
-                  <ShieldCheck className="h-5 w-5 text-editorial-accent mt-0.5 flex-shrink-0 animate-pulse" />
-                  <div>
-                    <h5 className="font-serif font-light text-editorial-text text-sm">
-                      Secure Payment Hold
-                    </h5>
-                    <p className="text-xs text-gray-500 leading-relaxed mt-0.5 font-light">
-                      Please provide your payment details to reserve your rug.
-                      Your card will be securely stored for authorization but
-                      will not be charged until final confirmation.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
-                      Cardholder Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      placeholder="Name on card"
-                      className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text"
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
-                      Card Number
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={cardNumber}
-                      onChange={handleCardChange}
-                      placeholder="0000 0000 0000 0000"
-                      maxLength={19}
-                      className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
-                    />
-                    {currentBrand && (
-                      <div className="absolute right-2 top-[34px] text-[10px] font-bold uppercase tracking-wider text-editorial-accent bg-amber-50 px-2 py-0.5 border border-editorial-border">
-                        {currentBrand}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
-                        Expiration
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={cardExpiry}
-                        onChange={(e) =>
-                          setCardExpiry(e.target.value.substring(0, 5))
-                        }
-                        maxLength={5}
-                        placeholder="MM/YY"
-                        className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
-                        CVV / CVC
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={cardCVC}
-                        onChange={(e) =>
-                          setCardCVC(
-                            e.target.value
-                              .replace(/[^0-9]/gi, "")
-                              .substring(0, 4),
-                          )
-                        }
-                        maxLength={4}
-                        placeholder="123"
-                        className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-editorial-text font-mono"
-                      />
-                    </div>
-                  </div>
+                <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none space-y-3">
+                  <h3 className="font-semibold text-base">Pay by phone or in store</h3>
+                  <p>Online payments are not available yet. Placing this order does not charge your card or take payment.</p>
+                  <p>Our showroom team will contact you using the details you provided to confirm availability and arrange payment by phone or at our store.</p>
+                  <p>You can also call <a href="tel:+17034610207" className="underline">(703) 461-0207</a> or visit 3260 Duke St, Alexandria, VA 22314.</p>
+                  <p>Please do not include card details in order notes, chat or email. Your order remains pending until the showroom confirms it.</p>
                 </div>
 
                 <div className="pt-4 space-y-3 border-t border-editorial-border">
@@ -802,12 +685,12 @@ export const CartView: React.FC = () => {
                   >
                     {isProcessing ? (
                       <span className="animate-pulse flex items-center gap-2">
-                        Processing Hold...
+                        Submitting order...
                       </span>
                     ) : (
                       <>
                         <Lock className="h-4 w-4" />
-                        <span>Confirm Secure Hold</span>
+                        <span>Place order — pay later</span>
                       </>
                     )}
                   </button>
@@ -827,13 +710,13 @@ export const CartView: React.FC = () => {
 
                 <div className="space-y-2">
                   <h3 className="font-serif text-2xl font-light text-editorial-text">
-                    Reservation Confirmed!
+                    Thank you — order submitted!
                   </h3>
                   <p className="text-xs text-gray-500 leading-relaxed max-w-sm mx-auto font-light">
-                    Your request has been sent to our showroom successfully. A
-                    Marco Polo advisor will contact you shortly to confirm your
-                    hold, answer any questions, and arrange payment and final
-                    delivery.
+                    No payment has been taken. Online payments are not available yet.
+                    Our showroom team will contact you to confirm availability and arrange
+                    payment by phone or in store. For assistance, call (703) 461-0207
+                    and quote your order number below.
                   </p>
                 </div>
 
@@ -843,13 +726,11 @@ export const CartView: React.FC = () => {
                     <AlertTriangle className="h-5 w-5 text-amber-700 flex-shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <h4 className="text-sm font-bold text-amber-900 uppercase tracking-wider">
-                        CRITICAL REQUIREMENT
+                        Save your order number
                       </h4>
                       <p className="text-sm text-amber-850 leading-relaxed font-normal">
-                        Please **print**, **take a screenshot**, **save as a
-                        photo**, or **download** this order receipt right now.
-                        This is your official showroom escrow record and
-                        reference key.
+                        Save or download this order summary for your records.
+                        It confirms your request, not payment.
                       </p>
                     </div>
                   </div>
@@ -863,7 +744,7 @@ export const CartView: React.FC = () => {
                       title="Print receipt"
                     >
                       <Printer className="h-3 w-3" />
-                      <span>Print Receipt</span>
+                      <span>Print Order</span>
                     </button>
                     <button
                       type="button"
@@ -939,7 +820,7 @@ export const CartView: React.FC = () => {
                       {createdOrder.customerInfo.name}
                     </p>
                     <p>
-                      • <strong>Settlement Sum:</strong> $
+                      • <strong>Order Total:</strong> $
                       {createdOrder.total.toLocaleString()}
                     </p>
                   </div>
@@ -1007,7 +888,7 @@ export const CartView: React.FC = () => {
                 </div>
                 <div className="flex justify-between border-t border-editorial-border pt-3 text-sm font-light">
                   <span className="text-editorial-text uppercase tracking-wider">
-                    Est. Settlement:
+                    Estimated total:
                   </span>
                   <span className="font-serif text-base text-editorial-text">
                     ${total.toLocaleString()}
