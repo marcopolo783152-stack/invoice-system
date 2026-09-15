@@ -18,8 +18,16 @@ export function AdminChatBox({activeSessionId,onClose,embedded=false}:{activeSes
  useEffect(()=>{const feed=bottom.current?.parentElement;if(feed)feed.scrollTop=feed.scrollHeight;},[messages.length]);
  if(!activeSessionId||!canAccess(staff,'messages'))return null;
  const run=async(body:Record<string,unknown>)=>{setBusy(true);setError('');try{await chatRequest({...body,sessionId:activeSessionId});setText('');}catch(e){setError(e instanceof Error?e.message:'Could not send.');}finally{setBusy(false);}};
+ const remove=async()=>{
+  if(!window.confirm('Permanently delete this conversation and all its messages? This cannot be undone.'))return;
+  setBusy(true);setError('');
+  try{await chatRequest({action:'delete',sessionId:activeSessionId});onClose();}
+  catch(e){setError(e instanceof Error?e.message:'Could not delete. Please try again.');}
+  finally{setBusy(false);}
+ };
  return <section className={styles.window+' '+(embedded?styles.embedded:'')} aria-label="Customer conversation">
  <header className={styles.header}><div><strong>{session?.contact?.name||session?.customerName||'Customer conversation'}</strong><small>{session?.status==='human'?'With '+session.staffName:session?.status==='waiting'?'Waiting for our team':'AI assistant conversation'}</small></div><button onClick={onClose} aria-label="Close customer conversation">×</button></header>
+ {canAccess(staff,'messages','delete')&&<div className={styles.tools}><button disabled={busy} onClick={remove}>{busy?'Please wait…':'Delete permanently'}</button></div>}
  {session?.contact&&<div className={styles.tools}><a href={'mailto:'+session.contact.email}>{session.contact.email}</a><span>{session.contact.phone}</span></div>}
  <div className={styles.feed}>{messages.map(m=><div key={m.id} className={styles.bubble+' '+(m.sender==='admin'?styles.mine:'')}><span className={styles.label}>{m.sender==='customer'?'Customer':m.isAutomated?'AI assistant':(m as any).staffName||'Team'}</span><ChatText text={m.text}/></div>)}<div ref={bottom}/></div>
  {error&&<p role="alert" className={styles.error}>{error}</p>}

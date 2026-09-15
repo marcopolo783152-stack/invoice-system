@@ -295,6 +295,21 @@ const AdminWorkspace: React.FC = () => {
   // State for message replies
   const [adminReplyText, setAdminReplyText] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
+  const [readMessages,setReadMessages]=useState<{uid:string;ids:string[]}>({uid:'',ids:[]});
+  useEffect(()=>{
+   if(!staff?.uid){setReadMessages({uid:'',ids:[]});return;}
+   try{const saved=JSON.parse(localStorage.getItem('chat-read:'+staff.uid)||'[]');setReadMessages({uid:staff.uid,ids:Array.isArray(saved)?saved.filter(id=>typeof id==='string'):[]});}
+   catch{setReadMessages({uid:staff.uid,ids:[]});}
+  },[staff?.uid]);
+  const openConversation=(sessionId:string)=>{
+   setSelectedSessionId(sessionId);
+   if(!staff?.uid)return;
+   setReadMessages(previous=>{
+    const ids=Array.from(new Set([...(previous.uid===staff.uid?previous.ids:[]),...chatMessages.filter(m=>m.sessionId===sessionId&&m.sender==='customer').map(m=>m.id)]));
+    try{localStorage.setItem('chat-read:'+staff.uid,JSON.stringify(ids));}catch{}
+    return {uid:staff.uid,ids};
+   });
+  };
 
   // States for inventory filters
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
@@ -390,13 +405,8 @@ const AdminWorkspace: React.FC = () => {
   // Auto-select first thread if none is selected
   // Conversations open only when selected; closing must leave the panel closed.
 
-  const unreadMessagesCount = chatThreads.filter(t => {
-    // AI replies also use sender=admin. They must not hide customer requests.
-    const lastStaffReply = Math.max(0, ...t.messages
-      .filter(m => (m.sender as string) === "Marco Polo" || (m.sender === "admin" && m.isAutomated === false))
-      .map(m => new Date(m.timestamp).getTime()));
-    return t.messages.some(m => m.sender === "customer" && new Date(m.timestamp).getTime() > lastStaffReply);
-  }).length;
+  const readIds=new Set(readMessages.uid===staff?.uid?readMessages.ids:[]);
+  const unreadMessagesCount=chatThreads.filter(t=>t.messages.some(m=>m.sender==='customer'&&!readIds.has(m.id))).length;
 
   // --- CALCULATE DYNAMIC ANALYTICS FROM REAL CURRENT STATE ---
   const dynamicAnalytics = React.useMemo(() => {
@@ -2721,7 +2731,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
         )}
 
-        {activeTab==='messages' && allowed('messages') && <div className={portal.grid}><section className={portal.card}><h2>Customer conversations</h2>{!chatThreads.length&&<p>No conversations yet.</p>}{chatThreads.map(thread=><button key={thread.sessionId} className={portal.row} style={{width:'100%',textAlign:'left'}} onClick={()=>setSelectedSessionId(thread.sessionId)}><span>{thread.customerName||'Customer'}</span><span>Open →</span></button>)}</section><AdminChatBox activeSessionId={selectedSessionId} onClose={()=>setSelectedSessionId("")} embedded/></div>}
+        {activeTab==='messages' && allowed('messages') && <div className={portal.grid}><section className={portal.card}><h2>Customer conversations</h2>{!chatThreads.length&&<p>No conversations yet.</p>}{chatThreads.map(thread=><button key={thread.sessionId} className={portal.row} style={{width:'100%',textAlign:'left'}} onClick={()=>openConversation(thread.sessionId)}><span>{thread.customerName||'Customer'}</span><span>Open →</span></button>)}</section><AdminChatBox activeSessionId={selectedSessionId} onClose={()=>setSelectedSessionId("")} embedded/></div>}
 
         {/* --- TAB F: BLOG PUBLISHER --- */}
         {activeTab === "blogs" && allowed('blogs') && (

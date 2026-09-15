@@ -13,7 +13,7 @@ export async function POST(req:NextRequest){
   let body:any;try{body=JSON.parse(raw);}catch{return fail('Invalid request.');}
   const user=await caller(req);const db=serverDb();
   const action=body.action||'message';
-  if(!['message','handoff','claim','reply'].includes(action))return fail('Unknown chat action.');
+  if(!['message','handoff','claim','reply','delete'].includes(action))return fail('Unknown chat action.');
   const sessionId=String(body.sessionId||'');
   if(!/^[a-zA-Z0-9_-]{1,100}$/.test(sessionId))return fail('Please open a new chat.');
   const text=typeof body.text==='string'?body.text.trim():'';
@@ -28,13 +28,23 @@ export async function POST(req:NextRequest){
   });
   const sessionRef=db.doc('showroom_chat_sessions/'+sessionId);
   let staff:StaffAccess|null=null;
-  if(action==='claim'||action==='reply'){
+  if(action==='claim'||action==='reply'||action==='delete'){
    if(!user.email_verified)return fail('Verify your staff email first.',403);
    const role=(await db.doc('showroom_roles/'+user.uid).get()).data();
    const owner=user.uid===OWNER_UID&&user.email?.toLowerCase()===OWNER_EMAIL;
    if(role && role.email?.toLowerCase()===user.email?.toLowerCase()&&(role.active===true||(owner&&role.active!==false))&&
      (role.role!=='admin'||owner))staff={uid:user.uid,email:user.email||'',name:role.name||user.name||'',role:role.role,active:true,permissions:role.permissions||{}};
-   if(!canAccess(staff,'messages','write'))return fail('You do not have permission to reply.',403);
+   if(!canAccess(staff,'messages',action==='delete'?'delete':'write'))return fail('You do not have permission to reply.',403);
+  }
+  if(action==='delete'){
+   // A content-free marker prevents concurrent requests from recreating deleted messages.
+   await sessionRef.set({status:'deleted'});
+   while(true){
+    const page=await db.collection('showroom_chat').where('sessionId','==',sessionId).limit(400).get();
+    if(page.empty)break;
+    const batch=db.batch();page.docs.forEach(d=>batch.delete(d.ref));await batch.commit();
+   }
+   return NextResponse.json({ok:true});
   }
   const append=(tx:any,session:any,sender:string,message:string,automated:boolean,extra:Record<string,unknown>={})=>{
    const ref=db.collection('showroom_chat').doc();
@@ -45,7 +55,7 @@ export async function POST(req:NextRequest){
    const name=String(body.name||'').trim();
    if(name.length<2||name.length>100)return fail('Enter your name before accepting this conversation.');
    await db.runTransaction(async tx=>{
-    const snap=await tx.get(sessionRef);if(!snap.exists)throw Error('SESSION_NOT_FOUND');const session=snap.data()!;
+    const snap=await tx.get(sessionRef);if(!snap.exists)throw Error('SESSION_NOT_FOUND');const session=snap.data()!;if(session.status==='deleted')throw Error('SESSION_NOT_FOUND');
     if(session.claimedBy&&session.claimedBy!==user.uid)throw Error('ALREADY_CLAIMED');
     if(session.claimedBy===user.uid)return;
     tx.update(sessionRef,{status:'human',claimedBy:user.uid,staffName:name,updatedAt:new Date().toISOString()});
@@ -54,7 +64,7 @@ export async function POST(req:NextRequest){
   }
   if(action==='reply'){
    await db.runTransaction(async tx=>{
-    const snap=await tx.get(sessionRef);if(!snap.exists)throw Error('SESSION_NOT_FOUND');const session=snap.data()!;
+    const snap=await tx.get(sessionRef);if(!snap.exists)throw Error('SESSION_NOT_FOUND');const session=snap.data()!;if(session.status==='deleted')throw Error('SESSION_NOT_FOUND');
     if(session.claimedBy!==user.uid)throw Error('ACCEPT_FIRST');
     append(tx,session,'admin',text,false,{staffName:session.staffName});
     tx.update(sessionRef,{updatedAt:new Date().toISOString()});
@@ -64,6 +74,7 @@ export async function POST(req:NextRequest){
   const session=await db.runTransaction(async tx=>{
    const snap=await tx.get(sessionRef);
    const session=snap.exists?snap.data()!:{ownerUid:user.uid,status:'ai',claimedBy:'',customerName:String(body.customerName||'Customer').slice(0,100),createdAt:new Date().toISOString()};
+   if(session.status==='deleted')throw Error('SESSION_NOT_FOUND');
    if(session.ownerUid!==user.uid)throw Error('NOT_YOUR_CHAT');
    if(action==='handoff'){
     const contact={name:body.contact.name.trim(),email:body.contact.email.trim(),phone:body.contact.phone.trim()};

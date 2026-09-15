@@ -137,5 +137,17 @@ try{
  assert.equal((await post(managerToken,{action:'claim',sessionId:'user-'+customer.uid,name:'Other Manager'})).status,403,'Second employee cannot take an accepted chat');
  assert.equal((await post(customerToken,{action:'reply',sessionId:'user-'+customer.uid,text:'Pretend staff'})).status,403,'Customer cannot impersonate staff');
  assert.equal((await post(managerToken,{action:'message',sessionId:'user-'+customer.uid,text:'Read another chat'})).status,403,'Customer operation cannot access another owner’s session');
+
+ assert.equal((await post(customerToken,{action:'delete',sessionId:'user-'+customer.uid})).status,403,'Customers cannot delete staff conversations');
+ const bulk=db.batch();
+ for(let i=0;i<405;i++)bulk.set(db.collection('showroom_chat').doc(),{sessionId:'delete-test',sender:'customer',text:'Delete me',timestamp:new Date().toISOString()});
+ await bulk.commit();
+ await db.doc('showroom_chat_sessions/delete-test').set({ownerUid:customer.uid,contact:{name:'Private name'},status:'ai'});
+ assert.equal((await post(managerToken,{action:'delete',sessionId:'delete-test'})).status,200);
+ assert.equal((await db.collection('showroom_chat').where('sessionId','==','delete-test').get()).size,0,'Delete removes every batch of messages');
+ assert.deepEqual((await db.doc('showroom_chat_sessions/delete-test').get()).data(),{status:'deleted'},'Delete removes contact details');
+ assert.equal((await post(customerToken,{action:'message',sessionId:'delete-test',text:'Old request'})).status,404,'Old requests cannot recreate deleted conversations');
+ await staffChat.getByRole('button',{name:'Close customer conversation'}).click();
+ await staffChat.waitFor({state:'hidden'});
  console.log('BROWSER_CHECKS_PASSED: admin desktop/mobile layout; reset page/email; verification gate; customer dashboard desktop/mobile; greeting fallback; contact handoff; named staff acceptance/reply; second-claim and impersonation protection.');
 }catch(error){if(browser)for(const [i,ctx] of browser.contexts().entries())for(const [j,p] of ctx.pages().entries())await p.screenshot({path:`screenshots/failure-${i}-${j}.png`,fullPage:true}).catch(()=>{});throw error;}finally{await browser?.close();server.kill('SIGTERM');await Promise.all(getApps().map(app=>deleteApp(app)));}
