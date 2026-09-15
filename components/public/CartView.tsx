@@ -163,7 +163,7 @@ export const CartView: React.FC = () => {
     }
   };
 
-  const handleCheckoutSubmit = (e: React.FormEvent) => {
+  const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isProcessing) return;
     if (
@@ -193,7 +193,8 @@ export const CartView: React.FC = () => {
       last4: "",
     };
 
-    const order = checkout(
+    try {
+    const order = await checkout(
       customerInfo,
       paymentDetails,
       deliveryOption,
@@ -206,6 +207,8 @@ export const CartView: React.FC = () => {
     setIsProcessing(false);
     setCreatedOrder(order);
     setCheckoutStep("success");
+    } catch { alert("Your order could not be saved. Your cart is still here. Please retry or contact our showroom."); }
+    finally { setIsProcessing(false); }
   };
 
   const handleClose = () => {

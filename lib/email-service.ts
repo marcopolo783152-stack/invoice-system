@@ -23,7 +23,6 @@ const DEFAULT_CONFIG: EmailConfig = {
   templateIdSignature: 'rm8govh',
   templateIdConfirm: '',
   publicKey: 'Anj9zrEUo-VEWvMVw',
-  privateKey: 'ZgV1UYxVUy0UQKBmgj3I5',
 };
 
 // Admin email for security confirmations
