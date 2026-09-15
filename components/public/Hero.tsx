@@ -424,8 +424,8 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                     <ShieldCheck className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-editorial-text uppercase tracking-widest">Secure Escrow</h4>
-                    <p className="text-xs text-gray-400 font-light mt-0.5">Full payment escrow and manual approval.</p>
+                    <h4 className="text-sm font-bold text-editorial-text uppercase tracking-widest">Personal Service</h4>
+                    <p className="text-xs text-gray-400 font-light mt-0.5">Order assistance from our Alexandria showroom.</p>
                   </div>
                 </div>
                 

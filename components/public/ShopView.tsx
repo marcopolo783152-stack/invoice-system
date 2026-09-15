@@ -544,6 +544,8 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                       <img
                         src={rug.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"}
                         alt={rug.name}
+                        loading={index < 4 ? "eager" : "lazy"}
+                        decoding="async"
                         className="w-full h-full object-contain object-center group-hover:scale-105 transition duration-700"
                         referrerPolicy="no-referrer"
                       />

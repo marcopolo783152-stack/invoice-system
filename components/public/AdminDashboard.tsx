@@ -1,3 +1,4 @@
+import {auth as firebaseAuth} from '@/lib/auth';
 import ListingStats from "@/components/ListingStats";
 import listingStyles from "@/components/ListingInventory.module.css";
 import OrderPaymentControls from '@/components/OrderPaymentControls';
@@ -31,21 +32,21 @@ import { EstimatesAdminTab } from "./EstimatesAdminTab";
 import AppraisalsAdminTab from "./AppraisalsAdminTab";
 import { EmployeesAdminTab } from "./EmployeesAdminTab";
 import { ClockAdminTab } from "./ClockAdminTab";
-import { 
-  BarChart3, 
-  Layers, 
-  ClipboardList, 
-  Star, 
-  MessageSquare, 
-  BookOpen, 
-  Plus, 
-  Edit3, 
-  Trash2, 
-  Check, 
-  Truck, 
-  X, 
-  ShieldCheck, 
-  AlertCircle, 
+import {
+  BarChart3,
+  Layers,
+  ClipboardList,
+  Star,
+  MessageSquare,
+  BookOpen,
+  Plus,
+  Edit3,
+  Trash2,
+  Check,
+  Truck,
+  X,
+  ShieldCheck,
+  AlertCircle,
   FileText,
   DollarSign,
   Briefcase,
@@ -63,7 +64,7 @@ import {
   Settings,
   Tag,
   Save,
-  Eye, 
+  Eye,
   UploadCloud,
   Camera,
   Banknote,
@@ -85,29 +86,29 @@ const AdminWorkspace: React.FC = () => {
   const {staff}=useStaffAccess();
   const [navigationOpen,setNavigationOpen]=useState(false);
   const allowed=(tab:string)=>{const section=sectionForTab(tab);return !!section && canAccess(staff,section);};
-  const { 
-    rugs, 
+  const {
+    rugs,
     orders,
     orderLoadError,
     ordersLoading,
-    reviews, 
-    chatMessages, 
+    reviews,
+    chatMessages,
     blogs,
     cleaningBookings,
     estimates,
-    addRug, 
-    updateRug, 
-    deleteRug, 
-    updateOrderStatus, 
+    addRug,
+    updateRug,
+    deleteRug,
+    updateOrderStatus,
     deleteOrderPaymentDetails,
     updateCleaningBookingStatus,
     deleteCleaningBooking,
-    approveReview, 
+    approveReview,
     deleteReview,
     promoCodes,
     addPromoCode,
     deletePromoCode,
-    deleteOrder, 
+    deleteOrder,
     sendChatMessage,
     addBlogPost,
     deleteBlogPost,
@@ -180,14 +181,14 @@ const AdminWorkspace: React.FC = () => {
     if (orders.length === 0) return;
 
     const latestOrderTime = Math.max(...orders.map(o => new Date(o.createdAt).getTime()));
-    
+
     const savedTime = typeof window !== "undefined" ? sessionStorage.getItem('lastSeenOrder') : null;
     const previousTime = savedTime ? parseInt(savedTime) : 0;
-    
+
     if (localLastSeenOrder.current === null) {
       localLastSeenOrder.current = previousTime;
     }
-    
+
     if (latestOrderTime > localLastSeenOrder.current) {
       if (localLastSeenOrder.current > 0 || (Date.now() - latestOrderTime < 60000)) {
         const audio = new Audio("/coin.mp3");
@@ -196,7 +197,7 @@ const AdminWorkspace: React.FC = () => {
           alert("🔔🔔 NEW ORDER RECEIVED! 🔔🔔 (Audio blocked by browser, please click anywhere on the page first)");
         });
       }
-      
+
       localLastSeenOrder.current = latestOrderTime;
       if (typeof window !== "undefined") sessionStorage.setItem('lastSeenOrder', latestOrderTime.toString());
     } else if (localLastSeenOrder.current === 0) {
@@ -227,7 +228,7 @@ const AdminWorkspace: React.FC = () => {
   const [announcementInput, setAnnouncementInput] = useState(showroomAnnouncement);
   const [logoInput, setLogoInput] = useState(logoUrl);
   const [coverSuccess, setCoverSuccess] = useState(false);
-  
+
   const [annSuccess, setAnnSuccess] = useState(false);
   const [shopNameInput, setShopNameInput] = useState(shopProfile?.name || "");
   const [shopPhoneInput, setShopPhoneInput] = useState(shopProfile?.phone || "");
@@ -287,12 +288,15 @@ const AdminWorkspace: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   // State for dispatch carrier info modal
+  const [shippingRates, setShippingRates] = useState<Array<{id:string;provider:string;amount:string;currency:string;service:string}>>([]);
+  const [selectedShippingRate, setSelectedShippingRate] = useState("");
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
   const [shippingOrderId, setShippingOrderId] = useState<string | null>(null);
   const [shippingWeight, setShippingWeight] = useState("10");
   const [shippingLength, setShippingLength] = useState("36");
   const [shippingWidth, setShippingWidth] = useState("8");
   const [shippingHeight, setShippingHeight] = useState("8");
+  React.useEffect(()=>{setShippingRates([]);setSelectedShippingRate("");},[shippingOrderId,shippingWeight,shippingLength,shippingWidth,shippingHeight]);
   const [isGeneratingLabel, setIsGeneratingLabel] = useState(false);
 
   // State for message replies
@@ -331,6 +335,7 @@ const AdminWorkspace: React.FC = () => {
   });
   const [adminAvailabilityFilter, setAdminAvailabilityFilter] = useState("Available");
   const [adminSizeFilter, setAdminSizeFilter] = useState("All");
+  const [qualityFilter, setQualityFilter] = useState("All");
   const [adminTypeFilter, setAdminTypeFilter] = useState("All");
 
   // State for blogs
@@ -351,7 +356,7 @@ const AdminWorkspace: React.FC = () => {
 
   // Security features state
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  
+
   // Bulk select and promotions
   const [selectedRugIds, setSelectedRugIds] = useState<string[]>([]);
   const [bulkDiscountPercent, setBulkDiscountPercent] = useState<number | "">("");
@@ -390,11 +395,11 @@ const AdminWorkspace: React.FC = () => {
   // Group messages by sessionId to construct threads for the Admin CRM
   const chatThreads = useMemo(() => {
     const threadsMap: { [key: string]: { sessionId: string; customerName: string; messages: typeof chatMessages; lastTimestamp: string } } = {};
-    
+
     chatMessages.forEach((msg) => {
       const sId = msg.sessionId || "default";
       const cName = msg.customerName || "Guest Customer";
-      
+
       if (!threadsMap[sId]) {
         threadsMap[sId] = {
           sessionId: sId,
@@ -431,7 +436,7 @@ const AdminWorkspace: React.FC = () => {
     const confirmedOrders = orders.filter((o) => o.status === "Confirmed").length;
     const shippedOrders = orders.filter((o) => o.status === "Shipped").length;
     const deliveredOrders = orders.filter((o) => o.status === "Delivered").length;
-    
+
     const inventoryValue = rugs
       .filter((r) => r.availability === "In Stock")
       .reduce((sum, r) => sum + r.price, 0);
@@ -568,7 +573,7 @@ const AdminWorkspace: React.FC = () => {
       const newImages = [...prev, ...previewUrls];
       return newImages.slice(0, 15);
     });
-    
+
     setIsUploading(true);
 
     try {
@@ -576,7 +581,7 @@ const AdminWorkspace: React.FC = () => {
       for (let i = 0; i < filesToUpload.length; i++) {
         const file = filesToUpload[i];
         const tempUrl = previewUrls[i];
-        
+
         try {
           // 1. Compress image heavily on the client side
           const compressedBase64 = await compressImage(file, 600, 600, 0.6);
@@ -584,20 +589,20 @@ const AdminWorkspace: React.FC = () => {
           // Convert base64 back to Blob for Firebase Storage
           const res = await fetch(compressedBase64);
           const blob = await res.blob();
-          
+
           let finalUrl = compressedBase64;
-          
+
           if (storage) {
             try {
               // 2. Try to upload to Firebase Storage with a strict 5-second timeout
               const fileRef = ref(storage, `showroom_rugs/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`);
-              
+
               const uploadTask = async () => {
                 const snapshot = await uploadBytes(fileRef, blob);
                 return await getDownloadURL(snapshot.ref);
               };
 
-              const timeoutTask = new Promise<string>((_, reject) => 
+              const timeoutTask = new Promise<string>((_, reject) =>
                 setTimeout(() => reject(new Error("Firebase upload timeout")), 5000)
               );
 
@@ -606,7 +611,7 @@ const AdminWorkspace: React.FC = () => {
               console.warn("Firebase Storage failed or timed out, falling back to Base64", storageError);
             }
           }
-          
+
           // Replace the temporary preview URL with the final permanent URL
           setRugImages(prev => prev.map(url => url === tempUrl ? finalUrl : url));
         } catch (fileErr) {
@@ -682,17 +687,17 @@ const AdminWorkspace: React.FC = () => {
       }
 
       const data = await response.json();
-      
+
       updateOrderStatus(shippingOrderId, "Shipped", {
         carrier: data.carrier,
         trackingNumber: data.trackingNumber,
         labelUrl: data.labelUrl,
         transactionId: data.transactionId
       });
-      
+
       alert(`Label generated successfully! Tracking: ${data.trackingNumber}`);
       setShippingModalOpen(false);
-      
+
     } catch (error: any) {
       console.error("Shipping error:", error);
       alert("Error generating label: " + error.message);
@@ -730,18 +735,19 @@ const AdminWorkspace: React.FC = () => {
   const handleDispatchShipping = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shippingOrderId) return;
-    
+
     setIsGeneratingLabel(true);
-    
+
     try {
       const order = orders.find(o => o.id === shippingOrderId);
       if (!order) throw new Error("Order not found");
 
       const response = await fetch('/api/shipping/create-label', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await firebaseAuth.currentUser?.getIdToken()}` },
         body: JSON.stringify({
           orderId: order.id,
+          selectedRate: selectedShippingRate || undefined,
           customerAddress: order.customerInfo,
           dimensions: {
             weight: shippingWeight,
@@ -753,13 +759,14 @@ const AdminWorkspace: React.FC = () => {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Failed to generate label");
       }
-      
+
+      if (data.rates) { setShippingRates(data.rates); setSelectedShippingRate(""); return; }
       // Update the order locally via context (status & shipping details)
-      updateOrderStatus(order.id, "Shipped", {
+      updateOrderStatus(order.id, "Preparing for Shipping", {
         trackingNumber: data.trackingNumber,
         labelUrl: data.labelUrl,
         carrier: data.carrier,
@@ -769,13 +776,13 @@ const AdminWorkspace: React.FC = () => {
 
       alert(`Label generated successfully! Tracking: ${data.trackingNumber}`);
       setShippingModalOpen(false);
-      
+
       // Automatically open the PDF label in a new tab for printing!
       if (data.labelUrl) {
         window.open(data.labelUrl, '_blank');
       }
-      
-      
+
+
     } catch (error: any) {
       alert("Error generating label: " + error.message);
     } finally {
@@ -785,23 +792,23 @@ const AdminWorkspace: React.FC = () => {
 
   const handleRefundLabel = async (orderId: string, transactionId: string) => {
     if (!confirm("Are you sure you want to cancel this label and request a refund from Shippo?")) return;
-    
+
     try {
       const response = await fetch('/api/shipping/refund-label', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionId })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await firebaseAuth.currentUser?.getIdToken()}` },
+        body: JSON.stringify({ transactionId, orderId })
       });
-      
+
       const data = await response.json();
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Failed to refund label");
       }
-      
+
       // Revert status to 'Preparing for Shipping' and clear shipping details
       updateOrderStatus(orderId, "Preparing for Shipping");
-      
-      alert("Label successfully refunded/cancelled!");
+
+      alert("Label refund requested. Shippo will confirm whether the refund is approved.");
     } catch (error: any) {
       alert("Error refunding label: " + error.message);
     }
@@ -810,7 +817,7 @@ const AdminWorkspace: React.FC = () => {
   const handleAdminChatReply = (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminReplyText.trim()) return;
-    
+
     const activeSession = selectedSessionId || "default";
     const customerMsg = chatMessages.find(m => m.sessionId === activeSession && m.customerName);
     const customerName = customerMsg ? customerMsg.customerName : "Customer";
@@ -855,24 +862,24 @@ const AdminWorkspace: React.FC = () => {
     if (filter === "All") return true;
     if (rug.sizeCategory === filter) return true;
     if (rug.shape === filter) return true;
-    
+
     const filterLower = filter.toLowerCase();
     const isRunnerFilter = filterLower.includes("runner");
     const isRugRunner = rug.shape?.toLowerCase() === "runner" || rug.sizeCategory?.toLowerCase() === "runner";
-    
+
     if (isRunnerFilter) {
       if (filterLower === "runner" || filterLower === "runners") {
         return isRugRunner;
       }
-      
+
       const match = filterLower.match(/(\d+)\s*ft\s*runner/);
       if (match && isRugRunner) {
         const targetFt = parseInt(match[1]);
-        
+
         // Parse rug dimensions like "2'6'' x 7'9''"
         const dims = rug.dimensions || "";
         const numbers = [...dims.matchAll(/(\d+)(?:'|ft|\.)?(\d+)?(?:''|in)?/gi)];
-        
+
         let maxFt = 0;
         for (const m of numbers) {
            const ft = parseInt(m[1]) || 0;
@@ -880,44 +887,48 @@ const AdminWorkspace: React.FC = () => {
            const totalFt = ft + (inc / 12);
            if (totalFt > maxFt) maxFt = totalFt;
         }
-        
+
         // Match if within ~1.5 ft to be safe (e.g. 7'9" is ~7.75ft, matches 8ft)
         if (maxFt > 0 && Math.abs(maxFt - targetFt) <= 1.5) {
           return true;
         }
       }
     }
-    
+
     return false;
   };
 
   const filteredAdminRugs = useMemo(() => {
     return rugs.filter(r => {
-      const matchesSearch = adminSearchQuery === "" || 
-        r.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
-        r.sku.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
-        r.origin.toLowerCase().includes(adminSearchQuery.toLowerCase());
-      
+      const matchesSearch = adminSearchQuery === "" ||
+        (r.name || "").toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+        (r.sku || "").toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+        (r.origin || "").toLowerCase().includes(adminSearchQuery.toLowerCase());
+
       const matchesSize = matchesSizeLogic(r, adminSizeFilter);
-      
+
       const isMachineMade = (r.manufacturingType || "").toLowerCase().includes("machine");
       let matchesType = true;
       if (adminTypeFilter === "Handmade" && isMachineMade) matchesType = false;
       if (adminTypeFilter === "Machine-made" && !isMachineMade) matchesType = false;
-      
-      const matchesAvailability = 
+
+      const matchesAvailability =
         adminAvailabilityFilter === "All" ||
         (adminAvailabilityFilter === "Available" && r.availability === "In Stock") ||
         (adminAvailabilityFilter === "On Hold" && (r.availability === "Reserved" || r.availability === "On Hold")) ||
         (adminAvailabilityFilter === "Sold" && r.availability === "Sold");
-      
-      return matchesSearch && matchesSize && matchesType && matchesAvailability;
-    }).sort((a, b) => listingSort === 'price-low' ? a.price - b.price : listingSort === 'price-high' ? b.price - a.price : a.name.localeCompare(b.name));
-  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter, listingSort]);
+
+      const matchesQuality = qualityFilter === 'All' ||
+        (qualityFilter === 'photos' && !r.images?.length) ||
+        (qualityFilter === 'dimensions' && !r.dimensions?.trim()) ||
+        (qualityFilter === 'description' && !r.description?.trim());
+      return matchesQuality && matchesSearch && matchesSize && matchesType && matchesAvailability;
+    }).sort((a, b) => listingSort === 'price-low' ? a.price - b.price : listingSort === 'price-high' ? b.price - a.price : (a.name || "").localeCompare(b.name || ""));
+  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter, listingSort, qualityFilter]);
 
   return (
     <div className={portal.shell}>
-      
+
       <button className={portal.mobileToggle} aria-expanded={navigationOpen} onClick={()=>setNavigationOpen(!navigationOpen)}>☰ Dashboard menu</button>
       {/* 1. Sidebar Nav */}
       <aside className={portal.sidebar} data-open={navigationOpen}>
@@ -932,17 +943,9 @@ const AdminWorkspace: React.FC = () => {
             </div>
           </div>
 
-          <nav className="space-y-1.5 text-xs">
-            {allowed('promotions') && (<button
-              onClick={() => setActiveTab("promotions")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
-                activeTab === "promotions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <Tag className="h-4.5 w-4.5" />
-              <span>Promotions</span>
-            </button>)}
-            {allowed('analytics') && (<button
+          <nav className="space-y-1.5 text-sm" aria-label="Admin sections">
+{(allowed('analytics') || allowed('transactions')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Overview</p>}
+{allowed('analytics') && (<button
               onClick={() => setActiveTab("analytics")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "analytics" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -951,39 +954,19 @@ const AdminWorkspace: React.FC = () => {
               <BarChart3 className="h-4.5 w-4.5" />
               <span>Overview</span>
             </button>)}
-            
-            {allowed('inventory') && (<button
-              onClick={() => setActiveTab("inventory")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
-                activeTab === "inventory" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+{allowed('transactions') && (<button
+              onClick={() => setActiveTab("transactions")}
+              className={`w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "transactions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
-              <Layers className="h-4.5 w-4.5" />
-              <span>Inventory</span>
+              <div className="flex items-center gap-3">
+                <Banknote className="h-4.5 w-4.5" />
+                <span>Transactions</span>
+              </div>
             </button>)}
-            
-            {allowed('bulk_import') && (<button
-              onClick={() => setActiveTab("bulk_import")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
-                activeTab === "bulk_import" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <UploadCloud className="h-4.5 w-4.5" />
-              <span>Bulk Import</span>
-            </button>)}
-            
-            
-            {allowed('crm') && (<button
-              onClick={() => setActiveTab("crm")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
-                activeTab === "crm" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <Users className="h-4.5 w-4.5" />
-              <span>Customers</span>
-            </button>)}
-            
-            {allowed('orders') && (<button
+{(allowed('orders') || allowed('crm') || allowed('messages')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Sales</p>}
+{allowed('orders') && (<button
               onClick={() => setActiveTab("orders")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "orders" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -996,85 +979,16 @@ const AdminWorkspace: React.FC = () => {
                 <ActivityBadge count={dynamicAnalytics.pendingOrders} />
               )}
             </button>)}
-
-            {allowed('cleaning') && (<button
-              onClick={() => setActiveTab("cleaning")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                activeTab === "cleaning" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+{allowed('crm') && (<button
+              onClick={() => setActiveTab("crm")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "crm" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
               }`}
             >
-              <Brush className="h-4.5 w-4.5" />
-              <span>Cleaning & repairs</span>
-              {cleaningBookings.filter(b => b.status === "Pending").length > 0 && (
-                <ActivityBadge count={cleaningBookings.filter(b => b.status === "Pending").length} />
-              )}
+              <Users className="h-4.5 w-4.5" />
+              <span>Customers</span>
             </button>)}
-
-            {allowed('estimates') && (<button
-              onClick={() => setActiveTab("estimates")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                activeTab === "estimates" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <Calculator className="h-4.5 w-4.5" />
-              <span>Service Estimates</span>
-              {estimates && estimates.filter(e => e.status === "New").length > 0 && (
-                <ActivityBadge count={estimates.filter(e => e.status === "New").length} />
-              )}
-            </button>)}
-            
-            {allowed('appointments') && (<button
-              onClick={() => setActiveTab("appointments")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                activeTab === "appointments" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <Calendar className="h-4.5 w-4.5" />
-              <span>Appointments</span>
-              <ActivityBadge count={pendingAppointments} />
-            </button>)}
-            
-            {allowed('appraisals') && (<button 
-              onClick={() => setActiveTab("appraisals")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                activeTab === "appraisals" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <FileText size={18} /> <span>Appraisals</span>
-            </button>)}
-              
-            {allowed('employees') && (<button 
-              onClick={() => setActiveTab("employees")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                activeTab === "employees" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <Users size={18} /> <span>Employees</span>
-            </button>)}
-
-            {allowed('clock') && (<button 
-              onClick={() => setActiveTab("clock")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                activeTab === "clock" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <Clock size={18} /> <span>Time Clock</span>
-            </button>)}
-            
-            {allowed('reviews') && (<button
-              onClick={() => setActiveTab("reviews")}
-              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
-                activeTab === "reviews" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <Star className="h-4.5 w-4.5" />
-              <span>Customer reviews</span>
-              {reviews.filter(r => !r.isApproved).length > 0 && (
-                <ActivityBadge count={reviews.filter(r => !r.isApproved).length} />
-              )}
-            </button>)}
-            
-            {allowed('messages') && (<button
+{allowed('messages') && (<button
               onClick={() => setActiveTab("messages")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
                 activeTab === "messages" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1086,8 +1000,108 @@ const AdminWorkspace: React.FC = () => {
                 <ActivityBadge count={unreadMessagesCount} />
               )}
             </button>)}
-            
-            {allowed('blogs') && (<button
+{(allowed('inventory') || allowed('bulk_import') || allowed('promotions')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Inventory</p>}
+{allowed('inventory') && (<button
+              onClick={() => setActiveTab("inventory")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "inventory" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Layers className="h-4.5 w-4.5" />
+              <span>Inventory</span>
+            </button>)}
+{allowed('bulk_import') && (<button
+              onClick={() => setActiveTab("bulk_import")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "bulk_import" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <UploadCloud className="h-4.5 w-4.5" />
+              <span>Bulk Import</span>
+            </button>)}
+{allowed('promotions') && (<button
+              onClick={() => setActiveTab("promotions")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === "promotions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Tag className="h-4.5 w-4.5" />
+              <span>Promotions</span>
+            </button>)}
+{(allowed('cleaning') || allowed('estimates') || allowed('appointments') || allowed('appraisals')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Services</p>}
+{allowed('cleaning') && (<button
+              onClick={() => setActiveTab("cleaning")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "cleaning" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Brush className="h-4.5 w-4.5" />
+              <span>Cleaning & repairs</span>
+              {cleaningBookings.filter(b => b.status === "Pending").length > 0 && (
+                <ActivityBadge count={cleaningBookings.filter(b => b.status === "Pending").length} />
+              )}
+            </button>)}
+{allowed('estimates') && (<button
+              onClick={() => setActiveTab("estimates")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "estimates" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Calculator className="h-4.5 w-4.5" />
+              <span>Service Estimates</span>
+              {estimates && estimates.filter(e => e.status === "New").length > 0 && (
+                <ActivityBadge count={estimates.filter(e => e.status === "New").length} />
+              )}
+            </button>)}
+{allowed('appointments') && (<button
+              onClick={() => setActiveTab("appointments")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "appointments" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Calendar className="h-4.5 w-4.5" />
+              <span>Appointments</span>
+              <ActivityBadge count={pendingAppointments} />
+            </button>)}
+{allowed('appraisals') && (<button
+              onClick={() => setActiveTab("appraisals")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "appraisals" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <FileText size={18} /> <span>Appraisals</span>
+            </button>)}
+{(allowed('employees') || allowed('clock')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Team</p>}
+{allowed('employees') && (<button
+              onClick={() => setActiveTab("employees")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "employees" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Users size={18} /> <span>Employees</span>
+            </button>)}
+{allowed('clock') && (<button
+              onClick={() => setActiveTab("clock")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "clock" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Clock size={18} /> <span>Time Clock</span>
+            </button>)}
+{(allowed('reviews') || allowed('blogs') || allowed('builder') || allowed('settings')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Website</p>}
+{allowed('reviews') && (<button
+              onClick={() => setActiveTab("reviews")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "reviews" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Star className="h-4.5 w-4.5" />
+              <span>Customer reviews</span>
+              {reviews.filter(r => !r.isApproved).length > 0 && (
+                <ActivityBadge count={reviews.filter(r => !r.isApproved).length} />
+              )}
+            </button>)}
+{allowed('blogs') && (<button
               onClick={() => setActiveTab("blogs")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "blogs" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1096,30 +1110,7 @@ const AdminWorkspace: React.FC = () => {
               <BookOpen className="h-4.5 w-4.5" />
               <span>Design Journal</span>
             </button>)}
-            
-
-            {allowed('transactions') && (<button
-              onClick={() => setActiveTab("transactions")}
-              className={`w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
-                activeTab === "transactions" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Banknote className="h-4.5 w-4.5" />
-                <span>Transactions</span>
-              </div>
-            </button>)}
-            <a
-              href="/admin/invoices"
-              className="w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer text-gray-300 hover:bg-white/10 hover:text-white"
-            >
-              <div className="flex items-center gap-3">
-                <FileText className="h-4.5 w-4.5" />
-                <span>Invoice System</span>
-              </div>
-            </a>
-            
-            {allowed('builder') && (<button
+{allowed('builder') && (<button
               onClick={() => setActiveTab("builder")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "builder" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1128,8 +1119,7 @@ const AdminWorkspace: React.FC = () => {
               <Layout className="h-4.5 w-4.5" />
               <span>Website Editor</span>
             </button>)}
-            
-            {allowed('settings') && (<button
+{allowed('settings') && (<button
               onClick={() => setActiveTab("settings")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
                 activeTab === "settings" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
@@ -1138,7 +1128,7 @@ const AdminWorkspace: React.FC = () => {
               <Settings className="h-4.5 w-4.5" />
               <span>General Settings</span>
             </button>)}
-          {allowed('users') && <button className="w-full text-left px-4 py-3" onClick={()=>setActiveTab('users')}><Users className="inline h-4 w-4 mr-2"/>Users & Permissions</button>}
+{allowed('users') && <button className="w-full text-left px-4 py-3" onClick={()=>setActiveTab('users')}><Users className="inline h-4 w-4 mr-2"/>Users & Permissions</button>}
 <a className="block px-4 py-3" href="/staff-account">My account / password</a>
 </nav>
         </div>
@@ -1151,7 +1141,7 @@ const AdminWorkspace: React.FC = () => {
 
       {/* 2. Main Workspace */}
       <main className={portal.main}>
-        
+
         {/* Workspace banner info */}
         <div className="bg-white p-6 rounded-none shadow-sm border border-editorial-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-left">
           <div className="space-y-1">
@@ -1175,7 +1165,7 @@ const AdminWorkspace: React.FC = () => {
               {activeTab === "settings" && "General Settings & Security"}
             </h1>
           </div>
-          
+
           <div className="text-right text-xs">
             <span className="text-gray-400 block font-semibold uppercase">Signed in as:</span>
             <span className="font-bold text-editorial-text font-mono">{staff?.email}</span>
@@ -1188,7 +1178,7 @@ const AdminWorkspace: React.FC = () => {
         {activeTab === "transactions" && allowed('transactions') && (
           <div className="space-y-6 animate-fadeIn text-left">
             <h2 className="text-xl font-serif text-editorial-text border-b border-editorial-border pb-2">Transactions Ledger</h2>
-            
+
             <div className="bg-white p-6 border border-editorial-border shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500 block mb-1">Total System Revenue</span>
@@ -1259,7 +1249,7 @@ const AdminWorkspace: React.FC = () => {
         {activeTab === "appointments" && allowed('appointments') && (
           <AppointmentsAdminTab />
         )}
-        
+
 {/* --- TAB: APPRAISALS --- */}
         {activeTab === "appraisals" && allowed('appraisals') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
@@ -1325,8 +1315,8 @@ const AdminWorkspace: React.FC = () => {
                 </div>
                 <div className="flex flex-col justify-end pb-2">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={promoOneTime}
                       onChange={(e) => setPromoOneTime(e.target.checked)}
                       className="rounded-none border-gray-300 text-editorial-accent focus:ring-editorial-accent"
@@ -1410,7 +1400,7 @@ const AdminWorkspace: React.FC = () => {
              <WebsiteBuilder />
           </div>
         )}
-        
+
 {/* --- TAB: SETTINGS --- */}
         {activeTab === "settings" && allowed('settings') && (
           <div className="space-y-6">
@@ -1422,14 +1412,14 @@ const AdminWorkspace: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs font-sans">
-                
+
                 {/* Store Logo Customizer */}
                 <div className="space-y-3">
                   <h4 className="font-bold text-neutral-800 uppercase tracking-wide text-sm">Store Logo</h4>
                   <p className="text-gray-400 text-xs leading-relaxed font-light">
                     Upload or link a logo image for the navigation bar and invoices. Leave blank to use text.
                   </p>
-                  
+
                   <div className="space-y-2">
                     <div className="flex gap-2">
                       <input
@@ -1443,7 +1433,7 @@ const AdminWorkspace: React.FC = () => {
                         className="flex-1 bg-stone-50 border border-neutral-200 rounded py-2 px-3 outline-none focus:border-editorial-accent text-sm font-mono"
                       />
                       <label className="flex items-center justify-center px-3 py-2 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 rounded text-neutral-600 text-xs font-bold uppercase tracking-wider cursor-pointer transition whitespace-nowrap">
-                        <Upload className="h-3 w-3 mr-1.5" /> 
+                        <Upload className="h-3 w-3 mr-1.5" />
                         <span>Upload PC</span>
                         <input
                           type="file"
@@ -1455,7 +1445,7 @@ const AdminWorkspace: React.FC = () => {
                               setLogoInput("Uploading...");
                               try {
                                 const compressedBase64 = await compressImage(file, 400, 400, 0.8);
-                                
+
                                 let finalUrl = compressedBase64;
                                 if (storage) {
                                   try {
@@ -1468,7 +1458,7 @@ const AdminWorkspace: React.FC = () => {
                                     console.warn("Storage upload failed, keeping base64 fallback", storageError);
                                   }
                                 }
-                                
+
                                 setLogoInput(finalUrl);
                                 setLogoUrl(finalUrl);
                                 setLogoSuccess(true);
@@ -1493,7 +1483,7 @@ const AdminWorkspace: React.FC = () => {
                         setLogoSuccess(true);
                         setTimeout(() => setLogoSuccess(false), 3000);
                       }}
-                      
+
                       className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
                     >
                       Apply Logo
@@ -1510,7 +1500,7 @@ const AdminWorkspace: React.FC = () => {
                   <p className="text-gray-400 text-xs leading-relaxed font-light">
                     Upload or paste up to 3 high-resolution images for the homepage slider.
                   </p>
-                  
+
                   <div className="space-y-4">
                     {[0, 1, 2].map(index => (
                       <div key={index} className="space-y-2 pb-3 border-b border-neutral-100 last:border-0 last:pb-0">
@@ -1522,7 +1512,7 @@ const AdminWorkspace: React.FC = () => {
                                   <img src={coverPhotoInputs[index]} alt="Preview" className="h-6 w-8 object-cover rounded shadow-sm" />
                                   <span className="text-sm text-emerald-600 font-bold truncate">✓ Local Photo Uploaded</span>
                                 </div>
-                                <button 
+                                <button
                                   type="button"
                                   onClick={() => {
                                     setCoverPhotoInputs(prev => {
@@ -1551,7 +1541,7 @@ const AdminWorkspace: React.FC = () => {
                               />
                             )}
                           <label className="flex items-center justify-center px-3 py-2 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 rounded text-neutral-600 text-xs font-bold uppercase tracking-wider cursor-pointer transition whitespace-nowrap">
-                            <Upload className="h-3 w-3 mr-1.5" /> 
+                            <Upload className="h-3 w-3 mr-1.5" />
                             <span>Upload PC</span>
                             <input
                               type="file"
@@ -1567,11 +1557,11 @@ const AdminWorkspace: React.FC = () => {
                                     tempInputs[index] = tempUrl;
                                     return tempInputs;
                                   });
-                                  
+
                                   try {
                                     const compressedBase64 = await compressImage(file, 1600, 1200, 0.8);
                                     let finalUrl = compressedBase64;
-                                    
+
                                     if (storage) {
                                       try {
                                         const res = await fetch(compressedBase64);
@@ -1584,7 +1574,7 @@ const AdminWorkspace: React.FC = () => {
                                           alert("LIVE FIREBASE STORAGE ERROR (Images): " + (firebaseErr as Error).message + " -> Falling back to Base64...");
                                       }
                                     }
-                                    
+
                                     setCoverPhotoInputs(prev => {
                                       const updated = [...prev];
                                       updated[index] = finalUrl;
@@ -1615,7 +1605,7 @@ const AdminWorkspace: React.FC = () => {
                         setCoverSuccess(true);
                         setTimeout(() => setCoverSuccess(false), 3000);
                       }}
-                      
+
                       className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
                     >
                       Apply All Photos
@@ -1632,7 +1622,7 @@ const AdminWorkspace: React.FC = () => {
                   <p className="text-gray-400 text-xs leading-relaxed font-light">
                     Write a custom notification to announce sales, free shipping, private exhibition events, or newly imported tribal stock. Clear the text to hide the announcement completely.
                   </p>
-                  
+
                   <div className="space-y-2">
                     <textarea
                       rows={2}
@@ -1654,7 +1644,7 @@ const AdminWorkspace: React.FC = () => {
                         setAnnSuccess(true);
                         setTimeout(() => setAnnSuccess(false), 3000);
                       }}
-                      
+
                       className="py-1.5 px-4 font-bold uppercase tracking-wider text-xs transition bg-neutral-900 hover:bg-neutral-850 text-amber-400 cursor-pointer"
                     >
                       Save Announcement
@@ -1691,7 +1681,7 @@ const AdminWorkspace: React.FC = () => {
               <p className="text-gray-400 text-xs leading-relaxed font-light">
                 Configure the social media links displayed in the website header and footer. Leave the URL blank to hide the icon.
               </p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-sans">
                 {socialLinks.map((link, idx) => (
                   <div key={link.platform} className="space-y-1">
@@ -1800,15 +1790,15 @@ const AdminWorkspace: React.FC = () => {
               <div className="flex flex-wrap items-center gap-3">
                 <button type="button" role="switch" aria-checked={showListingStats} aria-label="Show listing stats" onClick={toggleListingStats} className={listingStyles.toggle}>Stats {showListingStats ? 'On' : 'Off'}</button>
                 <div className="flex items-center bg-stone-100 rounded-lg p-1 border border-stone-200">
-                  <button 
-                    onClick={() => setInventoryViewMode("list")} 
+                  <button
+                    onClick={() => setInventoryViewMode("list")}
                     className={`p-1.5 rounded-md transition ${inventoryViewMode === 'list' ? 'bg-white shadow text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
                     title="List View"
                   >
                     <List size={16} />
                   </button>
-                  <button 
-                    onClick={() => setInventoryViewMode("gallery")} 
+                  <button
+                    onClick={() => setInventoryViewMode("gallery")}
                     className={`p-1.5 rounded-md transition ${inventoryViewMode === 'gallery' ? 'bg-white shadow text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
                     title="Gallery View"
                   >
@@ -1870,6 +1860,10 @@ const AdminWorkspace: React.FC = () => {
                 </select>
               </div>
               <div className="space-y-1">
+                <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider" htmlFor="listing-quality">Listing completeness</label>
+                <select id="listing-quality" value={qualityFilter} onChange={e => setQualityFilter(e.target.value)} className="w-full border border-neutral-200 rounded-lg py-2 px-3 text-sm">
+                  <option value="All">All listings</option><option value="photos">Missing photos</option><option value="dimensions">Missing dimensions</option><option value="description">Missing description</option>
+                </select>
                 <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider">Availability</label>
                 <select
                   value={adminAvailabilityFilter}
@@ -1894,21 +1888,21 @@ const AdminWorkspace: React.FC = () => {
                     {selectedRugIds.length > 0 && (
                       <div className="flex items-center gap-2 border-l border-neutral-300 pl-4">
                         <div className="flex items-center gap-1">
-                          <input 
-                            type="number" 
-                            min="1" max="99" 
-                            value={bulkDiscountPercent} 
+                          <input
+                            type="number"
+                            min="1" max="99"
+                            value={bulkDiscountPercent}
                             onChange={(e) => setBulkDiscountPercent(Number(e.target.value))}
                             placeholder="% Off"
                             className="w-20 bg-white border border-neutral-200 rounded px-2 py-1 outline-none text-sm focus:border-editorial-accent"
                           />
-                          <button 
+                          <button
                             onClick={() => {
                               if (!bulkDiscountPercent || bulkDiscountPercent <= 0 || bulkDiscountPercent >= 100) {
                                 alert("Please enter a valid percentage between 1 and 99");
                                 return;
                               }
-                              
+
                               selectedRugIds.forEach(id => {
                                 const rug = rugs.find(r => r.id === id);
                                 if (rug) {
@@ -1928,7 +1922,7 @@ const AdminWorkspace: React.FC = () => {
                             Apply Sale
                           </button>
                         </div>
-                        <button 
+                        <button
                           onClick={() => {
                             selectedRugIds.forEach(id => {
                               const rug = rugs.find(r => r.id === id);
@@ -1945,7 +1939,7 @@ const AdminWorkspace: React.FC = () => {
                         >
                           Remove Sale
                         </button>
-                        <button 
+                        <button
                           onClick={() => {
                             if (confirm(`Are you sure you want to completely delete ${selectedRugIds.length} rug(s)? This will also permanently delete all associated images from storage.`)) {
                               selectedRugIds.forEach(id => {
@@ -1976,7 +1970,7 @@ const AdminWorkspace: React.FC = () => {
                       <div key={r.id} className="bg-white border border-neutral-200 rounded-lg shadow-sm hover:shadow-md transition overflow-hidden flex flex-col relative group">
                         {/* Checkbox overlay */}
                         <div className="absolute top-2 left-2 z-10">
-                          <input 
+                          <input
                             type="checkbox"
                             checked={selectedRugIds.includes(r.id)}
                             onChange={(e) => {
@@ -2014,7 +2008,7 @@ const AdminWorkspace: React.FC = () => {
                             </div>
                           </div>
                           <p className="text-xs text-neutral-500 font-mono mb-2">SKU: {r.sku}</p>
-                          
+
                           <div className="flex items-center gap-2 mb-4 flex-wrap">
                             {(r.manufacturingType || "").toLowerCase().includes("machine") ? (
                                 <span className="px-1.5 py-0.5 bg-stone-100 text-stone-600 text-[9px] font-bold rounded-sm border border-stone-200">MACHINE</span>
@@ -2052,7 +2046,7 @@ const AdminWorkspace: React.FC = () => {
                 <thead>
                   <tr className="border-b border-neutral-200 uppercase tracking-wider text-sm text-neutral-400 font-semibold bg-stone-50">
                     <th className="py-3 px-4 w-12 text-center">
-                      <input 
+                      <input
                         type="checkbox"
                         checked={selectedRugIds.length > 0 && selectedRugIds.length === filteredAdminRugs.length}
                         onChange={(e) => {
@@ -2091,7 +2085,7 @@ const AdminWorkspace: React.FC = () => {
                     return filteredAdminRugs.map((r) => (
                       <tr key={r.id} className="hover:bg-stone-50 transition">
                         <td className="py-3 px-4 text-center">
-                            <input 
+                            <input
                               type="checkbox"
                               checked={selectedRugIds.includes(r.id)}
                               onChange={(e) => {
@@ -2188,11 +2182,11 @@ const AdminWorkspace: React.FC = () => {
           <BulkImport />
         )}
 
-        
+
         {activeTab === "crm" && allowed('crm') && (
           <CRMAdminTab />
         )}
-        
+
         {/* --- TAB C: ORDER MANAGEMENT (CUSTOMER ORDERS) --- */}
 
         {activeTab === "orders" && allowed('orders') && (
@@ -2214,18 +2208,18 @@ const AdminWorkspace: React.FC = () => {
               <div className="space-y-4">
                 {(() => {
                   const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                  
+
                   const filteredOrders = sortedOrders.filter(o => {
                     const searchLower = orderSearchQuery.toLowerCase();
-                    const matchesSearch = 
-                      !orderSearchQuery || 
+                    const matchesSearch =
+                      !orderSearchQuery ||
                       o.id.toLowerCase().includes(searchLower) ||
                       o.customerInfo.name.toLowerCase().includes(searchLower) ||
                       o.customerInfo.phone.toLowerCase().includes(searchLower) ||
                       o.customerInfo.email.toLowerCase().includes(searchLower) ||
                       (o.shippingDetails?.trackingNumber && o.shippingDetails.trackingNumber.toLowerCase().includes(searchLower));
 
-                    const matchesStatus = 
+                    const matchesStatus =
                       orderStatusFilter === "All" ||
                       (orderStatusFilter === "Active" && o.status !== "Delivered" && o.status !== "Cancelled") ||
                       (orderStatusFilter === "Shipped" && o.status === "Shipped") ||
@@ -2239,9 +2233,9 @@ const AdminWorkspace: React.FC = () => {
                   const isExpanded = expandedOrderId === o.id;
                   return (
                   <div key={o.id} className="p-5 bg-stone-50 rounded-2xl border border-neutral-200/60 shadow-sm transition-all duration-300">
-                    
+
                     {/* Header bar */}
-                    <div 
+                    <div
                       onClick={() => setExpandedOrderId(isExpanded ? null : o.id)}
                       className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer hover:opacity-80 transition ${isExpanded ? "border-b border-neutral-200 pb-4 mb-4" : ""}`}
                     >
@@ -2278,7 +2272,7 @@ const AdminWorkspace: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="text-neutral-400 self-center hidden sm:flex justify-center items-center">
                         {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                       </div>
@@ -2289,7 +2283,7 @@ const AdminWorkspace: React.FC = () => {
 
                     {/* Middle grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-left">
-                      
+
                       {/* Address */}
                       <div className="space-y-1 relative group">
                         <div className="flex justify-between items-start">
@@ -2355,7 +2349,7 @@ const AdminWorkspace: React.FC = () => {
                       {/* Actions workflow */}
                       <div className="space-y-2 bg-white p-4 rounded-xl border border-neutral-200/50 flex flex-col justify-between">
                         <span className="text-sm uppercase tracking-wider text-neutral-400 font-bold block">Advisory Workflows</span>
-                        
+
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           {o.status === "Pending Confirmation" && (
                             <button
@@ -2415,7 +2409,7 @@ const AdminWorkspace: React.FC = () => {
                               >
                                 <span>Mark Delivered</span>
                               </button>
-                              
+
                               {o.shippingDetails?.labelUrl && (
                                 <button
                                   onClick={() => window.open(o.shippingDetails!.labelUrl!, "_blank")}
@@ -2466,19 +2460,19 @@ const AdminWorkspace: React.FC = () => {
                                 </a>
                               )}
                             </div>
-                            
+
                             {/* Live Tracking Feature */}
                             {o.shippingDetails.carrier && o.shippingDetails.trackingNumber && (
-                              <LiveTrackingButton 
-                                carrier={o.shippingDetails.carrier} 
-                                trackingNumber={o.shippingDetails.trackingNumber} 
+                              <LiveTrackingButton
+                                carrier={o.shippingDetails.carrier}
+                                trackingNumber={o.shippingDetails.trackingNumber}
                                 orderId={o.id}
                                 currentOrderStatus={o.status}
                               />
                             )}
                           </>
                         )}
-                        
+
                         <div className="pt-2 border-t border-neutral-100 flex gap-2 mt-auto">
                           <button
                             type="button"
@@ -2492,11 +2486,11 @@ const AdminWorkspace: React.FC = () => {
                             type="button"
                             onClick={async () => {
                               try {
-                                alert('Sending invoice via SendGrid...');
+                                alert('Sending invoice email...');
                                 const res = await fetch('/api/notify-order', {
                                   method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ order: o, shopProfile, type: 'invoice' })
+                                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await firebaseAuth.currentUser?.getIdToken()}` },
+                                  body: JSON.stringify({ orderId: o.id, type: 'invoice' })
                                 });
                                 if (res.ok) alert('Invoice Email Sent Successfully!');
                                 else alert('Failed to send email.');
@@ -2508,6 +2502,7 @@ const AdminWorkspace: React.FC = () => {
                           >
                             <Mail className="h-3.5 w-3.5" />
                             <span>Email Invoice</span>
+                            <small className="block text-xs normal-case">{(o as any).notificationStatus?.invoice === "sent" ? "Last email sent" : (o as any).notificationStatus?.invoice === "failed" || (o as any).notificationStatus?.invoice === "error" ? "Last attempt failed — retry" : ""}</small>
                           </button>
                           <button
                             type="button"
@@ -2795,7 +2790,7 @@ const AdminWorkspace: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveRug} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs font-sans">
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Rug Name</label>
@@ -2842,7 +2837,7 @@ const AdminWorkspace: React.FC = () => {
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500"
                   />
                 </div>
-                
+
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Type</label>
                   <select
@@ -3114,7 +3109,7 @@ const AdminWorkspace: React.FC = () => {
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Shipping Offer</label>
                   <label className="flex items-center gap-2 mt-2 cursor-pointer h-full pb-2">
-                    <input 
+                    <input
                       type="checkbox"
                       checked={rugIsFreeShipping}
                       onChange={(e) => setRugIsFreeShipping(e.target.checked)}
@@ -3152,7 +3147,7 @@ const AdminWorkspace: React.FC = () => {
                               <span className="bg-stone-800/80 text-white text-xs font-bold px-1.5 py-0.5 shadow-xs">Photo {index + 1}</span>
                             )}
                           </div>
-                          
+
                           <button
                             type="button"
                             onClick={() => handleRemoveImage(index)}
@@ -3253,14 +3248,14 @@ const AdminWorkspace: React.FC = () => {
                     type="button"
                     onClick={() => {
                       const ageText = rugAge.includes('Vintage') ? 'vintage' : rugAge.includes('Antique') ? 'antique' : 'contemporary';
-                      
+
                       const openings = [
                         `This exquisite ${ageText} ${rugStyle} rug, masterfully hand-crafted in ${rugOrigin}, brings timeless elegance to any interior space.`,
                         `Presenting a remarkable ${ageText} ${rugStyle} masterpiece originating from ${rugOrigin}, showcasing true artisanal heritage.`,
                         `Discover the charm of this authentic ${ageText} ${rugStyle} rug, a beautiful testament to the weaving traditions of ${rugOrigin}.`,
                         `An exceptional piece of history, this ${ageText} ${rugStyle} rug from ${rugOrigin} offers unparalleled aesthetic appeal.`
                       ];
-                      
+
                       const bodies = [
                         `Measuring ${rugDimensions}, this piece features a breathtaking palette of ${rugColors}. Woven from ${rugMaterial.toLowerCase()}, its ${rugCondition.toLowerCase()} condition speaks to its enduring quality and expert craftsmanship.`,
                         `With dimensions of ${rugDimensions}, it boasts a striking array of ${rugColors}. The premium ${rugMaterial.toLowerCase()} construction and ${rugCondition.toLowerCase()} condition ensure it remains a focal point for generations.`,
@@ -3281,14 +3276,14 @@ const AdminWorkspace: React.FC = () => {
 
                       // If the user already wrote some notes, incorporate them!
                       const userNotes = rugDescription.trim();
-                      
+
                       let finalDesc = "";
                       if (userNotes.length > 0) {
                         finalDesc = `${userNotes}\n\n${opening} ${body} ${closing}`;
                       } else {
                         finalDesc = `${opening} ${body} ${closing}`;
                       }
-                      
+
                       setRugDescription(finalDesc);
                     }}
                     className="flex items-center text-xs text-editorial-accent hover:text-amber-600 font-bold transition"
@@ -3333,7 +3328,7 @@ const AdminWorkspace: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-neutral-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-left">
             <div className="px-6 py-4 bg-stone-50 border-b border-neutral-200 flex justify-between items-center">
-              <h3 className="font-serif font-bold text-neutral-900 text-sm">Insured Carrier Dispatch Details</h3>
+              <h3 className="font-serif font-bold text-neutral-900 text-sm">Shipping label details</h3>
               <button onClick={() => setShippingModalOpen(false)} className="p-1 text-neutral-400 hover:text-neutral-600"><X className="h-5 w-5" /></button>
             </div>
 
@@ -3386,6 +3381,13 @@ const AdminWorkspace: React.FC = () => {
                 </div>
               </div>
 
+              {shippingRates.length > 0 && <label className="block text-sm font-semibold">Choose a shipping service
+                <select aria-label="Shipping service" value={selectedShippingRate} onChange={e=>setSelectedShippingRate(e.target.value)} className="mt-2 w-full border rounded p-2">
+                  <option value="">Select a rate to purchase</option>
+                  {shippingRates.map(rate=><option key={rate.id} value={rate.id}>{rate.provider} · {rate.service} · ${rate.amount} {rate.currency}</option>)}
+                </select>
+                <span className="block mt-2 font-normal">Purchasing creates a label. It does not mark the package shipped.</span>
+              </label>}
               <button
                 type="submit"
                 disabled={isGeneratingLabel}
@@ -3396,7 +3398,7 @@ const AdminWorkspace: React.FC = () => {
                 ) : (
                   <>
                     <Truck className="h-4 w-4" />
-                    <span>Generate Label & Dispatch</span>
+                    <span>{selectedShippingRate ? 'Confirm & purchase label' : 'Get shipping rates'}</span>
                   </>
                 )}
               </button>
@@ -3483,8 +3485,8 @@ const AdminWorkspace: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-left border border-neutral-200">
             <div className="px-6 py-4 bg-stone-50 border-b border-neutral-200 flex justify-between items-center">
               <h3 className="font-serif font-bold text-neutral-900 text-sm">{confirmModal.title}</h3>
-              <button 
-                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))} 
+              <button
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
                 className="p-1 text-neutral-400 hover:text-neutral-600 cursor-pointer"
               >
                 <X className="h-5 w-5" />

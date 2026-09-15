@@ -73,8 +73,8 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
             feed.push({
                 id: `booking-${booking.id}`,
                 type: 'booking',
-                title: `Service: ${booking.serviceType || 'Wash'}`,
-                subtitle: `${booking.customerName} requested service.`,
+                title: `Service: ${booking.serviceOption || 'Cleaning'}`,
+                subtitle: `${booking.fullName} requested service.`,
                 date: new Date(booking.createdAt),
                 link: '/?view=admin&adminTab=cleaning',
                 icon: <AlertCircle size={20} />,

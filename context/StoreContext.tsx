@@ -1,3 +1,4 @@
+import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import {recordListingActivity} from "@/lib/record-listing-activity";
 import {chatRequest} from "@/lib/chat-client";
 /**
@@ -92,7 +93,7 @@ interface StoreContextType {
   clearCart: () => void;
   
   // Checkout operations
-  checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number, appliedPromo?: PromoCode, discountAmount?: number) => Order;
+  checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number, appliedPromo?: PromoCode, discountAmount?: number) => Promise<Order>;
   
   // Admin Operations
   addRug: (rug: Omit<Rug, "id" | "rating">) => void;
@@ -513,7 +514,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- Checkout Flow ---
-  const checkout = (
+  const checkout = async (
     customer: CustomerInfo,
     payment: PaymentDetails,
     deliveryOption: "Pickup" | "Delivery",
@@ -522,14 +523,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     totalWeightLbs?: number,
     appliedPromo?: PromoCode,
     discountAmount?: number
-  ): Order => {
+  ): Promise<Order> => {
     const subtotal = cart.reduce((sum, item) => sum + item.rug.price * item.quantity, 0);
     const total = subtotal + shipping + tax;
     
     if(!auth.currentUser)throw new Error("Please wait for the secure connection and retry.");
     const newOrder: Order = {
       customerId: auth.currentUser.uid,
-      id: `MPR-${Math.floor(100000 + Math.random() * 90000).toString()}`,
+      id: `MPR-${crypto.randomUUID()}`,
       customerInfo: customer,
       cartItems: [...cart],
       subtotal,
@@ -545,17 +546,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString()
     };
 
-    // Add new order to Firebase
-    addShowroomDoc(SHOWROOM_ORDERS, newOrder);
-    
-    // Trigger Email/SMS notifications automatically
-    const emailConfig = getEmailConfig();
-    fetch('/api/notify-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order: newOrder, shopProfile, emailConfig })
-    }).catch(err => console.error('Notification trigger failed:', err));
-    
+    // Notify only after persistence succeeds; never send credentials from the browser.
+    const currentUser = auth.currentUser;
+    await addShowroomDoc(SHOWROOM_ORDERS, newOrder);
+    void (async () => {
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/api/notify-order', {
+        method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${token}`},
+        body:JSON.stringify({orderId:newOrder.id})
+      });
+      if (!response.ok) console.warn('Order saved; email needs attention in order management.');
+    })().catch(() => console.warn('Order saved; notification needs attention.'));
+
     if (appliedPromo && appliedPromo.oneTimeUse) {
       updatePromoCode(appliedPromo.id, {
         isActive: false,
@@ -865,12 +867,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // --- INACTIVITY TIMEOUT (SHOWROOM) ---
     let inactivityTimer: NodeJS.Timeout;
-    const INACTIVITY_LIMIT = 4 * 60 * 60 * 1000; // 4 hours
+    const INACTIVITY_LIMIT = STAFF_INACTIVITY_TIMEOUT_MS;
 
     const resetInactivity = () => {
       clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
-        // Auto-logout after 4 hours
+        // Auto-logout after five hours of inactivity
         sessionStorage.removeItem('mp-invoice-auth');
         sessionStorage.removeItem('mp-invoice-user');
         localStorage.removeItem('mp-invoice-auth');
@@ -985,6 +987,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </StoreContext.Provider>
   );
 };
+
+// Read-only presentation components can also render outside the showroom.
+export const useOptionalStore = () => useContext(StoreContext);
 
 export const useStore = () => {
   const context = useContext(StoreContext);

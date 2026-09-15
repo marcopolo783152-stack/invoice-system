@@ -1,80 +1,42 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase"; // Note: this uses the client SDK on the server, which can be flaky but we'll try it
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
-
+import {NextResponse} from 'next/server';
+import {Shippo} from 'shippo';
+import {serverDb} from '@/lib/server/firebase-admin';
 export async function POST(request: Request) {
   try {
-    const payload = await request.json();
-
-    // Check if this is a tracking update event
-    if (payload.event === "track_updated" && payload.data) {
-      const trackingNumber = payload.data.tracking_number;
-      const shippoStatus = payload.data.tracking_status?.status; // e.g., TRANSIT, DELIVERED, RETURNED, FAILURE
-
-      if (!trackingNumber || !shippoStatus) {
-        return NextResponse.json({ message: "Ignored: Missing tracking number or status" });
-      }
-
-      // Map Shippo status to our OrderStatus
-      let newOrderStatus = "";
-      if (shippoStatus === "DELIVERED") {
-        newOrderStatus = "Delivered";
-      } else if (shippoStatus === "TRANSIT") {
-        // Already "Shipped", but we could update estimated delivery if we wanted
-        newOrderStatus = "Shipped";
-      } else if (shippoStatus === "RETURNED") {
-        newOrderStatus = "Returned";
-      } else {
-        // Ignore other statuses like UNKNOWN, PRE_TRANSIT for now
-        return NextResponse.json({ message: `Ignored status: ${shippoStatus}` });
-      }
-
-      // If we need to update the status to Delivered or Returned
-      if (newOrderStatus === "Delivered" || newOrderStatus === "Returned") {
-        if (!db) throw new Error("Firebase DB not initialized");
-
-        // Find the order with this tracking number
-        const q = query(
-          collection(db!, "showroom_orders"),
-          where("shippingDetails.trackingNumber", "==", trackingNumber)
-        );
-
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-          console.log("No order found for tracking number:", trackingNumber);
-          return NextResponse.json({ message: "Order not found for tracking number" });
-        }
-
-        // Update all matching orders (should only be one)
-        const updatePromises = snapshot.docs.map(async (orderDoc) => {
-          const currentStatus = orderDoc.data().status;
-          
-          // Only update if it's currently "Shipped", to prevent overriding manual admin changes
-          if (currentStatus === "Shipped") {
-            const docRef = doc(db!, "showroom_orders", orderDoc.id);
-            await updateDoc(docRef, {
-              status: newOrderStatus,
-              "shippingDetails.estimatedDelivery": payload.data.tracking_status?.status_details || ""
-            });
-            console.log(`Order ${orderDoc.id} automatically updated to ${newOrderStatus} via Shippo webhook`);
-          }
-        });
-
-        await Promise.all(updatePromises);
-      }
-
-      return NextResponse.json({ success: true, message: "Webhook processed" });
+    const raw = await request.text();
+    if (raw.length > 32000) return NextResponse.json({error:'Request too large'}, {status:413});
+    const payload = JSON.parse(raw);
+    const tracking = payload.data?.tracking_number;
+    if (payload.event !== 'track_updated' || typeof tracking !== 'string' || !/^[a-zA-Z0-9-]{5,80}$/.test(tracking))
+      return NextResponse.json({received:true});
+    const db = serverDb();
+    const matches = await db.collection('showroom_orders').where('shippingDetails.trackingNumber','==',tracking).limit(10).get();
+    const key = process.env.SHIPPO_API_KEY?.trim().replace(/^ShippoToken /,'');
+    if (!key) return NextResponse.json({error:'Tracking service not configured'}, {status:503});
+    const shippo = new Shippo({apiKeyHeader:key});
+    for (const order of matches.docs) {
+      const data = order.data();
+      // Never trust an incoming webhook status. Fetch the carrier status from Shippo.
+      const provider = String(data.shippingDetails?.carrier || '').toLowerCase();
+      const carrier = ({'usps':'usps','ups':'ups','fedex':'fedex','dhl express':'dhl_express','dhl_express':'dhl_express'} as Record<string,string>)[provider];
+      if (!carrier) continue;
+      const lease = db.collection('shipping_tracking_checks').doc(order.id);
+      const check = await db.runTransaction(async tx => {
+        const previous = (await tx.get(lease)).data();
+        if (Date.now() - (previous?.checkedAt || 0) < 60000) return false;
+        tx.set(lease,{checkedAt:Date.now()}); return true;
+      });
+      if (!check) continue;
+      const verified = await shippo.trackingStatus.get(tracking, carrier);
+      const status = verified.trackingStatus?.status;
+      const next = status === 'DELIVERED' ? 'Delivered' : status === 'RETURNED' ? 'Returned' : status === 'TRANSIT' ? 'Shipped' : null;
+      if (!next) continue;
+      await db.runTransaction(async tx => {
+        const current = (await tx.get(order.ref)).data();
+        if (!current || current.shippingDetails?.trackingNumber !== tracking || !['Preparing for Shipping','Shipped'].includes(current.status)) return;
+        tx.update(order.ref, {status:next, 'shippingDetails.verifiedAt':new Date().toISOString()});
+      });
     }
-
-    // Ignore other events
-    return NextResponse.json({ message: "Ignored event type" });
-
-  } catch (error: any) {
-    console.error("Webhook processing error:", error);
-    return NextResponse.json(
-      { error: "Failed to process webhook" },
-      { status: 500 }
-    );
-  }
+    return NextResponse.json({received:true});
+  } catch { return NextResponse.json({error:'Tracking update could not be verified'}, {status:503}); }
 }

@@ -7,6 +7,7 @@
 
 'use client';
 
+import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -75,10 +76,7 @@ function InvoicePageContent() {
     fullName: string;
     password: string;
     role: "admin" | "seller" | "manager";
-  }[]>([
-    { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin" },
-    { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" }
-  ]);
+  }[]>([]);
   const [currentUser, setCurrentUser] = useState<{ username: string; fullName: string; role: string } | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
@@ -100,14 +98,14 @@ function InvoicePageContent() {
         try { setCurrentUser(JSON.parse(storedUser)); } catch { }
       }
 
-      // --- Logout after 2 hours of inactivity ---
+      // --- Logout after five hours of inactivity ---
       let inactivityTimeout: ReturnType<typeof setTimeout> | undefined;
       const resetInactivityTimer = () => {
         if (inactivityTimeout) clearTimeout(inactivityTimeout);
         inactivityTimeout = setTimeout(() => {
           logout();
           alert('Session timed out due to inactivity.'); // Inform user
-        }, 2 * 60 * 60 * 1000); // 2 hours
+        }, STAFF_INACTIVITY_TIMEOUT_MS);
       };
 
       // Reset timer on user activity

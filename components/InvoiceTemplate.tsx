@@ -7,7 +7,7 @@
  * DO NOT modify layout, spacing, or arrangement.
  */
 
-import { useStore } from "@/context/StoreContext";
+import { useOptionalStore } from "@/context/StoreContext";
 import React from 'react';
 import {
   InvoiceData,
@@ -36,7 +36,7 @@ interface InvoiceTemplateProps {
 }
 
 export default function InvoiceTemplate(props: any) {
-  const { shopProfile } = useStore();
+  const shopProfile = useOptionalStore()?.shopProfile;
   const {
   data,
   calculations,
