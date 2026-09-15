@@ -40,7 +40,7 @@ export default function PaymentTest() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not open Stripe.'); setBusy(false); }
   }
   return <main style={{maxWidth: 660, margin: '48px auto', padding: 24, background: '#fff', color: '#183e35', border: '1px solid #d8dfdb', borderRadius: 16}}>
-    <p style={{fontWeight: 700}}>MARCO POLO · OWNER PAYMENT TEST</p>
+    <p style={{fontWeight: 700}}>MARCO POLO RUGS · OWNER PAYMENT TEST</p>
     <h1 style={{fontSize: 30, margin: '16px 0'}}>Test your Stripe connection</h1>
     <p>This is a $1.00 simulated payment. No purchase, shipment or inventory change is created.</p>
     <p style={{margin: '16px 0'}}>Use only Stripe test card details on the next page:</p>

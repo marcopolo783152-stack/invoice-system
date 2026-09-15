@@ -23,7 +23,7 @@ jobs:
         working-directory: tests/access
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Test payment and listing safeguards
-        run: node --test tests/access/stripe-test.test.mjs tests/access/listing-stats.test.mjs
+        run: node --test tests/access/stripe-test.test.mjs tests/access/listing-stats.test.mjs tests/access/rug-checkout.test.mjs
       - name: Test safe authentication diagnostics
         run: node --test tests/access/firebase-failure.test.mjs
       - name: Check syntax of changed TypeScript and TSX

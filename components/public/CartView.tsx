@@ -5,6 +5,7 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
+import RugCheckoutButton from "./RugCheckoutButton";
 import AddressAutocomplete from "../AddressAutocomplete";
 import {
   X,
@@ -107,7 +108,7 @@ export const CartView: React.FC = () => {
   if (appliedPromo) {
     if (appliedPromo.discountType === "percentage") {
       discount = rawSubtotal * (appliedPromo.discountValue / 100);
-    } else {
+    } else if (appliedPromo.discountType === "fixed") {
       discount = appliedPromo.discountValue;
     }
   }
@@ -136,7 +137,7 @@ export const CartView: React.FC = () => {
   // Calculate shipping cost based on weight & delivery option
   // "shiping cost like 2-5 lbs gonna be 16 dollar"
   let shipping = 0;
-  if (deliveryOption === "Delivery") {
+  if (deliveryOption === "Delivery" && appliedPromo?.discountType !== "free_shipping") {
     if (totalWeightLbs === 0) {
       shipping = 0;
     } else if (totalWeightLbs <= 1.9) {
@@ -618,6 +619,10 @@ export const CartView: React.FC = () => {
                 onSubmit={handleCheckoutSubmit}
                 className="space-y-4 text-xs text-left"
               >
+                <RugCheckoutButton payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
+                  promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
+                    billingAddress: billingSameAsShipping ? derivedShippingAddress : billingAddress,
+                    notes: [notes.trim(), 'Complimentary padding included with each rug.'].filter(Boolean).join('\n')}}} />
                 <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none space-y-3">
                   <h3 className="font-semibold text-base">Pay by phone or in store</h3>
                   <p>Online payments are not available yet. Placing this order does not charge your card or take payment.</p>
