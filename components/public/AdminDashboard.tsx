@@ -372,7 +372,9 @@ export const AdminDashboard: React.FC = () => {
   const unreadMessagesCount = chatThreads.filter(t => t.messages[t.messages.length - 1].sender === "customer").length;
 
   const handleUnlockCardDetails = (orderId: string) => {
-    setUnlockedOrders((prev) => [...prev, orderId]);
+    setPasswordPromptOrderId(orderId);
+    setPasswordInput("");
+    setPasswordError("");
   };
 
   const verifyDecryptPassword = (e: React.FormEvent) => {
