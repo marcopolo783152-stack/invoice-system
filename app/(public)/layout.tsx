@@ -5,7 +5,7 @@ import TopAdminBar from '@/components/TopAdminBar';
 import PublicAdminWrapper from '@/components/PublicAdminWrapper';
 import { Analytics } from "@vercel/analytics/react";
 
-import { db } from '@/lib/firebase';
+import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   let seoDesc = 'Discover our premium collection of authentic handmade rugs, Persian rugs, vintage runners, and luxurious carpets. Visit our Alexandria showroom for rug cleaning and restoration.';
   
   try {
-    const docSnap = db ? await getDoc(doc(db, 'showroom_settings', 'live_website_content')) : null;
+    const docSnap = isFirebaseConfigured() ? await getDoc(doc(db, 'showroom_settings', 'live_website_content')) : null;
     if (docSnap && docSnap.exists()) {
       const data = docSnap.data().data || {};
       if (data.seo_title) seoTitle = data.seo_title;
@@ -60,7 +60,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     "openingHoursSpecification": [
       {
         "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         "opens": "10:00",
         "closes": "18:00"
       }

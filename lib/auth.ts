@@ -1,4 +1,5 @@
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, sendEmailVerification, signOut, onAuthStateChanged, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { OWNER_UID, OWNER_EMAIL } from './access-policy';
 import { app, db } from './firebase';
 import { doc, getDoc, setDoc, Firestore } from 'firebase/firestore';
 
@@ -70,6 +71,7 @@ export const resetPassword = async (email: string) => {
         await sendPasswordResetEmail(auth, email);
         return { success: true, error: null };
     } catch (error: any) {
+        if (error.code === 'auth/user-not-found') return { success: true, error: null };
         return { success: false, error: error.message };
     }
 };
@@ -78,16 +80,15 @@ export const logout = async () => {
     await signOut(auth);
 };
 
+// Legacy UI calls this for staff-mode display; data permissions are enforced by rules.
 export const checkIsAdmin = async (uid: string, email?: string | null) => {
-    if (email === "marcopolorugs@aol.com" || email === "admin@marcopolo.com") return true;
-    try {
-        const docRef = doc(db as Firestore, 'showroom_roles', uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().role === 'admin') {
-            return true;
-        }
-        return false;
-    } catch (error) {
-        return false;
-    }
+ const user = auth.currentUser;
+ if (!user || user.uid !== uid || user.isAnonymous || !user.emailVerified) return false;
+ try {
+  const snap = await getDoc(doc(db, 'showroom_roles', uid));
+  const data = snap.data();
+  const owner = uid === OWNER_UID && user.email?.toLowerCase() === OWNER_EMAIL;
+  return !!data && data.email?.toLowerCase() === user.email?.toLowerCase() && data.active !== false && (data.active === true || owner)
+    && (data.role === 'admin' ? owner : ['general_manager','seller','custom'].includes(data.role));
+ } catch { return false; }
 };

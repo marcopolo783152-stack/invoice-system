@@ -2,49 +2,21 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useStaffAccess } from '@/hooks/useStaffAccess';
+import { canAccess } from '@/lib/access-policy';
+import { logout } from '@/lib/auth';
+import { syncLegacyStaffSession } from '@/lib/staff-session';
 import { Bell } from 'lucide-react';
 
 export default function TopAdminBar() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const pathname = usePathname();
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('mp-invoice-auth');
-    sessionStorage.removeItem('mp-invoice-user');
-    localStorage.removeItem('mp-invoice-auth');
-    localStorage.removeItem('mp-invoice-user');
-    localStorage.removeItem('marcopolo_active_view');
-    sessionStorage.removeItem('marcopolo_active_view');
-    sessionStorage.removeItem('marcopolo_current_user');
-    window.location.href = '/';
+  const {staff}=useStaffAccess();
+  const isAdmin=!!staff;
+  const pathname=usePathname();
+  const handleLogout=async()=>{
+    sessionStorage.setItem('showroom-logout','1');
+    try{await logout();syncLegacyStaffSession(null);window.location.replace('/');}
+    catch{sessionStorage.removeItem('showroom-logout');window.alert('Sign out failed. Please try again.');}
   };
-
-  useEffect(() => {
-    const checkAuth = () => {
-      if (pathname === '/admin/invoices/clock') {
-        setIsAdmin(false);
-        return;
-      }
-      
-      const auth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
-      const activeView = localStorage.getItem('marcopolo_active_view');
-      
-      if ((auth === '1' && pathname?.startsWith('/admin')) || activeView === 'admin') {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
-    };
-
-    checkAuth();
-    window.addEventListener('storage', checkAuth);
-    const interval = setInterval(checkAuth, 1000);
-
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-      clearInterval(interval);
-    };
-  }, [pathname]);
 
   // Inactivity auto-logout
   useEffect(() => {
@@ -105,7 +77,7 @@ export default function TopAdminBar() {
         position: 'sticky',
         top: 0
       }}>
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#A68B67' }}>
           Admin Mode
         </span>
@@ -118,14 +90,16 @@ export default function TopAdminBar() {
         >
           Admin Main Page
         </a>
-        <a 
-          href="/admin/invoices" 
+        {canAccess(staff,'invoices') && <a 
+          href={canAccess(staff,'reports')?'/admin/invoices':'/admin/invoices/invoices'} 
           style={linkStyle(pathname?.startsWith('/admin/invoices') || false)}
           onMouseOver={(e) => (e.currentTarget.style.color = 'white')}
           onMouseOut={(e) => { if (!pathname?.startsWith('/admin/invoices')) e.currentTarget.style.color = '#9ca3af' }}
         >
           Invoice System
-        </a>
+        </a>}
+        {canAccess(staff,'users') && <a href="/admin/users" style={linkStyle(pathname==='/admin/users')}>Users & Permissions</a>}
+        <a href="/staff-account" style={linkStyle(pathname==='/staff-account')}>My account</a>
 
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>

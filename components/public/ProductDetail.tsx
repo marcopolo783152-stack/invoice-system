@@ -282,7 +282,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                     className="w-full py-3 bg-neutral-900 hover:bg-black text-white font-bold uppercase tracking-widest text-xs rounded-none transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
                   >
                     <Layers className="h-4 w-4 text-emerald-400" />
-                    <span>See it in your room (AR)</span>
+                    <span>See it in your room</span>
                   </button>
 
                   {/* Trust Badges */}

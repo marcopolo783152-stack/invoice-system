@@ -1,3 +1,4 @@
+import { changeAppointmentStatus, deleteAppointment } from '@/lib/appointment-booking';
 import React, { useEffect, useState } from 'react';
 import { subscribeToCollection, SHOWROOM_APPOINTMENTS, updateShowroomDoc, deleteShowroomDoc } from '@/lib/showroom-firebase';
 import { Calendar, User, Clock, CheckCircle2, XCircle, Trash2, Plus } from 'lucide-react';
@@ -8,12 +9,14 @@ export default function AppointmentsAdminTab() {
   const [showAddForm, setShowAddForm] = useState(false);
   
   const handleStatusChange = async (id: string, newStatus: string) => {
-    await updateShowroomDoc(SHOWROOM_APPOINTMENTS, id, { status: newStatus });
+    try { await changeAppointmentStatus(id, newStatus as 'confirmed' | 'rejected'); }
+    catch (err) { alert(err instanceof Error ? err.message : 'Could not update appointment.'); }
   };
   
   const handleDelete = async (id: string) => {
     if(confirm('Are you sure you want to delete this appointment?')) {
-      await deleteShowroomDoc(SHOWROOM_APPOINTMENTS, id);
+      try { await deleteAppointment(id); }
+      catch (err) { alert(err instanceof Error ? err.message : 'Could not delete appointment.'); }
     }
   };
 

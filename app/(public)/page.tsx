@@ -66,12 +66,6 @@ function AppContent() {
   if (activeView === "admin") {
     return (
       <div className="min-h-screen bg-stone-100 flex flex-col">
-        {showroomAnnouncement && (
-          <div className="bg-amber-950 text-amber-200 text-center py-2 px-4 text-sm font-sans font-medium tracking-wide border-b border-amber-900 flex items-center justify-center gap-2">
-            <span>{showroomAnnouncement}</span>
-          </div>
-        )}
-        <Navbar currentTab={currentTab} setCurrentTab={setCurrentTab} />
         <AdminDashboard />
       </div>
     );

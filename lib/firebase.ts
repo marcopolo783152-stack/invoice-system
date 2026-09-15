@@ -1,60 +1,42 @@
-/**
- * FIREBASE CONFIGURATION
- */
-
-import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { getAuth, signInAnonymously } from 'firebase/auth';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCtSukPxCXfHl3jBPg5JC6dF5AvbG8nX0Y",
-  authDomain: "marcopolo-invoice.firebaseapp.com",
-  projectId: "marcopolo-invoice",
-  storageBucket: "marcopolo-invoice.firebasestorage.app",
-  messagingSenderId: "257585608766",
-  appId: "1:257585608766:web:6309ba28477926e86c796f",
-  measurementId: "G-BMPL0XNPQ4"
+import {initializeApp,getApps} from 'firebase/app';
+import {getFirestore,connectFirestoreEmulator} from 'firebase/firestore';
+import {getStorage} from 'firebase/storage';
+import {getAuth,signInAnonymously,connectAuthEmulator} from 'firebase/auth';
+const configured=!!process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim() && !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
+const config={
+ apiKey:process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim() || 'preview-not-configured',
+ authDomain:process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim() || 'demo-marcopolo-preview.firebaseapp.com',
+ projectId:process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim() || 'demo-marcopolo-preview',
+ storageBucket:process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim(),
+ messagingSenderId:process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim(),
+ appId:process.env.NEXT_PUBLIC_FIREBASE_APP_ID?.trim()
 };
-
-export function isFirebaseConfigured(): boolean {
-  return !!(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.apiKey !== '');
+export const app=getApps()[0] || initializeApp(config);
+export const db=getFirestore(app);
+export const storage=getStorage(app);
+if((typeof window!=='undefined'||process.env.FIRESTORE_EMULATOR_HOST) && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS==='true' && config.projectId.startsWith('demo-')){
+ const state=globalThis as typeof globalThis & {__marcopoloEmulatorsConnected?:boolean};
+ if(!state.__marcopoloEmulatorsConnected){
+  connectFirestoreEmulator(db,'127.0.0.1',8080);
+  connectAuthEmulator(getAuth(app),'http://127.0.0.1:9099',{disableWarnings:true});
+  state.__marcopoloEmulatorsConnected=true;
+ }
+}
+export function isFirebaseConfigured(){return configured;}
+if(typeof window!=='undefined' && configured){
+ const auth=getAuth(app);
+ auth.authStateReady().then(()=>{if(!auth.currentUser)return signInAnonymously(auth);}).catch(()=>console.warn('Guest connection unavailable.'));
+}
+export function checkFirebaseQuotaError(error:any){
+ return /quota|resource-exhausted/i.test(String(error?.code||error?.message||''));
 }
 
-// Initialize immediately to ensure const exports are bound correctly!
-let appInstance: FirebaseApp;
-let dbInstance: Firestore | undefined;
-let storageInstance: FirebaseStorage | undefined;
-
-if (typeof window !== 'undefined' && isFirebaseConfigured()) {
-  appInstance = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-  dbInstance = getFirestore(appInstance);
-  try {
-    storageInstance = getStorage(appInstance);
-  } catch(e) {}
-  
-  try {
-    const auth = getAuth(appInstance);
-    signInAnonymously(auth).catch(e => console.warn("Anon Auth failed:", e));
-  } catch(e) {}
-} else if (isFirebaseConfigured()) {
-  // SSR Database Init
-  appInstance = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-  dbInstance = getFirestore(appInstance);
-} else {
-  appInstance = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-}
-
-export const app = appInstance;
-export const db = dbInstance as Firestore;
-export const storage = storageInstance;
-
-export function checkFirebaseQuotaError(error: any) {
-  if (!error) return false;
-  const errStr = String(error.message || error.code || error).toLowerCase();
-  if (errStr.includes('quota') || errStr.includes('resource-exhausted')) {
-    if (typeof window !== 'undefined') alert("FIREBASE QUOTA EXCEEDED");
-    return true;
-  }
-  return false;
+export function signInErrorMessage(error:unknown){
+ const message=error instanceof Error?error.message:String(error||'');
+ if(/api-key-not-valid|invalid-api-key|api-key-invalid|API_KEY_INVALID|CONFIGURATION_NOT_FOUND/i.test(message))
+  return 'Website sign-in is temporarily unavailable because its Firebase connection is not configured correctly. Please contact the showroom. Changing your password will not fix this connection problem.';
+ if(/unauthorized-domain/i.test(message))return 'Sign-in is not enabled for this website address yet. Please contact the showroom.';
+ if(/invalid-credential|wrong-password|user-not-found/i.test(message))return 'The email or password was not accepted. Try again or use Forgot password.';
+ if(/popup-closed-by-user|cancelled-popup-request/i.test(message))return 'Google sign-in was closed. Please try again.';
+ return message||'Please try again.';
 }

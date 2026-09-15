@@ -1,24 +1,34 @@
-import React, { useMemo } from 'react';
+import { useStaffAccess } from '@/hooks/useStaffAccess';
+import { canAccess } from '@/lib/access-policy';
+import React, { useMemo, useEffect, useState } from 'react';
 import { X, ShoppingBag, CheckCircle, MessageCircle, AlertCircle, Calendar, Clock, Bell, User } from 'lucide-react';
-import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
 
+import { subscribeToCollection, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
+
 export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-    const { orders, reviews, chatMessages, cleaningBookings } = useStore();
+    const {staff}=useStaffAccess();
+    const { orders, reviews, chatMessages, cleaningBookings, estimates } = useStore();
+
+    const [appointments, setAppointments] = useState<Array<{ id: string; name?: string; createdAt?: string }>>([]);
+    useEffect(()=>{
+      setAppointments([]);
+      if(canAccess(staff,'appointments')) return subscribeToCollection<{id:string;name?:string;createdAt?:string}>(SHOWROOM_APPOINTMENTS,setAppointments);
+    },[staff]);
 
     const activityFeed = useMemo(() => {
         const feed: Array<{ id: string, type: string, title: string, subtitle: string, date: Date, link: string, icon: React.ReactNode, bgColor: string, color: string }> = [];
 
         // 1. Orders
-        orders.forEach(order => {
+        (canAccess(staff,'orders')?orders:[]).forEach(order => {
             if (!order.createdAt) return;
             feed.push({
                 id: `order-${order.id}`,
                 type: 'order',
                 title: `Order $${order.total?.toLocaleString()}`,
-                subtitle: `${order.shippingAddress?.name || 'Customer'} placed an order.`,
+                subtitle: `${order.customerInfo?.name || 'Customer'} placed an order.`,
                 date: new Date(order.createdAt),
-                link: '/admin/invoices/invoices',
+                link: '/?view=admin&adminTab=orders',
                 icon: <ShoppingBag size={20} />,
                 bgColor: 'rgba(16, 185, 129, 0.1)',
                 color: '#10b981' // emerald-500
@@ -26,15 +36,15 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
         });
 
         // 2. Reviews
-        reviews.forEach(review => {
+        (canAccess(staff,'reviews')?reviews:[]).forEach(review => {
             if (!review.createdAt) return;
             feed.push({
                 id: `review-${review.id}`,
                 type: 'review',
                 title: `${review.rating} Star Review`,
-                subtitle: `From ${review.authorName}`,
+                subtitle: `From ${review.reviewerName}`,
                 date: new Date(review.createdAt),
-                link: '/admin/invoices/crm',
+                link: '/?view=admin&adminTab=reviews',
                 icon: <CheckCircle size={20} />,
                 bgColor: 'rgba(59, 130, 246, 0.1)',
                 color: '#3b82f6' // blue-500
@@ -42,15 +52,15 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
         });
 
         // 3. Customer Messages
-        chatMessages.forEach(msg => {
-            if (!msg.createdAt || msg.sender === 'Marco Polo') return;
+        (canAccess(staff,'messages')?chatMessages:[]).forEach(msg => {
+            if (!msg.timestamp || msg.sender !== 'customer') return;
             feed.push({
                 id: `msg-${msg.id}`,
                 type: 'chat',
                 title: 'New Customer Message',
                 subtitle: msg.text?.substring(0, 40) + '...',
-                date: new Date(msg.createdAt),
-                link: '/admin/invoices/crm',
+                date: new Date(msg.timestamp),
+                link: '/?view=admin&adminTab=messages',
                 icon: <MessageCircle size={20} />,
                 bgColor: 'rgba(168, 85, 247, 0.1)',
                 color: '#a855f7' // purple-500
@@ -58,7 +68,7 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
         });
 
         // 4. Wash / Repair Bookings
-        cleaningBookings.forEach(booking => {
+        (canAccess(staff,'services')?cleaningBookings:[]).forEach(booking => {
             if (!booking.createdAt) return;
             feed.push({
                 id: `booking-${booking.id}`,
@@ -66,16 +76,38 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
                 title: `Service: ${booking.serviceType || 'Wash'}`,
                 subtitle: `${booking.customerName} requested service.`,
                 date: new Date(booking.createdAt),
-                link: '/admin/invoices/crm',
+                link: '/?view=admin&adminTab=cleaning',
                 icon: <AlertCircle size={20} />,
                 bgColor: 'rgba(245, 158, 11, 0.1)',
                 color: '#f59e0b' // amber-500
             });
         });
 
+        (canAccess(staff,'appointments')?appointments:[]).forEach(appointment => {
+            if (!appointment.createdAt) return;
+            feed.push({
+                id: 'appointment-' + appointment.id, type: 'appointment',
+                title: 'Appointment request', subtitle: appointment.name || 'Customer',
+                date: new Date(appointment.createdAt),
+                link: '/?view=admin&adminTab=appointments',
+                icon: <Calendar size={20} />, bgColor: 'rgba(99,102,241,0.1)', color: '#6366f1'
+            });
+        });
+        (canAccess(staff,'services')?estimates:[]).forEach(estimate => {
+            if (!estimate.createdAt) return;
+            feed.push({
+                id: 'estimate-' + estimate.id, type: 'estimate',
+                title: 'Service estimate request',
+                subtitle: estimate.name || [estimate.firstName, estimate.lastName].filter(Boolean).join(' ') || 'Customer',
+                date: new Date(estimate.createdAt),
+                link: '/?view=admin&adminTab=estimates',
+                icon: <AlertCircle size={20} />, bgColor: 'rgba(59,130,246,0.1)', color: '#3b82f6'
+            });
+        });
+
         // Sort descending
-        return feed.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 50); // Top 50 activities
-    }, [orders, reviews, chatMessages, cleaningBookings]);
+        return feed.sort((a, b) => b.date.getTime() - a.date.getTime()); // Keep all available activity visible.
+    }, [orders, reviews, chatMessages, cleaningBookings, appointments, estimates]);
 
     if (!isOpen) return null;
 
@@ -130,7 +162,7 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                             {activityFeed.map((item, index) => (
-                                <Link
+                                <a
                                     href={item.link}
                                     key={item.id}
                                     onClick={onClose}
@@ -164,7 +196,7 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
                                             </span>
                                         </div>
                                     </div>
-                                </Link>
+                                </a>
                             ))}
                         </div>
                     )}

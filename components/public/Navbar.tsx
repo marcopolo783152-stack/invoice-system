@@ -174,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
             {/* Account access button */}
             {!currentUser ? (
               <button
-                onClick={() => setAuthModalOpen(true)}
+                onClick={() => { if(currentUser) window.location.assign("/account"); else setAuthModalOpen(true); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-editorial-aside text-gray-700 hover:text-editorial-accent text-sm transition border border-editorial-border font-sans uppercase tracking-wider font-bold cursor-pointer"
               >
                 <LogIn className="h-3.5 w-3.5" />
@@ -182,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               </button>
             ) : (
               <button
-                onClick={() => setAuthModalOpen(true)}
+                onClick={() => { if(currentUser) window.location.assign("/account"); else setAuthModalOpen(true); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-stone-100 text-stone-900 hover:text-editorial-accent text-sm transition border border-editorial-border font-sans uppercase tracking-wider font-bold cursor-pointer"
               >
                 <User className="h-3.5 w-3.5" />

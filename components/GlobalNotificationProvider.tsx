@@ -1,10 +1,12 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import {useStore} from '@/context/StoreContext';
+import React, { useEffect, useState, useRef } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { SHOWROOM_ORDERS, SHOWROOM_REVIEWS, SHOWROOM_CHAT, SHOWROOM_CLEANING, SHOWROOM_ESTIMATES, SHOWROOM_APPOINTMENTS } from '@/lib/showroom-firebase';
 import { db as firestoreDb } from '@/lib/firebase';
 import { AlertCircle, CheckCircle, Bell, MessageCircle, Calendar, FileText, ShoppingBag, X } from 'lucide-react';
-import Link from 'next/link';
+import { useStaffAccess } from '@/hooks/useStaffAccess';
+import { canAccess } from '@/lib/access-policy';
 import { AdminChatBox } from './public/AdminChatBox';
 
 // Using a custom global event or context for toasts
@@ -18,6 +20,10 @@ interface Toast {
 }
 
 export const GlobalNotificationProvider = ({ children }: { children: React.ReactNode }) => {
+    const {staff}=useStaffAccess();
+    const {orders}=useStore();
+    const knownOrderIds=useRef<Set<string>|null>(null);
+    useEffect(()=>{knownOrderIds.current=null;},[staff?.uid]);
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [activeAdminChatSession, setActiveAdminChatSession] = useState<string | null>(null);
     
@@ -103,35 +109,22 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
     };
 
     useEffect(() => {
-        // Only run if authenticated
-        const isAuth = sessionStorage.getItem('mp-invoice-auth') || localStorage.getItem('mp-invoice-auth');
-        const activeView = localStorage.getItem('marcopolo_active_view');
-        if (!isAuth && activeView !== 'admin') return;
-
+        setToasts([]);setActiveAdminChatSession(null);
+        if(!staff)return;
+        const sectionForCollection:Record<string,string>={
+          [SHOWROOM_ORDERS]:'orders',[SHOWROOM_REVIEWS]:'reviews',[SHOWROOM_CHAT]:'messages',
+          [SHOWROOM_CLEANING]:'services',[SHOWROOM_ESTIMATES]:'services',[SHOWROOM_APPOINTMENTS]:'appointments'
+        };
+        const watch=(name:string,handler:any)=>{
+          if(!canAccess(staff,sectionForCollection[name]))return ()=>{};
+          return onSnapshot(collection(firestoreDb,name),handler,()=>{setToasts([]);setActiveAdminChatSession(null);});
+        };
         const now = Date.now();
         
         const subscriptions = [
-            // Orders
-            onSnapshot(collection(firestoreDb, SHOWROOM_ORDERS), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        const data = change.doc.data();
-                        const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
-                        if (createdAt > now - 10000) { // Only recent (last 10 seconds)
-                            addToast({
-                                title: `New Order: ${data.id}`,
-                                message: `${data.shippingAddress?.name || 'Customer'} placed an order for $${data.total?.toLocaleString()}`,
-                                type: 'order',
-                                link: '/admin/invoices/invoices'
-                            });
-                        }
-                    }
-                });
-            }),
-
             // Reviews
-            onSnapshot(collection(firestoreDb, SHOWROOM_REVIEWS), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_REVIEWS, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
@@ -147,27 +140,27 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             }),
 
             // Chat Messages / Help Requests
-            onSnapshot(collection(firestoreDb, SHOWROOM_CHAT), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_CHAT, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.timestamp ? new Date(data.timestamp).getTime() : 0;
-                        if (createdAt > now - 10000 && data.sender !== 'Marco Polo') {
+                        if (createdAt > now - 10000 && data.sender === 'customer') {
                             addToast({
                                 title: 'New Customer Message',
                                 message: data.text?.substring(0, 50) + '...',
                                 type: 'chat',
                                 link: undefined
                             });
-                            setActiveAdminChatSession(data.sessionId);
+                            setActiveAdminChatSession(data.sessionId || 'default');
                         }
                     }
                 });
             }),
 
             // Estimates
-            onSnapshot(collection(firestoreDb, SHOWROOM_ESTIMATES), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_ESTIMATES, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
@@ -176,7 +169,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
                                 title: 'New Service Estimate',
                                 message: `${data.firstName} ${data.lastName} requested an estimate for ${data.serviceType}.`,
                                 type: 'estimate',
-                                link: '/admin/invoices/service-tracking'
+                                link: '/?view=admin&adminTab=estimates'
                             });
                         }
                     }
@@ -184,8 +177,8 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             }),
 
             // Appointments / Cleanings / Repairs
-            onSnapshot(collection(firestoreDb, SHOWROOM_CLEANING), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_CLEANING, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
@@ -194,7 +187,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
                                 title: 'New Service Request',
                                 message: `${data.customerName} requested a ${data.serviceType || 'wash'} service.`,
                                 type: 'booking',
-                                link: '/admin/invoices/crm'
+                                link: '/?view=admin&adminTab=cleaning'
                             });
                         }
                     }
@@ -202,8 +195,8 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             }),
             
             // General Appointments (if separate from cleaning)
-            onSnapshot(collection(firestoreDb, SHOWROOM_APPOINTMENTS || 'showroom_appointments'), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
+            watch(SHOWROOM_APPOINTMENTS, (snapshot: any) => {
+                snapshot.docChanges().forEach((change: any) => {
                     if (change.type === 'added') {
                         const data = change.doc.data();
                         const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
@@ -212,7 +205,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
                                 title: 'New Appointment Scheduled',
                                 message: `${data.name || 'A customer'} scheduled a showroom visit.`,
                                 type: 'appointment',
-                                link: '/admin/invoices/crm'
+                                link: '/?view=admin&adminTab=appointments'
                             });
                         }
                     }
@@ -221,7 +214,17 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
         ];
 
         return () => subscriptions.forEach(unsub => unsub());
-    }, []);
+    }, [staff]);
+
+    useEffect(()=>{
+      if(!canAccess(staff,'orders'))return;
+      if(knownOrderIds.current){
+        for(const order of orders)if(!knownOrderIds.current.has(order.id)&&new Date(order.createdAt).getTime()>Date.now()-60000){
+          addToast({title:'New order: '+order.id,message:(order.customerInfo?.name||'Customer')+' placed an order.',type:'order',link:'/?view=admin&adminTab=orders&orderId='+encodeURIComponent(order.id)});
+        }
+      }
+      knownOrderIds.current=new Set(orders.map(order=>order.id));
+    },[orders,staff]);
 
     const getIconForType = (type: string) => {
         switch (type) {
@@ -252,9 +255,9 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
                             <h4 className="text-sm font-bold text-editorial-text uppercase tracking-wider">{toast.title}</h4>
                             <p className="text-xs text-gray-500 mt-1 truncate">{toast.message}</p>
                             {toast.link && (
-                                <Link href={toast.link} className="text-[10px] uppercase font-bold tracking-widest text-emerald-600 mt-2 inline-block hover:underline">
+                                <a href={toast.link} className="text-[10px] uppercase font-bold tracking-widest text-emerald-600 mt-2 inline-block hover:underline">
                                     View Details &rarr;
-                                </Link>
+                                </a>
                             )}
                         </div>
                         <button 
@@ -275,7 +278,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             `}</style>
 
             <AdminChatBox 
-                activeSessionId={activeAdminChatSession} 
+                activeSessionId={typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('adminTab') === 'messages' ? null : activeAdminChatSession} 
                 onClose={() => setActiveAdminChatSession(null)} 
             />
         </>
