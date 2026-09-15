@@ -388,11 +388,7 @@ const AdminWorkspace: React.FC = () => {
   }, [chatMessages]);
 
   // Auto-select first thread if none is selected
-  useEffect(() => {
-    if (chatThreads.length > 0 && !selectedSessionId) {
-      setSelectedSessionId(chatThreads[0].sessionId);
-    }
-  }, [chatThreads, selectedSessionId]);
+  // Conversations open only when selected; closing must leave the panel closed.
 
   const unreadMessagesCount = chatThreads.filter(t => {
     // AI replies also use sender=admin. They must not hide customer requests.
@@ -2725,7 +2721,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
         )}
 
-        {activeTab==='messages' && allowed('messages') && <div className={portal.grid}><section className={portal.card}><h2>Customer conversations</h2>{!chatThreads.length&&<p>No conversations yet.</p>}{chatThreads.map(thread=><button key={thread.sessionId} className={portal.row} style={{width:'100%',textAlign:'left'}} onClick={()=>setSelectedSessionId(thread.sessionId)}><span>{thread.customerName||'Customer'}</span><span>Open →</span></button>)}</section><AdminChatBox activeSessionId={selectedSessionId} onClose={()=>setSelectedSessionId(null)} embedded/></div>}
+        {activeTab==='messages' && allowed('messages') && <div className={portal.grid}><section className={portal.card}><h2>Customer conversations</h2>{!chatThreads.length&&<p>No conversations yet.</p>}{chatThreads.map(thread=><button key={thread.sessionId} className={portal.row} style={{width:'100%',textAlign:'left'}} onClick={()=>setSelectedSessionId(thread.sessionId)}><span>{thread.customerName||'Customer'}</span><span>Open →</span></button>)}</section><AdminChatBox activeSessionId={selectedSessionId} onClose={()=>setSelectedSessionId("")} embedded/></div>}
 
         {/* --- TAB F: BLOG PUBLISHER --- */}
         {activeTab === "blogs" && allowed('blogs') && (
