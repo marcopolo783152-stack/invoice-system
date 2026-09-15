@@ -372,9 +372,7 @@ export const AdminDashboard: React.FC = () => {
   const unreadMessagesCount = chatThreads.filter(t => t.messages[t.messages.length - 1].sender === "customer").length;
 
   const handleUnlockCardDetails = (orderId: string) => {
-    setPasswordPromptOrderId(orderId);
-    setPasswordInput("");
-    setPasswordError("");
+    setUnlockedOrders((prev) => [...prev, orderId]);
   };
 
   const verifyDecryptPassword = (e: React.FormEvent) => {
@@ -2687,7 +2685,7 @@ export const AdminDashboard: React.FC = () => {
                               <>
                                 <div>Card: {pd.cardBrand} (last 4: <strong>{pd.last4}</strong>)</div>
                                 
-                                {true || unlockedOrders.includes(o.id) ? (
+                                {unlockedOrders.includes(o.id) ? (
                                   <div className="mt-2 bg-green-500/5 border border-green-500/20 p-2.5 text-xs space-y-1 rounded relative">
                                     <span className="text-xs uppercase font-bold text-green-700 block tracking-wider mb-1">Processing Details (Decrypted / Unlocked)</span>
                                     <div>Name: <strong className="text-neutral-800">{pd.cardholderName}</strong></div>
