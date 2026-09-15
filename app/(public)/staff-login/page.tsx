@@ -9,7 +9,7 @@ import styles from '@/components/AccessPanel.module.css';
 export default function StaffLogin() {
  const [email,setEmail] = useState(''), [password,setPassword] = useState(''), [name,setName] = useState('');
  const [register,setRegister] = useState(false), [busy,setBusy] = useState(false), [message,setMessage] = useState(''), [error,setError] = useState('');
- useEffect(() => { setEmail(new URLSearchParams(window.location.search).get('email') || ''); }, []);
+ useEffect(() => { sessionStorage.removeItem('showroom-logout'); setEmail(new URLSearchParams(window.location.search).get('email') || ''); }, []);
  const finish = async () => {
   const user = auth.currentUser;
   if (!user) throw new Error('Please sign in first.');

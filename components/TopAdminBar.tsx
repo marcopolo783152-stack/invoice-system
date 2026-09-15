@@ -12,7 +12,11 @@ export default function TopAdminBar() {
   const {staff}=useStaffAccess();
   const isAdmin=!!staff;
   const pathname=usePathname();
-  const handleLogout=async()=>{await logout();syncLegacyStaffSession(null);window.location.assign('/staff-login');};
+  const handleLogout=async()=>{
+    sessionStorage.setItem('showroom-logout','1');
+    try{await logout();syncLegacyStaffSession(null);window.location.replace('/');}
+    catch{sessionStorage.removeItem('showroom-logout');window.alert('Sign out failed. Please try again.');}
+  };
 
   // Inactivity auto-logout
   useEffect(() => {

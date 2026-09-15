@@ -149,5 +149,32 @@ try{
  assert.equal((await post(customerToken,{action:'message',sessionId:'delete-test',text:'Old request'})).status,404,'Old requests cannot recreate deleted conversations');
  await staffChat.getByRole('button',{name:'Close customer conversation'}).click();
  await staffChat.waitFor({state:'hidden'});
+
+ const removePayment=token=>fetch('http://127.0.0.1:3000/api/order-payment?orderId=test-order',{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+ assert.equal((await removePayment(customerToken)).status,403);
+ assert.ok((await db.doc('showroom_orders/test-order').get()).data().paymentDetails,'Denied removal leaves payment intact');
+ assert.equal((await removePayment(managerToken)).status,200);
+ const cleaned=(await db.doc('showroom_orders/test-order').get()).data();
+ assert.equal(cleaned.paymentDetails,undefined);
+ assert.equal(cleaned.total,250,'Removing card data preserves order total');
+ await staffPage.getByRole('button',{name:'Logout',exact:true}).click();
+ await staffPage.waitForURL('http://127.0.0.1:3000/');
+ assert.equal(await staffPage.getByRole('button',{name:'Logout',exact:true}).count(),0);
+ const image='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+ await db.doc('showroom_rugs/room-test').set({id:'room-test',name:'Preview Test Rug',sku:'TEST',price:100,images:[image],dimensions:'5 x 8',material:'Wool',origin:'Afghanistan',style:'Traditional',age:'New',availability:'In Stock',sizeCategory:'Medium',description:'Test rug',colors:['Blue']});
+ await staffPage.goto('http://127.0.0.1:3000/shop/room-test');
+ await staffPage.getByText('See it in your room',{exact:true}).click();
+ const preview=staffPage.getByRole('dialog',{name:'Room preview'});
+ await preview.waitFor();
+ await preview.getByLabel('Choose room photo',{exact:true}).setInputFiles({name:'room.png',mimeType:'image/png',buffer:Buffer.from(image.split(',')[1],'base64')});
+ await preview.getByLabel('Trim sides',{exact:true}).fill('12');
+ await preview.getByLabel('Move rug with arrow keys or drag').focus();
+ await staffPage.keyboard.press('ArrowRight');
+ await staffPage.screenshot({path:'screenshots/room-preview-desktop.png'});
+ await staffPage.setViewportSize({width:390,height:844});
+ assert.ok(await preview.evaluate(el=>el.scrollWidth<=el.clientWidth+2),'Preview fits mobile width');
+ await staffPage.screenshot({path:'screenshots/room-preview-mobile.png'});
+ await preview.getByRole('button',{name:'Close room preview'}).click();
+ await preview.waitFor({state:'hidden'});
  console.log('BROWSER_CHECKS_PASSED: admin desktop/mobile layout; reset page/email; verification gate; customer dashboard desktop/mobile; greeting fallback; contact handoff; named staff acceptance/reply; second-claim and impersonation protection.');
 }catch(error){if(browser)for(const [i,ctx] of browser.contexts().entries())for(const [j,p] of ctx.pages().entries())await p.screenshot({path:`screenshots/failure-${i}-${j}.png`,fullPage:true}).catch(()=>{});throw error;}finally{await browser?.close();server.kill('SIGTERM');await Promise.all(getApps().map(app=>deleteApp(app)));}

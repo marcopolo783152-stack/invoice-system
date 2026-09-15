@@ -12,7 +12,7 @@ export default function StaffGate({children,section}:{children:ReactNode;section
   if(loading)return;
   syncLegacyStaffSession(staff);
   setReadyUid(staff?.uid||null);
-  if(!user||user.isAnonymous) window.location.replace('/staff-login?next='+encodeURIComponent(pathname||'/admin/invoices'));
+  if(!user||user.isAnonymous) window.location.replace(sessionStorage.getItem('showroom-logout')==='1'?'/':'/staff-login?next='+encodeURIComponent(pathname||'/admin/invoices'));
  },[staff,user,loading,pathname]);
  if(loading)return <p style={{padding:24}}>Checking your access…</p>;
  if(!staff)return <div style={{padding:24}}><p>{error||'This area requires an active, verified staff account.'}</p><a href="/staff-login">Sign in to the showroom</a></div>;

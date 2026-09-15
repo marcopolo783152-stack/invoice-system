@@ -1,3 +1,4 @@
+import OrderPaymentControls from '@/components/OrderPaymentControls';
 import {AdminChatBox} from "./AdminChatBox";
 import portal from "@/components/Portal.module.css";
 import AdminOverview from "@/components/AdminOverview";
@@ -2345,6 +2346,7 @@ const AdminWorkspace: React.FC = () => {
                           <p>Payment method: {o.paymentDetails?.cardBrand || 'Confirm with showroom'}</p>
                           {o.paymentDetails?.last4 && <p>Ending in {o.paymentDetails.last4}</p>}
                           <p className="text-neutral-400">Payment is confirmed separately by the showroom.</p>
+                          <OrderPaymentControls orderId={o.id}/>
 
                         </div>
                       </div>
