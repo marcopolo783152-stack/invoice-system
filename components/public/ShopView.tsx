@@ -584,7 +584,7 @@ export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
                       <div className="space-y-1.5 text-left">
                         <div className="flex items-center gap-1.5 text-editorial-accent">
                           <Star className="h-3 w-3 fill-editorial-accent" />
-                          <span className="text-xs font-bold text-editorial-text">{rug.rating.toFixed(1)} / 5</span>
+                          <span className="text-xs font-bold text-editorial-text">{Number.isFinite(rug.rating) ? `${rug.rating.toFixed(1)} / 5` : 'No ratings yet'}</span>
                           <span className="text-xs text-gray-400">| Certified Origin</span>
                           <div className="flex gap-2 ml-auto">
                             <span className="flex items-center gap-1 text-xs text-gray-500"><Eye size={12} /> {rug.views || 0}</span>

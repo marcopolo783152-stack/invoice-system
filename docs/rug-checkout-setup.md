@@ -7,7 +7,7 @@ This stage tests the real rug cart using server inventory prices and Stripe-host
 1. Keep `STRIPE_TEST_SECRET_KEY` in Vercel Production with the sandbox `sk_test_` key.
 2. Deploy this code. Creating a draft PR alone does not deploy production.
 3. In the same Stripe sandbox that issued the key, open Workbench → Webhooks → Add destination. Choose events from Your account, destination type Webhook endpoint.
-4. Set the endpoint URL to `https://marcopolorugs.com/api/stripe/webhook` and the description to `Marco Polo Rugs — test order payments`.
+4. Set the endpoint URL to `https://www.marcopolorugs.com/api/stripe/webhook` and the description to `Marco Polo Rugs — test order payments`.
 5. Select `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, and `checkout.session.async_payment_failed`. Select event API version `2026-08-26.dahlia`, matching the installed Stripe SDK. If a different version is selected, test delivery and payload compatibility before continuing.
 6. Reveal the destination's signing secret. In Vercel, save it as a Secret named `STRIPE_TEST_WEBHOOK_SECRET`, environment Production. Paste the complete `whsec_...` value privately; never put it in GitHub or chat.
 7. Redeploy the code with that variable.

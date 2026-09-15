@@ -27,6 +27,7 @@ try{
  browser=await chromium.launch({headless:true});
  const staffContext=await browser.newContext({viewport:{width:1440,height:960}});
  const staffPage=await staffContext.newPage();
+ staffPage.on('pageerror', error => console.error('STAFF_PAGE_ERROR:', error.message));
  await staffPage.goto('http://127.0.0.1:3000/staff-login');
  await staffPage.getByLabel('Email',{exact:true}).fill(owner.email);
  await staffPage.getByLabel('Password',{exact:true}).fill(password);
