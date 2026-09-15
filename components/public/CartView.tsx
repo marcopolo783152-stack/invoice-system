@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import RugCheckoutButton from "./RugCheckoutButton";
 import AddressAutocomplete from "../AddressAutocomplete";
@@ -24,6 +24,7 @@ import {
   Lock,
   Layers,
 } from "lucide-react";
+import styles from "./CartView.module.css";
 import { jsPDF } from "jspdf";
 
 export const CartView: React.FC = () => {
@@ -96,6 +97,33 @@ export const CartView: React.FC = () => {
     );
     setTimeout(() => setPrintFeedback(null), 8000);
   };
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!cartOpen) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialogRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setCartOpen(false);
+        if (checkoutStep === 'success') { setCheckoutStep('cart'); setCreatedOrder(null); }
+      }
+      if (event.key !== 'Tab') return;
+      const nodes = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') || []).filter(el => el.getClientRects().length > 0);
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (!first) { event.preventDefault(); return; }
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialogRef.current)) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+      previousFocus?.focus();
+    };
+  }, [cartOpen, checkoutStep, setCartOpen]);
 
   if (!cartOpen) return null;
 
@@ -221,18 +249,18 @@ export const CartView: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden font-sans">
+    <div className={`${styles.overlay} font-sans`}>
       <div className="absolute inset-0 bg-editorial-text/40 backdrop-blur-xs transition-opacity" onClick={handleClose} />
 
-      <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-lg bg-editorial-bg text-editorial-text h-full shadow-xl flex flex-col border-l border-editorial-border animate-slideLeft">
+      <div className={styles.positioner}>
+        <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="cart-window-title" tabIndex={-1} className={`${styles.dialog} bg-editorial-bg text-editorial-text shadow-xl`}>
           {/* Header Panel */}
-          <div className="px-6 py-5 bg-editorial-aside border-b border-editorial-border flex items-center justify-between">
+          <div className="shrink-0 px-4 py-3 sm:px-6 sm:py-5 bg-editorial-aside border-b border-editorial-border flex items-center justify-between">
             <div>
               <span className="text-sm uppercase tracking-widest text-editorial-accent font-bold block">
                 Marco Polo Oriental Rugs
               </span>
-              <h2 className="font-serif text-lg font-light text-editorial-text flex items-center gap-2">
+              <h2 id="cart-window-title" className="font-serif text-lg font-light text-editorial-text flex items-center gap-2">
                 {checkoutStep === "cart" && "Shopping Curation"}
                 {checkoutStep === "shipping" && "Shipping & Address Curation"}
                 {checkoutStep === "payment" && "Review your order"}
@@ -241,6 +269,7 @@ export const CartView: React.FC = () => {
             </div>
             <button
               onClick={handleClose}
+              aria-label="Close checkout"
               className="p-1.5 text-gray-400 hover:text-editorial-text hover:bg-white border border-transparent hover:border-editorial-border rounded-none transition"
             >
               <X className="h-4 w-4" />
@@ -249,7 +278,7 @@ export const CartView: React.FC = () => {
 
           {/* Stepper visual bar */}
           {checkoutStep !== "success" && (
-            <div className="grid grid-cols-3 bg-white border-b border-editorial-border text-sm font-bold text-center uppercase tracking-wider">
+            <div className="shrink-0 grid grid-cols-3 bg-white border-b border-editorial-border text-sm font-bold text-center uppercase tracking-wider">
               <button
                 type="button"
                 onClick={() => setCheckoutStep("cart")}
@@ -278,7 +307,7 @@ export const CartView: React.FC = () => {
           )}
 
           {/* Core Body content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className={`${styles.body} p-4 sm:p-6 space-y-6`}>
             {/* --- STEP 1: CART DETAILS --- */}
             {checkoutStep === "cart" && (
               <>
@@ -800,7 +829,7 @@ export const CartView: React.FC = () => {
 
           {/* Checkout Footer Totals Summary (Only if cart/shipping/payment) */}
           {checkoutStep !== "success" && cart.length > 0 && (
-            <div className="p-6 bg-editorial-aside border-t border-editorial-border space-y-4">
+            <div className={`${styles.summary} p-4 sm:p-6 bg-editorial-aside border-t border-editorial-border space-y-4`}>
               <div className="space-y-2 text-xs text-gray-500 font-sans font-light">
                 <div className="flex justify-between">
                   <span>Showroom Subtotal:</span>
@@ -847,8 +876,8 @@ export const CartView: React.FC = () => {
                   <span className="text-editorial-text uppercase tracking-wider">
                     Estimated total:
                   </span>
-                  <span className="font-serif text-base text-editorial-text">
-                    ${total.toLocaleString()}
+                  <span className="font-sans text-xl font-bold text-editorial-text">
+                    ${total.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </span>
                 </div>
               </div>
