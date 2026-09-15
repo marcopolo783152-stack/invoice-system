@@ -1,3 +1,4 @@
+import {recordListingActivity} from "@/lib/record-listing-activity";
 import {chatRequest} from "@/lib/chat-client";
 /**
  * @license
@@ -590,28 +591,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateShowroomDoc(SHOWROOM_RUGS, id, updatedFields);
   };
 
-  const incrementRugViews = (id: string) => {
-    const rug = rugs.find(r => r.id === id);
-    if (!rug) return;
-    updateRug(id, { views: (rug.views || 0) + 1 });
+  const recordEngagement = async (id: string, kind: 'visit' | 'favorite' | 'unfavorite') => {
+    const result = await recordListingActivity(id, kind);
+    if (result) setRugs(prev => prev.map(r => r.id === id ? {...r, ...result} : r));
   };
-
+  const incrementRugViews = (id: string) => { void recordEngagement(id, 'visit'); };
+  const favoriteIdsRef = useRef(favoritedRugIds);
+  useEffect(() => { favoriteIdsRef.current = favoritedRugIds; }, [favoritedRugIds]);
   const toggleRugFavorite = (id: string) => {
-    const rug = rugs.find(r => r.id === id);
-    if (!rug) return;
-    
-    setFavoritedRugIds(prev => {
-      let next;
-      if (prev.includes(id)) {
-        next = prev.filter(rId => rId !== id);
-        updateRug(id, { favorites: Math.max(0, (rug.favorites || 0) - 1) });
-      } else {
-        next = [...prev, id];
-        updateRug(id, { favorites: (rug.favorites || 0) + 1 });
-      }
-      safeSetItem("marcopolo_favorites", JSON.stringify(next));
-      return next;
-    });
+    if (!rugs.some(r => r.id === id)) return;
+    const removing = favoriteIdsRef.current.includes(id);
+    const next = removing ? favoriteIdsRef.current.filter(rId => rId !== id) : [...favoriteIdsRef.current, id];
+    favoriteIdsRef.current = next;
+    setFavoritedRugIds(next);
+    safeSetItem('marcopolo_favorites', JSON.stringify(next));
+    void recordEngagement(id, removing ? 'unfavorite' : 'favorite');
   };
 
   const deleteRug = async (id: string) => {

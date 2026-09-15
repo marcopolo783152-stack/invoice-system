@@ -52,9 +52,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
       const existing = saved ? (JSON.parse(saved) as string[]) : [];
 
       // Check if we already viewed this rug
-      const hasViewed = existing.includes(rugId);
+      const dayKey = 'mp_visit:' + rugId + ':' + new Date().toISOString().slice(0, 10);
+      const hasViewed = sessionStorage.getItem(dayKey) === '1';
 
-      if (activeView === "customer" && !hasViewed) {
+      if (rug && activeView === "customer" && !hasViewed) {
+        sessionStorage.setItem(dayKey, "1");
         incrementRugViews(rugId);
       }
       
@@ -288,6 +290,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                   {/* Trust Badges */}
                   <div className="flex flex-wrap items-center justify-center gap-6 py-3 mt-1 bg-gray-50 border border-gray-200 text-xs text-gray-600 font-bold uppercase tracking-wider rounded-none">
                     <span className="flex items-center gap-1.5"><ShieldAlert className="h-4 w-4 text-emerald-600" /> Secure Checkout</span>
+                    <span className="flex items-center gap-1.5"><Layers className="h-4 w-4 text-emerald-600" /> Free padding with this rug</span>
                     <span className="flex items-center gap-1.5"><RefreshCw className="h-4 w-4 text-emerald-600" /> Free Shipping & Returns</span>
                     <span className="flex items-center gap-1.5"><Award className="h-4 w-4 text-emerald-600" /> Official Certificate Included</span>
                   </div>

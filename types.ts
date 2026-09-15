@@ -27,6 +27,8 @@ export interface Rug {
   isSpecialSale?: boolean;
   isFreeShipping?: boolean;
   manufacturingType?: "Handmade" | "Machine-made";
+  engagementDaily?: Record<string, {visits: number; favorites: number}>;
+  engagementStartedAt?: string;
   views?: number;
   favorites?: number;
   type?: string;
@@ -275,4 +277,3 @@ export interface AuctionItem {
   status: "live" | "upcoming" | "ended";
   minBidIncrement: number;
 }
-
