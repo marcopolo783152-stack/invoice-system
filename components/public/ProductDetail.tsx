@@ -360,7 +360,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, on
                 </div>
                 <div className="flex items-center gap-1.5 bg-editorial-aside px-3 py-1 border border-editorial-border rounded-none text-editorial-accent">
                   <Star className="h-3.5 w-3.5 fill-editorial-accent text-editorial-accent" />
-                  <span className="font-bold text-xs">{rug.rating.toFixed(1)} / 5.0</span>
+                  <span className="font-bold text-xs">{Number.isFinite(rug.rating) ? `${rug.rating.toFixed(1)} / 5.0` : 'No ratings yet'}</span>
                 </div>
               </div>
 
