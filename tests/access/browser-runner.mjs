@@ -139,16 +139,16 @@ try{
  assert.equal((await post(managerToken,{action:'message',sessionId:'user-'+customer.uid,text:'Read another chat'})).status,403,'Customer operation cannot access another owner’s session');
 
  assert.equal((await post(customerToken,{action:'delete',sessionId:'user-'+customer.uid})).status,403,'Customers cannot delete staff conversations');
+ await staffChat.getByRole('button',{name:'Close customer conversation'}).click();
+ await staffChat.waitFor({state:'hidden'});
  const bulk=db.batch();
- for(let i=0;i<405;i++)bulk.set(db.collection('showroom_chat').doc(),{sessionId:'delete-test',sender:'customer',text:'Delete me',timestamp:new Date().toISOString()});
+ for(let i=0;i<405;i++)bulk.set(db.collection('showroom_chat').doc(),{sessionId:'delete-test',sender:'admin',text:'Delete me',timestamp:new Date().toISOString()});
  await bulk.commit();
  await db.doc('showroom_chat_sessions/delete-test').set({ownerUid:customer.uid,contact:{name:'Private name'},status:'ai'});
  assert.equal((await post(managerToken,{action:'delete',sessionId:'delete-test'})).status,200);
  assert.equal((await db.collection('showroom_chat').where('sessionId','==','delete-test').get()).size,0,'Delete removes every batch of messages');
  assert.deepEqual((await db.doc('showroom_chat_sessions/delete-test').get()).data(),{status:'deleted'},'Delete removes contact details');
  assert.equal((await post(customerToken,{action:'message',sessionId:'delete-test',text:'Old request'})).status,404,'Old requests cannot recreate deleted conversations');
- await staffChat.getByRole('button',{name:'Close customer conversation'}).click();
- await staffChat.waitFor({state:'hidden'});
 
  const removePayment=token=>fetch('http://127.0.0.1:3000/api/order-payment?orderId=test-order',{method:'DELETE',headers:{Authorization:'Bearer '+token}});
  assert.equal((await removePayment(customerToken)).status,403);
