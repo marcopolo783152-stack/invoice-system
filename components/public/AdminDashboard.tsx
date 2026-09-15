@@ -1,3 +1,5 @@
+import ListingStats from "@/components/ListingStats";
+import listingStyles from "@/components/ListingInventory.module.css";
 import OrderPaymentControls from '@/components/OrderPaymentControls';
 import {AdminChatBox} from "./AdminChatBox";
 import portal from "@/components/Portal.module.css";
@@ -316,7 +318,17 @@ const AdminWorkspace: React.FC = () => {
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("All");
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
-  const [inventoryViewMode, setInventoryViewMode] = useState<"list" | "gallery">("list");
+  const [inventoryViewMode, setInventoryViewMode] = useState<"list" | "gallery">("gallery");
+  const [listingSort, setListingSort] = useState("name");
+  const [showListingStats, setShowListingStats] = useState(false);
+  useEffect(() => {
+    try { setShowListingStats(localStorage.getItem('mp_listing_stats') === 'on'); } catch {}
+  }, []);
+  const toggleListingStats = () => setShowListingStats(previous => {
+    const next = !previous;
+    try { localStorage.setItem('mp_listing_stats', next ? 'on' : 'off'); } catch {}
+    return next;
+  });
   const [adminAvailabilityFilter, setAdminAvailabilityFilter] = useState("Available");
   const [adminSizeFilter, setAdminSizeFilter] = useState("All");
   const [adminTypeFilter, setAdminTypeFilter] = useState("All");
@@ -896,12 +908,12 @@ const AdminWorkspace: React.FC = () => {
       const matchesAvailability = 
         adminAvailabilityFilter === "All" ||
         (adminAvailabilityFilter === "Available" && r.availability === "In Stock") ||
-        (adminAvailabilityFilter === "On Hold" && r.availability === "Reserved") ||
+        (adminAvailabilityFilter === "On Hold" && (r.availability === "Reserved" || r.availability === "On Hold")) ||
         (adminAvailabilityFilter === "Sold" && r.availability === "Sold");
       
       return matchesSearch && matchesSize && matchesType && matchesAvailability;
-    });
-  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter]);
+    }).sort((a, b) => listingSort === 'price-low' ? a.price - b.price : listingSort === 'price-high' ? b.price - a.price : a.name.localeCompare(b.name));
+  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter, listingSort]);
 
   return (
     <div className={portal.shell}>
@@ -1779,14 +1791,15 @@ const AdminWorkspace: React.FC = () => {
 
         {/* --- TAB B: INVENTORY MANAGEMENT --- */}
         {activeTab === "inventory" && allowed('inventory') && (
-          <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
-            <div className="flex justify-between items-center border-b border-neutral-100 pb-4">
+          <div className={`bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 text-left ${listingStyles.workspace}`}>
+            <div className={`flex flex-wrap gap-4 justify-between items-center border-b border-neutral-100 pb-4 ${listingStyles.heading}`}>
               <div>
-                <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Registered Rug Inventory</h2>
+                <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Rug listings</h2>
                 <p className="text-xs text-neutral-400">Add, edit, modify, or delete high-resolution wool and silk rugs.</p>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="hidden sm:flex items-center bg-stone-100 rounded-lg p-1 border border-stone-200">
+              <div className="flex flex-wrap items-center gap-3">
+                <button type="button" role="switch" aria-checked={showListingStats} aria-label="Show listing stats" onClick={toggleListingStats} className={listingStyles.toggle}>Stats {showListingStats ? 'On' : 'Off'}</button>
+                <div className="flex items-center bg-stone-100 rounded-lg p-1 border border-stone-200">
                   <button 
                     onClick={() => setInventoryViewMode("list")} 
                     className={`p-1.5 rounded-md transition ${inventoryViewMode === 'list' ? 'bg-white shadow text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
@@ -1812,8 +1825,15 @@ const AdminWorkspace: React.FC = () => {
               </div>
             </div>
 
+            {showListingStats && <p className={`text-xs text-stone-500 ${listingStyles.explanation}`}>Last 30 days counts visits and new favorites once per browser, per rug, per UTC day. Collection begins with this update; earlier activity remains in lifetime counters. These are website statistics, not Etsy statistics.</p>}
             {/* Search and Size Filters Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-stone-50 p-4 border border-neutral-200">
+            <div className={listingStyles.filters}>
+              <div className="space-y-1">
+                <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider">Sort listings</label>
+                <select value={listingSort} onChange={e => setListingSort(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-xs">
+                  <option value="name">Name A–Z</option><option value="price-low">Price: lowest first</option><option value="price-high">Price: highest first</option>
+                </select>
+              </div>
               <div className="space-y-1">
                 <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider">Search Inventory</label>
                 <input
@@ -1865,11 +1885,12 @@ const AdminWorkspace: React.FC = () => {
             </div>
 
             {/* Bulk Actions Bar */}
-              <div className="bg-stone-50 p-4 rounded-xl border border-neutral-200 flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+              <div className={`bg-stone-50 p-4 rounded-xl border border-neutral-200 flex flex-wrap items-center justify-between gap-4 ${listingStyles.bulk}`}>
                   <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <span className="text-sm font-bold text-neutral-700">
-                      {selectedRugIds.length} Selected
-                    </span>
+                    <label className="text-sm font-bold text-neutral-700 flex items-center gap-2">
+                      <input type="checkbox" aria-label="Select all filtered rugs" checked={filteredAdminRugs.length > 0 && filteredAdminRugs.every(r => selectedRugIds.includes(r.id))} onChange={e => setSelectedRugIds(e.target.checked ? filteredAdminRugs.map(r => r.id) : [])} />
+                      {selectedRugIds.length} selected · {filteredAdminRugs.length} listings
+                    </label>
                     {selectedRugIds.length > 0 && (
                       <div className="flex items-center gap-2 border-l border-neutral-300 pl-4">
                         <div className="flex items-center gap-1">
@@ -1943,9 +1964,9 @@ const AdminWorkspace: React.FC = () => {
                 </div>
 
               {/* Catalog Display */}
-            <div className="overflow-x-auto">
+            <div className={listingStyles.catalog}>
               {inventoryViewMode === "gallery" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4 bg-stone-50 border-t border-neutral-200">
+                <div className={listingStyles.grid}>
                   {filteredAdminRugs.length === 0 ? (
                     <div className="col-span-full py-12 text-center text-neutral-400 font-sans italic text-sm">
                       No rugs found matching search query or active size filter.
@@ -1968,8 +1989,8 @@ const AdminWorkspace: React.FC = () => {
                             className="rounded-sm border-gray-300 text-editorial-accent focus:ring-editorial-accent cursor-pointer bg-white shadow-sm"
                           />
                         </div>
-                        <div className="relative aspect-square">
-                          <img src={r.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80"} alt={r.name} className="w-full h-full object-cover" />
+                        <a href={`/shop/${r.id}`} target="_blank" rel="noopener noreferrer" className={listingStyles.image} aria-label={`View ${r.name}`}>
+                          <img src={r.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80"} alt={r.name} className="w-full h-full object-contain" />
                           <span className={`absolute bottom-2 right-2 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider shadow-sm ${
                             r.availability === "In Stock" ? "bg-green-100 text-green-700" :
                             r.availability === "Reserved" ? "bg-amber-100 text-amber-700 animate-pulse" :
@@ -1977,7 +1998,7 @@ const AdminWorkspace: React.FC = () => {
                           }`}>
                             {r.availability}
                           </span>
-                        </div>
+                        </a>
                         <div className="p-4 flex flex-col flex-1">
                           <div className="flex justify-between items-start mb-2 gap-2">
                             <h3 className="font-bold text-neutral-900 text-sm leading-tight">{r.name}</h3>
@@ -2003,18 +2024,9 @@ const AdminWorkspace: React.FC = () => {
                             <span className="text-[10px] text-neutral-500">{r.origin} • {r.dimensions}</span>
                           </div>
 
+                          {showListingStats && <ListingStats rug={r} />}
                           <div className="mt-auto flex items-center justify-between pt-3 border-t border-neutral-100">
-                            <div className="flex gap-2">
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-editorial-text bg-stone-100 px-1.5 py-0.5 rounded-sm" title="Views">
-                                <Eye className="h-3 w-3 text-editorial-accent" />
-                                {r.views || 0}
-                              </span>
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-editorial-text bg-stone-100 px-1.5 py-0.5 rounded-sm" title="Favorites">
-                                <Heart className="h-3 w-3 text-rose-500" fill={r.favorites && r.favorites > 0 ? "currentColor" : "none"} />
-                                {r.favorites || 0}
-                              </span>
-                            </div>
-                            
+                            <span className="text-xs text-emerald-700">Free padding included</span>
                             <div className="flex gap-1">
                               <button onClick={() => handleOpenRugModal(r)} className="p-1.5 hover:bg-stone-100 text-neutral-600 hover:text-amber-600 rounded" title="Edit">
                                 <Edit3 className="h-3.5 w-3.5" />
@@ -2058,7 +2070,7 @@ const AdminWorkspace: React.FC = () => {
                     <th className="py-3 px-4">Geographic Origin</th>
                     <th className="py-3 px-4">Size & Shape</th>
                     <th className="py-3 px-4">Price Value</th>
-                    <th className="py-3 px-4">Views</th>
+                    {showListingStats && <th className="py-3 px-4">Listing stats</th>}
                     <th className="py-3 px-4">Availability</th>
                     <th className="py-3 px-4 text-center">Manage</th>
                   </tr>
@@ -2069,7 +2081,7 @@ const AdminWorkspace: React.FC = () => {
                     if (filteredAdminRugs.length === 0) {
                       return (
                         <tr>
-                          <td colSpan={7} className="py-8 text-center text-neutral-400 font-sans italic text-xs">
+                          <td colSpan={showListingStats ? 9 : 8} className="py-8 text-center text-neutral-400 font-sans italic text-xs">
                             No rugs found matching search query or active size filter.
                           </td>
                         </tr>
@@ -2119,18 +2131,7 @@ const AdminWorkspace: React.FC = () => {
                             <span>${r.price.toLocaleString()}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4">
-                          <div className="flex flex-col gap-1">
-                            <span className="inline-flex items-center gap-1 text-xs font-bold text-editorial-text bg-stone-100 px-2 py-1 rounded-sm border border-stone-200">
-                              <Eye className="h-3 w-3 text-editorial-accent" />
-                              {r.views || 0}
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-xs font-bold text-editorial-text bg-stone-100 px-2 py-1 rounded-sm border border-stone-200">
-                              <Heart className="h-3 w-3 text-rose-500" fill={r.favorites && r.favorites > 0 ? "currentColor" : "none"} />
-                              {r.favorites || 0}
-                            </span>
-                          </div>
-                        </td>
+                        {showListingStats && <td className="py-3 px-4"><ListingStats rug={r} /></td>}
                         <td className="py-3 px-4">
                           <select
                             value={r.availability}

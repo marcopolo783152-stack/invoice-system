@@ -5,6 +5,7 @@
 
 import React, { useState } from "react";
 import { useStore } from "@/context/StoreContext";
+import RugCheckoutButton from "./RugCheckoutButton";
 import AddressAutocomplete from "../AddressAutocomplete";
 import {
   X,
@@ -107,7 +108,7 @@ export const CartView: React.FC = () => {
   if (appliedPromo) {
     if (appliedPromo.discountType === "percentage") {
       discount = rawSubtotal * (appliedPromo.discountValue / 100);
-    } else {
+    } else if (appliedPromo.discountType === "fixed") {
       discount = appliedPromo.discountValue;
     }
   }
@@ -136,7 +137,7 @@ export const CartView: React.FC = () => {
   // Calculate shipping cost based on weight & delivery option
   // "shiping cost like 2-5 lbs gonna be 16 dollar"
   let shipping = 0;
-  if (deliveryOption === "Delivery") {
+  if (deliveryOption === "Delivery" && appliedPromo?.discountType !== "free_shipping") {
     if (totalWeightLbs === 0) {
       shipping = 0;
     } else if (totalWeightLbs <= 1.9) {
@@ -184,7 +185,7 @@ export const CartView: React.FC = () => {
       billingAddress: billingSameAsShipping
         ? derivedShippingAddress
         : billingAddress,
-      notes,
+      notes: [notes.trim(), "Complimentary padding included with each rug."].filter(Boolean).join("\n"),
     };
 
     const paymentDetails = {
@@ -331,6 +332,7 @@ export const CartView: React.FC = () => {
                               <p className="text-sm text-gray-400">
                                 SKU: {item.rug.sku} | Origin: {item.rug.origin}
                               </p>
+                              <p className="text-xs text-emerald-700 font-semibold">Free rug padding included</p>
                               <p className="text-sm text-editorial-accent mt-0.5 font-light">
                                 Dimensions: {item.rug.dimensions}
                               </p>
@@ -351,62 +353,10 @@ export const CartView: React.FC = () => {
                   </div>
                 )}
 
-                {/* Smart Upsells Section */}
                 {cart.length > 0 && (
-                  <div className="mt-8 border-t border-editorial-border pt-6">
-                    <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold mb-4">
-                      Recommended for your collection
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Rug Pad Upsell */}
-                      <div className="border border-editorial-border p-4 bg-white flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <Layers className="w-4 h-4 text-emerald-600" />
-                            <h5 className="font-bold text-xs uppercase tracking-wider text-editorial-text">
-                              Premium Felt Rug Pad
-                            </h5>
-                          </div>
-                          <p className="text-xs text-gray-500 mb-3">
-                            Custom-cut to perfectly fit your rug. Prevents
-                            slipping, protects your floors, and adds luxurious
-                            cushion.
-                          </p>
-                        </div>
-                        <button
-                          onClick={() =>
-                            alert("Added Custom Rug Pad to your cart!")
-                          }
-                          className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-editorial-text text-xs uppercase tracking-widest font-bold transition"
-                        >
-                          + Add for $120
-                        </button>
-                      </div>
-
-                      {/* Stain Protection Upsell */}
-                      <div className="border border-editorial-border p-4 bg-white flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                            <h5 className="font-bold text-xs uppercase tracking-wider text-editorial-text">
-                              5-Year Stain Protection
-                            </h5>
-                          </div>
-                          <p className="text-xs text-gray-500 mb-3">
-                            White-glove application of our proprietary stain
-                            repellant before shipping. Complete peace of mind.
-                          </p>
-                        </div>
-                        <button
-                          onClick={() =>
-                            alert("Added Stain Protection to your cart!")
-                          }
-                          className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-editorial-text text-xs uppercase tracking-widest font-bold transition"
-                        >
-                          + Add for $250
-                        </button>
-                      </div>
-                    </div>
+                  <div className="mt-6 border border-emerald-200 bg-emerald-50 p-4">
+                    <h4 className="font-semibold text-emerald-900">Free padding with every rug</h4>
+                    <p className="mt-1 text-sm text-emerald-800">Complimentary rug padding is included with each rug in your order. No add-on charge.</p>
                   </div>
                 )}
               </>
@@ -649,13 +599,13 @@ export const CartView: React.FC = () => {
 
                   <div className="space-y-1">
                     <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
-                      Delivery instructions / Custom Padding Holds
+                      Delivery instructions
                     </label>
                     <textarea
                       rows={2}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="e.g. Please wrap for storage / hold for Tuesday delivery / include premium non-slip felt rug pad..."
+                      placeholder="e.g. Please hold for Tuesday pickup. Free padding is included with each rug."
                       className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-xs text-editorial-text resize-none font-light"
                     />
                   </div>
@@ -669,6 +619,10 @@ export const CartView: React.FC = () => {
                 onSubmit={handleCheckoutSubmit}
                 className="space-y-4 text-xs text-left"
               >
+                <RugCheckoutButton payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
+                  promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
+                    billingAddress: billingSameAsShipping ? derivedShippingAddress : billingAddress,
+                    notes: [notes.trim(), 'Complimentary padding included with each rug.'].filter(Boolean).join('\n')}}} />
                 <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none space-y-3">
                   <h3 className="font-semibold text-base">Pay by phone or in store</h3>
                   <p>Online payments are not available yet. Placing this order does not charge your card or take payment.</p>

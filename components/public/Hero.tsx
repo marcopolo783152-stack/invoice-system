@@ -519,7 +519,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
                 <div className="p-6 text-left space-y-2">
                   <div className="flex items-center gap-1.5 text-editorial-accent">
                     <Star className="h-3 w-3 fill-editorial-accent" />
-                    <span className="text-sm font-bold text-editorial-text">{rug.rating.toFixed(1)}</span>
+                    <span className="text-sm font-bold text-editorial-text">{Number.isFinite(rug.rating) ? rug.rating.toFixed(1) : 'No ratings yet'}</span>
                     <span className="text-xs text-gray-400">| Certified Origin</span>
                   </div>
                   <h3 className="font-serif text-lg font-light text-editorial-text group-hover:text-editorial-accent transition-colors truncate">
