@@ -1,3 +1,4 @@
+import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import {recordListingActivity} from "@/lib/record-listing-activity";
 import {chatRequest} from "@/lib/chat-client";
 /**
@@ -866,12 +867,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // --- INACTIVITY TIMEOUT (SHOWROOM) ---
     let inactivityTimer: NodeJS.Timeout;
-    const INACTIVITY_LIMIT = 4 * 60 * 60 * 1000; // 4 hours
+    const INACTIVITY_LIMIT = STAFF_INACTIVITY_TIMEOUT_MS;
 
     const resetInactivity = () => {
       clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
-        // Auto-logout after 4 hours
+        // Auto-logout after five hours of inactivity
         sessionStorage.removeItem('mp-invoice-auth');
         sessionStorage.removeItem('mp-invoice-user');
         localStorage.removeItem('mp-invoice-auth');
