@@ -58,3 +58,9 @@ test('Stripe SDK rejects forged, altered and stale webhook signatures', () => {
   const stale = stripe.webhooks.generateTestHeaderString({payload, secret, timestamp: Math.floor(Date.now() / 1000) - 600});
   assert.throws(() => stripe.webhooks.constructEvent(payload, stale, secret));
 });
+test('server pricing rejects held origins and flagged IDs even if browser requests them directly', () => {
+  assert.throws(() => priceCart(input, [{...rugs[0], origin: 'Iran'}]));
+  const id = 'rug-1783796714385';
+  assert.throws(() => priceCart({...input, items: [{id, quantity: 1}]}, [{...rugs[0], id, origin: 'Unknown'}]));
+  assert.ok(priceCart(input, [{...rugs[0], origin: 'Afghanistan'}]).total > 0);
+});

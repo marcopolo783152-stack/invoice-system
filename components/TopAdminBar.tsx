@@ -1,5 +1,6 @@
 'use client';
 
+import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
@@ -26,10 +27,10 @@ export default function TopAdminBar() {
 
     const resetTimeout = () => {
       clearTimeout(timeoutId);
-      // 15 minutes of inactivity logs out
+      // Five hours of inactivity logs out
       timeoutId = setTimeout(() => {
         handleLogout();
-      }, 15 * 60 * 1000);
+      }, STAFF_INACTIVITY_TIMEOUT_MS);
     };
 
     resetTimeout();

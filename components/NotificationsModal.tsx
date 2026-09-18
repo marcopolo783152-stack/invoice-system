@@ -41,7 +41,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, 
   const pendingOrders = (orders || []).filter(o => o.status === 'Pending Confirmation');
 
   // Pending Reviews
-  const pendingReviews = (reviews || []).filter(r => r.status === 'Pending');
+  const pendingReviews = (reviews || []).filter(r => !r.isApproved);
 
   const totalNotifications = unreadChats.length + newEstimates.length + pendingCleanings.length + pendingOrders.length + pendingReviews.length;
 
@@ -109,7 +109,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, 
                 <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><Brush size={18} /></div>
                 <div>
                   <h4 className="font-bold text-sm text-gray-900">Specialty Care Booking</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">{b.customerName} - {b.serviceRequested}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{b.fullName} - {b.serviceOption}</p>
                 </div>
               </div>
             </Link>
@@ -121,7 +121,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, 
                 <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Star size={18} /></div>
                 <div>
                   <h4 className="font-bold text-sm text-gray-900">New Review</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">{r.rating} Stars by {r.name}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{r.rating} Stars by {r.reviewerName}</p>
                 </div>
               </div>
             </Link>

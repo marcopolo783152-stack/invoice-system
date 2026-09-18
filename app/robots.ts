@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/admin', '/api/'],
     },
-    sitemap: 'https://marcopolorugs.com/sitemap.xml',
+    sitemap: 'https://www.marcopolorugs.com/sitemap.xml',
   }
 }

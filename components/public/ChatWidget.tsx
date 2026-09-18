@@ -5,7 +5,7 @@ import {chatRequest} from '@/lib/chat-client';
 import ChatText from '@/components/ChatText';
 import styles from '@/components/Chat.module.css';
 export function ChatWidget(){
- const {chatMessages,currentUser}=useStore();
+ const {chatMessages,currentUser,cartOpen}=useStore();
  const [open,setOpen]=useState(false),[text,setText]=useState(''),[sessionId,setSessionId]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[handoff,setHandoff]=useState(false);
  const [contact,setContact]=useState({name:'',email:'',phone:''});
@@ -20,6 +20,7 @@ export function ChatWidget(){
  useEffect(()=>{bottom.current?.scrollIntoView({behavior:'auto'});},[messages.length,open]);
  useEffect(()=>{const show=()=>setOpen(true);window.addEventListener('open-marcopolo-chat',show);return()=>window.removeEventListener('open-marcopolo-chat',show);},[]);
  const run=async(body:Record<string,unknown>)=>{setBusy(true);setError('');try{const result=await chatRequest({...body,sessionId,customerName:currentUser?.name||'Customer'});if(result.requiresHandoff)setHandoff(true);if(body.action==='handoff')setHandoff(false);return true;}catch(e){setError(e instanceof Error?e.message:'Message not sent. Please try again.');return false;}finally{setBusy(false);}};
+ if(cartOpen)return null;
  return open?<section className={styles.window} role="dialog" aria-label="Marco Polo customer support"><header className={styles.header}><div><strong>Cyrus · Marco Polo</strong><small>AI assistant & showroom support</small></div><button aria-label="Minimize chat" onClick={()=>setOpen(false)}>×</button></header>
  <div className={styles.feed} aria-live="polite">{!messages.length&&<div className={styles.bubble}><span className={styles.label}>Cyrus · AI assistant</span>Hello, and welcome! I’d love to help you find a rug, explore our care services or plan a visit. What brings you in today?</div>}
  {messages.map(m=><div key={m.id} className={styles.bubble+' '+(m.sender==='customer'?styles.mine:'')}><span className={styles.label}>{m.sender==='customer'?'You':m.isAutomated?'Cyrus · AI assistant':(m as any).staffName||'Showroom team'}</span><ChatText text={m.text}/></div>)}

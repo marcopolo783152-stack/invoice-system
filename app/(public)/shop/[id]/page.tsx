@@ -1,23 +1,25 @@
 import { Metadata } from 'next';
-import { INITIAL_RUGS } from '@/lib/data';
-import { Rug } from '@/types';
+import { catalogRugForPage } from '@/lib/server/catalog';
+import {notFound} from 'next/navigation';
+import { ClientRedirect } from './ClientRedirect';
 import Link from 'next/link';
 import { ArrowLeft, ShoppingBag } from 'lucide-react';
-import Image from 'next/image';
-import { ClientRedirect } from './ClientRedirect';
+
+
 
 // Revalidate this page occasionally to keep data fresh for SEO
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const rug = INITIAL_RUGS.find(r => r.id === params.id) || null;
+  const rug = await catalogRugForPage(params.id);
 
   if (!rug) {
-    return { title: 'Rug Details | Marco Polo Rugs' };
+    return { title: 'Rug Details | Marco Polo Rugs', robots: { index: false, follow: true } };
   }
 
   return {
-    title: `${rug.name} | Marco Polo Oriental Rugs`,
+    title: `${rug.name} | Marco Polo Rugs`,
+    alternates: {canonical: `https://www.marcopolorugs.com/shop/${rug.id}`},
     description: rug.description || `Beautiful ${rug.style} rug from ${rug.origin}. Size: ${rug.dimensions}.`,
     openGraph: {
       title: `${rug.name} | Marco Polo Oriental Rugs`,
@@ -35,19 +37,21 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
-  const rug = INITIAL_RUGS.find(r => r.id === params.id) || null;
+  const rug = await catalogRugForPage(params.id);
 
-  if (!rug) {
+  if (rug === undefined) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-editorial-bg text-editorial-text animate-pulse">
+      <main className="min-h-screen p-8 text-center">
+        <h1 className="text-2xl font-serif">Marco Polo Rugs</h1>
+        <p className="my-4">Opening this rug in our gallery…</p>
+        <Link href={`/?item=${encodeURIComponent(params.id)}`} className="underline">View rug photos and details</Link>
         <ClientRedirect rugId={params.id} />
-        <h1 className="text-xl font-serif text-neutral-400">Opening Rug Profile...</h1>
-      </div>
+      </main>
     );
   }
+  if (!rug) notFound();
 
-  // Googlebot will see this static HTML with all the important keywords!
-  // Human users will run ClientRedirect and instantly load the beautiful SPA modal.
+  // Render the same product information for visitors and search engines.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -79,7 +83,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
       "url": `https://www.marcopolorugs.com/shop/${rug.id}`,
       "priceCurrency": "USD",
       "price": rug.price,
-      "itemCondition": "https://schema.org/NewCondition",
+
       "availability": rug.availability === "In Stock" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "seller": {
         "@type": "Organization",
@@ -102,54 +106,55 @@ export default async function ProductPage({ params }: { params: { id: string } }
     <div className="min-h-screen bg-editorial-bg text-editorial-text p-4 md:p-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
       />
-      {/* Client Component that immediately redirects humans to the SPA view */}
-      <ClientRedirect rugId={params.id} />
-      
-      {/* Static SEO Content below (humans briefly see this or not at all, bots index this!) */}
+
       <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
         <Link href="/" className="inline-flex items-center text-sm font-bold uppercase tracking-wider text-neutral-500 hover:text-editorial-accent">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Gallery
         </Link>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <img 
-              src={rug.images?.[0] || ''} 
-              alt={rug.name} 
-              className="w-full aspect-[4/3] object-cover bg-neutral-100"
+            <img
+              src={rug.images?.[0] || ''}
+              alt={rug.name}
+              className="w-full max-h-[70vh] object-contain bg-neutral-100"
             />
           </div>
           <div className="space-y-6">
             <h1 className="text-3xl font-serif text-editorial-text">{rug.name}</h1>
-            <p className="text-xl text-neutral-600">${rug.price.toLocaleString()}</p>
-            
+            <p className="text-xl text-neutral-600">${Number(rug.price || 0).toLocaleString()}</p>
+
             <div className="space-y-2 text-sm text-neutral-500">
               <p><strong>Size:</strong> {rug.dimensions}</p>
               <p><strong>Style:</strong> {rug.style}</p>
               <p><strong>Origin:</strong> {rug.origin}</p>
               <p><strong>Status:</strong> {rug.availability}</p>
+              <p><strong>SKU:</strong> {rug.sku || rug.id}</p>
+              <p><strong>Material:</strong> {rug.material || "Ask our showroom"}</p>
+              <p><strong>Construction:</strong> {rug.manufacturingType || "Ask our showroom"}</p>
+              <p className="text-emerald-800 font-semibold">Free rug padding included</p>
             </div>
-            
+
             <div>
               <h2 className="text-lg font-serif mb-2">Description</h2>
               <p className="text-neutral-600 leading-relaxed text-sm">
                 {rug.description}
               </p>
             </div>
-            
-            <Link 
+
+            <Link
               href={`/?item=${rug.id}`}
               className="inline-flex items-center justify-center w-full bg-editorial-accent text-white font-bold py-3 px-6 uppercase tracking-wider"
             >
               <ShoppingBag className="w-4 h-4 mr-2" />
-              View in Showroom
+              View photos & add to cart
             </Link>
           </div>
         </div>
