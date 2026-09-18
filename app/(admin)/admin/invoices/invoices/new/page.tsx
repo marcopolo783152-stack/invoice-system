@@ -9,6 +9,7 @@
 
 import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import { logActivity } from '@/lib/audit-logger';
+import { appendInvoicePayment } from '@/lib/firebase-storage';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -341,25 +342,18 @@ function InvoicePageContent() {
       return;
     }
 
-    const currentPayments = invoiceData.payments || [];
-
-    // Create updated data object
-    const updatedData: InvoiceData = {
-      ...invoiceData,
-      payments: [...currentPayments, payment]
-    };
-
     try {
-      // Save to DB
-      await saveInvoice(updatedData, targetId);
+      const updatedData = await appendInvoicePayment(targetId, payment);
 
       // Update local state to reflect changes instantly
       setInvoiceData(updatedData);
       setShowPaymentModal(false);
       alert('Payment recorded successfully!');
+      return true;
     } catch (e) {
       console.error(e);
-      alert('Failed to save payment');
+      alert('Failed to save payment. Your entered details are kept so you can retry.');
+      return false;
     }
   };
 

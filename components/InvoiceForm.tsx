@@ -235,6 +235,13 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
               if (draft.discountValue) setDiscountValue(draft.discountValue);
               if (draft.discountType) setDiscountType(draft.discountType);
               if (draft.notes) setNotes(draft.notes);
+              if (typeof draft.downpayment === 'number') setDownpayment(draft.downpayment);
+              if (draft.date) setDate(draft.date);
+              if (typeof draft.isLumpSum === 'boolean') setIsLumpSum(draft.isLumpSum);
+              if (typeof draft.lumpSumAmount === 'number') setLumpSumAmount(draft.lumpSumAmount);
+              if (draft.signature) setSignature(draft.signature);
+              if (draft.pickupDate) setPickupDate(draft.pickupDate);
+              if (draft.servedBy) setServedBy(draft.servedBy);
             } else {
               localStorage.removeItem('mp_invoice_draft');
             }
@@ -260,7 +267,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
           additionalCharges,
           discountValue,
           discountType,
-          notes
+          notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy
         };
         try {
           localStorage.setItem('mp_invoice_draft', JSON.stringify(draft));
@@ -270,7 +277,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
         }
       }
     }
-  }, [documentType, mode, soldTo, items, terms, additionalCharges, discountValue, discountType, notes, initialData]);
+  }, [documentType, mode, soldTo, items, terms, additionalCharges, discountValue, discountType, notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy, initialData]);
 
   // AUTOMATIC TERMS UPDATE BASED ON BALANCE
   useEffect(() => {
@@ -547,6 +554,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       discountValue,
       isLumpSum,
       lumpSumAmount,
+      downpayment,
       servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
       pickupDate: documentType === 'WASH' ? pickupDate : undefined,
       // Auto-calculate status if it's currently 'washing' or 'repairing' (initial states)

@@ -1,5 +1,6 @@
 'use client';
 
+import { appendInvoicePayment } from '@/lib/firebase-storage';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -422,37 +423,16 @@ function InvoiceViewContent() {
     const handleSavePayment = async (payment: any) => {
         if (!invoice) return;
 
-        // Use type assertion to handle the new field until types propagate fully
-        const currentData = invoice.data as any;
-        const currentPayments = currentData.payments || [];
-
-        const newPayments = [...currentPayments, payment];
-        const newData = {
-            ...currentData,
-            payments: newPayments
-        };
-        
-        const calcs = calculateInvoice(newData);
-        if (calcs.balanceDue <= 0.01) {
-            newData.terms = 'Paid';
-        } else {
-            newData.terms = 'Outstanding';
-        }
-
-        const updatedInvoice = {
-            ...invoice,
-            data: newData,
-            updatedAt: new Date().toISOString()
-        };
-
         try {
-            await saveInvoice(updatedInvoice.data, invoice.id);
+            await appendInvoicePayment(invoice.id, payment);
             await loadInvoice(invoice.id);
             setShowPaymentModal(false);
             alert('Payment recorded successfully');
+            return true;
         } catch (e) {
             console.error(e);
-            alert('Failed to save payment');
+            alert('Failed to save payment. Your entered details are kept so you can retry.');
+            return false;
         }
     }
 
