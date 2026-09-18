@@ -119,7 +119,7 @@ interface StoreContextType {
   deleteChatSession: (sessionId: string) => void;
   
   // Customer Review Submit
-  submitReview: (rugId: string, reviewerName: string, rating: number, reviewText: string, imageUrl?: string) => void;
+  submitReview: (rugId: string, reviewerName: string, rating: number, reviewText: string, imageUrl?: string) => Promise<void>;
 
   // Hero Cover Photo & Showroom Announcement & Logo
   heroCoverPhotos: string[];
@@ -696,7 +696,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- Customer Reviews ---
-  const submitReview = (
+  const submitReview = async (
     rugId: string,
     reviewerName: string,
     rating: number,
@@ -713,8 +713,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isApproved: false, // Moderated by admin
       createdAt: new Date().toISOString()
     };
+    await addShowroomDoc(SHOWROOM_REVIEWS, newReview);
     setReviews(prev => [newReview, ...prev]);
-      addShowroomDoc(SHOWROOM_REVIEWS, newReview).catch(e => console.error("Review save failed", e));
   };
 
   const approveReview = (reviewId: string) => {

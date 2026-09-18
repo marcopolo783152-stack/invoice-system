@@ -261,8 +261,8 @@ export const CartView: React.FC = () => {
                 Marco Polo Oriental Rugs
               </span>
               <h2 id="cart-window-title" className="font-serif text-lg font-light text-editorial-text flex items-center gap-2">
-                {checkoutStep === "cart" && "Shopping Curation"}
-                {checkoutStep === "shipping" && "Shipping & Address Curation"}
+                {checkoutStep === "cart" && "Your cart"}
+                {checkoutStep === "shipping" && "Delivery details"}
                 {checkoutStep === "payment" && "Review your order"}
                 {checkoutStep === "success" && "Order Submitted!"}
               </h2>
@@ -331,7 +331,7 @@ export const CartView: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
-                      Selected Rug Masterworks
+                      Your rugs
                     </h4>
                     <div className="space-y-3">
                       {cart.map((item) => (
@@ -398,7 +398,7 @@ export const CartView: React.FC = () => {
             {checkoutStep === "shipping" && (
               <div className="space-y-4 text-xs">
                 <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
-                  Consignee Coordinates
+                  Contact details
                 </h4>
 
                 <div className="space-y-3">
@@ -434,7 +434,7 @@ export const CartView: React.FC = () => {
                     </div>
                     <div className="space-y-1">
                       <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
-                        Email Coordinates
+                        Email address
                       </label>
                       <input
                         type="email"
@@ -832,7 +832,7 @@ export const CartView: React.FC = () => {
             <div className={`${styles.summary} p-4 sm:p-6 bg-editorial-aside border-t border-editorial-border space-y-4`}>
               <div className="space-y-2 text-xs text-gray-500 font-sans font-light">
                 <div className="flex justify-between">
-                  <span>Showroom Subtotal:</span>
+                  <span>Subtotal:</span>
                   <span className="font-serif font-light text-editorial-text">
                     ${rawSubtotal.toLocaleString()}
                   </span>
@@ -855,7 +855,7 @@ export const CartView: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="flex items-center gap-1">
-                    Insured Freight (
+                    Delivery estimate (
                     {deliveryOption === "Pickup"
                       ? "Pickup"
                       : `${totalWeightLbs.toFixed(1)} lbs`}
@@ -929,7 +929,7 @@ export const CartView: React.FC = () => {
                   onClick={handleNextStep}
                   className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-xs rounded-none shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Proceed to Address Coordinates</span>
+                  <span>Continue to delivery</span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
               )}
