@@ -5,3 +5,11 @@ dialog.loginDialog{position:fixed;inset:0;margin:auto;padding:16px;border:0;bord
 dialog.loginDialog::backdrop{background:rgb(12 25 20 / 60%)}
 dialog.loginDialog .form{margin:48px auto 0;width:100%;box-sizing:border-box}
 @media(max-width:480px){dialog.loginDialog{padding:12px}dialog.loginDialog .form{padding:20px;margin-top:44px}}
+
+/* Customer account controls remain readable and usable on phones. */
+.page input,.page select,.page textarea{max-width:100%;box-sizing:border-box;font-size:16px}
+.page button,.page .button{min-height:44px}
+.page .row>div{min-width:0;overflow-wrap:anywhere}
+@media(max-width:540px){.page .row{flex-wrap:wrap;align-items:flex-start}.page .card{padding:18px}.page .hero{padding:24px}.page .actions{width:100%}.page .actions>*{flex:1}}
+
+.orderTotals{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 20px;margin:20px 0}.orderTotals dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}

@@ -18,7 +18,7 @@ export function ChatWidget(){
  },[currentUser?.id]);
  const messages=chatMessages.filter(m=>m.sessionId===sessionId).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
  useEffect(()=>{bottom.current?.scrollIntoView({behavior:'auto'});},[messages.length,open]);
- useEffect(()=>{const show=()=>setOpen(true);window.addEventListener('open-marcopolo-chat',show);return()=>window.removeEventListener('open-marcopolo-chat',show);},[]);
+ useEffect(()=>{const show=(event:Event)=>{setOpen(true);const draft=(event as CustomEvent).detail?.initialMessage;if(typeof draft==='string')setText(draft.slice(0,2000));};window.addEventListener('open-marcopolo-chat',show);return()=>window.removeEventListener('open-marcopolo-chat',show);},[]);
  const run=async(body:Record<string,unknown>)=>{setBusy(true);setError('');try{const result=await chatRequest({...body,sessionId,customerName:currentUser?.name||'Customer'});if(result.requiresHandoff)setHandoff(true);if(body.action==='handoff')setHandoff(false);return true;}catch(e){setError(e instanceof Error?e.message:'Message not sent. Please try again.');return false;}finally{setBusy(false);}};
  if(cartOpen)return null;
  return open?<section className={styles.window} role="dialog" aria-label="Marco Polo customer support"><header className={styles.header}><div><strong>Cyrus · Marco Polo</strong><small>AI assistant & showroom support</small></div><button aria-label="Minimize chat" onClick={()=>setOpen(false)}>×</button></header>

@@ -1,5 +1,6 @@
 import {auth as firebaseAuth} from '@/lib/auth';
 import ListingStats from "@/components/ListingStats";
+import { matchesSearch as matchesInventorySearch } from "@/lib/rug-discovery.mjs";
 import listingStyles from "@/components/ListingInventory.module.css";
 import OrderPaymentControls from '@/components/OrderPaymentControls';
 import {AdminChatBox} from "./AdminChatBox";
@@ -900,10 +901,7 @@ const AdminWorkspace: React.FC = () => {
 
   const filteredAdminRugs = useMemo(() => {
     return rugs.filter(r => {
-      const matchesSearch = adminSearchQuery === "" ||
-        (r.name || "").toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
-        (r.sku || "").toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
-        (r.origin || "").toLowerCase().includes(adminSearchQuery.toLowerCase());
+      const matchesSearch = matchesInventorySearch(r, adminSearchQuery);
 
       const matchesSize = matchesSizeLogic(r, adminSizeFilter);
 
@@ -1815,7 +1813,23 @@ const AdminWorkspace: React.FC = () => {
               </div>
             </div>
 
+            <div className={listingStyles.searchBar}>
+              <label htmlFor="admin-inventory-search" className={listingStyles.searchLabel}>Search your rug inventory</label>
+              <div className={listingStyles.searchField}>
+                <Search size={22} aria-hidden="true" />
+                <input id="admin-inventory-search" type="search" value={adminSearchQuery}
+                  onChange={e => setAdminSearchQuery(e.target.value)}
+                  placeholder="Search by rug name, SKU, color, material, origin or size"
+                  aria-describedby="inventory-search-help" />
+                {adminSearchQuery && <button type="button" onClick={() => setAdminSearchQuery('')}>Clear search</button>}
+              </div>
+              <p id="inventory-search-help" className={listingStyles.searchHelp}>Try a SKU or combine words, such as “blue wool”. The filters also apply to your search.</p>
+              <p role="status" aria-live="polite" className={listingStyles.searchCount}>
+                Showing {filteredAdminRugs.length} of {rugs.length} rugs{adminSearchQuery.trim() ? ` matching “${adminSearchQuery.trim()}”` : ''}.
+                {filteredAdminRugs.length === 0 && ' Try fewer words or change the filters, including Availability.'}
+              </p>
             {showListingStats && <p className={`text-xs text-stone-500 ${listingStyles.explanation}`}>Last 30 days counts visits and new favorites once per browser, per rug, per UTC day. Collection begins with this update; earlier activity remains in lifetime counters. These are website statistics, not Etsy statistics.</p>}
+            </div>
             {/* Search and Size Filters Bar */}
             <div className={listingStyles.filters}>
               <div className="space-y-1">
@@ -1823,16 +1837,6 @@ const AdminWorkspace: React.FC = () => {
                 <select value={listingSort} onChange={e => setListingSort(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-xs">
                   <option value="name">Name A–Z</option><option value="price-low">Price: lowest first</option><option value="price-high">Price: highest first</option>
                 </select>
-              </div>
-              <div className="space-y-1">
-                <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider">Search Inventory</label>
-                <input
-                  type="text"
-                  value={adminSearchQuery}
-                  onChange={(e) => setAdminSearchQuery(e.target.value)}
-                  placeholder="Search by name, SKU, origin..."
-                  className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-xs outline-none focus:border-amber-500"
-                />
               </div>
               <div className="space-y-1">
                 <label className="block text-xs text-neutral-500 font-bold uppercase tracking-wider">Filter by Size Category</label>

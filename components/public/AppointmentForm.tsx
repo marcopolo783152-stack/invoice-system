@@ -6,9 +6,10 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { reserveAppointment } from '@/lib/appointment-booking';
 import { APPOINTMENT_STAFF, appointmentSlots, showroomNow, isFutureSlot } from '@/lib/appointment-slots';
+import {Rug} from '@/types';
 import AddressAutocomplete from '../AddressAutocomplete';
 
-export default function AppointmentForm() {
+export default function AppointmentForm({publicRugs=[]}:{publicRugs?:Rug[]}) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     
@@ -26,6 +27,9 @@ export default function AppointmentForm() {
         zip: ''
     });
 
+    const [selectedIds,setSelectedIds] = useState<string[]>([]);
+    useEffect(()=>{setSelectedIds((new URLSearchParams(window.location.search).get('rugs')||'').split(',').filter(Boolean).slice(0,3));},[]);
+    const selectedRugs=publicRugs.filter(r=>selectedIds.includes(r.id));
     const [booked, setBooked] = useState<string[]>([]);
     const [availabilityReady, setAvailabilityReady] = useState(false);
     const [error, setError] = useState('');
@@ -56,7 +60,7 @@ export default function AppointmentForm() {
         setIsSubmitting(true);
 
         try {
-            await reserveAppointment(formData);
+            await reserveAppointment({...formData, notes: [selectedRugs.length ? 'Rugs to view: ' + selectedRugs.map(r=>r.name+' (SKU '+r.sku+', '+r.dimensions+')').join('; ') : '', formData.notes].filter(Boolean).join('\n')});
             setIsSuccess(true);
         } catch (err) {
             console.error(err);
@@ -83,7 +87,7 @@ export default function AppointmentForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="bg-white border border-neutral-100 p-8 shadow-sm rounded-sm max-w-3xl mx-auto space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white border border-neutral-100 p-8 shadow-sm rounded-sm max-w-3xl mx-auto space-y-6">{selectedRugs.length>0&&<div className="col-span-full rounded-lg bg-stone-100 p-4"><h3 className="font-semibold">Rugs for your visit</h3>{selectedRugs.map(r=><p key={r.id}>{r.name} · {r.dimensions} <button type="button" className="underline ml-2" onClick={()=>setSelectedIds(ids=>ids.filter(id=>id!==r.id))}>Remove</button></p>)}</div>}
             <div className="text-center mb-8">
                 <h2 className="text-3xl font-serif text-neutral-900 mb-2">Book an Appointment</h2>
                 <p className="text-neutral-500">Open every day, 10:00 AM–6:00 PM. Lunch: 1:30–2:00 PM. Appointments are 30 minutes, in Alexandria time.</p>

@@ -13,3 +13,13 @@
 .catalog { grid-column:1; min-width:0; overflow-x:auto; }
 @media(max-width:1000px) { .workspace { grid-template-columns:minmax(0,1fr); } .filters { grid-column:1; grid-row:auto; grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:540px) { .filters { grid-template-columns:1fr; } }
+
+.searchBar { grid-column:1 / -1; min-width:0; }
+.searchLabel { display:block; font-size:16px; font-weight:600; color:#183e35; margin-bottom:10px; }
+.searchField { display:flex; align-items:center; gap:12px; border:1px solid #a8b7b0; border-radius:10px; padding:4px 14px; background:#fff; color:#183e35; }
+.searchField:focus-within { outline:2px solid #183e35; outline-offset:2px; }
+.searchField input { flex:1; min-width:0; height:48px; font-size:16px; border:0; outline:none; background:transparent; color:#1c1917; }
+.searchField button { min-height:44px; padding:8px; font-size:14px; font-weight:600; text-decoration:underline; white-space:nowrap; }
+.searchHelp { margin:8px 0; font-size:14px; color:#57534e; }
+.searchCount { margin:6px 0 0; font-size:14px; font-weight:600; color:#183e35; overflow-wrap:anywhere; }
+@media(max-width:540px) { .searchField { gap:6px; padding:4px 8px; } .searchField button { font-size:12px; } }
