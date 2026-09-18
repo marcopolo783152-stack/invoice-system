@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import {isRugOnReviewHold} from '../../lib/catalog-visibility.mjs';
 function load(path,mocks={},extras={}) {
   const module={exports:{}};
   const js=ts.transpileModule(readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
@@ -76,7 +77,7 @@ test('shipping returns rates without purchase and blocks a repeated purchase ope
 
 test('catalog fallback distinguishes unavailable server, missing rug and existing rug',async()=>{
   for(const state of ['unavailable','missing','exists']) {
-    const catalog=load('lib/server/catalog.ts',{'server-only':{},react:{cache:fn=>fn},'./firebase-admin':{serverDb:()=>{
+    const catalog=load('lib/server/catalog.ts',{'../catalog-visibility.mjs':{isRugOnReviewHold},'server-only':{},react:{cache:fn=>fn},'./firebase-admin':{serverDb:()=>{
       if(state==='unavailable')throw Error('SERVER_NOT_CONFIGURED');
       return {collection:()=>({doc:id=>({get:async()=>({exists:state==='exists',id,data:()=>({name:'Existing rug'})})})})};
     }}},{console:{error(){}}});

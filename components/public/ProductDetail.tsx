@@ -19,7 +19,7 @@ interface ProductDetailProps {
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ rugId, onClose, onSelectRugId }) => {
-  const { rugs, reviews, addToCart, submitReview, deleteReview, activeView, incrementRugViews, toggleRugFavorite, favoritedRugIds } = useStore();
+  const { publicRugs: rugs, reviews, addToCart, submitReview, deleteReview, activeView, incrementRugViews, toggleRugFavorite, favoritedRugIds } = useStore();
   
   const rug = rugs.find((r) => r.id === rugId);
   

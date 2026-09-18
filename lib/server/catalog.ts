@@ -1,3 +1,4 @@
+import { isRugOnReviewHold } from '../catalog-visibility.mjs';
 import 'server-only';
 import {cache} from 'react';
 import {serverDb} from './firebase-admin';
@@ -6,11 +7,12 @@ import {Rug} from '@/types';
 export const catalogRug = cache(async (id: string): Promise<Rug | null> => {
   if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) return null;
   const doc = await serverDb().collection('showroom_rugs').doc(id).get();
-  return doc.exists ? {...doc.data(), id:doc.id} as Rug : null;
+  const rug = doc.exists ? {...doc.data(), id:doc.id} as Rug : null;
+  return rug && !isRugOnReviewHold(rug) ? rug : null;
 });
 export async function catalogIds() {
-  const result = await serverDb().collection('showroom_rugs').select('availability').get();
-  return result.docs.filter(doc => doc.data().availability === 'In Stock').map(doc => doc.id);
+  const result = await serverDb().collection('showroom_rugs').select('availability', 'origin').get();
+  return result.docs.filter(doc => doc.data().availability === 'In Stock' && !isRugOnReviewHold({...doc.data(), id:doc.id})).map(doc => doc.id);
 }
 
 // Keep unavailable server configuration distinct from a genuinely missing rug.

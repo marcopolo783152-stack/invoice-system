@@ -52,7 +52,7 @@ const EditableText = ({ id, defaultText, className, type = "input" }: { id: stri
 };
 
 export const Hero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }) => {
-  const { rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhotos, submitReview, websiteContent, isEditMode, setWebsiteContent } = useStore();
+  const { publicRugs: rugs, reviews, sendChatMessage, addCleaningBooking, currentUser, heroCoverPhotos, submitReview, websiteContent, isEditMode, setWebsiteContent } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
 
   // Leave Review State

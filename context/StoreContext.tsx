@@ -1,3 +1,4 @@
+import { isRugOnReviewHold } from '@/lib/catalog-visibility.mjs';
 import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import {recordListingActivity} from "@/lib/record-listing-activity";
 import {chatRequest} from "@/lib/chat-client";
@@ -51,6 +52,7 @@ import {
 
 interface StoreContextType {
   rugs: Rug[];
+  publicRugs: Rug[];
   blogs: BlogPost[];
   orders: Order[];
   orderLoadError: string;
@@ -482,7 +484,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // --- Cart Actions ---
   const addToCart = (rug: Rug) => {
-    if (rug.availability !== "In Stock") return;
+    if (isRugOnReviewHold(rug) || rug.availability !== "In Stock") return;
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex((item) => item.rug.id === rug.id);
       if (existingIndex > -1) {
@@ -524,6 +526,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     appliedPromo?: PromoCode,
     discountAmount?: number
   ): Promise<Order> => {
+    if (cart.some(item => isRugOnReviewHold(rugs.find(r => r.id === item.rug.id)))) throw new Error("An item is unavailable for online ordering. Please remove it from your cart.");
     const subtotal = cart.reduce((sum, item) => sum + item.rug.price * item.quantity, 0);
     const total = subtotal + shipping + tax;
     
@@ -910,6 +913,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <StoreContext.Provider
       value={{
+        publicRugs: rugs.filter(r => !isRugOnReviewHold(r)),
         rugs,
         blogs,
         orders,

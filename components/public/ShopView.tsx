@@ -30,7 +30,7 @@ interface ShopViewProps {
 }
 
 export const ShopView: React.FC<ShopViewProps> = ({ onSelectRugId }) => {
-  const { rugs, addToCart, setCartOpen, toggleRugFavorite, favoritedRugIds, incrementRugViews } = useStore();
+  const { publicRugs: rugs, addToCart, setCartOpen, toggleRugFavorite, favoritedRugIds, incrementRugViews } = useStore();
   
   // Search and Sort State
   const [searchQuery, setSearchQuery] = useState("");
