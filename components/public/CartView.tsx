@@ -270,7 +270,7 @@ export const CartView: React.FC = () => {
             <button
               onClick={handleClose}
               aria-label="Close checkout"
-              className="p-1.5 text-gray-400 hover:text-editorial-text hover:bg-white border border-transparent hover:border-editorial-border rounded-none transition"
+              className="p-1.5 text-gray-600 hover:text-editorial-text hover:bg-white border border-transparent hover:border-editorial-border rounded-none transition"
             >
               <X className="h-4 w-4" />
             </button>
@@ -282,7 +282,7 @@ export const CartView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setCheckoutStep("cart")}
-                className={`py-3.5 border-r border-editorial-border transition-colors cursor-pointer ${checkoutStep === "cart" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside hover:bg-neutral-100"}`}
+                className={`py-3.5 border-r border-editorial-border transition-colors cursor-pointer ${checkoutStep === "cart" ? "bg-editorial-accent text-white" : "text-gray-600 bg-editorial-aside hover:bg-neutral-100"}`}
               >
                 1. Review Cart
               </button>
@@ -292,14 +292,14 @@ export const CartView: React.FC = () => {
                   if (checkoutStep === "payment") setCheckoutStep("shipping");
                 }}
                 disabled={checkoutStep === "cart"}
-                className={`py-3.5 border-r border-editorial-border transition-colors ${checkoutStep === "shipping" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"} ${checkoutStep === "payment" ? "cursor-pointer hover:bg-neutral-100" : "cursor-default"}`}
+                className={`py-3.5 border-r border-editorial-border transition-colors ${checkoutStep === "shipping" ? "bg-editorial-accent text-white" : "text-gray-600 bg-editorial-aside"} ${checkoutStep === "payment" ? "cursor-pointer hover:bg-neutral-100" : "cursor-default"}`}
               >
                 2. Shipping
               </button>
               <button
                 type="button"
                 disabled
-                className={`py-3.5 transition-colors cursor-default ${checkoutStep === "payment" ? "bg-editorial-accent text-white" : "text-gray-400 bg-editorial-aside"}`}
+                className={`py-3.5 transition-colors cursor-default ${checkoutStep === "payment" ? "bg-editorial-accent text-white" : "text-gray-600 bg-editorial-aside"}`}
               >
                 3. Review & Reserve
               </button>
@@ -314,23 +314,23 @@ export const CartView: React.FC = () => {
                 {cart.length === 0 ? (
                   <div className="text-center py-20 space-y-3">
                     <Trash2 className="h-8 w-8 text-editorial-accent/60 mx-auto" />
-                    <h3 className="font-serif font-light text-editorial-text text-lg">
+                    <h3 className="font-sans font-medium text-editorial-text text-lg">
                       Your Cart is Empty
                     </h3>
-                    <p className="text-xs text-gray-500 max-w-xs mx-auto font-light leading-relaxed">
+                    <p className="text-sm text-gray-500 max-w-xs mx-auto font-light leading-relaxed">
                       Explore our fine hand-knotted showroom catalog to select
                       antique, Persian, or modern masterpieces.
                     </p>
                     <button
                       onClick={handleClose}
-                      className="px-5 py-2.5 bg-editorial-accent text-white font-bold uppercase tracking-widest text-xs rounded-none shadow hover:bg-[#8E7453] transition"
+                      className="px-5 py-2.5 bg-editorial-accent text-white font-bold uppercase tracking-widest text-sm rounded-none shadow hover:bg-[#8E7453] transition"
                     >
                       Browse fine rugs
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
+                    <h4 className="text-sm uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
                       Your rugs
                     </h4>
                     <div className="space-y-3">
@@ -345,36 +345,37 @@ export const CartView: React.FC = () => {
                               "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"
                             }
                             alt={item.rug.name}
-                            className="w-20 h-20 object-cover rounded-none border border-editorial-border flex-shrink-0"
+                            className="w-20 h-20 object-contain rounded-none border border-editorial-border flex-shrink-0"
                             referrerPolicy="no-referrer"
                           />
                           <div className="min-w-0 flex-1 flex flex-col justify-between text-left">
                             <div>
                               <div className="flex justify-between items-start gap-2">
-                                <h5 className="font-serif text-xs font-light text-editorial-text truncate">
+                                <h5 className="font-sans text-base font-semibold text-editorial-text break-words">
                                   {item.rug.name}
                                 </h5>
                                 <button
+                                  aria-label={`Remove ${item.rug.name} from cart`}
                                   onClick={() => removeFromCart(item.rug.id)}
-                                  className="text-gray-400 hover:text-red-500 transition p-1"
+                                  className="text-gray-600 hover:text-red-500 transition p-1"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
-                              <p className="text-sm text-gray-400">
+                              <p className="text-sm text-gray-600">
                                 SKU: {item.rug.sku} | Origin: {item.rug.origin}
                               </p>
-                              <p className="text-xs text-emerald-700 font-semibold">Free rug padding included</p>
+                              <p className="text-sm text-emerald-700 font-semibold">Free rug padding included</p>
                               <p className="text-sm text-editorial-accent mt-0.5 font-light">
                                 Dimensions: {item.rug.dimensions}
                               </p>
                             </div>
 
                             <div className="flex justify-between items-center pt-2 border-t border-editorial-border mt-2">
-                              <span className="text-sm uppercase tracking-wider text-gray-400 font-light">
-                                Unique Unit
+                              <span className="text-sm uppercase tracking-wider text-gray-600 font-light">
+                                Quantity: {item.quantity}
                               </span>
-                              <span className="font-serif text-sm font-light text-editorial-text">
+                              <span className="font-sans text-base font-semibold text-editorial-text">
                                 ${item.rug.price.toLocaleString()}
                               </span>
                             </div>
@@ -396,14 +397,14 @@ export const CartView: React.FC = () => {
 
             {/* --- STEP 2: SHIPPING FORM --- */}
             {checkoutStep === "shipping" && (
-              <div className="space-y-4 text-xs">
-                <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
+              <div className="space-y-4 text-sm">
+                <h4 className="text-sm uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
                   Contact details
                 </h4>
 
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                    <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm">
                       Full Recipient Name
                     </label>
                     <input
@@ -413,13 +414,13 @@ export const CartView: React.FC = () => {
                       autoComplete="name"
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Elena Rostov"
-                      className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                      className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-sm text-editorial-text focus:border-editorial-accent"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                      <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm">
                         Phone Line
                       </label>
                       <input
@@ -429,11 +430,11 @@ export const CartView: React.FC = () => {
                         autoComplete="tel"
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+1 (555) 789-0122"
-                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-sm text-editorial-text focus:border-editorial-accent"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                      <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm">
                         Email address
                       </label>
                       <input
@@ -443,14 +444,14 @@ export const CartView: React.FC = () => {
                         autoComplete="email"
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="elena@luxury-designs.com"
-                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-sm text-editorial-text focus:border-editorial-accent"
                       />
                     </div>
                   </div>
 
                   {/* Pickup or Delivery Selector */}
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                    <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm mb-1">
                       Fulfillment Mode
                     </label>
                     <div className="grid grid-cols-2 gap-2 bg-neutral-150 p-1 rounded-none border border-editorial-border">
@@ -464,7 +465,7 @@ export const CartView: React.FC = () => {
                           setShippingState("");
                           setShippingZip("");
                         }}
-                        className={`py-2 text-center text-xs font-bold uppercase tracking-wider transition ${
+                        className={`py-2 text-center text-sm font-bold uppercase tracking-wider transition ${
                           deliveryOption === "Delivery"
                             ? "bg-editorial-accent text-white font-semibold"
                             : "text-gray-500 hover:text-editorial-text"
@@ -478,7 +479,7 @@ export const CartView: React.FC = () => {
                           setDeliveryOption("Pickup");
                           // Delivery option set to pickup, derived address handles it automatically.
                         }}
-                        className={`py-2 text-center text-xs font-bold uppercase tracking-wider transition ${
+                        className={`py-2 text-center text-sm font-bold uppercase tracking-wider transition ${
                           deliveryOption === "Pickup"
                             ? "bg-editorial-accent text-white font-semibold"
                             : "text-gray-500 hover:text-editorial-text"
@@ -492,7 +493,7 @@ export const CartView: React.FC = () => {
                   {deliveryOption === "Delivery" ? (
                     <div className="space-y-3 animate-fadeIn">
                       <div>
-                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                        <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm mb-1">
                           Street Address *
                         </label>
                         <input
@@ -502,11 +503,11 @@ export const CartView: React.FC = () => {
                           autoComplete="street-address"
                           onChange={(e) => setShippingStreet(e.target.value)}
                           placeholder="783 Park Avenue"
-                          className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                          className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-sm text-editorial-text focus:border-editorial-accent"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                        <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm mb-1">
                           Apt, Suite, Bldg (optional)
                         </label>
                         <input
@@ -515,12 +516,12 @@ export const CartView: React.FC = () => {
                           autoComplete="address-line2"
                           onChange={(e) => setShippingApt(e.target.value)}
                           placeholder="Apt 14B"
-                          className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                          className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-sm text-editorial-text focus:border-editorial-accent"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                          <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm mb-1">
                             City *
                           </label>
                           <input
@@ -530,12 +531,12 @@ export const CartView: React.FC = () => {
                             autoComplete="address-level2"
                             onChange={(e) => setShippingCity(e.target.value)}
                             placeholder="New York"
-                            className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                            className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-sm text-editorial-text focus:border-editorial-accent"
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                            <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm mb-1">
                               State *
                             </label>
                             <input
@@ -545,11 +546,11 @@ export const CartView: React.FC = () => {
                               autoComplete="address-level1"
                               onChange={(e) => setShippingState(e.target.value)}
                               placeholder="NY"
-                              className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                              className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-sm text-editorial-text focus:border-editorial-accent"
                             />
                           </div>
                           <div>
-                            <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm mb-1">
+                            <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm mb-1">
                               Zip *
                             </label>
                             <input
@@ -559,21 +560,14 @@ export const CartView: React.FC = () => {
                               autoComplete="postal-code"
                               onChange={(e) => setShippingZip(e.target.value)}
                               placeholder="10021"
-                              className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                              className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-sm text-editorial-text focus:border-editorial-accent"
                             />
                           </div>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-400 mt-1">
-                        Est. total shipping weight:{" "}
-                        <strong>{totalWeightLbs.toFixed(1)} lbs</strong>.
-                        Shipping cost applies:{" "}
-                        {totalWeightLbs <= 1.9
-                          ? "$8 (under 2 lbs)"
-                          : totalWeightLbs >= 2 && totalWeightLbs <= 5
-                            ? "$16 (2-5 lbs)"
-                            : "$45 (premium insured)"}
-                        .
+                      <p className="text-sm text-gray-600 mt-1">
+                        Delivery estimate: <strong>${shipping.toFixed(2)}</strong>.
+                        Our showroom will confirm delivery arrangements before payment.
                       </p>
                     </div>
                   ) : (
@@ -581,14 +575,14 @@ export const CartView: React.FC = () => {
                       <span className="text-sm uppercase tracking-wider text-editorial-accent font-bold block">
                         Alexandria HQ Showroom Location
                       </span>
-                      <p className="text-xs text-editorial-text font-serif italic">
+                      <p className="text-sm text-editorial-text font-serif italic">
                         MARCO POLO ORIENTAL RUGS, INC.
                         <br />
                         3260 DUKE ST
                         <br />
                         ALEXANDRIA, VA 22314
                       </p>
-                      <p className="text-xs text-gray-500 font-light">
+                      <p className="text-sm text-gray-500 font-light">
                         We will secure your purchase in our vault. You may pick
                         it up at your convenience. Bring your confirmation code
                         and ID.
@@ -606,7 +600,7 @@ export const CartView: React.FC = () => {
                         }
                         className="rounded-none accent-editorial-accent border-editorial-border h-4 w-4 cursor-pointer"
                       />
-                      <span className="font-semibold text-xs">
+                      <span className="font-semibold text-sm">
                         Billing address is identical to shipping
                       </span>
                     </label>
@@ -614,7 +608,7 @@ export const CartView: React.FC = () => {
 
                   {!billingSameAsShipping && (
                     <div className="space-y-1 animate-fadeIn">
-                      <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                      <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm">
                         Billing Address
                       </label>
                       <input
@@ -624,13 +618,13 @@ export const CartView: React.FC = () => {
                         autoComplete="street-address"
                         onChange={(e) => setBillingAddress(e.target.value)}
                         placeholder="Billing address..."
-                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-xs text-editorial-text focus:border-editorial-accent"
+                        className="w-full bg-white border border-editorial-border rounded-none py-2.5 px-3 outline-none text-sm text-editorial-text focus:border-editorial-accent"
                       />
                     </div>
                   )}
 
                   <div className="space-y-1">
-                    <label className="block text-gray-400 font-semibold uppercase tracking-wider text-sm">
+                    <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm">
                       Delivery instructions
                     </label>
                     <textarea
@@ -638,7 +632,7 @@ export const CartView: React.FC = () => {
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="e.g. Please hold for Tuesday pickup. Free padding is included with each rug."
-                      className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-xs text-editorial-text resize-none font-light"
+                      className="w-full bg-white border border-editorial-border rounded-none py-2 px-3 outline-none focus:border-editorial-accent text-sm text-editorial-text resize-none font-light"
                     />
                   </div>
                 </div>
@@ -649,7 +643,7 @@ export const CartView: React.FC = () => {
             {checkoutStep === "payment" && (
               <form
                 onSubmit={handleCheckoutSubmit}
-                className="space-y-4 text-xs text-left"
+                className="space-y-4 text-sm text-left"
               >
                 <RugCheckoutButton payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
@@ -698,7 +692,7 @@ export const CartView: React.FC = () => {
                   <h3 className="font-serif text-2xl font-light text-editorial-text">
                     Thank you — order submitted!
                   </h3>
-                  <p className="text-xs text-gray-500 leading-relaxed max-w-sm mx-auto font-light">
+                  <p className="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto font-light">
                     No payment has been taken. Online payments are not available yet.
                     Our showroom team will contact you to confirm availability and arrange
                     payment by phone or in store. For assistance, call (703) 461-0207
@@ -773,11 +767,11 @@ export const CartView: React.FC = () => {
                         {shopProfile?.name || "Marco Polo"}
                       </h4>
                       {shopProfile?.address && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-sm text-gray-500 mt-1">
                           {shopProfile.address}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm text-gray-500">
                         {[shopProfile?.phone, shopProfile?.email]
                           .filter(Boolean)
                           .join(" • ")}
@@ -785,8 +779,8 @@ export const CartView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-b border-editorial-border pb-2 text-xs">
-                    <span className="text-gray-400 font-semibold uppercase tracking-wider">
+                  <div className="flex items-center justify-between border-b border-editorial-border pb-2 text-sm">
+                    <span className="text-gray-600 font-semibold uppercase tracking-wider">
                       Tracking Reference
                     </span>
                     <span className="font-mono font-bold text-editorial-accent text-sm">
@@ -815,11 +809,11 @@ export const CartView: React.FC = () => {
                 <div className="space-y-2 max-w-sm mx-auto">
                   <button
                     onClick={handleClose}
-                    className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-xs rounded-none transition"
+                    className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none transition"
                   >
                     Return to Showroom
                   </button>
-                  <p className="text-xs text-gray-400 font-light">
+                  <p className="text-sm text-gray-600 font-light">
                     Need assistance? Use our floating concierge support chat.
                   </p>
                 </div>
@@ -830,10 +824,10 @@ export const CartView: React.FC = () => {
           {/* Checkout Footer Totals Summary (Only if cart/shipping/payment) */}
           {checkoutStep !== "success" && cart.length > 0 && (
             <div className={`${styles.summary} p-4 sm:p-6 bg-editorial-aside border-t border-editorial-border space-y-4`}>
-              <div className="space-y-2 text-xs text-gray-500 font-sans font-light">
+              <div className="space-y-2 text-base text-gray-700 font-sans">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span className="font-serif font-light text-editorial-text">
+                  <span className="font-sans font-medium text-editorial-text">
                     ${rawSubtotal.toLocaleString()}
                   </span>
                 </div>
@@ -849,20 +843,16 @@ export const CartView: React.FC = () => {
                 )}
                 <div className="flex justify-between">
                   <span>Sales Tax (6%):</span>
-                  <span className="font-serif font-light text-editorial-text">
+                  <span className="font-sans font-medium text-editorial-text">
                     ${tax.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="flex items-center gap-1">
-                    Delivery estimate (
-                    {deliveryOption === "Pickup"
-                      ? "Pickup"
-                      : `${totalWeightLbs.toFixed(1)} lbs`}
-                    ):
-                    <Truck className="h-3.5 w-3.5 text-gray-400" />
+                    {deliveryOption === "Pickup" ? "Store pickup:" : "Delivery estimate:"}
+                    <Truck className="h-3.5 w-3.5 text-gray-600" />
                   </span>
-                  <span className="font-serif font-light text-editorial-text">
+                  <span className="font-sans font-medium text-editorial-text">
                     {deliveryOption === "Pickup" ? (
                       <span className="text-green-700 font-sans uppercase text-sm font-semibold">
                         Free Pickup
@@ -892,7 +882,7 @@ export const CartView: React.FC = () => {
                       onChange={(e) =>
                         setPromoInput(e.target.value.toUpperCase())
                       }
-                      className="w-full bg-white border border-editorial-border py-2 px-3 text-xs outline-none focus:border-editorial-accent uppercase"
+                      className="w-full bg-white border border-editorial-border py-2 px-3 text-sm outline-none focus:border-editorial-accent uppercase"
                     />
                     <button
                       onClick={() => {
@@ -906,18 +896,18 @@ export const CartView: React.FC = () => {
                           setPromoError("Invalid or expired promo code");
                         }
                       }}
-                      className="bg-[#1A1A1A] text-white px-4 text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-[#333]"
+                      className="bg-[#1A1A1A] text-white px-4 text-sm font-bold uppercase tracking-widest cursor-pointer hover:bg-[#333]"
                     >
                       Apply
                     </button>
                   </div>
                   {promoError && (
-                    <div className="text-red-500 text-xs mt-1">
+                    <div className="text-red-500 text-sm mt-1">
                       {promoError}
                     </div>
                   )}
                   {appliedPromo && (
-                    <div className="text-green-600 text-xs mt-1">
+                    <div className="text-green-600 text-sm mt-1">
                       Promo applied successfully!
                     </div>
                   )}
@@ -927,7 +917,7 @@ export const CartView: React.FC = () => {
               {checkoutStep === "cart" && (
                 <button
                   onClick={handleNextStep}
-                  className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-xs rounded-none shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Continue to delivery</span>
                   <ChevronRight className="h-4 w-4" />
@@ -947,7 +937,7 @@ export const CartView: React.FC = () => {
                       !shippingZip) &&
                       deliveryOption === "Delivery")
                   }
-                  className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-xs rounded-none shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Proceed to Final Review</span>
                   <ChevronRight className="h-4 w-4" />
