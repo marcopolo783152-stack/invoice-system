@@ -468,7 +468,8 @@ export async function sendSignatureRequestEmail(
   invoiceNumber: string,
   signatureLink: string
 ): Promise<boolean> {
-  const config = getEmailConfig();
+  const cloudSettings = await import('./settings-storage').then(m => m.getSettingsFromCloud());
+  const config = cloudSettings?.emailConfig || getEmailConfig();
   const templateId = config.templateIdSignature || config.templateIdInvoice;
 
   if (!config.serviceId || !templateId || !config.publicKey) {
@@ -490,7 +491,7 @@ export async function sendSignatureRequestEmail(
         signature_link: signatureLink,
         invoice_link: signatureLink,
         invoice_url: signatureLink,
-        message: `Dear ${customerName},\n\nYour signature is required for invoice #${invoiceNumber}. Please click the link below to sign electronically. This link is for one-time use:\n\n${signatureLink}\n\nThank you!`
+        message: `Dear ${customerName},\n\nYour signature is required for invoice #${invoiceNumber}. Please click the link below to sign electronically. You can review and sign your invoice here:\n\n${signatureLink}\n\nThank you!`
       },
       config.publicKey
     );

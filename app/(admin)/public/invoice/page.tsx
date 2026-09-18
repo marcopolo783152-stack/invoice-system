@@ -17,6 +17,7 @@ function PublicInvoiceContent() {
     const [invoice, setInvoice] = useState<SavedInvoice | null>(null);
     const [calculations, setCalculations] = useState<InvoiceCalculations | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const invoiceRef = useRef<HTMLDivElement>(null);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isSavingSignature, setIsSavingSignature] = useState(false);
@@ -46,13 +47,19 @@ function PublicInvoiceContent() {
     }, [loading, invoice, searchParams]);
 
     const loadInvoice = async (invoiceId: string) => {
+        setLoading(true);
+        setLoadError('');
+        setInvoice(null);
+        setCalculations(null);
         try {
             const data = await getInvoiceByIdAsync(invoiceId);
             if (data) {
+                const totals = calculateInvoice(data.data);
                 setInvoice(data);
-                setCalculations(calculateInvoice(data.data));
+                setCalculations(totals);
             }
         } catch (error) {
+            setLoadError('We could not open your invoice right now. Please try again or contact Marco Polo Rugs.');
             console.error('Failed to load invoice:', error);
         } finally {
             setLoading(false);
@@ -110,8 +117,10 @@ function PublicInvoiceContent() {
     if (!invoice || !calculations) {
         return (
             <div style={{ padding: 40, fontFamily: 'sans-serif', textAlign: 'center' }}>
-                <h2 style={{ color: '#ef4444' }}>Invoice Not Found</h2>
-                <p style={{ color: '#666' }}>This invoice may have been deleted or does not exist.</p>
+                <h2 style={{ color: '#ef4444' }}>Unable to open invoice</h2>
+                <p style={{ color: '#666' }}>{loadError || 'Please check that you opened the complete link from your email. If it still does not open, contact the showroom.'}</p>
+                {id && <button onClick={() => loadInvoice(id)} style={{padding:'12px 20px',margin:12,cursor:'pointer'}}>Try again</button>}
+                <p><a href="tel:+17034610207">Call Marco Polo Rugs: (703) 461-0207</a></p>
             </div>
         );
     }

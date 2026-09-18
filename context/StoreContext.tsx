@@ -1,5 +1,4 @@
 import { isRugOnReviewHold } from '@/lib/catalog-visibility.mjs';
-import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import {recordListingActivity} from "@/lib/record-listing-activity";
 import {chatRequest} from "@/lib/chat-client";
 /**
@@ -868,46 +867,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       handleSetActiveView('customer');
     }
 
-    // --- INACTIVITY TIMEOUT (SHOWROOM) ---
-    let inactivityTimer: NodeJS.Timeout;
-    const INACTIVITY_LIMIT = STAFF_INACTIVITY_TIMEOUT_MS;
-
-    const resetInactivity = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        // Auto-logout after five hours of inactivity
-        sessionStorage.removeItem('mp-invoice-auth');
-        sessionStorage.removeItem('mp-invoice-user');
-        localStorage.removeItem('mp-invoice-auth');
-        localStorage.removeItem('mp-invoice-user');
-        sessionStorage.removeItem('marcopolo_current_user');
-        sessionStorage.removeItem('marcopolo_active_view');
-        if (typeof window !== 'undefined') {
-          handleSetActiveView('customer');
-        }
-      }, INACTIVITY_LIMIT);
-    };
-
-    // Attach listeners
-    if (typeof window !== 'undefined') {
-      window.addEventListener('mousemove', resetInactivity);
-      window.addEventListener('keypress', resetInactivity);
-      window.addEventListener('click', resetInactivity);
-      window.addEventListener('scroll', resetInactivity);
-      window.addEventListener('touchstart', resetInactivity);
-      resetInactivity();
-    }
-
-    return () => {
-      if (typeof window !== 'undefined') {
-        clearTimeout(inactivityTimer);
-        window.removeEventListener('mousemove', resetInactivity);
-        window.removeEventListener('keypress', resetInactivity);
-        window.removeEventListener('click', resetInactivity);
-        window.removeEventListener('scroll', resetInactivity);
-        window.removeEventListener('touchstart', resetInactivity);
-      }
-    };
+    // Staff inactivity is managed centrally by TopAdminBar across tabs.
   }, []);
 
   return (
