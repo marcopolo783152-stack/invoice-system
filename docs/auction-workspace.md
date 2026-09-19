@@ -1,10 +1,19 @@
 # Marco Polo Rugs auction workspace — first implementation
 
-Status: staff sandbox and customer preregistration. NOT ready for public bidding.
+Status: real auction catalog management, public lot previews, account watchlists and a separate staff bidding lab. NOT ready for public bidding.
+
+## Catalog management update
+
+The auction catalog now shows ONLY explicitly created and published auction lots, not the regular retail collection. Staff use `/admin/auctions` → Catalog & lots → Create auction lot → Save draft → Publish preview. Draft editing uses optimistic version checks; publication checks the current inventory availability and origin review hold again. Unpublishing/archiving requires a recorded reason. Records are stored in `auction_lots` with an `events` subcollection. There is no real stock lock or bidding activation yet.
+
+Public `/api/auction/catalog` returns allowlisted lot data and rechecks live inventory. Private reserve amounts and staff data never appear in that response. `/auctions/lots/[id]` shows an auction-specific gallery, opening bid, reserve indicator, condition, delivery options and planned dates. `/auctions/account` lists authenticated account watchlists, persisted separately in `auction_watchlists/{uid}/lots`.
+
+The blank secondary button labels were caused by CSS specificity; both secondary and test-lot button selectors are now scoped to the page so their text remains dark on white. The preview connection failure has NOT been verified live: server configuration failures now name the missing/mismatched configuration rather than suggesting endless refreshes. Ensure the three server Firebase credentials are scoped to Preview in Vercel, and redeploy, if `AUCTION_SERVER_CONFIG` is shown. No secret values were accessed or changed.
+
 
 ## Where to review
 
-- `/?view=auction`: customer landing page and searchable, size-filtered public collection preview. No account is required for browsing or opening rug details. Preview rugs come from the existing in-stock public catalog and retain origin-review holds; they are not represented as scheduled auction lots.
+- `/?view=auction`: published auction lot previews, searchable by title/attributes and filterable by size/event, with opening-price and planned-close sorting.
 - `/auctions/register`: bidder profile and verification checklist.
 - `/admin/auctions`: staff sandbox, linked from the showroom admin sidebar and header.
 - Staff require `settings.read` to view and `settings.write` for mutations. Owner and General Manager qualify through the existing policy; custom staff require explicit permission. Server authorization applies to every sandbox request.
@@ -40,17 +49,17 @@ This commit deliberately does not claim a complete live auction system. Remainin
 4. Real customer bid API enforcing verified profile, current verified payment method, terms version, account standing, quote acceptance, staff exclusions and product eligibility on every bid.
 5. Inventory reservation integrated with ALL invoice, checkout and stock-edit paths. The sandbox makes no locks on real inventory.
 6. Shipping quotes from verified packed dimensions/weight and destination, quote validity, tax and loading capacity/fees. No unquoted shipping bids.
-7. Public catalog, watchlist, private customer maxima, bid alerts and customer wins dashboard. Use paginated queries; current sandbox lists latest 100 lots and first 500 inventory items.
+7. Private customer maxima, bid alerts and customer wins dashboard (public lot previews and watchlist are now implemented). Use paginated queries; current sandbox lists latest 100 lots and first 500 inventory items.
 8. Automatic reliable closing, one winning order, deadline monitoring, notification outbox/retries, payment capture/failure handling, refunds/cancellation approvals, disputes and reconciliation.
 9. Shipment and pickup scheduling with identity checks, tracking, loading acknowledgment and completion records.
 10. Firestore emulator concurrency/security tests, provider sandbox end-to-end tests, signed-out access checks, iPad/mobile/browser QA, rate limiting and deployment review.
 
 ## Verification performed
 
-- 17 auction tests: rule behavior, authorization, profile forgery rejection, locked public API, retry handling, concurrent test bids, failed-payment fulfillment blocking and preservation of source inventory.
+- 22 auction tests: rule behavior, authorization, profile forgery rejection, locked public API, retry handling, concurrent test bids, failed-payment fulfillment blocking and preservation of source inventory.
 - 23 existing reliability/shopping/upgrade tests.
 - Tests use pure rules and an in-memory serialized transaction adapter; they do not establish real Firestore conflict behavior or prove deployed permissions.
 - Production build and TypeScript check. Existing optional `encoding` warning originates in employee clock / face-api dependencies.
-- No authenticated browser/iPad or live Firebase/Stripe test was performed.
+- No authenticated browser/iPad or live Firebase/Stripe test was performed. The admin loading failure’s actual deployed cause is still unverified.
 
 Technical reference: Firebase transaction semantics: https://firebase.google.com/docs/firestore/manage-data/transactions

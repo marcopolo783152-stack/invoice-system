@@ -148,7 +148,7 @@ function AppContent({initialRugId,initialRug}: Props) {
         )}
 
         {currentTab === "auction" && (
-          <AuctionView rugs={publicRugs} onSelectRug={setSelectedRugId} />
+          <AuctionView />
         )}
       </div>
 

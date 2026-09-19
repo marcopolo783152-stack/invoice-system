@@ -942,7 +942,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
 
           <nav className="space-y-1.5 text-sm" aria-label="Admin sections">
-{canAccess(staff, 'settings', 'read') && <a href="/admin/auctions" className="w-full flex items-center gap-3 py-3 px-3 rounded-none font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10"><ClipboardList className="h-4.5 w-4.5"/><span>Auction management <small className="block normal-case font-normal tracking-normal">Sandbox · Test only</small></span></a>}
+{canAccess(staff, 'settings', 'read') && <a href="/admin/auctions" className="w-full flex items-center gap-3 py-3 px-3 rounded-none font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10"><ClipboardList className="h-4.5 w-4.5"/><span>Auction management <small className="block normal-case font-normal tracking-normal">Lots &amp; public previews</small></span></a>}
 {(allowed('analytics') || allowed('transactions')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Overview</p>}
 {allowed('analytics') && (<button
               onClick={() => setActiveTab("analytics")}
@@ -1166,7 +1166,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
 
           <div className="text-right text-xs">
-            {canAccess(staff, 'settings', 'read') && <a href="/admin/auctions" className="inline-block mb-3 underline font-semibold">Auction management · Sandbox</a>}
+            {canAccess(staff, 'settings', 'read') && <a href="/admin/auctions" className="inline-block mb-3 underline font-semibold">Auction management</a>}
             <span className="text-gray-400 block font-semibold uppercase">Signed in as:</span>
             <span className="font-bold text-editorial-text font-mono">{staff?.email}</span>
           </div>

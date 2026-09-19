@@ -2,13 +2,16 @@
 import {useEffect,useState,FormEvent,useRef} from 'react';
 import {getAuth} from 'firebase/auth';
 import {app} from '@/lib/firebase';
+import LotManagement from './LotManagement';
 import StaffGate from '@/components/StaffGate';
 import {increment} from '@/lib/auction/engine.mjs';
 import styles from './Auction.module.css';
 const money=(c:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format((c||0)/100);
 const localDate=(n:number)=>{const d=new Date(n);return new Date(n-d.getTimezoneOffset()*60000).toISOString().slice(0,16);};
 async function api(query='',body?:object){const auth=getAuth(app);await auth.authStateReady();const user=auth.currentUser;if(!user||user.isAnonymous)throw Error('Please sign in as staff.');const response=await fetch('/api/auction/sandbox'+query,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+await user.getIdToken(),'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store'});const data=await response.json();if(!response.ok)throw Error(data.error||'Operation failed.');return data;}
-export default function AuctionAdmin(){return <StaffGate section="settings"><Workspace/></StaffGate>;}
+export default function AuctionAdmin(){return <StaffGate section="settings"><AuctionWorkspace/></StaffGate>;}
+function AuctionWorkspace(){const [tab,setTab]=useState('catalog');return <>{tab==='catalog'?<main className={styles.page}><a href="/?view=admin">← Showroom admin</a><p className={styles.eyebrow}>Marco Polo Rugs</p><h1>Auction management</h1><div className={styles.actions}><button aria-pressed>Catalog &amp; lots</button><button className={styles.secondary} onClick={()=>setTab('test')}>Bidding test lab</button><a className={`${styles.button} ${styles.secondary}`} href="/auctions/register">Bidder registration</a></div><LotManagement/></main>:<><div className={styles.page} style={{minHeight:0,paddingBottom:0}}><button className={styles.secondary} onClick={()=>setTab('catalog')}>← Catalog &amp; lots</button></div><Workspace/></>}</>;}
+
 function Workspace(){
  const [lots,setLots]=useState<any[]>([]),[rugs,setRugs]=useState<any[]>([]),[selected,setSelected]=useState(''),[detail,setDetail]=useState<any>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false),[now,setNow]=useState(Date.now()),[search,setSearch]=useState('');
  const lastOperation=useRef<{body:string;id:string}|null>(null);

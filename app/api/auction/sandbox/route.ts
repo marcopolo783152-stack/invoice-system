@@ -1,18 +1,12 @@
 import {NextResponse} from 'next/server';
 import {createHash} from 'crypto';
 import {requireStaff} from '@/lib/server/staff-permission';
+import {auctionFailure} from '@/lib/server/auction-errors';
 import {serverDb} from '@/lib/server/firebase-admin';
 import {check, validateLot, placeMaximum, settle} from '@/lib/auction/engine.mjs';
 export const dynamic = 'force-dynamic';
 const collection = 'auction_sandbox_lots';
 const idPattern = /^[a-zA-Z0-9_-]{1,100}$/;
-function failure(error: unknown) {
-  const message = error instanceof Error ? error.message : '';
-  if (/SIGN_IN_REQUIRED|auth\//.test(message)) return NextResponse.json({error:'Please sign in again.'},{status:401});
-  if (message === 'FORBIDDEN') return NextResponse.json({error:'Auction management requires settings permission.'},{status:403});
-  console.error('Auction sandbox operation failed', error instanceof Error ? error.name : 'unknown');
-  return NextResponse.json({error:'Could not complete the operation. Refresh and try again.'},{status:503});
-}
 export async function GET(request: Request) {
   try {
     await requireStaff(request,'settings','read');
@@ -32,7 +26,7 @@ export async function GET(request: Request) {
     }
     const lots = await db.collection(collection).orderBy('createdAt','desc').limit(100).get();
     return NextResponse.json({lots:lots.docs.map(d=>({id:d.id,...d.data()})),serverNow:Date.now(),mode:'sandbox'},{headers:{'Cache-Control':'no-store'}});
-  } catch(error) { return failure(error); }
+  } catch(error) { return auctionFailure(error); }
 }
 export async function POST(request: Request) {
   try {
@@ -126,5 +120,5 @@ export async function POST(request: Request) {
       if ((error as any)?.code) throw error;
       return NextResponse.json({error:error instanceof Error?error.message:'Check your input.'},{status:400});
     }
-  } catch(error) {return failure(error);}
+  } catch(error) {return auctionFailure(error);}
 }
