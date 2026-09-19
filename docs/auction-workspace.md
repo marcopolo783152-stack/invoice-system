@@ -4,9 +4,9 @@ Status: staff sandbox and customer preregistration. NOT ready for public bidding
 
 ## Where to review
 
-- `/?view=auction`: customer landing page.
+- `/?view=auction`: customer landing page and searchable, size-filtered public collection preview. No account is required for browsing or opening rug details. Preview rugs come from the existing in-stock public catalog and retain origin-review holds; they are not represented as scheduled auction lots.
 - `/auctions/register`: bidder profile and verification checklist.
-- `/admin/auctions`: staff sandbox, linked from the showroom admin header.
+- `/admin/auctions`: staff sandbox, linked from the showroom admin sidebar and header.
 - Staff require `settings.read` to view and `settings.write` for mutations. Owner and General Manager qualify through the existing policy; custom staff require explicit permission. Server authorization applies to every sandbox request.
 
 ## Try the sandbox
