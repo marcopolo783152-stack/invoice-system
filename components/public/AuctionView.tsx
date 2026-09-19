@@ -1,22 +1,10 @@
 'use client';
-
-import React from 'react';
-import { Gavel, Clock } from 'lucide-react';
-
-export const AuctionView: React.FC = () => {
-  return (
-    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 text-center">
-      <Gavel className="w-16 h-16 text-amber-800 mb-6" />
-      <h1 className="text-4xl md:text-5xl font-serif text-neutral-900 mb-4">
-        Auction Platform
-      </h1>
-      <div className="bg-amber-100 text-amber-900 px-4 py-2 rounded-full font-semibold uppercase tracking-wider text-sm mb-6 inline-flex items-center gap-2">
-        <Clock className="w-4 h-4" />
-        Under Construction
-      </div>
-      <p className="text-neutral-600 max-w-md text-lg">
-        Our live auction platform is currently being upgraded to provide you with the best bidding experience. Please check back soon.
-      </p>
-    </div>
-  );
-};
+import styles from '@/components/auction/Auction.module.css';
+export const AuctionView = () => <section className={styles.page}>
+  <div className={styles.hero}>
+    <div><span className={styles.eyebrow}>Marco Polo Rugs · Since 1988</span><h1>A new way to find<br/>a remarkable rug.</h1><p>Discover our upcoming rug auctions, with detailed condition reports, clear bidding rules and personal help from our Alexandria showroom.</p><div className={styles.actions}><a className={styles.button} href="/auctions/register">Prepare your bidder profile</a><a className={`${styles.button} ${styles.secondary}`} href="/?view=shop">Explore the collection</a></div></div>
+    <aside className={styles.card}><span className={styles.badge}>Auctions coming soon</span><h2 style={{marginTop:20}}>Know before you bid.</h2><ul className={styles.list}><li>Verified account and payment method required</li><li>Choose shipping or showroom pickup</li><li>Free padding included with every rug</li><li>Clear costs before you confirm a bid</li></ul><p className={styles.muted}>Bidding and card verification are not open yet. Preparing a profile does not place a bid or charge your card.</p></aside>
+  </div>
+  <div className={styles.grid}>{[['01 · Get ready','Save your contact details. Email, phone and payment verification will be required before bidding opens.'],['02 · Find your rug','Review measurements, photos and the condition report. Ask us questions before committing to a bid.'],['03 · Bring it home','Choose delivery or pickup. Any shipping or assisted-loading charge must be confirmed before bidding.']].map(([title,body])=><article className={styles.card} key={title}><h3>{title}</h3><p>{body}</p></article>)}</div>
+  <div className={styles.row}><p>Questions? <a href="tel:+17034610207">Call (703) 461-0207</a></p><a href="/?view=book">Visit our Alexandria showroom</a></div>
+</section>;

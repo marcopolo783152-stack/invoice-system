@@ -1165,6 +1165,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
 
           <div className="text-right text-xs">
+            {canAccess(staff, 'settings', 'read') && <a href="/admin/auctions" className="inline-block mb-3 underline font-semibold">Auction management · Sandbox</a>}
             <span className="text-gray-400 block font-semibold uppercase">Signed in as:</span>
             <span className="font-bold text-editorial-text font-mono">{staff?.email}</span>
           </div>
