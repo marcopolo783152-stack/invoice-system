@@ -6,6 +6,7 @@ import {OWNER_UID, OWNER_EMAIL} from '@/lib/access-policy';
 
 export default function RugCheckoutButton({payload}: {payload: unknown}) {
   const [owner, setOwner] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [countriesConfirmed, setCountriesConfirmed] = useState(false);
   const attempt = useRef({body: '', id: ''}), running = useRef(false);
   useEffect(() => onAuthStateChanged(auth, u => setOwner(!!u && u.emailVerified && u.uid === OWNER_UID && u.email?.toLowerCase() === OWNER_EMAIL)), []);
   if (!owner) return null;
@@ -13,7 +14,9 @@ export default function RugCheckoutButton({payload}: {payload: unknown}) {
     if (running.current || !auth.currentUser) return;
     running.current = true; setBusy(true); setError('');
     try {
-      const body = JSON.stringify(payload);
+      if (!countriesConfirmed) throw new Error('Confirm the test billing and delivery addresses are in the United States.');
+      const value = payload as {customerInfo?: Record<string, unknown>};
+      const body = JSON.stringify({...value, customerInfo: {...value.customerInfo, billingCountry: 'US', shippingCountry: 'US'}});
       if (attempt.current.body !== body || !attempt.current.id) attempt.current = {body, id: crypto.randomUUID()};
       const response = await fetch('/api/rug-checkout', {method: 'POST', headers: {'Content-Type': 'application/json',
         Authorization: 'Bearer ' + await auth.currentUser.getIdToken(), 'X-Checkout-Attempt': attempt.current.id}, body});
@@ -26,8 +29,9 @@ export default function RugCheckoutButton({payload}: {payload: unknown}) {
     <h3 style={{fontWeight: 700, fontSize: 18}}>Marco Polo Rugs — test rug checkout</h3>
     <p style={{margin: '10px 0'}}>Owner test only. Pay the cart total with a Stripe test card. Free padding is included with every rug. This creates a separate test order; no money, shipment or inventory change.</p>
     <p>Use 4242 4242 4242 4242, a future expiry, and CVC 123. For a declined card, use 4000 0000 0000 0002.</p>
+    <label style={{display: "block", marginTop: 12}}><input type="checkbox" checked={countriesConfirmed} onChange={e => setCountriesConfirmed(e.target.checked)} /> I confirm both test billing and delivery addresses are in the United States. Pickup does not waive the billing-country requirement.</label>
     {error && <p role="alert" style={{color: '#9b281e', marginTop: 12}}>{error}</p>}
-    <button type="button" disabled={busy} onClick={start} style={{background: '#183e35', color: 'white', padding: '14px 18px', marginTop: 14, opacity: busy ? .5 : 1}}>{busy ? 'Opening secure checkout…' : 'Test rug payment with Stripe'}</button>
+    <button type="button" disabled={busy || !countriesConfirmed} onClick={start} style={{background: '#183e35', color: 'white', padding: '14px 18px', marginTop: 14, opacity: busy ? .5 : 1}}>{busy ? 'Opening secure checkout…' : 'Test rug payment with Stripe'}</button>
     <p style={{marginTop: 12}}><a href="/checkout/result" style={{textDecoration: 'underline'}}>View test orders</a></p>
   </section>;
 }

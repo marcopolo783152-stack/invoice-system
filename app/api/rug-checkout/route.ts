@@ -1,3 +1,4 @@
+import {checkoutOriginKnown} from '@/lib/server/checkout-region.mjs';
 import { isRugOnReviewHold } from '@/lib/catalog-visibility.mjs';
 import {NextRequest} from 'next/server';
 import {createHash} from 'node:crypto';
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     const db = serverDb(), ref = db.collection(TEST_ORDERS).doc(id);
     // Recheck saved inventory even when resuming an existing checkout attempt.
     const currentRugs = await db.getAll(...input.items.map((item: {id:string}) => db.collection('showroom_rugs').doc(item.id)));
-    if (currentRugs.some(d => !d.exists || isRugOnReviewHold({...d.data(), id:d.id}))) throw new CheckoutError('An item is unavailable for online checkout.', 409);
+    if (currentRugs.some(d => !d.exists || !checkoutOriginKnown(d.data()) || isRugOnReviewHold({...d.data(), id:d.id}))) throw new CheckoutError('An item is unavailable for online checkout.', 409);
 
     const order = await db.runTransaction(async tx => {
       const existing = (await tx.get(ref)).data();
