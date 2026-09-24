@@ -1,6 +1,6 @@
 export const OWNER_UID = 'msQJKLOsWceWK5A75V6ZBLQRvsl2';
 export const OWNER_EMAIL = 'marcopolo783152@gmail.com';
-export const ACCESS_SECTIONS = ['inventory','invoices','orders','appointments','messages','services','customers','reviews','content','promotions','reports','employees','settings','users'] as const;
+export const ACCESS_SECTIONS = ['inventory','invoices','orders','appointments','messages','services','customers','reviews','content','promotions','reports','employees','loans','settings','users'] as const;
 export type AccessSection = typeof ACCESS_SECTIONS[number];
 export type StaffRole = 'admin' | 'general_manager' | 'seller' | 'custom';
 export type StaffAccess = { uid: string; email: string; name: string; role: StaffRole; active: boolean; permissions: Record<string, boolean> };
@@ -18,7 +18,7 @@ export function canAccess(staff: StaffAccess | null, section: string, action = '
 export function sectionForTab(tab: string): AccessSection | null {
  const tabs: Record<string, AccessSection> = {
   analytics:'reports', inventory:'inventory', bulk_import:'inventory', orders:'orders', transactions:'reports',
-  cleaning:'services', estimates:'services', appointments:'appointments', appraisals:'invoices', employees:'employees',
+  cleaning:'services', estimates:'services', appointments:'appointments', appraisals:'invoices', employees:'employees', loans:'loans',
   clock:'employees', reviews:'reviews', messages:'messages', blogs:'content', promotions:'promotions', settings:'settings',
   builder:'content', crm:'customers', users:'users'
  };
