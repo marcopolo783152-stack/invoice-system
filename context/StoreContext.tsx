@@ -1,3 +1,4 @@
+import { isRugOnReviewHold } from '@/lib/catalog-visibility.mjs';
 import {recordListingActivity} from "@/lib/record-listing-activity";
 import {chatRequest} from "@/lib/chat-client";
 /**
@@ -50,6 +51,7 @@ import {
 
 interface StoreContextType {
   rugs: Rug[];
+  publicRugs: Rug[];
   blogs: BlogPost[];
   orders: Order[];
   orderLoadError: string;
@@ -92,7 +94,7 @@ interface StoreContextType {
   clearCart: () => void;
   
   // Checkout operations
-  checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number, appliedPromo?: PromoCode, discountAmount?: number) => Order;
+  checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number, appliedPromo?: PromoCode, discountAmount?: number) => Promise<Order>;
   
   // Admin Operations
   addRug: (rug: Omit<Rug, "id" | "rating">) => void;
@@ -116,7 +118,7 @@ interface StoreContextType {
   deleteChatSession: (sessionId: string) => void;
   
   // Customer Review Submit
-  submitReview: (rugId: string, reviewerName: string, rating: number, reviewText: string, imageUrl?: string) => void;
+  submitReview: (rugId: string, reviewerName: string, rating: number, reviewText: string, imageUrl?: string) => Promise<void>;
 
   // Hero Cover Photo & Showroom Announcement & Logo
   heroCoverPhotos: string[];
@@ -481,7 +483,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // --- Cart Actions ---
   const addToCart = (rug: Rug) => {
-    if (rug.availability !== "In Stock") return;
+    if (isRugOnReviewHold(rug) || rug.availability !== "In Stock") return;
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex((item) => item.rug.id === rug.id);
       if (existingIndex > -1) {
@@ -513,7 +515,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- Checkout Flow ---
-  const checkout = (
+  const checkout = async (
     customer: CustomerInfo,
     payment: PaymentDetails,
     deliveryOption: "Pickup" | "Delivery",
@@ -522,14 +524,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     totalWeightLbs?: number,
     appliedPromo?: PromoCode,
     discountAmount?: number
-  ): Order => {
+  ): Promise<Order> => {
+    if (cart.some(item => isRugOnReviewHold(rugs.find(r => r.id === item.rug.id)))) throw new Error("An item is unavailable for online ordering. Please remove it from your cart.");
     const subtotal = cart.reduce((sum, item) => sum + item.rug.price * item.quantity, 0);
     const total = subtotal + shipping + tax;
     
     if(!auth.currentUser)throw new Error("Please wait for the secure connection and retry.");
     const newOrder: Order = {
       customerId: auth.currentUser.uid,
-      id: `MPR-${Math.floor(100000 + Math.random() * 90000).toString()}`,
+      id: `MPR-${crypto.randomUUID()}`,
       customerInfo: customer,
       cartItems: [...cart],
       subtotal,
@@ -545,17 +548,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString()
     };
 
-    // Add new order to Firebase
-    addShowroomDoc(SHOWROOM_ORDERS, newOrder);
-    
-    // Trigger Email/SMS notifications automatically
-    const emailConfig = getEmailConfig();
-    fetch('/api/notify-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order: newOrder, shopProfile, emailConfig })
-    }).catch(err => console.error('Notification trigger failed:', err));
-    
+    // Notify only after persistence succeeds; never send credentials from the browser.
+    const currentUser = auth.currentUser;
+    await addShowroomDoc(SHOWROOM_ORDERS, newOrder);
+    void (async () => {
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/api/notify-order', {
+        method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${token}`},
+        body:JSON.stringify({orderId:newOrder.id})
+      });
+      if (!response.ok) console.warn('Order saved; email needs attention in order management.');
+    })().catch(() => console.warn('Order saved; notification needs attention.'));
+
     if (appliedPromo && appliedPromo.oneTimeUse) {
       updatePromoCode(appliedPromo.id, {
         isActive: false,
@@ -691,7 +695,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- Customer Reviews ---
-  const submitReview = (
+  const submitReview = async (
     rugId: string,
     reviewerName: string,
     rating: number,
@@ -708,8 +712,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isApproved: false, // Moderated by admin
       createdAt: new Date().toISOString()
     };
+    await addShowroomDoc(SHOWROOM_REVIEWS, newReview);
     setReviews(prev => [newReview, ...prev]);
-      addShowroomDoc(SHOWROOM_REVIEWS, newReview).catch(e => console.error("Review save failed", e));
   };
 
   const approveReview = (reviewId: string) => {
@@ -863,51 +867,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       handleSetActiveView('customer');
     }
 
-    // --- INACTIVITY TIMEOUT (SHOWROOM) ---
-    let inactivityTimer: NodeJS.Timeout;
-    const INACTIVITY_LIMIT = 4 * 60 * 60 * 1000; // 4 hours
-
-    const resetInactivity = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        // Auto-logout after 4 hours
-        sessionStorage.removeItem('mp-invoice-auth');
-        sessionStorage.removeItem('mp-invoice-user');
-        localStorage.removeItem('mp-invoice-auth');
-        localStorage.removeItem('mp-invoice-user');
-        sessionStorage.removeItem('marcopolo_current_user');
-        sessionStorage.removeItem('marcopolo_active_view');
-        if (typeof window !== 'undefined') {
-          handleSetActiveView('customer');
-        }
-      }, INACTIVITY_LIMIT);
-    };
-
-    // Attach listeners
-    if (typeof window !== 'undefined') {
-      window.addEventListener('mousemove', resetInactivity);
-      window.addEventListener('keypress', resetInactivity);
-      window.addEventListener('click', resetInactivity);
-      window.addEventListener('scroll', resetInactivity);
-      window.addEventListener('touchstart', resetInactivity);
-      resetInactivity();
-    }
-
-    return () => {
-      if (typeof window !== 'undefined') {
-        clearTimeout(inactivityTimer);
-        window.removeEventListener('mousemove', resetInactivity);
-        window.removeEventListener('keypress', resetInactivity);
-        window.removeEventListener('click', resetInactivity);
-        window.removeEventListener('scroll', resetInactivity);
-        window.removeEventListener('touchstart', resetInactivity);
-      }
-    };
+    // Staff inactivity is managed centrally by TopAdminBar across tabs.
   }, []);
 
   return (
     <StoreContext.Provider
       value={{
+        publicRugs: rugs.filter(r => !isRugOnReviewHold(r)),
         rugs,
         blogs,
         orders,
@@ -985,6 +951,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </StoreContext.Provider>
   );
 };
+
+// Read-only presentation components can also render outside the showroom.
+export const useOptionalStore = () => useContext(StoreContext);
 
 export const useStore = () => {
   const context = useContext(StoreContext);

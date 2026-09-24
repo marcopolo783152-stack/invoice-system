@@ -7,6 +7,9 @@
 
 'use client';
 
+import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
+import { logActivity } from '@/lib/audit-logger';
+import { appendInvoicePayment } from '@/lib/firebase-storage';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -34,6 +37,8 @@ function InvoicePageContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
   // Settings dropdown state
+  const [savingInvoice, setSavingInvoice] = useState(false);
+  const savingInvoiceRef = useRef(false);
   const [showSettings, setShowSettings] = useState(false);
 
   // Logout function
@@ -75,10 +80,7 @@ function InvoicePageContent() {
     fullName: string;
     password: string;
     role: "admin" | "seller" | "manager";
-  }[]>([
-    { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin" },
-    { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" }
-  ]);
+  }[]>([]);
   const [currentUser, setCurrentUser] = useState<{ username: string; fullName: string; role: string } | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
@@ -100,14 +102,14 @@ function InvoicePageContent() {
         try { setCurrentUser(JSON.parse(storedUser)); } catch { }
       }
 
-      // --- Logout after 2 hours of inactivity ---
+      // --- Logout after five hours of inactivity ---
       let inactivityTimeout: ReturnType<typeof setTimeout> | undefined;
       const resetInactivityTimer = () => {
         if (inactivityTimeout) clearTimeout(inactivityTimeout);
         inactivityTimeout = setTimeout(() => {
           logout();
           alert('Session timed out due to inactivity.'); // Inform user
-        }, 2 * 60 * 60 * 1000); // 2 hours
+        }, STAFF_INACTIVITY_TIMEOUT_MS);
       };
 
       // Reset timer on user activity
@@ -217,6 +219,7 @@ function InvoicePageContent() {
   }, []);
 
   const handleFormSubmit = (data: InvoiceData) => {
+    if (savingInvoiceRef.current) return;
     // Validate data
     const validationErrors = validateInvoiceData(data);
     if (validationErrors.length > 0) {
@@ -230,7 +233,11 @@ function InvoicePageContent() {
     setInvoiceData(data);
 
     // Save invoice to storage (async)
+    savingInvoiceRef.current = true;
+    setSavingInvoice(true);
     saveInvoice(data, editId || undefined).then(async (savedInv) => {
+      if (!editId) { try { localStorage.removeItem('mp_invoice_draft'); } catch {} }
+      try { logActivity('Invoice Saved', `${data.documentType || 'INVOICE'} #${data.invoiceNumber} for ${data.soldTo.name} has been saved.`); } catch { console.warn('Invoice saved, but the local activity log could not be updated.'); }
       // Save succeeded, so we can now safely swap the UI to the preview page
       setShowPreview(true);
       setShowSearch(false);
@@ -274,10 +281,14 @@ function InvoicePageContent() {
         if (shouldRegen) {
           generateInvoiceNumber().then(newNumber => {
             localStorage.setItem('currentInvoiceNumber', newNumber);
+            savingInvoiceRef.current = false;
             handleFormSubmit({ ...data, invoiceNumber: newNumber });
           });
         }
       }
+    }).finally(() => {
+      savingInvoiceRef.current = false;
+      setSavingInvoice(false);
     });
 
     // Scroll to preview
@@ -331,25 +342,18 @@ function InvoicePageContent() {
       return;
     }
 
-    const currentPayments = invoiceData.payments || [];
-
-    // Create updated data object
-    const updatedData: InvoiceData = {
-      ...invoiceData,
-      payments: [...currentPayments, payment]
-    };
-
     try {
-      // Save to DB
-      await saveInvoice(updatedData, targetId);
+      const updatedData = await appendInvoicePayment(targetId, payment);
 
       // Update local state to reflect changes instantly
       setInvoiceData(updatedData);
       setShowPaymentModal(false);
       alert('Payment recorded successfully!');
+      return true;
     } catch (e) {
       console.error(e);
-      alert('Failed to save payment');
+      alert('Failed to save payment. Your entered details are kept so you can retry.');
+      return false;
     }
   };
 
@@ -492,8 +496,8 @@ function InvoicePageContent() {
       <div className={styles.container}>
         <header className={styles.header}>
           <div>
-            <h1>Rug Business Invoice System</h1>
-            <p>Professional invoicing for Web, Android, and Windows</p>
+            <h1>Marco Polo Rugs · Invoices</h1>
+            <p>Create, review and send invoices from your showroom workspace.</p>
           </div>
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
             <div style={{ fontSize: 13, color: '#64748b', background: '#f1f5f9', padding: '6px 12px', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -509,7 +513,7 @@ function InvoicePageContent() {
                   marginTop: 4, display: 'flex', alignItems: 'center', gap: 4
                 }}
               >
-                <span>Mange Users</span> ⚙️
+                <span>Manage users</span> ⚙️
               </button>
             )}
           </div>
@@ -532,6 +536,7 @@ function InvoicePageContent() {
           <div className={styles.formSection}>
             <InvoiceForm
               onSubmit={handleFormSubmit}
+              saving={savingInvoice}
               initialData={formInitialData}
               currentUser={currentUser}
               users={users}

@@ -20,7 +20,8 @@ export async function GET(req:NextRequest){
     customerInfo:strings(d.customerInfo,['name','email','phone','address','street','city','state','zip','country']),
     subtotal:Number(d.subtotal||0),tax:Number(d.tax||0),shipping:Number(d.shipping||0),total:Number(d.total||0),discountAmount:Number(d.discountAmount||0),
     paymentDetails:strings(d.paymentDetails,['cardBrand','last4']),
-    shippingDetails:strings(d.shippingDetails,['carrier','trackingNumber','trackingUrl','estimatedDelivery','shippedAt']),
+    shippingDetails:strings(d.shippingDetails,all?['carrier','trackingNumber','trackingUrl','estimatedDelivery','shippedAt','labelCreatedAt','refundStatus','transactionId','labelUrl']:['carrier','trackingNumber','trackingUrl','estimatedDelivery','shippedAt']),
+    notificationStatus:all?{confirmation:d.notifications?.confirmation?.status||'unknown',invoice:d.notifications?.invoice?.status||'unknown'}:undefined,
     cartItems:Array.isArray(d.cartItems)?d.cartItems.map((item:any)=>({quantity:Number(item.quantity||1),rug:{...strings(item.rug,['id','name','sku','material','origin','dimensions','sizeCategory','style','age']),price:Number(item.rug?.price||0),images:Array.isArray(item.rug?.images)?item.rug.images.filter((url:any)=>typeof url==='string').slice(0,2):[]}})):[]
    };
   });

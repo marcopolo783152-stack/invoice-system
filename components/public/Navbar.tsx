@@ -16,6 +16,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => {
   const { cart, activeView, setActiveView, setCartOpen, currentUser, logoutUser, socialLinks, logoUrl } = useStore();
+  const [moreOpen,setMoreOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -33,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
 
   const handleNavClick = (tabId: string) => {
     setCurrentTab(tabId);
-    setMobileMenuOpen(false);
+    setMobileMenuOpen(false); setMoreOpen(false);
     if (activeView === "admin") {
       setActiveView("customer");
     }
@@ -138,12 +139,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               </button>
               
               <div className="group relative">
-                <button className={`relative py-2 transition-all duration-300 hover:text-editorial-accent flex items-center gap-1 ${['blog', 'track', 'book'].includes(currentTab) ? 'text-editorial-text font-medium italic' : 'text-gray-400'}`}>
-                  Categories
+                <button aria-expanded={moreOpen} onClick={()=>setMoreOpen(v=>!v)} className={`relative py-2 transition-all duration-300 hover:text-editorial-accent flex items-center gap-1 ${['blog', 'track', 'book'].includes(currentTab) ? 'text-editorial-text font-medium italic' : 'text-gray-400'}`}>
+                  More
                   <ChevronDown className="h-3.5 w-3.5" />
                   {['blog', 'track', 'book'].includes(currentTab) && <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-editorial-accent" />}
                 </button>
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-0 w-56 bg-white border border-editorial-border shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 flex flex-col z-50">
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-0 w-56 bg-white border border-editorial-border shadow-xl transition-all duration-300 flex-col z-50" style={{display:moreOpen?"flex":"none"}}>
                   <button onClick={() => handleNavClick('blog')} className="text-left px-5 py-3.5 hover:bg-stone-50 hover:text-editorial-accent border-b border-stone-100 text-gray-500 transition tracking-widest font-bold">Interior Blog</button>
                   <button onClick={() => handleNavClick('track')} className="text-left px-5 py-3.5 hover:bg-stone-50 hover:text-editorial-accent border-b border-stone-100 text-gray-500 transition tracking-widest font-bold">Track Order</button>
                   <button onClick={() => handleNavClick('book')} className="text-left px-5 py-3.5 hover:bg-stone-50 hover:text-editorial-accent text-gray-500 transition tracking-widest font-bold">Book Appointment</button>
@@ -231,7 +232,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
 
             {/* Shopping Cart Trigger */}
             <button
-              onClick={() => setCartOpen(true)}
+              aria-label="Open shopping cart" onClick={() => setCartOpen(true)}
               className="relative p-2 bg-editorial-aside rounded-none text-editorial-accent hover:bg-white transition border border-editorial-border cursor-pointer"
             >
               <ShoppingBag className="h-4.5 w-4.5" />
@@ -246,7 +247,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
           {/* Mobile Cart and Menu Toggles */}
           <div className="flex md:hidden items-center space-x-3">
             <button
-              onClick={() => setCartOpen(true)}
+              aria-label="Open shopping cart" onClick={() => setCartOpen(true)}
               className="relative p-2 bg-editorial-aside rounded-none text-editorial-accent border border-editorial-border"
             >
               <ShoppingBag className="h-4.5 w-4.5" />
@@ -258,7 +259,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
             </button>
 
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 bg-editorial-aside rounded-none text-gray-600 border border-editorial-border"
             >
               {mobileMenuOpen ? <X className="h-4.5 w-4.5" /> : <Menu className="h-4.5 w-4.5" />}
@@ -293,7 +294,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               <button
                 onClick={() => {
                   setAuthModalOpen(true);
-                  setMobileMenuOpen(false);
+                  setMobileMenuOpen(false); setMoreOpen(false);
                 }}
                 className="w-full py-2 bg-stone-150 border border-stone-300 text-stone-700 text-center text-xs uppercase font-bold tracking-widest font-sans flex items-center justify-center gap-1"
               >
@@ -306,7 +307,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                 <button
                   onClick={() => {
                     setAuthModalOpen(true);
-                    setMobileMenuOpen(false);
+                    setMobileMenuOpen(false); setMoreOpen(false);
                   }}
                   className="py-1 px-3 bg-stone-200 text-stone-800 text-xs uppercase font-bold tracking-widest underline"
                 >
@@ -330,7 +331,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                 <button
                   onClick={() => {
                     setActiveView("customer");
-                    setMobileMenuOpen(false);
+                    setMobileMenuOpen(false); setMoreOpen(false);
                   }}
                   className={`py-2 px-3 rounded-none text-center text-xs font-bold uppercase tracking-wider transition ${
                     activeView === "customer"
@@ -343,7 +344,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                 <button
                   onClick={() => {
                     setActiveView("admin");
-                    setMobileMenuOpen(false);
+                    setMobileMenuOpen(false); setMoreOpen(false);
                   }}
                   className={`py-2 px-3 rounded-none text-center text-xs font-bold uppercase tracking-wider transition ${
                     activeView === "admin"

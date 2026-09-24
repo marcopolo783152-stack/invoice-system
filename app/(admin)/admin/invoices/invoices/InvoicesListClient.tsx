@@ -178,7 +178,7 @@ function InvoicesListContent() {
 
         // 1. Text Search
         if (searchTerm.trim()) {
-            const lowerTerm = searchTerm.toLowerCase();
+            const lowerTerm = searchTerm.trim().toLowerCase();
             result = result.filter(inv => {
                 const invNum = inv.data?.invoiceNumber || '';
                 const custName = inv.data?.soldTo?.name || '';
@@ -187,6 +187,8 @@ function InvoicesListContent() {
                 );
                 return invNum.toLowerCase().includes(lowerTerm) ||
                     custName.toLowerCase().includes(lowerTerm) ||
+                    (inv.data?.soldTo?.email || '').toLowerCase().includes(lowerTerm) ||
+                    (inv.data?.soldTo?.phone || '').replace(/[^0-9]/g, '').includes(lowerTerm.replace(/[^0-9]/g, '') || 'NO_PHONE_QUERY') ||
                     hasMatchingSku;
             });
         }
@@ -432,8 +434,8 @@ function InvoicesListContent() {
         <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto', animation: 'fadeIn 0.5s ease-out' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 48, flexWrap: 'wrap', gap: 24 }} className="animate-slide-up">
                 <div>
-                    <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.03em', marginBottom: 6 }}>Transaction Ledger</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>Official registry of financial instruments and records.</p>
+                    <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.03em', marginBottom: 6 }}>Invoices</h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>Marco Polo Rugs · Find invoices, check balances and follow up with customers.</p>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12 }}>
@@ -577,7 +579,7 @@ function InvoicesListContent() {
                             {isExporting ? `Exporting...` : 'Export PDFs'}
                         </button>
                         <Link href="/admin/invoices/invoices/new" className="luxury-button" style={{ background: 'var(--primary)', color: 'white', border: 'none' }}>
-                            <Plus size={20} style={{ marginRight: 8 }} /> New Document
+                            <Plus size={20} style={{ marginRight: 8 }} /> Create invoice
                         </Link>
                     </div>
                 </div>
@@ -597,11 +599,11 @@ function InvoicesListContent() {
                             </th>
                             <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', borderBottom: '1px solid var(--surface-border)' }}>Reference</th>
                             <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', borderBottom: '1px solid var(--surface-border)' }}>Status</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', borderBottom: '1px solid var(--surface-border)' }}>Counterparty</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', borderBottom: '1px solid var(--surface-border)' }}>Customer</th>
                             <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', borderBottom: '1px solid var(--surface-border)' }}>Entry Date</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', borderBottom: '1px solid var(--surface-border)' }}>Volume</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', borderBottom: '1px solid var(--surface-border)' }}>Valuation</th>
-                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', borderBottom: '1px solid var(--surface-border)' }}>Controls</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', borderBottom: '1px solid var(--surface-border)' }}>Items</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', borderBottom: '1px solid var(--surface-border)' }}>Invoice total</th>
+                            <th style={{ padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', borderBottom: '1px solid var(--surface-border)' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -655,7 +657,9 @@ function InvoicesListContent() {
                                     <td style={{ padding: '20px 24px', color: 'var(--text-dim)', fontSize: 14 }}>{formatDateMMDDYYYY(inv.data?.date)}</td>
                                     <td style={{ padding: '20px 24px', textAlign: 'right', color: 'var(--text-dim)' }}>{(inv.data?.items || []).length} items</td>
                                     <td style={{ padding: '20px 24px', textAlign: 'right', fontWeight: 800, color: 'var(--text-main)', fontSize: 16 }}>
-                                        ${calcs.totalDue.toLocaleString()}
+                                        ${calcs.totalDue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+                                        <div style={{fontSize:13,fontWeight:500,marginTop:6,color:"#426052"}}>Paid: ${calcs.totalPaid.toFixed(2)}</div>
+                                        <div style={{fontSize:13,fontWeight:700,marginTop:4,color:calcs.balanceDue>0?"#9a3412":"#183e35"}}>Balance: ${calcs.balanceDue.toFixed(2)}</div>
                                     </td>
                                     <td style={{ padding: '20px 24px', textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -666,25 +670,25 @@ function InvoicesListContent() {
                                                     const left = (window.screen.width - width) / 2;
                                                     const top = (window.screen.height - height) / 2;
                                                     window.open(
-                                                        `/invoices/print?id=${inv.id}`,
+                                                        `/admin/invoices/invoices/print?id=${inv.id}`,
                                                         '_blank',
                                                         `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
                                                     );
                                                 }}
                                                 className="luxury-button"
-                                                style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center' }}
+                                                style={{ padding: '8px', borderRadius: 10, width: 44, height: 44, justifyContent: 'center' }}
                                                 title="Print Professional Invoice"
                                             >
                                                 <Printer size={18} />
                                             </button>
-                                            <Link href={`/admin/invoices/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center' }} title="View Details">
+                                            <Link href={`/admin/invoices/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '8px', borderRadius: 10, width: 44, height: 44, justifyContent: 'center' }} title="View Details">
                                                 <FileText size={18} />
                                             </Link>
                                             {(viewMode === 'active' || viewMode === 'drafts') && (
                                                 <button
                                                     onClick={(e) => handleDeleteSingle(inv.id, e)}
                                                     className="luxury-button"
-                                                    style={{ padding: '8px', borderRadius: 10, width: 36, height: 36, justifyContent: 'center', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.2)' }}
+                                                    style={{ padding: '8px', borderRadius: 10, width: 44, height: 44, justifyContent: 'center', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.2)' }}
                                                     title="Archive Record"
                                                 >
                                                     <Trash2 size={18} />
@@ -744,7 +748,9 @@ function InvoicesListContent() {
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: 16 }}>
                                 <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.03em' }}>
-                                    ${calcs.totalDue.toLocaleString()}
+                                    ${calcs.totalDue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+                                        <div style={{fontSize:13,fontWeight:500,marginTop:6,color:"#426052"}}>Paid: ${calcs.totalPaid.toFixed(2)}</div>
+                                        <div style={{fontSize:13,fontWeight:700,marginTop:4,color:calcs.balanceDue>0?"#9a3412":"#183e35"}}>Balance: ${calcs.balanceDue.toFixed(2)}</div>
                                 </div>
                                 <div style={{ display: 'flex', gap: 10 }}>
                                     <div style={{ padding: 10, background: 'var(--glass-bg)', borderRadius: 12, color: 'var(--primary)', border: '1px solid var(--glass-border)' }}>

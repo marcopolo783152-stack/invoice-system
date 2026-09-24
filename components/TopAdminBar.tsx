@@ -1,5 +1,7 @@
 'use client';
 
+import { monitorStaffIdle } from '@/lib/staff-idle.mjs';
+import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
@@ -22,25 +24,9 @@ export default function TopAdminBar() {
   useEffect(() => {
     if (!isAdmin) return;
 
-    let timeoutId: NodeJS.Timeout;
-
-    const resetTimeout = () => {
-      clearTimeout(timeoutId);
-      // 15 minutes of inactivity logs out
-      timeoutId = setTimeout(() => {
-        handleLogout();
-      }, 15 * 60 * 1000);
-    };
-
-    resetTimeout();
-    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
-    events.forEach(e => document.addEventListener(e, resetTimeout));
-
-    return () => {
-      clearTimeout(timeoutId);
-      events.forEach(e => document.removeEventListener(e, resetTimeout));
-    };
-  }, [isAdmin]);
+    return monitorStaffIdle({win: window, userId: staff!.uid,
+      timeoutMs: STAFF_INACTIVITY_TIMEOUT_MS, onExpire: handleLogout});
+  }, [isAdmin, staff?.uid]);
 
   if (!isAdmin) return null;
 

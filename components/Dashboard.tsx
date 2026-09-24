@@ -586,7 +586,7 @@ export default function Dashboard() {
             {/* KPI Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 24, marginBottom: 32 }}>
                 <KpiCard
-                    title="Current Balance"
+                    title="Net invoice total"
                     value={`$${totalNetRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<DollarSign size={22} />}
                     color="#1e50ff"
@@ -601,7 +601,7 @@ export default function Dashboard() {
                     link="/admin/invoices/employees"
                 />
                 <KpiCard
-                    title="Total Profit"
+                    title="Estimated margin (20%)"
                     value={`$${(totalNetRevenue * 0.2).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<TrendingUp size={22} />}
                     color="#10b981"

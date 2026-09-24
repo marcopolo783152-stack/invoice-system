@@ -34,13 +34,15 @@ import styles from './InvoiceForm.module.css';
 
 interface InvoiceFormProps {
   onSubmit: (data: InvoiceData) => void;
+  saving?: boolean;
   initialData?: Partial<InvoiceData>;
   currentUser?: { username: string; fullName: string; role: string } | null;
   users?: { username: string; fullName: string; role: string }[];
 }
 
 // This form supports both creating and editing invoices. When editing, all fields (customer info, items, etc.) are pre-filled and can be updated.
-export default function InvoiceForm({ onSubmit, initialData, currentUser, users }: InvoiceFormProps) {
+export default function InvoiceForm({ onSubmit, initialData, currentUser, users, saving = false }: InvoiceFormProps) {
+  const [draftNotice, setDraftNotice] = useState('');
   const [servedBy, setServedBy] = useState(initialData?.servedBy || (currentUser?.fullName || currentUser?.username || ''));
 
   useEffect(() => {
@@ -233,6 +235,13 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
               if (draft.discountValue) setDiscountValue(draft.discountValue);
               if (draft.discountType) setDiscountType(draft.discountType);
               if (draft.notes) setNotes(draft.notes);
+              if (typeof draft.downpayment === 'number') setDownpayment(draft.downpayment);
+              if (draft.date) setDate(draft.date);
+              if (typeof draft.isLumpSum === 'boolean') setIsLumpSum(draft.isLumpSum);
+              if (typeof draft.lumpSumAmount === 'number') setLumpSumAmount(draft.lumpSumAmount);
+              if (draft.signature) setSignature(draft.signature);
+              if (draft.pickupDate) setPickupDate(draft.pickupDate);
+              if (draft.servedBy) setServedBy(draft.servedBy);
             } else {
               localStorage.removeItem('mp_invoice_draft');
             }
@@ -258,12 +267,17 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           additionalCharges,
           discountValue,
           discountType,
-          notes
+          notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy
         };
-        localStorage.setItem('mp_invoice_draft', JSON.stringify(draft));
+        try {
+          localStorage.setItem('mp_invoice_draft', JSON.stringify(draft));
+          setDraftNotice('Draft saved on this device. Save the invoice to sync it to your account.');
+        } catch {
+          setDraftNotice('This device could not save your draft. Keep this page open and save your invoice.');
+        }
       }
     }
-  }, [documentType, mode, soldTo, items, terms, additionalCharges, discountValue, discountType, notes, initialData]);
+  }, [documentType, mode, soldTo, items, terms, additionalCharges, discountValue, discountType, notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy, initialData]);
 
   // AUTOMATIC TERMS UPDATE BASED ON BALANCE
   useEffect(() => {
@@ -540,6 +554,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       discountValue,
       isLumpSum,
       lumpSumAmount,
+      downpayment,
       servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
       pickupDate: documentType === 'WASH' ? pickupDate : undefined,
       // Auto-calculate status if it's currently 'washing' or 'repairing' (initial states)
@@ -551,16 +566,13 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
     };
 
     onSubmit(invoiceData);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('mp_invoice_draft'); // Clear draft on successful submit
-    }
-    logActivity('Invoice Saved', `${documentType} #${invoiceNumber} for ${soldTo.name} has been processed.`);
+    // The parent clears the draft only after persistence succeeds.
   };
 
   const isRetail = mode.startsWith('retail');
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
+    <form onSubmit={e => { if(saving){e.preventDefault();return;} handleSubmit(e); }} className={styles.form}>
       <div className={styles.formGroup}>
         <label>Document Type:</label>
         <select
@@ -703,7 +715,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       </div>
 
       {/* Sold To Section */}
-      <h3>Customer Information</h3>
+      <h3>1. Customer information</h3>
       {debtStats && debtStats.totalDebt > 0 && (
         <div style={{ padding: '15px', background: '#ffe4e6', border: '1px solid #fda4af', borderRadius: '8px', marginBottom: '20px', color: '#9f1239' }}>
           <h4 style={{ margin: '0 0 5px 0' }}>⚠️ Outstanding Balance</h4>
@@ -834,7 +846,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       </div>
 
       {/* Items Section */}
-      <h3>Items</h3>
+      <h3>2. Rugs and services</h3>
       <div className={styles.itemsContainer}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
           <button
@@ -1258,7 +1270,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
 
         {/* Static Summary Block */}
         <div style={{ marginTop: 24, padding: 20, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-          <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16, color: '#334155' }}>Summary</h3>
+          <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16, color: '#334155' }}>3. Charges and balance</h3>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <table style={{ borderCollapse: 'collapse' }}>
               <tbody>
@@ -1526,10 +1538,11 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         </div>
       </div>
 
+      {draftNotice && <p role="status" className={styles.draftNotice}>{draftNotice}</p>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 32 }}>
 
-        <button type="submit" className={styles.submitBtn}>
-          Generate Invoice
+        <button type="submit" className={styles.submitBtn} disabled={saving}>
+          {saving ? 'Saving invoice…' : 'Save and review invoice'}
         </button>
       </div>
 

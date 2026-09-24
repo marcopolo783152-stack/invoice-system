@@ -14,7 +14,7 @@ interface BlogViewProps {
 }
 
 export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab }) => {
-  const { blogs, rugs } = useStore();
+  const { blogs, publicRugs: rugs } = useStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [activePost, setActivePost] = useState<BlogPost | null>(null);

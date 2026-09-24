@@ -30,7 +30,20 @@ function CustomerAccount(){
  {orderLoadError&&<p role="alert" className={styles.error}>{orderLoadError}</p>}
  {status&&<p role="status" className={styles.notice}>{status}</p>}
  <div className={styles.grid}><div>
- <section className={styles.card}><h2>Your purchases</h2>{!mine.length?<div className={styles.empty}><p>No purchases linked to this account yet.</p><p>For a previous purchase, contact the showroom with your order number so we can help.</p><a href="/shop">Find your next favorite rug →</a></div>:mine.map(o=><details key={o.id} className={styles.row} style={{display:'block'}}><summary style={{cursor:'pointer'}}><strong>{o.id}</strong> · <span className={styles.badge}>{o.status}</span> · ${Number(o.total||0).toFixed(2)}</summary><p className={styles.muted}>Placed {new Date(o.createdAt).toLocaleDateString()}</p>{o.cartItems?.map(item=><p key={item.rug.id}>{item.rug.name||item.rug.sku} · Quantity {item.quantity}</p>)}<p>Need an update? Include this order number when you message us.</p></details>)}</section>
+ <section className={styles.card}><h2>Your purchases</h2>{!mine.length?<div className={styles.empty}><p>No purchases linked to this account yet.</p><p>For a previous purchase, contact the showroom with your order number so we can help.</p><a href="/shop">Find your next favorite rug →</a></div>:mine.map(o=><details key={o.id} className={styles.row} style={{display:'block'}}><summary style={{cursor:'pointer'}}><strong>{o.id}</strong> · <span className={styles.badge}>{o.status}</span> · ${Number(o.total||0).toFixed(2)}</summary><p className={styles.muted}>Placed {new Date(o.createdAt).toLocaleDateString()}</p>{o.cartItems?.map(item=><p key={item.rug.id}>{item.rug.name||item.rug.sku} · Quantity {item.quantity}</p>)}<div className={styles.notice}>
+ <p><strong>{o.deliveryOption === 'Pickup' ? 'Showroom pickup' : 'Delivery'}</strong></p>
+ {o.shippingDetails?.carrier && <p>Carrier: {o.shippingDetails.carrier}</p>}
+ {o.shippingDetails?.trackingNumber ? <p>Tracking number: <strong>{o.shippingDetails.trackingNumber}</strong></p> : <p>{o.deliveryOption === 'Pickup' ? 'Please contact the showroom to confirm when your order is ready for pickup.' : 'Tracking will appear here after the showroom adds shipment details.'}</p>}
+ {o.shippingDetails?.estimatedDelivery && <p>Estimated delivery: {o.shippingDetails.estimatedDelivery}</p>}
+ </div>
+ <dl className={styles.orderTotals}>
+ <dt>Rugs</dt><dd>${Number(o.subtotal||0).toFixed(2)}</dd>
+ {Number(o.discountAmount)>0 && <><dt>Discount</dt><dd>−${Number(o.discountAmount).toFixed(2)}</dd></>}
+ <dt>Delivery</dt><dd>${Number(o.shipping||0).toFixed(2)}</dd>
+ <dt>Tax</dt><dd>${Number(o.tax||0).toFixed(2)}</dd>
+ <dt><strong>Total</strong></dt><dd><strong>${Number(o.total||0).toFixed(2)}</strong></dd>
+ </dl>
+ <p>Free padding is included with every rug. Need an update? Include this order number when you message us.</p></details>)}</section>
  <section className={styles.card+' '+styles.section}><h2>Upcoming appointments</h2>{!appointments.length?<p className={styles.empty}>Your bookings will appear here. We’d love to welcome you.</p>:appointments.slice().sort((a,b)=>(a.date+a.slotTime).localeCompare(b.date+b.slotTime)).map(a=><div className={styles.row} key={a.id}><div><strong>{a.manager||'Showroom visit'}</strong><div className={styles.muted}>{a.date} at {a.time} · Alexandria time</div></div><span className={styles.badge}>{a.status}</span></div>)}<a href="/services/book">Book a showroom appointment →</a></section>
  <section className={styles.card+' '+styles.section}><h2>Rugs you love</h2><p className={styles.muted}>Favorites saved on this device.</p>{saved.length?<div className={styles.rugGrid}>{saved.map(r=><a key={r.id} href={'/shop/'+encodeURIComponent(r.id)}><img src={r.images?.[0]||''} alt={r.name||'Saved rug'}/><strong>{r.name||r.sku}</strong><p>${Number(r.price||0).toLocaleString()}</p></a>)}</div>:<p className={styles.empty}>Tap the heart on a rug to save it here.</p>}</section>
  </div><aside><section className={styles.card}><h2>Your details</h2><p className={styles.muted}>{user.email} · Verified</p>

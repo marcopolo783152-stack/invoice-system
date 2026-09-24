@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import Stripe from 'stripe';
 import {checkoutInput, priceCart, rugSessionParams, verifiedStatus, paymentUpdate} from '../../lib/server/rug-checkout.mjs';
-const input = {items: [{id: 'rug-1', quantity: 1}], deliveryOption: 'Delivery', promoCode: '', customerInfo: {name: 'Test', email: 'test@example.com', phone: '7034610207', shippingAddress: 'Alexandria', billingAddress: 'Alexandria'}};
-const rugs = [{id: 'rug-1', name: 'Persian rug', price: 100.01, availability: 'In Stock', sizeCategory: '6x9'}];
+const input = {items: [{id: 'rug-1', quantity: 1}], deliveryOption: 'Delivery', promoCode: '', customerInfo: {billingCountry: 'US', shippingCountry: 'US', name: 'Test', email: 'test@example.com', phone: '7034610207', shippingAddress: 'Alexandria', billingAddress: 'Alexandria'}};
+const rugs = [{id: 'rug-1', name: 'Persian design rug', origin: 'Turkey', price: 100.01, availability: 'In Stock', sizeCategory: '6x9'}];
 const order = () => ({...priceCart(input, rugs), ...input, items: priceCart(input, rugs).items, id: 'MPR-TEST-abc', ownerUid: 'owner', test: true, paymentStatus: 'Awaiting payment', sessionId: 'cs_test_123', expiresAt: 2000000000});
 const session = o => ({id: o.sessionId, livemode: false, currency: 'usd', amount_total: o.total, status: 'complete', payment_status: 'paid', metadata: {purpose: 'marcopolo_rug_test', ownerUid: o.ownerUid, orderId: o.id}});
 test('server inventory determines amount; browser prices and totals are ignored', () => {
@@ -57,4 +57,10 @@ test('Stripe SDK rejects forged, altered and stale webhook signatures', () => {
   assert.throws(() => stripe.webhooks.constructEvent(payload, header, 'whsec_wrong'));
   const stale = stripe.webhooks.generateTestHeaderString({payload, secret, timestamp: Math.floor(Date.now() / 1000) - 600});
   assert.throws(() => stripe.webhooks.constructEvent(payload, stale, secret));
+});
+test('server pricing rejects held origins and flagged IDs even if browser requests them directly', () => {
+  assert.throws(() => priceCart(input, [{...rugs[0], origin: 'Iran'}]));
+  const id = 'rug-1783796714385';
+  assert.throws(() => priceCart({...input, items: [{id, quantity: 1}]}, [{...rugs[0], id, origin: 'Unknown'}]));
+  assert.ok(priceCart(input, [{...rugs[0], origin: 'Afghanistan'}]).total > 0);
 });

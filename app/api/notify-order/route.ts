@@ -1,8 +1,33 @@
+import {caller,serverDb} from '@/lib/server/firebase-admin';
+import {requireStaff} from '@/lib/server/staff-permission';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { order, shopProfile, type = 'confirmation', emailConfig } = await request.json();
+    const user = await caller(request);
+    const raw = await request.text();
+    if (raw.length > 2000) return NextResponse.json({error:"Request too large"},{status:413});
+    const input = JSON.parse(raw);
+    const id = input.orderId || input.order?.id;
+    const type = input.type === 'invoice' ? 'invoice' : 'confirmation';
+    if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(id)) return NextResponse.json({error:'Invalid order'}, {status:400});
+    const ref = serverDb().collection('showroom_orders').doc(id);
+    const snapshot = await ref.get();
+    const order:any = snapshot.exists ? {...snapshot.data(),id:snapshot.id} : null;
+    if (!order) return NextResponse.json({error:'Order not found'}, {status:404});
+    if (type === 'invoice' || order.customerId !== user.uid) await requireStaff(request,'orders');
+    const shopProfile = {name:'Marco Polo Rugs'};
+    const key = process.env.EMAILJS_PRIVATE_KEY;
+    if (!key) return NextResponse.json({error:'Email service needs configuration. Your order is saved.'}, {status:503});
+    const recent = order.notificationAttempts?.[type] || 0;
+    if (Date.now() - recent < 60000) return NextResponse.json({error:'Please wait a minute before retrying.'}, {status:429});
+    await serverDb().runTransaction(async tx => {
+      const current = (await tx.get(ref)).data();
+      if (Date.now() - (current?.notificationAttempts?.[type] || 0) < 60000) throw Error('RETRY_LATER');
+      tx.update(ref, {[`notificationAttempts.${type}`]:Date.now()});
+    });
+    const escape = (value:any) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] || c));
+    order.customerInfo = {...order.customerInfo, name:escape(order.customerInfo?.name)};
     
     if (!order || !order.customerInfo) {
       return NextResponse.json({ error: 'Invalid order data' }, { status: 400 });
@@ -12,10 +37,10 @@ export async function POST(request: Request) {
     const results: any = { email: null, sms: null };
 
     // 1. EmailJS Notification (Replaced SendGrid to bypass DMARC issues)
-    const EMAILJS_SERVICE_ID = emailConfig?.serviceId || 'marcopolo2';
-    const EMAILJS_TEMPLATE_ID = type === 'confirmation' ? 'marcopolo2' : (emailConfig?.templateIdInvoice || 'rm8govh');
-    const EMAILJS_PUBLIC_KEY = emailConfig?.publicKey || 'Anj9zrEUo-VEWvMVw';
-    const EMAILJS_PRIVATE_KEY = emailConfig?.privateKey || 'ZgV1UYxVUy0UQKBmgj3I5';
+    const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'marcopolo2';
+    const EMAILJS_TEMPLATE_ID = type === 'confirmation' ? 'marcopolo2' : (process.env.EMAILJS_TEMPLATE_INVOICE || 'rm8govh');
+    const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || 'Anj9zrEUo-VEWvMVw';
+    const EMAILJS_PRIVATE_KEY = key;
 
     if (customerInfo.email) {
       try {
@@ -42,7 +67,7 @@ export async function POST(request: Request) {
                 <p style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 3px; color: #000;">${order.id}</p>
               </div>
               <div style="text-align: center; margin-top: 20px;">
-                <a href="https://marcopoloorientalrugs.com/?track=${order.id}" style="display: inline-block; background-color: #8E7453; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; letter-spacing: 2px; border-radius: 4px; text-transform: uppercase;">Track Order Instantly</a>
+                <a href="https://www.marcopolorugs.com/?track=${order.id}" style="display: inline-block; background-color: #8E7453; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; letter-spacing: 2px; border-radius: 4px; text-transform: uppercase;">Track Order Instantly</a>
               </div>
             </div>
 
@@ -78,7 +103,7 @@ export async function POST(request: Request) {
                 <p style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 3px; color: #000;">${order.id}</p>
               </div>
               <div style="text-align: center; margin-top: 20px;">
-                <a href="${request.headers.get('origin') || 'https://marcopoloorientalrugs.com'}/?track=${order.id}" style="display: inline-block; background-color: #8E7453; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; letter-spacing: 2px; border-radius: 4px; text-transform: uppercase;">Track Order Instantly</a>
+                <a href="https://www.marcopolorugs.com/?track=${order.id}" style="display: inline-block; background-color: #8E7453; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; letter-spacing: 2px; border-radius: 4px; text-transform: uppercase;">Track Order Instantly</a>
               </div>
             </div>
 
@@ -117,19 +142,20 @@ export async function POST(request: Request) {
           results.email = 'sent';
         } else {
           const errText = await emailRes.text();
-          console.error("EmailJS Error:", errText);
+          console.error("Email delivery rejected by provider");
           results.email = 'failed';
         }
       } catch (err) {
-        console.error("EmailJS API Error:", err);
+        console.error("Email delivery failed");
         results.email = 'error';
       }
     }
 
-    return NextResponse.json({ success: true, results });
+    await ref.update({[`notifications.${type}`]:{status:results.email || 'not_sent',updatedAt:new Date().toISOString()}});
+    return NextResponse.json({ success: results.email === 'sent', results }, {status:results.email === 'sent' ? 200 : 502});
 
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('Order notification failed');
     return NextResponse.json({ error: 'Failed to notify order' }, { status: 500 });
   }
 }

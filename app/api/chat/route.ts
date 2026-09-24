@@ -1,3 +1,4 @@
+import { isRugOnReviewHold } from '@/lib/catalog-visibility.mjs';
 import {classifyFirebaseFailure} from '@/lib/server/firebase-failure.mjs';
 import {NextRequest,NextResponse} from 'next/server';
 import {serverDb,caller} from '@/lib/server/firebase-admin';
@@ -96,7 +97,7 @@ export async function POST(req:NextRequest){
     db.collection('showroom_rugs').limit(200).get()
    ]);
    const terms=text.toLowerCase().split(/\W+/).filter((t:string)=>t.length>2);
-   const rugs=catalog.docs.map(d=>({id:d.id,...d.data()})).map((r:any)=>({r,score:terms.filter((t:string)=>([r.name,r.sku,r.material,r.origin,r.dimensions,r.description].join(' ').toLowerCase()).includes(t)).length})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,8).map(({r}:any)=>({name:r.name,sku:r.sku,price:r.price,material:r.material,dimensions:r.dimensions,availability:r.availability,url:'/shop/'+encodeURIComponent(r.id)}));
+   const rugs=catalog.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!isRugOnReviewHold(r)).map((r:any)=>({r,score:terms.filter((t:string)=>([r.name,r.sku,r.material,r.origin,r.dimensions,r.description].join(' ').toLowerCase()).includes(t)).length})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,8).map(({r}:any)=>({name:r.name,sku:r.sku,price:r.price,material:r.material,dimensions:r.dimensions,availability:r.availability,url:'/shop/'+encodeURIComponent(r.id)}));
    const history=messages.docs.map(d=>d.data()).reverse().map(m=>({role:m.sender==='customer'?'user':'assistant',content:String(m.text||'').slice(0,2500)}));
     const response=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json',Authorization:'Bearer '+process.env.OPENAI_API_KEY},body:JSON.stringify({
      model:process.env.OPENAI_MODEL||'gpt-4.1-mini',temperature:0.3,max_tokens:450,response_format:{type:'json_object'},
