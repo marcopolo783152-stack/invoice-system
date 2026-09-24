@@ -32,6 +32,7 @@ import LiveTrackingButton from "./LiveTrackingButton";
 import { EstimatesAdminTab } from "./EstimatesAdminTab";
 import AppraisalsAdminTab from "./AppraisalsAdminTab";
 import { EmployeesAdminTab } from "./EmployeesAdminTab";
+import LoansAdminTab from "./LoansAdminTab";
 import { ClockAdminTab } from "./ClockAdminTab";
 import {
   BarChart3,
@@ -129,7 +130,7 @@ const AdminWorkspace: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -160,7 +161,7 @@ const AdminWorkspace: React.FC = () => {
   };
   useEffect(()=>{
     if(staff && !allowed(activeTab)){
-      const next=['analytics','orders','inventory','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','settings','users'].find(allowed);
+      const next=['analytics','orders','inventory','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','loans','settings','users'].find(allowed);
       if(next)setActiveTabState(next as any);
     }
   },[staff,activeTab]);
@@ -1070,7 +1071,7 @@ const AdminWorkspace: React.FC = () => {
             >
               <FileText size={18} /> <span>Appraisals</span>
             </button>)}
-{(allowed('employees') || allowed('clock')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Team</p>}
+{(allowed('employees') || allowed('loans') || allowed('clock')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Team</p>}
 {allowed('employees') && (<button
               onClick={() => setActiveTab("employees")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
@@ -1078,6 +1079,14 @@ const AdminWorkspace: React.FC = () => {
               }`}
             >
               <Users size={18} /> <span>Employees</span>
+            </button>)}
+{allowed('loans') && (<button
+              onClick={() => setActiveTab("loans")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
+                activeTab === "loans" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              <Banknote size={18} /> <span>Loans & repayments</span>
             </button>)}
 {allowed('clock') && (<button
               onClick={() => setActiveTab("clock")}
@@ -1155,6 +1164,7 @@ const AdminWorkspace: React.FC = () => {
               {activeTab === "estimates" && "Service Estimate Requests"}
               {activeTab === "appraisals" && "Certificates of Authenticity & Appraisals"}
               {activeTab === "employees" && "HR & Employee Management"}
+              {activeTab === "loans" && "Loans & Repayments"}
               {activeTab === "clock" && "Time Clock & Geofencing"}
               {activeTab === "transactions" && "System Transactions Ledger"}
               {activeTab === "reviews" && "Advisor Review Moderation"}
@@ -1261,6 +1271,13 @@ const AdminWorkspace: React.FC = () => {
         {activeTab === "employees" && allowed('employees') && (
           <div className="bg-white border border-editorial-border p-8 shadow-sm">
              <EmployeesAdminTab />
+          </div>
+        )}
+
+        {/* --- TAB: LOANS --- */}
+        {activeTab === "loans" && allowed('loans') && (
+          <div className="bg-white border border-editorial-border p-8 shadow-sm">
+             <LoansAdminTab />
           </div>
         )}
 
