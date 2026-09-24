@@ -17,10 +17,10 @@ export async function GET(request:Request){
    if(!validId(id)) throw new Error('INVALID_LOAN');
    const ref=db.collection('showroom_loans').doc(id), [loanSnap,paySnap]=await Promise.all([ref.get(),ref.collection('payments').orderBy('createdAt','desc').limit(250).get()]);
    if(!loanSnap.exists)return NextResponse.json({error:'Loan not found.'},{status:404});
-   return NextResponse.json({loan:{id:loanSnap.id,...loanSnap.data()},payments:paySnap.docs.map(d=>({id:d.id,...d.data()}))},{headers:{'Cache-Control':'no-store'}});
+   const loanData=loanSnap.data()!;return NextResponse.json({loan:{id:loanSnap.id,...loanData,status:loanStatus(loanData.balanceCents,loanData.dueDate)},payments:paySnap.docs.map(d=>({id:d.id,...d.data()}))},{headers:{'Cache-Control':'no-store'}});
   }
   const snap=await db.collection('showroom_loans').orderBy('createdAt','desc').limit(200).get();
-  return NextResponse.json({loans:snap.docs.map(d=>({id:d.id,...d.data()}))},{headers:{'Cache-Control':'no-store'}});
+  return NextResponse.json({loans:snap.docs.map(d=>{const x=d.data();return {id:d.id,...x,status:loanStatus(x.balanceCents,x.dueDate)};})},{headers:{'Cache-Control':'no-store'}});
  }catch(e){return fail(e);}
 }
 
@@ -45,12 +45,12 @@ export async function POST(request:Request){
   if(!validId(input.loanId))throw new Error('INVALID_LOAN');
   const loanRef=db.collection('showroom_loans').doc(input.loanId);
   if(action==='repay'){
-   const requestId=safeIdempotencyKey(input.requestId), amountCents=toCents(input.amount), paymentRef=loanRef.collection('payments').doc(requestId);
+   const requestId=safeIdempotencyKey(input.requestId), amountCents=toCents(input.amount), paymentRef=loanRef.collection('payments').doc(requestId), fingerprint=createHash('sha256').update(raw).digest('hex');
    await db.runTransaction(async tx=>{
     const [loan,payment]=await Promise.all([tx.get(loanRef),tx.get(paymentRef)]); if(!loan.exists)throw new Error('LOAN_NOT_FOUND');
-    if(payment.exists)return;
+    if(payment.exists){if(payment.data()?.fingerprint!==fingerprint)throw new Error('REQUEST_CONFLICT');return;}
     const data=loan.data()!, next=assertRepayment(data.balanceCents,amountCents), now=Date.now();
-    tx.create(paymentRef,{kind:'repayment',amountCents,date:clean(input.date,20)||new Date().toISOString().slice(0,10),method:clean(input.method,80),notes:clean(input.notes,500),createdAt:now,createdBy:actor.uid,reversed:false});
+    tx.create(paymentRef,{kind:'repayment',amountCents,date:clean(input.date,20)||new Date().toISOString().slice(0,10),method:clean(input.method,80),notes:clean(input.notes,500),createdAt:now,createdBy:actor.uid,reversed:false,fingerprint});
     tx.update(loanRef,{balanceCents:next,status:loanStatus(next,data.dueDate),updatedAt:now});
     tx.create(loanRef.collection('events').doc('payment_'+requestId),{type:'repayment',paymentId:requestId,amountCents,at:now,actor:actor.uid});
    });
