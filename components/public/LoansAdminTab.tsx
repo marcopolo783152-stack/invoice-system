@@ -7,6 +7,7 @@ type Payment={id:string;kind:string;amountCents:number;date:string;method?:strin
 
 const money=(c:number)=>'$'+(c/100).toFixed(2);
 const requestId=()=>crypto.randomUUID().replace(/-/g,'_');
+const esc=(v:string)=>v.replace(/[&<>\"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]||ch));
 
 async function call(path:string,init?:RequestInit){
  const user=auth.currentUser;if(!user)throw new Error('Please sign in again.');
