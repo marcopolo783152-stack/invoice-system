@@ -7,12 +7,14 @@ type Payment={id:string;kind:string;amountCents:number;date:string;method?:strin
 
 const money=(c:number)=>'$'+(c/100).toFixed(2);
 const requestId=()=>crypto.randomUUID().replace(/-/g,'_');
-const esc=(v:string)=>v.replace(/[&<>\"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]||ch));
+const htmlEntities:Record<string,string>={"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
+const esc=(v:string)=>v.replace(/[&<>\"']/g,ch=>htmlEntities[ch]||ch);
 
 async function call(path:string,init?:RequestInit){
  const user=auth.currentUser;if(!user)throw new Error('Please sign in again.');
  const token=await user.getIdToken();
- const res=await fetch(path,{...init,headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,...(init?.headers||{})},cache:'no-store'});
+ const headers=new Headers(init?.headers);headers.set('Content-Type','application/json');headers.set('Authorization','Bearer '+token);
+ const res=await fetch(path,{...init,headers,cache:'no-store'});
  const body=await res.json().catch(()=>({}));if(!res.ok)throw new Error(body.error||'Request failed.');return body;
 }
 
