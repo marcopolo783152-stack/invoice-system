@@ -2,7 +2,7 @@
 import {useEffect,useState,FormEvent,useRef} from 'react';
 import {getAuth} from 'firebase/auth';
 import {app} from '@/lib/firebase';
-import LotManagement from './LotManagement';
+import AuctionPlanning from './AuctionPlanning';
 import StaffGate from '@/components/StaffGate';
 import {increment} from '@/lib/auction/engine.mjs';
 import styles from './Auction.module.css';
@@ -10,9 +10,9 @@ const money=(c:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency
 const localDate=(n:number)=>{const d=new Date(n);return new Date(n-d.getTimezoneOffset()*60000).toISOString().slice(0,16);};
 async function api(query='',body?:object){const auth=getAuth(app);await auth.authStateReady();const user=auth.currentUser;if(!user||user.isAnonymous)throw Error('Please sign in as staff.');const response=await fetch('/api/auction/sandbox'+query,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+await user.getIdToken(),'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store'});const data=await response.json();if(!response.ok)throw Error(data.error||'Operation failed.');return data;}
 export default function AuctionAdmin(){return <StaffGate section="settings"><AuctionWorkspace/></StaffGate>;}
-function AuctionWorkspace(){const [tab,setTab]=useState('catalog');return <>{tab==='catalog'?<main className={styles.page}><a href="/?view=admin">← Showroom admin</a><p className={styles.eyebrow}>Marco Polo Rugs</p><h1>Auction management</h1><div className={styles.actions}><button aria-pressed>Catalog &amp; lots</button><button className={styles.secondary} onClick={()=>setTab('test')}>Bidding test lab</button><a className={`${styles.button} ${styles.secondary}`} href="/auctions/register">Bidder registration</a></div><LotManagement/></main>:<><div className={styles.page} style={{minHeight:0,paddingBottom:0}}><button className={styles.secondary} onClick={()=>setTab('catalog')}>← Catalog &amp; lots</button></div><Workspace/></>}</>;}
+function AuctionWorkspace(){const [tab,setTab]=useState('catalog'),[testId,setTestId]=useState('');return <>{tab==='catalog'?<main className={styles.page}><a href="/?view=admin">← Showroom admin</a><p className={styles.eyebrow}>Marco Polo Rugs · Since 1988</p><h1>Auction management</h1><div className={styles.actions}><button aria-pressed>Auctions &amp; bulk catalog</button><button className={styles.secondary} onClick={()=>setTab('test')}>Bidding test lab</button><a href="/auctions">View customer construction page</a></div><AuctionPlanning onTest={id=>{setTestId(id);setTab('test');}}/></main>:<><div className={styles.page} style={{minHeight:0,paddingBottom:0}}><button className={styles.secondary} onClick={()=>setTab('catalog')}>← Auctions &amp; bulk catalog</button></div><Workspace initialId={testId}/></>}</>;}
 
-function Workspace(){
+function Workspace({initialId}: {initialId:string}){
  const [lots,setLots]=useState<any[]>([]),[rugs,setRugs]=useState<any[]>([]),[selected,setSelected]=useState(''),[detail,setDetail]=useState<any>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false),[now,setNow]=useState(Date.now()),[search,setSearch]=useState('');
  const lastOperation=useRef<{body:string;id:string}|null>(null);
  const active=useRef(false),offset=useRef(0),selection=useRef('');
@@ -20,7 +20,7 @@ function Workspace(){
  const [bid,setBid]=useState({bidderId:'test-a',maximum:'',method:'pickup_self',address:''}),[reason,setReason]=useState(''),[reference,setReference]=useState('');
  async function refresh(){const data=await api();setLots(data.lots);offset.current=data.serverNow-Date.now();setNow(data.serverNow);setLoaded(true);}
  async function choose(id:string){selection.current=id;setSelected(id);setDetail(null);setError('');try{const data=await api('?id='+encodeURIComponent(id));if(selection.current===id){setDetail(data);offset.current=data.serverNow-Date.now();}}catch(e){setError(e instanceof Error?e.message:'Could not load lot.');}}
- useEffect(()=>{Promise.all([refresh(),api('?inventory=1').then(d=>setRugs(d.rugs))]).catch(e=>setError(e.message));const timer=setInterval(()=>setNow(Date.now()+offset.current),1000);return()=>clearInterval(timer);},[]);
+ useEffect(()=>{if(initialId)choose(initialId);Promise.all([refresh(),api('?inventory=1').then(d=>setRugs(d.rugs))]).catch(e=>setError(e.message));const timer=setInterval(()=>setNow(Date.now()+offset.current),1000);return()=>clearInterval(timer);},[]);
  async function operate(body:object,created=false){if(active.current)return;active.current=true;setBusy(true);setError('');setMessage('');try{const serialized=JSON.stringify(body);if(lastOperation.current?.body!==serialized)lastOperation.current={body:serialized,id:crypto.randomUUID()};const data=await api('',{...body,requestId:lastOperation.current.id});await refresh();await choose(created?data.id:selected);lastOperation.current=null;setMessage('Sandbox operation saved. No real payment or inventory change.');}catch(e){setError(e instanceof Error?e.message:'Could not save.');}finally{setBusy(false);active.current=false;}}
  function create(e:FormEvent){e.preventDefault();operate({action:'create',rugId:form.rugId,title:form.title,condition:form.condition,startingCents:Math.round(Number(form.starting)*100),reserveCents:Math.round(Number(form.reserve)*100),loadingCents:Math.round(Number(form.loading)*100),startAt:new Date(form.startAt).getTime(),endAt:new Date(form.endAt).getTime()},true);}
  const lot=detail?.lot;
