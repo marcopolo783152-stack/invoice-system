@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency, calculateInvoice, calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
 import { getItemBySku, searchInventory, InventoryItem } from '@/lib/inventory-storage';
@@ -17,13 +17,7 @@ import { logActivity } from '@/lib/audit-logger';
 import * as XLSX from 'xlsx'; // Import SheetJS
 import dynamic from 'next/dynamic';
 
-function getNextWashSku(): string {
-  if (typeof window === 'undefined') return `MPW${Math.floor(1234 + Math.random() * 8000)}`;
-  let counter = parseInt(localStorage.getItem('mp_wash_sku_counter') || '1234', 10);
-  const sku = `MPW${counter}`;
-  localStorage.setItem('mp_wash_sku_counter', (counter + 1).toString());
-  return sku;
-}
+import {reserveWashSkuBatch} from '@/lib/wash-sku';
 
 const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
 
@@ -160,31 +154,33 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
   const [isLumpSum, setIsLumpSum] = useState(initialData?.isLumpSum || false);
   const [lumpSumAmount, setLumpSumAmount] = useState(initialData?.lumpSumAmount || 0);
 
-  // Auto-switch to Wholesale for Consignment and auto-SKU for Wash
-  useEffect(() => {
-    if (documentType === 'CONSIGNMENT') {
-      // Only switch if not already a wholesale mode to preserve specific wholesale choices if any
-      if (!mode.includes('wholesale')) {
-        setMode('wholesale');
-      }
-    } else if (documentType === 'WASH') {
-      // Find how many items need SKUs
-      const neededCount = items.filter(i => !i.sku || !i.sku.startsWith('MPW')).length;
-      if (neededCount > 0) {
-        // Pre-generate SKUs outside the state updater to avoid React double-invocation bugs
-        const newSkus = Array.from({ length: neededCount }).map(() => getNextWashSku());
-        setItems(prev => {
-          let skuIndex = 0;
-          return prev.map(item => {
-            if (!item.sku || !item.sku.startsWith('MPW')) {
-              return { ...item, sku: newSkus[skuIndex++] };
-            }
-            return item;
-          });
-        });
-      }
-    }
-  }, [documentType]);
+  const [washSkuError,setWashSkuError]=useState('');
+  const [washSkuBusy,setWashSkuBusy]=useState(false);
+  const washRequest=useRef<{id:string;itemIds:string[]}|null>(null);
+  const washInFlight=useRef(false);
+  const documentTypeRef=useRef(documentType);documentTypeRef.current=documentType;
+  const needsWashSku=(item:InvoiceItem)=>!item.sku;
+  async function assignWashSkus(){
+    if(washInFlight.current||documentTypeRef.current!=='WASH')return;
+    const missing=items.filter(needsWashSku);
+    if(!missing.length)return;
+    if(!washRequest.current)washRequest.current={id:crypto.randomUUID(),itemIds:missing.slice(0,100).map(i=>i.id)};
+    const request=washRequest.current;
+    washInFlight.current=true;setWashSkuBusy(true);setWashSkuError('');
+    try{
+      const skus=await reserveWashSkuBatch(request.id,request.itemIds.length);
+      if(documentTypeRef.current==='WASH')setItems(previous=>previous.map(item=>{
+        const index=request.itemIds.indexOf(item.id);
+        return index>=0&&needsWashSku(item)?{...item,sku:skus[index]}:item;
+      }));
+      washRequest.current=null;
+    }catch(error){setWashSkuError(error instanceof Error?error.message:'Could not reserve wash SKUs.');}
+    finally{washInFlight.current=false;setWashSkuBusy(false);}
+  }
+  useEffect(()=>{
+    if(documentType==='CONSIGNMENT'&&!mode.includes('wholesale'))setMode('wholesale');
+    if(documentType==='WASH'&&!washSkuError)void assignWashSkus();
+  },[documentType,items]);
 
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [signature, setSignature] = useState(initialData?.signature || '');
@@ -197,7 +193,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
   function createEmptyItem(): InvoiceItem {
     return {
       id: Math.random().toString(36).substr(2, 9),
-      sku: documentType === 'WASH' ? getNextWashSku() : '',
+      sku: '',
       description: '',
       shape: 'rectangle',
       widthFeet: 0,
@@ -536,6 +532,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if(documentType==='WASH'&&(washSkuBusy||items.some(needsWashSku))){setWashSkuError('Reserve all wash SKUs before saving. Use Retry below.');return;}
+
     // Customer signature is now optional for admin creation
 
     const invoiceData: InvoiceData & { servedBy?: string } = {
@@ -715,6 +713,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       </div>
 
       {/* Sold To Section */}
+      {isWash&&washSkuBusy&&<p role="status">Reserving wash SKU numbers…</p>}
+      {isWash&&washSkuError&&<div role="alert"><p>{washSkuError}</p><button type="button" disabled={washSkuBusy} onClick={()=>void assignWashSkus()}>Retry SKU reservation</button></div>}
       <h3>1. Customer information</h3>
       {debtStats && debtStats.totalDebt > 0 && (
         <div style={{ padding: '15px', background: '#ffe4e6', border: '1px solid #fda4af', borderRadius: '8px', marginBottom: '20px', color: '#9f1239' }}>
@@ -1543,7 +1543,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       {draftNotice && <p role="status" className={styles.draftNotice}>{draftNotice}</p>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 32 }}>
 
-        <button type="submit" className={styles.submitBtn} disabled={saving}>
+        <button type="submit" className={styles.submitBtn} disabled={saving || (isWash && (washSkuBusy || items.some(needsWashSku)))}>
           {saving ? 'Saving invoice…' : 'Save and review invoice'}
         </button>
       </div>
