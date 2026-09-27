@@ -1,7 +1,8 @@
+import {installBrowserSession} from './browser-session';
 import {initializeApp,getApps} from 'firebase/app';
 import {getFirestore,connectFirestoreEmulator} from 'firebase/firestore';
 import {getStorage} from 'firebase/storage';
-import {getAuth,signInAnonymously,connectAuthEmulator} from 'firebase/auth';
+import {getAuth,signInAnonymously,connectAuthEmulator,setPersistence,browserSessionPersistence,signOut} from 'firebase/auth';
 const configured=!!process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim() && !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
 const config={
  apiKey:process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim() || 'preview-not-configured',
@@ -23,9 +24,20 @@ if((typeof window!=='undefined'||process.env.FIRESTORE_EMULATOR_HOST) && process
  }
 }
 export function isFirebaseConfigured(){return configured;}
-if(typeof window!=='undefined' && configured){
+export const browserSessionReady=typeof window!=='undefined' && configured ? (async()=>{
  const auth=getAuth(app);
- auth.authStateReady().then(()=>{if(!auth.currentUser)return signInAnonymously(auth);}).catch(()=>console.warn('Guest connection unavailable.'));
+ await auth.authStateReady();
+ // Discard legacy persistent sign-ins once instead of carrying them into this policy.
+ if(!sessionStorage.getItem('marcopolo-session-policy-v2')){
+  if(auth.currentUser&&!auth.currentUser.isAnonymous)await signOut(auth);
+  sessionStorage.setItem('marcopolo-session-policy-v2','1');
+ }
+ await setPersistence(auth,browserSessionPersistence);
+ installBrowserSession(auth);
+ if(!auth.currentUser)await signInAnonymously(auth).catch(()=>console.warn('Guest connection unavailable.'));
+})() : Promise.resolve();
+if(typeof window!=='undefined'&&configured){
+ void browserSessionReady.catch(()=>console.warn('Browser session could not be initialized.'));
 }
 export function checkFirebaseQuotaError(error:any){
  return /quota|resource-exhausted/i.test(String(error?.code||error?.message||''));

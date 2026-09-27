@@ -727,9 +727,11 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       )}
       <div className={styles.row}>
         <div className={styles.formGroup} style={{ position: 'relative' }}>
-          <label>Name:*</label>
+          <label htmlFor="customer-full-name">Full name:*</label>
           <input
             type="text"
+            id="customer-full-name"
+            placeholder="First and last name"
             value={soldTo.name}
             onChange={(e) => handleCustomerNameChange(e.target.value)}
             required

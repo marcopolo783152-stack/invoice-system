@@ -7,7 +7,6 @@
 
 'use client';
 
-import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import { logActivity } from '@/lib/audit-logger';
 import { appendInvoicePayment } from '@/lib/firebase-storage';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
@@ -102,29 +101,7 @@ function InvoicePageContent() {
         try { setCurrentUser(JSON.parse(storedUser)); } catch { }
       }
 
-      // --- Logout after five hours of inactivity ---
-      let inactivityTimeout: ReturnType<typeof setTimeout> | undefined;
-      const resetInactivityTimer = () => {
-        if (inactivityTimeout) clearTimeout(inactivityTimeout);
-        inactivityTimeout = setTimeout(() => {
-          logout();
-          alert('Session timed out due to inactivity.'); // Inform user
-        }, STAFF_INACTIVITY_TIMEOUT_MS);
-      };
 
-      // Reset timer on user activity
-      const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll', 'click'];
-      events.forEach(evt => {
-        window.addEventListener(evt, resetInactivityTimer);
-      });
-      resetInactivityTimer();
-
-      return () => {
-        events.forEach(evt => {
-          window.removeEventListener(evt, resetInactivityTimer);
-        });
-        if (inactivityTimeout) clearTimeout(inactivityTimeout);
-      };
     }
   }, []);
 
