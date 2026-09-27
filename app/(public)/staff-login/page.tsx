@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
 import { auth } from '@/lib/auth';
-import {isFirebaseConfigured,signInErrorMessage} from '@/lib/firebase';
+import {isFirebaseConfigured,signInErrorMessage,browserSessionReady} from '@/lib/firebase';
 import { acceptStaffInvitation, verifiedIdentity } from '@/lib/staff-access';
 import styles from './StaffLogin.module.css';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
@@ -25,7 +25,7 @@ export default function StaffLogin() {
  };
  const run = async (action: () => Promise<void>) => {
   setBusy(true); setError(''); setMessage('');
-  try { if(!isFirebaseConfigured())throw Error('CONFIGURATION_NOT_FOUND');await action(); } catch(e) { setError(signInErrorMessage(e)); }
+  try { if(!isFirebaseConfigured())throw Error('CONFIGURATION_NOT_FOUND');await browserSessionReady;await action(); } catch(e) { setError(signInErrorMessage(e)); }
   finally { setBusy(false); }
  };
  return <main className={styles.page}>

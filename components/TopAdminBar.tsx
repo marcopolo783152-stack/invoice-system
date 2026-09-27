@@ -1,7 +1,5 @@
 'use client';
 
-import { monitorStaffIdle } from '@/lib/staff-idle.mjs';
-import { STAFF_INACTIVITY_TIMEOUT_MS } from '@/lib/session-policy';
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
@@ -19,14 +17,6 @@ export default function TopAdminBar() {
     try{await logout();syncLegacyStaffSession(null);window.location.replace('/');}
     catch{sessionStorage.removeItem('showroom-logout');window.alert('Sign out failed. Please try again.');}
   };
-
-  // Inactivity auto-logout
-  useEffect(() => {
-    if (!isAdmin) return;
-
-    return monitorStaffIdle({win: window, userId: staff!.uid,
-      timeoutMs: STAFF_INACTIVITY_TIMEOUT_MS, onExpire: handleLogout});
-  }, [isAdmin, staff?.uid]);
 
   if (!isAdmin) return null;
 

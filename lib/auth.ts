@@ -1,6 +1,6 @@
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, sendEmailVerification, signOut, onAuthStateChanged, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { OWNER_UID, OWNER_EMAIL } from './access-policy';
-import { app, db } from './firebase';
+import { app, db, browserSessionReady } from './firebase';
 import { doc, getDoc, setDoc, Firestore } from 'firebase/firestore';
 
 export const auth = getAuth(app);
@@ -8,6 +8,7 @@ const googleProvider = new GoogleAuthProvider();
 
 export const loginWithEmail = async (email: string, pass: string) => {
     try {
+        await browserSessionReady;
         const userCredential = await signInWithEmailAndPassword(auth, email, pass);
         return { user: userCredential.user, error: null };
     } catch (error: any) {
@@ -22,6 +23,7 @@ export const registerWithEmail = async (name: string, email: string, pass: strin
             return { user: null, error: "An account with this email already exists." };
         }
 
+        await browserSessionReady;
         const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
         await sendEmailVerification(userCredential.user);
         
@@ -41,6 +43,7 @@ export const registerWithEmail = async (name: string, email: string, pass: strin
 
 export const loginWithGoogle = async () => {
     try {
+        await browserSessionReady;
         const result = await signInWithPopup(auth, googleProvider);
         const user = result.user;
         

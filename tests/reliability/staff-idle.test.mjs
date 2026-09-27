@@ -25,3 +25,11 @@ test('storage unavailable still supports inactivity and cleanup',()=>{
  const s=setup();s.win.localStorage.getItem=()=>{throw Error('blocked');};s.win.localStorage.setItem=()=>{throw Error('blocked');};
  s.advance(10000);s.activity();s.stop();s.advance(18000000);s.check();assert.equal(s.expired,0);
 });
+test('a reload preserves the saved inactivity deadline',()=>{
+ const s=setup(new Map([['marcopolo-staff-activity:staff','1']]));
+ s.advance(18000000-99999);s.check();assert.equal(s.expired,1);
+});
+test('future storage timestamps cannot extend the session',()=>{
+ const s=setup(new Map([['marcopolo-staff-activity:staff','9999999999999']]));
+ s.advance(18000000);s.check();assert.equal(s.expired,1);
+});

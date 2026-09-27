@@ -1,9 +1,10 @@
 import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
-import { app } from './firebase';
+import { app, browserSessionReady } from './firebase';
 
 const auth = getAuth(app);
 
-export function login(email: string, password: string) {
+export async function login(email: string, password: string) {
+  await browserSessionReady;
   return signInWithEmailAndPassword(auth, email, password);
 }
 
@@ -11,7 +12,8 @@ export function logout() {
   return signOut(auth);
 }
 
-export function signup(email: string, password: string) {
+export async function signup(email: string, password: string) {
+  await browserSessionReady;
   return createUserWithEmailAndPassword(auth, email, password);
 }
 
