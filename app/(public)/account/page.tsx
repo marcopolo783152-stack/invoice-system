@@ -24,7 +24,7 @@ function CustomerAccount(){
  const mine=orders.filter(o=>o.customerId===user.uid).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
  const saved=rugs.filter(r=>favoritedRugIds.includes(r.id));
  return <main className={styles.page}><div className={styles.container}>
- <header className={styles.header}><div><a className={styles.eyebrow} href="/">Marco Polo Oriental Rugs</a><h1>Your collection, your space.</h1></div><div className={styles.actions}><a className={styles.button+' '+styles.secondary} href="/shop">Browse rugs</a>{staff&&<a className={styles.button} href="/admin">Staff workspace</a>}<button className={styles.secondary} onClick={async()=>{await logout();window.location.assign('/sign-in');}}>Sign out</button></div></header>
+ <header className={styles.header}><div><a className={styles.eyebrow} href="/">Marco Polo Oriental Rugs</a><h1>Your collection, your space.</h1></div><div className={styles.actions}><a className={styles.button} href="/orders/pay">Online orders &amp; quotes</a><a className={styles.button+' '+styles.secondary} href="/shop">Browse rugs</a>{staff&&<a className={styles.button} href="/admin">Staff workspace</a>}<button className={styles.secondary} onClick={async()=>{await logout();window.location.assign('/sign-in');}}>Sign out</button></div></header>
  <section className={styles.hero}><div><span className={styles.eyebrow}>Your customer dashboard</span><h1>Hello, {profile.name.split(' ')[0]||'friend'}.</h1><p>Follow your purchases, plan your next showroom visit and keep the rugs you love close at hand.</p></div><a className={styles.button} href="/services/book">Plan a visit →</a></section>
  <div className={styles.stats}>{[['Your orders',mine.length],['Appointments',appointments.filter(a=>!['cancelled','rejected'].includes(a.status)).length],['Saved rugs',saved.length],['Account','Verified']].map(([label,value])=><div key={label} className={styles.card}><span className={styles.muted}>{label}</span><strong className={styles.stat}>{value}</strong></div>)}</div>
  {orderLoadError&&<p role="alert" className={styles.error}>{orderLoadError}</p>}
@@ -57,3 +57,4 @@ function CustomerAccount(){
  </div><ChatWidget/></main>;
 }
 export default function Page(){return <StoreProvider><CustomerAccount/></StoreProvider>;}
+

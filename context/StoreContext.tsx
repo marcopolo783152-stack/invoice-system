@@ -525,6 +525,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     appliedPromo?: PromoCode,
     discountAmount?: number
   ): Promise<Order> => {
+    if (cart.some(item => rugs.find(r => r.id === item.rug.id)?.liveOrderId)) throw new Error("A rug is held for online payment. Please refresh your cart.");
     if (cart.some(item => isRugOnReviewHold(rugs.find(r => r.id === item.rug.id)))) throw new Error("An item is unavailable for online ordering. Please remove it from your cart.");
     const subtotal = cart.reduce((sum, item) => sum + item.rug.price * item.quantity, 0);
     const total = subtotal + shipping + tax;
@@ -591,6 +592,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateRug = (id: string, updatedFields: Partial<Rug>) => {
+    if (rugs.find(r => r.id === id)?.liveOrderId) { alert("This rug belongs to an online payment order. Open Online orders & quotes to manage it."); return; }
     setRugs(prev => prev.map(r => r.id === id ? { ...r, ...updatedFields } : r)); // Optimistic UI
     updateShowroomDoc(SHOWROOM_RUGS, id, updatedFields);
   };
@@ -613,6 +615,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteRug = async (id: string) => {
+    if (rugs.find(r => r.id === id)?.liveOrderId) { alert("This rug belongs to an online payment order and cannot be deleted."); return; }
     const rug = rugs.find(r => r.id === id);
     setRugs(prev => prev.filter(r => r.id !== id)); // Optimistic UI
     
@@ -653,6 +656,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     shipping?: ShippingDetails,
     cancellationReason?: string
   ) => {
+    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
@@ -680,16 +684,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteOrderPaymentDetails = (orderId: string) => {
+    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, paymentDetails: undefined as any } : o));
     updateShowroomDoc(SHOWROOM_ORDERS, orderId, { paymentDetails: null });
   };
 
   const updateOrder = (orderId: string, updates: Partial<Order>) => {
+    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updates } : o));
     updateShowroomDoc(SHOWROOM_ORDERS, orderId, updates);
   };
 
   const deleteOrder = (orderId: string) => {
+    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
     setOrders(prev => prev.filter(o => o.id !== orderId)); // Optimistic UI
     deleteShowroomDoc(SHOWROOM_ORDERS, orderId);
   };
@@ -962,3 +969,4 @@ export const useStore = () => {
   }
   return context;
 };
+

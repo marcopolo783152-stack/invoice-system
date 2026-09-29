@@ -8,7 +8,7 @@ import styles from './page.module.css';
 
 type Connection = {
   accountId: string; paymentsEnabled: boolean; payoutsEnabled: boolean;
-  webhookSecretSaved: boolean; checkoutEnabled: false; checkedAt: string;
+  webhookSecretSaved: boolean; checkoutEnabled: boolean; quotesEnabled: boolean; checkedAt: string;
 };
 
 export default function PaymentSetup() {
@@ -60,11 +60,11 @@ export default function PaymentSetup() {
             <div><dt>Stripe payments</dt><dd>{connection.paymentsEnabled ? 'Enabled' : 'Not enabled'}</dd></div>
             <div><dt>Stripe payouts</dt><dd>{connection.payoutsEnabled ? 'Enabled' : 'Not enabled'}</dd></div>
             <div><dt>Live webhook secret</dt><dd>{connection.webhookSecretSaved ? 'Saved — delivery not yet verified' : 'Not configured'}</dd></div>
-            <div><dt>Website live checkout</dt><dd>Not enabled</dd></div>
+            <div><dt>Website live checkout</dt><dd>{connection.checkoutEnabled ? 'Enabled by configuration' : 'Not enabled'}</dd></div>
           </dl>
           <p className={styles.timestamp}>Checked {new Date(connection.checkedAt).toLocaleString()}</p>
         </div>}
-        <aside className={styles.notice}><strong>Connection setup is one step.</strong><p>Customer card payments stay unavailable until live order handling, payment confirmations, inventory reservations, and final tax and delivery amounts have been implemented and verified.</p></aside>
+        <aside className={styles.notice}><strong>Connection setup is one step.</strong><p>Pickup uses free collection and 6% tax. Staff must approve shipping and tax for delivery orders. Deployment switches keep payment disabled until Firestore protections and the live webhook are configured and checked.</p></aside>
         <p className={styles.help}>Keep API keys in Vercel’s secure settings. This page never displays them. Existing sandbox checkout and auctions are unaffected.</p>
       </>}
     </section>

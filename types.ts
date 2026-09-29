@@ -4,6 +4,7 @@
  */
 
 export interface Rug {
+  liveOrderId?: string | null;
   id: string;
   name: string;
   sku: string;

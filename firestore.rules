@@ -97,10 +97,11 @@ service cloud.firestore {
     : c == 'showroom_promocodes' ? 'promotions'
     : c == 'settings' ? 'settings' : '';
   }
+  function promoUnlocked(c,id) { return c != 'showroom_promocodes' || !exists(/databases/$(database)/documents/showroom_checkout_promos/$(id)); }
   match /{c}/{id} {
    allow read: if privateSection(c) != '' && can(privateSection(c),'read');
-   allow create,update: if privateSection(c) != '' && can(privateSection(c),'write');
-   allow delete: if privateSection(c) != '' && can(privateSection(c),'delete');
+   allow create,update: if privateSection(c) != '' && can(privateSection(c),'write') && promoUnlocked(c,id);
+   allow delete: if privateSection(c) != '' && can(privateSection(c),'delete') && promoUnlocked(c,id);
   }
   match /counters/{id} {
    allow read: if can('invoices','read');
@@ -123,10 +124,10 @@ service cloud.firestore {
   match /showroom_orders/{id} {
    // The server returns safe order summaries. Raw legacy payment documents stay full-admin only.
    allow read: if full();
-   allow create: if can('orders','write') || (signed() && request.resource.data.customerId == request.auth.uid
-    && request.resource.data.id == id && request.resource.data.status == 'Pending Confirmation');
-   allow update: if can('orders','write') && request.resource.data.get('customerId','') == resource.data.get('customerId','');
-   allow delete: if can('orders','delete');
+   allow create: if !id.matches('^MPR-LIVE-.*') && request.resource.data.get('liveManaged',false) == false && (can('orders','write') || (signed() && request.resource.data.customerId == request.auth.uid
+    && request.resource.data.id == id && request.resource.data.status == 'Pending Confirmation'));
+   allow update: if !id.matches('^MPR-LIVE-.*') && resource.data.get('liveManaged',false) == false && request.resource.data.get('liveManaged',false) == false && can('orders','write') && request.resource.data.get('customerId','') == resource.data.get('customerId','');
+   allow delete: if !id.matches('^MPR-LIVE-.*') && resource.data.get('liveManaged',false) == false && can('orders','delete');
   }
   match /showroom_chat/{id} {
    allow read: if can('messages','read') || (signed() && resource.data.get('ownerUid','') == request.auth.uid);
@@ -140,8 +141,10 @@ service cloud.firestore {
   }
   match /showroom_rugs/{id} {
    allow read: if true;
-   allow create,update: if can('inventory','write');
-   allow delete: if can('inventory','delete');
+   // Server-owned checkout locks prevent stale clients from selling or releasing a reserved rug.
+   allow create: if can('inventory','write') && request.resource.data.get('liveOrderId',null) == null;
+   allow update: if can('inventory','write') && resource.data.get('liveOrderId',null) == null && request.resource.data.get('liveOrderId',null) == null;
+   allow delete: if can('inventory','delete') && resource.data.get('liveOrderId',null) == null;
   }
   match /showroom_blogs/{id} {
    allow read: if true;
