@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Download, Printer } from 'lucide-react';
-import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-storage';
+import { SavedInvoice } from '@/lib/invoice-storage';
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import SignaturePad from '@/components/SignaturePad';
@@ -47,8 +47,15 @@ function PublicInvoiceContent() {
 
     const loadInvoice = async (invoiceId: string) => {
         try {
-            const data = await getInvoiceByIdAsync(invoiceId);
-            if (data) {
+            const response = await fetch(`/api/public/invoice?id=${encodeURIComponent(invoiceId)}`, {
+                cache: 'no-store',
+            });
+            if (!response.ok) {
+                throw new Error(`Invoice request failed: ${response.status}`);
+            }
+            const payload = await response.json();
+            const data = payload.invoice as SavedInvoice;
+            if (data?.data) {
                 setInvoice(data);
                 setCalculations(calculateInvoice(data.data));
             }
@@ -93,10 +100,20 @@ function PublicInvoiceContent() {
                 signatureDate: new Date().toISOString()
             };
 
-            await saveInvoice(updatedInvoiceData, invoice.id);
-            
+            const response = await fetch(`/api/public/invoice?id=${encodeURIComponent(invoice.id)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ signature: signatureData }),
+            });
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                throw new Error(payload.error || 'Unable to save signature.');
+            }
+            const payload = await response.json();
+            const savedData = payload.data || updatedInvoiceData;
+
             // Update local state to immediately show the invoice
-            setInvoice({ ...invoice, data: updatedInvoiceData });
+            setInvoice({ ...invoice, data: savedData });
         } catch (err) {
             console.error('Error saving signature:', err);
             alert('Failed to save signature. Please try again.');
