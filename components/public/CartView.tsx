@@ -232,7 +232,7 @@ export const CartView: React.FC = () => {
               <h2 id="cart-window-title" className="font-serif text-lg font-light text-editorial-text flex items-center gap-2">
                 {checkoutStep === "cart" && "Your cart"}
                 {checkoutStep === "shipping" && "Delivery details"}
-                {checkoutStep === "payment" && "Review your order"}
+                {checkoutStep === "payment" && "Review & payment"}
                 {checkoutStep === "success" && "Order Submitted!"}
               </h2>
             </div>
@@ -270,7 +270,7 @@ export const CartView: React.FC = () => {
                 disabled
                 className={`py-3.5 transition-colors cursor-default ${checkoutStep === "payment" ? "bg-editorial-accent text-white" : "text-gray-600 bg-editorial-aside"}`}
               >
-                3. Review & Reserve
+                3. Review & Payment
               </button>
             </div>
           )}
@@ -610,7 +610,7 @@ export const CartView: React.FC = () => {
             {/* Review the server-priced order before any payment. */}
             {checkoutStep === "payment" && (
               <div className="space-y-4 text-sm text-left">
-                <LiveOrderRequest payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
+                <LiveOrderRequest key={JSON.stringify([cart.map(i=>[i.rug.id,i.quantity]),deliveryOption,appliedPromo?.code,name,phone,email,derivedShippingAddress,billingAddress,notes])} payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
                     billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress,
                     notes, deliveryAddress: deliveryOption === 'Delivery' ? {street1:shippingStreet,street2:shippingApt,city:shippingCity,state:shippingState,zip:shippingZip,country:'US'} : undefined}}} />

@@ -70,3 +70,10 @@ UPS carrier cost is included in the delivered merchandise price, clearly identif
 Public invoices now use staff-issued 256-bit random capability links, with only a hash stored in `invoice_customer_links`, expiry 90 days and optional `revoked=true`. Invoice data stays private under existing rules. The server returns only customer-facing invoice fields, omitting inventory costs and internal payment notes. Public signature submission can only add a signature to that invoice, never alter prices/payments or replace an existing signature. Customers can inspect invoice contents before signing.
 
 Old `/public/invoice?id=...` links must be reissued using Send Email after deployment. New retail invoice links always use `https://www.marcopolorugs.com`, irrespective of the staff browser's Vercel hostname. No emails were sent by this change. Existing service tracking and separate signature-request links are not migrated by this patch. Deploy before resending invoices; verify one fresh link while signed out. No invoice data was migrated or deleted.
+
+### Cart review and embedded payment (2026-09-29)
+The cart now creates the server-priced order and loads UPS choices in its Review & Payment step. Stripe Embedded Checkout mounts in that same step after the customer accepts the terms. Payment completion is reconciled server-side before showing a paid confirmation. Existing hosted sessions retain their original mode and are not recreated.
+
+Set a live publishable key from the same Stripe account using `STRIPE_LIVE_PUBLISHABLE_KEY` (also accepts `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` or `STRIPE_PUBLISHABLE_KEY`). Existing live checkout, webhook, rules, and automatic-tax flags remain required. Missing configuration displays an error before reserving inventory.
+
+All rugs identified as Mushwani by name, type, category, or collection use the owner-confirmed packed parcel of 9 lb, 27 × 6 × 6 inches. Other rugs keep their existing package rules. Carrier costs are included in the delivered rug price and shipping is displayed as free.

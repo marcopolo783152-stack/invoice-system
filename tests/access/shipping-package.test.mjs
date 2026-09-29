@@ -12,3 +12,8 @@ test('invalid measurements and test/foreign carrier rates cannot reach live chec
  const rate={provider:'UPS',currency:'USD',test:false,object_id:'rate1',amount:'12.34',servicelevel:{name:'Ground'}};
  assert.deepEqual(upsRates({test:false,rates:[rate,{...rate,test:true},{...rate,provider:'USPS'},{...rate,currency:'EUR'},{...rate,amount:'NaN'}]}),[{id:'rate1',amount:1234,service:'Ground',days:null}]);
 });
+
+test('owner confirmed Mushwani package applies to every Mushwani and replaces prior measurements',()=>{
+ for(const rug of [{name:'Mushwani Runner',sku:'MPF 102'},{name:'Afghan Mushwani',shippingPackage:{length:26,width:6,height:6,weight:8}},{category:'Mushwani',sku:'MPF 105'}])assert.deepEqual(packedRug(rug),{length:'27',width:'6',height:'6',weight:'9',distance_unit:'in',mass_unit:'lb'});
+ assert.throws(()=>packedRug({name:'Gabbeh',sku:'MPF 105'}),/missing/);
+});

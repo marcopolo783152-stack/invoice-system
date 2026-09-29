@@ -129,3 +129,13 @@ test('shipping included prices preserve exact total without a separate Stripe sh
  const d=db(),o=await quote(d);const bundled={...o,automaticTax:true,shippingIncluded:true,shipping:1234,shippingService:'Ground'};const p=liveSessionParams(bundled,'https://www.marcopolorugs.com');
  assert.equal(p.line_items.reduce((n,i)=>n+i.price_data.unit_amount,0),o.subtotal-o.discount+1234);assert.equal(p.shipping_options[0].shipping_rate_data.fixed_amount.amount,0);assert.match(p.line_items[0].price_data.product_data.description,/delivery included/);
 });
+
+test('embedded checkout stays on page and retries preserve the original UI mode',async()=>{
+ const d=db(),o=await quote(d);
+ const r=await reservePayment(d,o.id,'customer',o.version,now+10,'embedded');
+ const p=liveSessionParams(r,'https://www.marcopolorugs.com');
+ assert.equal(p.ui_mode,'embedded');assert.equal(p.redirect_on_completion,'never');
+ assert.equal(p.success_url,undefined);assert.equal(p.cancel_url,undefined);
+ const retry=await reservePayment(d,o.id,'customer',o.version,now+20,'hosted');
+ assert.equal(retry.paymentUi,'embedded');
+});

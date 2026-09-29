@@ -30,11 +30,14 @@ export async function POST(req:NextRequest){
     if(b.accepted!==true)throw new CheckoutError('Review and accept the order details before paying.',400);
     if(!flags.paymentsEnabled)throw new CheckoutError('Card payments are not open yet. Your order is saved.',503);
     if(o.automaticTax&&process.env.MARCO_POLO_STRIPE_TAX_CONFIRMED!=='true')throw new CheckoutError('Automatic delivery tax is being configured. Please contact the showroom.',503);
+    const publishableKey=process.env.STRIPE_LIVE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY||process.env.STRIPE_PUBLISHABLE_KEY;
+    if(b.embedded===true&&!publishableKey?.startsWith('pk_live_'))throw new CheckoutError('On-page payment is being configured. Please contact the showroom.',503);
     const stripe=liveStripe();await checkPaymentAccount(stripe);
-    const reserved=await reservePayment(serverDb(),o.id,u.uid,b.version);
+    const reserved=await reservePayment(serverDb(),o.id,u.uid,b.version,Date.now(),b.embedded===true?'embedded':'hosted');
     if(reserved.paymentStatus==='Paid')return respond({order:publicOrder(reserved)});
     const s=await sessionForOrder(reserved,stripe);
     if(s.status!=='open')return respond({order:publicOrder(await settleSession(serverDb(),o.id,s,'checkout return'))});
+    if(reserved.paymentUi==='embedded'){if(!s.client_secret)throw new CheckoutError('Payment could not be loaded. Retry this order.',503);return respond({clientSecret:s.client_secret,publishableKey});}
     const url=new URL(s.url||'');if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new CheckoutError('Invalid payment address.',502);
     return respond({url:url.href});
   }catch(e){return failure(e);}
