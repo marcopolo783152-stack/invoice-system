@@ -30,7 +30,7 @@ export async function POST(req:NextRequest){
     if(b.accepted!==true)throw new CheckoutError('Review and accept the order details before paying.',400);
     if(!flags.paymentsEnabled)throw new CheckoutError('Card payments are not open yet. Your order is saved.',503);
     if(o.automaticTax&&process.env.MARCO_POLO_STRIPE_TAX_CONFIRMED!=='true')throw new CheckoutError('Automatic delivery tax is being configured. Please contact the showroom.',503);
-    const publishableKey=process.env.STRIPE_LIVE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY||process.env.STRIPE_PUBLISHABLE_KEY;
+    const publishableKey=[process.env.STRIPE_LIVE_PUBLISHABLE_KEY,process.env.NEXT_PUBLIC_STRIPE_LIVE_PUBLISHABLE_KEY,process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,process.env.STRIPE_PUBLISHABLE_KEY].map(value=>value?.trim()).find(value=>value?.startsWith('pk_live_'));
     if(b.embedded===true&&!publishableKey?.startsWith('pk_live_'))throw new CheckoutError('On-page payment is being configured. Please contact the showroom.',503);
     const stripe=liveStripe();await checkPaymentAccount(stripe);
     const reserved=await reservePayment(serverDb(),o.id,u.uid,b.version,Date.now(),b.embedded===true?'embedded':'hosted');
