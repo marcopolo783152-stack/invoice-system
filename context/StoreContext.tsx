@@ -145,7 +145,6 @@ interface StoreContextType {
 
   // Analytics
   referrers: Record<string, number>;
-  incrementReferrer: (source: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -313,33 +312,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [referrers, setReferrers] = useState<Record<string, number>>({});
 
-  const incrementReferrer = (source: string) => {
-    setReferrers(prev => {
-      const updated = { ...prev, [source]: (prev[source] || 0) + 1 };
-      updateSettingDoc("referrers", { sources: updated });
-      return updated;
-    });
-  };
-
-  // Track global referrer on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const hasTracked = sessionStorage.getItem("mp_tracked_referrer");
-      if (!hasTracked) {
-        sessionStorage.setItem("mp_tracked_referrer", "true");
-        let source = "Direct";
-        if (document.referrer) {
-          try {
-            const url = new URL(document.referrer);
-            source = url.hostname;
-          } catch (e) {
-            source = document.referrer;
-          }
-        }
-        incrementReferrer(source);
-      }
-    }
-  }, []);
+  // Keep historical referrer totals readable, but never write admin settings
+  // from a public page visit. Visitor analytics needs a separate ingestion path.
 
   // Public data and private data have separate subscriptions.
   useEffect(() => {
@@ -951,7 +925,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deletePromoCode,
         deleteOrder,
         referrers,
-        incrementReferrer
       }}
     >
       {isHydrated ? children : null}
