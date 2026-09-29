@@ -3,6 +3,7 @@ import {serverDb} from '@/lib/server/firebase-admin';
 import {CheckoutError} from '@/lib/server/rug-checkout.mjs';
 import {LIVE_ORDERS,createQuote,reservePayment,publicOrder,cancelQuote,settleSession} from '@/lib/server/live-orders.mjs';
 import {respond,failure,customer,sameSite,bodyJson,orderFlags,ownOrder,liveStripe,checkPaymentAccount,sessionForOrder,reconcile} from '@/lib/server/live-payment';
+import {shippingRates,selectShipping} from '@/lib/server/shippo-checkout';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 export async function GET(req:NextRequest){
   try{
@@ -21,11 +22,14 @@ export async function POST(req:NextRequest){
       return respond({order:publicOrder(await createQuote(serverDb(),u.uid,u.email!,b.payload,req.headers.get('x-checkout-attempt')))});
     }
     const o=await ownOrder(b.id,u.uid);
+    if(b.action==='rates'){const q=await shippingRates(o);return respond({rates:q.rates,expiresAt:q.expiresAt});}
+    if(b.action==='selectShipping')return respond({order:publicOrder(await selectShipping(o,b.rateId,b.version))});
     if(b.action==='sync')return respond({order:publicOrder(await reconcile(o))});
     if(b.action==='cancel')return respond({order:publicOrder(o.sessionAttemptedAt?await reconcile(o,true):await cancelQuote(serverDb(),o.id,u.uid))});
     if(b.action!=='pay')throw new CheckoutError('Unknown order action.',400);
     if(b.accepted!==true)throw new CheckoutError('Review and accept the order details before paying.',400);
     if(!flags.paymentsEnabled)throw new CheckoutError('Card payments are not open yet. Your order is saved.',503);
+    if(o.automaticTax&&process.env.MARCO_POLO_STRIPE_TAX_CONFIRMED!=='true')throw new CheckoutError('Automatic delivery tax is being configured. Please contact the showroom.',503);
     const stripe=liveStripe();await checkPaymentAccount(stripe);
     const reserved=await reservePayment(serverDb(),o.id,u.uid,b.version);
     if(reserved.paymentStatus==='Paid')return respond({order:publicOrder(reserved)});

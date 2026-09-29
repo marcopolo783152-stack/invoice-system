@@ -107,3 +107,25 @@ test('refunds are monotonic, block fulfillment and require explicit restocking',
 test('fulfillment cannot happen before payment or move backwards after completion',async()=>{
  const d=db(),o=await reserved(d);await assert.rejects(fulfillOrder(d,o.id,'staff',{fulfillment:'Collected'}));await settleSession(d,o.id,session(o),'webhook',now+2);await fulfillOrder(d,o.id,'staff',{fulfillment:'Collected'},now+3);await assert.rejects(fulfillOrder(d,o.id,'staff',{fulfillment:'Ready for pickup'}),/backwards/);
 });
+
+test('UPS payment accepts only the saved shipping and verified Stripe automatic tax; settlement saves final total',async()=>{
+ const d=db(),o=await quote(d,'Delivery');
+ d.change('showroom_rugs/rug-1',{shippingPackage:{length:26,width:6,height:6,weight:8}});
+ const parcels=[{length:'26',width:'6',height:'6',weight:'8',distance_unit:'in',mass_unit:'lb'}];
+ d.change(LIVE_ORDERS+'/'+o.id,{automaticTax:true,shipping:1200,shippingService:'Ground',shippingParcels:parcels,status:'Ready for payment'});
+ const r=await reservePayment(d,o.id,'customer',1,now+10),params=liveSessionParams(r,'https://www.marcopolorugs.com');
+ assert.equal(params.automatic_tax.enabled,true);assert.equal(params.shipping_options[0].shipping_rate_data.fixed_amount.amount,1200);assert.equal(params.line_items.length,1);
+ const s=session(r,{amount_total:11873,automatic_tax:{enabled:true,status:'complete'},total_details:{amount_tax:672,amount_discount:0,amount_shipping:1200}});
+ await assert.rejects(settleSession(d,o.id,{...s,total_details:{...s.total_details,amount_shipping:0}},'test',now+20),/does not match/);
+ await assert.rejects(settleSession(d,o.id,{...s,automatic_tax:{enabled:true,status:'failed'}},'test',now+20),/does not match/);
+ const paid=await settleSession(d,o.id,s,'test',now+30);assert.equal(paid.total,11873);assert.equal(paid.tax,672);assert.equal(d.read('showroom_orders/'+o.id).total,118.73);
+});
+test('UPS package edits invalidate payment reservation',async()=>{
+ const d=db(),o=await quote(d,'Delivery');d.change(LIVE_ORDERS+'/'+o.id,{automaticTax:true,shipping:1200,status:'Ready for payment',shippingParcels:[]});
+ d.change('showroom_rugs/rug-1',{shippingPackage:{length:26,width:6,height:6,weight:8}});
+ await assert.rejects(reservePayment(d,o.id,'customer',1,now+10),/measurements changed/);assert.equal(d.read('showroom_rugs/rug-1').availability,'In Stock');
+});
+test('shipping included prices preserve exact total without a separate Stripe shipping charge',async()=>{
+ const d=db(),o=await quote(d);const bundled={...o,automaticTax:true,shippingIncluded:true,shipping:1234,shippingService:'Ground'};const p=liveSessionParams(bundled,'https://www.marcopolorugs.com');
+ assert.equal(p.line_items.reduce((n,i)=>n+i.price_data.unit_amount,0),o.subtotal-o.discount+1234);assert.equal(p.shipping_options[0].shipping_rate_data.fixed_amount.amount,0);assert.match(p.line_items[0].price_data.product_data.description,/delivery included/);
+});

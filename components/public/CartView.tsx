@@ -536,7 +536,7 @@ export const CartView: React.FC = () => {
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
                         Shipping and applicable tax: <strong>quoted before payment</strong>.
-                        Our showroom will confirm delivery arrangements before payment.
+                        UPS shipping options are calculated from your address and the packed rugs.
                       </p>
                     </div>
                   ) : (
@@ -613,7 +613,7 @@ export const CartView: React.FC = () => {
                 <LiveOrderRequest payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
                     billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress,
-                    notes}}} />
+                    notes, deliveryAddress: deliveryOption === 'Delivery' ? {street1:shippingStreet,street2:shippingApt,city:shippingCity,state:shippingState,zip:shippingZip,country:'US'} : undefined}}} />
                 <RugCheckoutButton payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
                     billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress, notes}}} />
@@ -786,7 +786,7 @@ export const CartView: React.FC = () => {
                 <div className="flex justify-between">
                   <span>{deliveryOption === "Pickup" ? "Sales tax (6%):" : "Applicable sales tax:"}</span>
                   <span className="font-sans font-medium text-editorial-text">
-                    {deliveryOption === "Pickup" ? `$${tax.toFixed(2)}` : "Quoted before payment"}
+                    {deliveryOption === "Pickup" ? `$${tax.toFixed(2)}` : "Calculated at checkout"}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -800,13 +800,13 @@ export const CartView: React.FC = () => {
                         Free Pickup
                       </span>
                     ) : (
-                      "Quoted before payment"
+                      "Calculated at checkout"
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-editorial-border pt-3 text-sm font-light">
                   <span className="text-editorial-text uppercase tracking-wider">
-                    {deliveryOption === "Pickup" ? "Pickup total:" : "Rugs subtotal (before quote):"}
+                    {deliveryOption === "Pickup" ? "Pickup total:" : "Rugs subtotal (before shipping and tax):"}
                   </span>
                   <span className="font-sans text-xl font-bold text-editorial-text">
                     ${total.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}

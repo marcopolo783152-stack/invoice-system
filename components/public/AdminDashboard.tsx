@@ -278,6 +278,7 @@ const AdminWorkspace: React.FC = () => {
   const [rugAge, setRugAge] = useState<Rug["age"] | "">("");
   const [rugCondition, setRugCondition] = useState<Rug["condition"] | "">("");
   const [rugColors, setRugColors] = useState("");
+  const [packed, setPacked] = useState({length:"",width:"",height:"",weight:""});
   const [rugWeight, setRugWeight] = useState<number | "">("");
     const [rugIsFreeShipping, setRugIsFreeShipping] = useState<boolean>(false);
   const [rugShape, setRugShape] = useState<Rug["shape"] | "">("");
@@ -475,6 +476,7 @@ const AdminWorkspace: React.FC = () => {
       setRugCondition(r.condition);
       setRugColors(r.colors.join(", "));
       setRugWeight(r.weightLbs || 3.5);
+      setPacked({length:String(r.shippingPackage?.length||""),width:String(r.shippingPackage?.width||""),height:String(r.shippingPackage?.height||""),weight:String(r.shippingPackage?.weight||"")});
         setRugIsFreeShipping(r.isFreeShipping || false);
       setRugShape(r.shape);
       setRugAvailability(r.availability);
@@ -498,6 +500,7 @@ const AdminWorkspace: React.FC = () => {
       setRugCondition("");
       setRugColors("");
       setRugWeight("");
+      setPacked({length:"",width:"",height:"",weight:""});
         setRugIsFreeShipping(false);
       setRugShape("");
       setRugAvailability("In Stock");
@@ -529,6 +532,7 @@ const AdminWorkspace: React.FC = () => {
       condition: rugCondition as Rug["condition"],
       colors: colorsArr,
       weightLbs: Number(rugWeight) || 3.5,
+      shippingPackage: Object.values(packed).every(v=>Number(v)>0) ? {length:Number(packed.length),width:Number(packed.width),height:Number(packed.height),weight:Number(packed.weight)} : null,
         isFreeShipping: rugIsFreeShipping,
       shape: rugShape as Rug["shape"],
       availability: rugAvailability as Rug["availability"],
@@ -3131,6 +3135,9 @@ const AdminWorkspace: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase">Packed rug + padding — UPS</label>
+                  <p>Measure the finished package. All four values are required for automatic UPS rates.</p>
+                  {(['length','width','height','weight'] as const).map(key=><label key={key} className="block">{key} ({key==='weight'?'lb':'in'})<input type="number" min="0.1" max="1000" step="0.1" value={packed[key]} onChange={e=>setPacked({...packed,[key]:e.target.value})} className="w-full border rounded p-2" /></label>)}
                   <label className="block text-neutral-500 font-semibold uppercase">Shipping Offer</label>
                   <label className="flex items-center gap-2 mt-2 cursor-pointer h-full pb-2">
                     <input

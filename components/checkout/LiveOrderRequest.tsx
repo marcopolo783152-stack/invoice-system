@@ -12,7 +12,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
   async function create(){
     if(running.current)return;running.current=true;setBusy(true);setError('');
     try{
-      const value={...payload,customerInfo:{...payload.customerInfo,billingCountry:'US',shippingCountry:'US'}};
+      const value={...payload,customerInfo:{...payload.customerInfo,email:auth.currentUser?.email || payload.customerInfo.email,billingCountry:'US',shippingCountry:'US'}};
       const body=JSON.stringify(value);
       if(attempt.current.body!==body||!attempt.current.id)attempt.current={body,id:crypto.randomUUID()};
       const d=await orderRequest('/api/live-orders',{action:'create',payload:value},attempt.current.id);
@@ -20,11 +20,11 @@ export default function LiveOrderRequest({payload}:{payload:any}){
     }catch(e){setError(e instanceof Error?e.message:'Could not save your request.');running.current=false;setBusy(false);}
   }
   return <section className={styles.request}>
-    <h3 className="font-semibold text-lg">{payload.deliveryOption==='Pickup'?'Free showroom pickup':'Request your shipping quote'}</h3>
-    <p>{payload.deliveryOption==='Pickup'?'Review the rug price and 6% Alexandria pickup tax on the next page. No payment is taken by this button.':'We will confirm shipping and the applicable sales tax for your address. You will review the complete quote before paying. Submitting a request does not reserve the rug or charge your card.'}</p>
+    <h3 className="font-semibold text-lg">{payload.deliveryOption==='Pickup'?'Free showroom pickup':'Choose UPS delivery'}</h3>
+    <p>{payload.deliveryOption==='Pickup'?'Review the rug price and 6% Alexandria pickup tax on the next page. No payment is taken by this button.':'Enter your address to see a delivered price with UPS shipping included, then pay securely with Stripe. Tax and the final total are shown before you pay. No staff approval is needed.'}</p>
     {!signed?<p><a href="/sign-in" className="underline">Sign in or create an account</a>, then verify your email to save and track your request. Your cart stays on this device.</p>:<>
       <label className={styles.check}><input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)}/><span>My billing address and delivery address are in the United States. I have reviewed my contact details and will use my verified account email.</span></label>
-      <button type="button" disabled={!enabled||!checked||busy} onClick={create}>{busy?'Saving your request…':payload.deliveryOption==='Pickup'?'Review pickup order':'Request shipping quote'}</button>
+      <button type="button" disabled={!enabled||!checked||busy} onClick={create}>{busy?'Saving your request…':payload.deliveryOption==='Pickup'?'Review pickup order':'See UPS shipping options'}</button>
     </>}
     {!enabled&&<p>Online order requests are being prepared. Please call <a href="tel:+17034610207">(703) 461-0207</a> for assistance.</p>}
     {error&&<p role="alert" className={styles.error}>{error}</p>}

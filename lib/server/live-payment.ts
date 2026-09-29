@@ -40,7 +40,14 @@ export async function sessionForOrder(o:any,stripe:Stripe){
   if(!o.sessionAttemptedAt)throw new CheckoutError('Start payment after reviewing your quote.');
   // After 24 hours Stripe may forget an idempotency key. Never recreate an unknown session then.
   if(!o.sessionId&&Date.now()-Date.parse(o.sessionAttemptedAt)>=23*3600000)throw new CheckoutError('Payment recovery needs showroom assistance. Inventory remains held; do not pay a second time.',409);
-  const s=o.sessionId?await stripe.checkout.sessions.retrieve(o.sessionId):await stripe.checkout.sessions.create(liveSessionParams(o,LIVE_ORIGIN) as Stripe.Checkout.SessionCreateParams,{idempotencyKey:o.id});
+  const params=liveSessionParams(o,LIVE_ORIGIN) as Stripe.Checkout.SessionCreateParams;
+  if(o.automaticTax&&!o.sessionId){
+    if(process.env.MARCO_POLO_STRIPE_TAX_CONFIRMED!=='true')throw new CheckoutError('Automatic delivery tax is being configured. Please choose pickup or contact the showroom.',503);
+    const a=o.customerInfo.deliveryAddress;
+    const customer=await stripe.customers.create({name:o.customerInfo.name,email:o.customerInfo.email,shipping:{name:o.customerInfo.name,address:{line1:a.street1,line2:a.street2,city:a.city,state:a.state,postal_code:a.zip,country:'US'}},metadata:{orderId:o.id}},{idempotencyKey:o.id+'-shipping-customer'});
+    params.customer=customer.id;delete params.customer_email;
+  }
+  const s=o.sessionId?await stripe.checkout.sessions.retrieve(o.sessionId):await stripe.checkout.sessions.create(params,{idempotencyKey:o.id});
   await attachSession(serverDb(),o.id,s);return s;
 }
 export async function reconcile(o:any,expire=false){

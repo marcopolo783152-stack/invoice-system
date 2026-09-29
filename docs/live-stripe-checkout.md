@@ -46,3 +46,27 @@ Live request mutations are limited to the canonical Marco Polo domains; preview 
 ## Validation
 
 34 checkout/provider/catalog tests passed; 18 Firestore emulator access tests passed. Full TypeScript checking and Next.js production build passed. The build reports pre-existing optional face-api dependency warnings in the employee clock page. Production Vercel settings, live webhook deliveries, and actual card payments were not tested or enabled in this development session.
+
+## UPS checkout update — 2026-09-29
+
+New delivery requests can choose live UPS rates through Shippo, then continue directly to Stripe. Staff approval is not required. Existing unpaid manual quotes remain accessible. No label is purchased while fetching rates or taking payment.
+
+- Keep `SHIPPO_API_KEY` in Production. It must be a live Shippo key with an active UPS carrier connection. Test-mode rates are rejected. Neither API keys nor raw provider errors are returned to customers.
+- Add actual finished package length/width/height (inches) and weight (lb) in the inventory editor. Include complimentary padding. Each rug is one parcel. Missing/invalid measurements stop delivery checkout and offer pickup/contact instead. No weight is guessed from rug area.
+- Owner-confirmed package for exact SKU `H.17022`: 26 × 6 × 6 inches, 8 lb. This is a code fallback only when no shippingPackage field exists; an explicit null disables it. Other SKUs have no default. Saving package fields overrides this fallback.
+- Rates are server-stored per order, available for 15 minutes, UPS/USD/live only. Customer sends a rate ID, never the shipping price. Updated package measurements invalidate payment reservation. Carrier requests are limited to once per 30 seconds per order; existing order creation limits remain.
+- Delivery tax uses Stripe automatic tax. BEFORE enabling delivery payment, configure Stripe Tax business location, the appropriate product/default tax classification and actual tax registrations. Confirm the setup in Stripe, then set `MARCO_POLO_STRIPE_TAX_CONFIRMED=true`. Stripe Tax may have separate fees. This flag does not create registrations or change tax settings.
+- The customer sees shipping first, then the final tax and total in Stripe before confirming payment. The Stripe customer is dedicated to this order and its shipping address is the UPS-rated address. Address changes require a fresh checkout. The server verifies automatic-tax completion, merchandise amount, shipping and final total before fulfilling.
+- Pickup remains free with the existing 6% pickup calculation. Existing `MARCO_POLO_LIVE_CHECKOUT_ENABLED` stays false until the launch check is complete. Do not enable it just to view rates.
+- Payment success stores the final tax and total in both the protected live order and canonical showroom order. Existing refund reconciliation remains amount-checked. Use Stripe Tax reporting for automatic-tax records.
+- Labels remain a separate staff action after payment. For multiple parcels use the saved shipment in Shippo; the legacy admin label form supports one parcel. Carrier adjustments can occur if packing differs from the rated measurements.
+
+Validation needed in Production: H.17022 UPS rate retrieval, final Stripe tax/total, signed live webhook delivery, one paid order and inventory update. This update has not performed real charges, bought labels or changed Firebase inventory records.
+
+### Shipping included and invoice-link repair
+
+UPS carrier cost is included in the delivered merchandise price, clearly identified as "shipping included" after address/service selection. Stripe line items include that amount and the shipping line is $0; the saved carrier cost remains available internally. The customer must review the destination-dependent delivered price before payment. Existing inventory retail prices are not overwritten. This is not an assertion that the carrier transports the package at no cost.
+
+Public invoices now use staff-issued 256-bit random capability links, with only a hash stored in `invoice_customer_links`, expiry 90 days and optional `revoked=true`. Invoice data stays private under existing rules. The server returns only customer-facing invoice fields, omitting inventory costs and internal payment notes. Public signature submission can only add a signature to that invoice, never alter prices/payments or replace an existing signature. Customers can inspect invoice contents before signing.
+
+Old `/public/invoice?id=...` links must be reissued using Send Email after deployment. New retail invoice links always use `https://www.marcopolorugs.com`, irrespective of the staff browser's Vercel hostname. No emails were sent by this change. Existing service tracking and separate signature-request links are not migrated by this patch. Deploy before resending invoices; verify one fresh link while signed out. No invoice data was migrated or deleted.

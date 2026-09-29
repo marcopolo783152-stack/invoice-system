@@ -1,5 +1,7 @@
 'use client';
 
+import {createCustomerInvoiceLink} from '@/lib/invoice-share-client';
+
 import { appendInvoicePayment } from '@/lib/firebase-storage';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -918,7 +920,7 @@ function InvoiceViewContent() {
                             const isService = (invoice.data.mode as any) === 'wash' || (invoice.data.mode as any) === 'repair';
                             const link = isService 
                                 ? `${window.location.origin}/tracking/${invoice.id}`
-                                : `${window.location.origin}/public/invoice?id=${invoice.id}&pdf=true`;
+                                : await createCustomerInvoiceLink(invoice.id);
 
                             // Send Link (Client Side - Free Tier Compatible)
                             const { sendInvoiceEmail } = await import('@/lib/email-service');
@@ -1087,3 +1089,4 @@ export default function InvoiceViewPage() {
         </Suspense>
     );
 }
+
