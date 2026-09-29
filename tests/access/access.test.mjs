@@ -4,6 +4,34 @@ import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
 import {doc,setDoc,getDoc,getDocs,collection,updateDoc,deleteDoc,writeBatch,Timestamp} from 'firebase/firestore';
 import ts from 'typescript';
+
+test('live orders and payment internals cannot be forged or read directly by clients',async()=>{
+ const id='MPR-LIVE-12345678901234567890123456789012';
+ for(const db of [identity('customer'),identity('gm')]){
+  await assertFails(setDoc(doc(db,'showroom_live_orders/'+id),{customerId:'customer',paymentStatus:'Paid'}));
+  await assertFails(getDocs(collection(db,'showroom_live_orders')));
+  await assertFails(setDoc(doc(db,'showroom_orders/'+id),{id,customerId:'customer',status:'Pending Confirmation'}));
+ }
+});
+test('staff cannot alter or delete a server-reserved rug, but ordinary inventory editing still works',async()=>{
+ await seed('showroom_rugs/held',{name:'Held',availability:'Reserved',liveOrderId:'MPR-LIVE-test'});
+ await seed('showroom_rugs/free',{name:'Free',availability:'In Stock'});
+ const db=identity('gm');
+ await assertFails(updateDoc(doc(db,'showroom_rugs/held'),{availability:'In Stock',liveOrderId:null}));
+ await assertFails(setDoc(doc(db,'showroom_rugs/held'),{name:'Overwrite',availability:'In Stock'}));
+ await assertFails(deleteDoc(doc(db,'showroom_rugs/held')));
+ await assertFails(updateDoc(doc(db,'showroom_rugs/free'),{liveOrderId:'fake'}));
+ await assertSucceeds(updateDoc(doc(db,'showroom_rugs/free'),{price:200}));
+});
+test('live payment summaries cannot be changed through legacy order controls',async()=>{
+ const id='MPR-LIVE-12345678901234567890123456789012';await seed('showroom_orders/'+id,{id,liveManaged:true,customerId:'customer',status:'Confirmed'});
+ const db=identity('gm');await assertSucceeds(getDoc(doc(db,'showroom_orders/'+id)));
+ await assertFails(updateDoc(doc(db,'showroom_orders/'+id),{status:'Cancelled',liveManaged:false}));await assertFails(deleteDoc(doc(db,'showroom_orders/'+id)));
+});
+test('one-time promotion cannot be changed or deleted while reserved for payment',async()=>{
+ await seed('showroom_promocodes/once',{code:'ONCE',isActive:true});await seed('showroom_checkout_promos/once',{orderId:'MPR-LIVE-test',status:'Reserved'});
+ const db=identity('gm');await assertFails(updateDoc(doc(db,'showroom_promocodes/once'),{isActive:false}));await assertFails(deleteDoc(doc(db,'showroom_promocodes/once')));await assertFails(deleteDoc(doc(db,'showroom_checkout_promos/once')));
+});
 const ownerUid='msQJKLOsWceWK5A75V6ZBLQRvsl2';
 let env;
 before(async()=>{env=await initializeTestEnvironment({projectId:'demo-marcopolo-access',firestore:{rules:await readFile('../../firestore.rules','utf8')}});});

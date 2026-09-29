@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import RugCheckoutButton from "./RugCheckoutButton";
+import LiveOrderRequest from "@/components/checkout/LiveOrderRequest";
 import AddressAutocomplete from "../AddressAutocomplete";
 import {
   X,
@@ -143,48 +144,16 @@ export const CartView: React.FC = () => {
 
   const subtotal = Math.max(0, rawSubtotal - discount);
 
-  // Calculate total weight in lbs
-  const totalWeightLbs = cart.reduce((sum, item) => {
-    if (item.rug.isFreeShipping) return sum; // Free shipping items don't add to freight weight
-    const rugWeight =
-      item.rug.weightLbs ||
-      (item.rug.sizeCategory.includes("8x10")
-        ? 4.5
-        : item.rug.sizeCategory.includes("9x12")
-          ? 6.5
-          : item.rug.sizeCategory.includes("6x9")
-            ? 3.5
-            : item.rug.sizeCategory.includes("10x13")
-              ? 8.0
-              : item.rug.sizeCategory.includes("Runner")
-                ? 2.8
-                : 3.5);
-    return sum + rugWeight * item.quantity;
-  }, 0);
-
-  // Calculate shipping cost based on weight & delivery option
-  // "shiping cost like 2-5 lbs gonna be 16 dollar"
-  let shipping = 0;
-  if (deliveryOption === "Delivery" && appliedPromo?.discountType !== "free_shipping") {
-    if (totalWeightLbs === 0) {
-      shipping = 0;
-    } else if (totalWeightLbs <= 1.9) {
-      shipping = 8;
-    } else if (totalWeightLbs >= 2 && totalWeightLbs <= 5) {
-      shipping = 16;
-    } else {
-      shipping = 45; // heavier luxury items
-    }
-  }
-
-  // 6% sales taxes
-  const tax = subtotal * 0.06;
-  const total = subtotal + shipping + tax;
+  // Delivery and destination tax are quoted by the showroom before payment.
+  const totalWeightLbs = 0;
+  const shipping = 0;
+  const tax = deliveryOption === "Pickup" ? Math.round(subtotal * 100 * 0.06) / 100 : 0;
+  const total = subtotal + tax;
 
   const handleNextStep = () => {
     if (checkoutStep === "cart") setCheckoutStep("shipping");
     else if (checkoutStep === "shipping") {
-      if (billingSameAsShipping) {
+      if (billingSameAsShipping && deliveryOption === "Delivery") {
         setBillingAddress(derivedShippingAddress);
       }
       setCheckoutStep("payment");
@@ -471,7 +440,7 @@ export const CartView: React.FC = () => {
                             : "text-gray-500 hover:text-editorial-text"
                         }`}
                       >
-                        Insured Delivery
+                        Shipping quote
                       </button>
                       <button
                         type="button"
@@ -566,7 +535,7 @@ export const CartView: React.FC = () => {
                         </div>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        Delivery estimate: <strong>${shipping.toFixed(2)}</strong>.
+                        Shipping and applicable tax: <strong>quoted before payment</strong>.
                         Our showroom will confirm delivery arrangements before payment.
                       </p>
                     </div>
@@ -583,9 +552,7 @@ export const CartView: React.FC = () => {
                         ALEXANDRIA, VA 22314
                       </p>
                       <p className="text-sm text-gray-500 font-light">
-                        We will secure your purchase in our vault. You may pick
-                        it up at your convenience. Bring your confirmation code
-                        and ID.
+                        Pickup is free. Wait for your ready-for-pickup confirmation, then bring your order number and ID.
                       </p>
                     </div>
                   )}
@@ -594,7 +561,8 @@ export const CartView: React.FC = () => {
                     <label className="flex items-center gap-2 cursor-pointer text-gray-500">
                       <input
                         type="checkbox"
-                        checked={billingSameAsShipping}
+                        checked={billingSameAsShipping && deliveryOption === "Delivery"}
+                        disabled={deliveryOption === "Pickup"}
                         onChange={(e) =>
                           setBillingSameAsShipping(e.target.checked)
                         }
@@ -606,7 +574,7 @@ export const CartView: React.FC = () => {
                     </label>
                   </div>
 
-                  {!billingSameAsShipping && (
+                  {(!billingSameAsShipping || deliveryOption === "Pickup") && (
                     <div className="space-y-1 animate-fadeIn">
                       <label className="block text-gray-600 font-semibold uppercase tracking-wider text-sm">
                         Billing Address
@@ -639,43 +607,17 @@ export const CartView: React.FC = () => {
               </div>
             )}
 
-            {/* --- STEP 3: PAYMENT ESCROW FORM --- */}
+            {/* Review the server-priced order before any payment. */}
             {checkoutStep === "payment" && (
-              <form
-                onSubmit={handleCheckoutSubmit}
-                className="space-y-4 text-sm text-left"
-              >
+              <div className="space-y-4 text-sm text-left">
+                <LiveOrderRequest payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
+                  promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
+                    billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress,
+                    notes}}} />
                 <RugCheckoutButton payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
-                    billingAddress: billingSameAsShipping ? derivedShippingAddress : billingAddress,
-                    notes: [notes.trim(), 'Complimentary padding included with each rug.'].filter(Boolean).join('\n')}}} />
-                <div className="p-4 bg-editorial-aside border border-editorial-border rounded-none space-y-3">
-                  <h3 className="font-semibold text-base">Pay by phone or in store</h3>
-                  <p>Online payments are not available yet. Placing this order does not charge your card or take payment.</p>
-                  <p>Our showroom team will contact you using the details you provided to confirm availability and arrange payment by phone or at our store.</p>
-                  <p>You can also call <a href="tel:+17034610207" className="underline">(703) 461-0207</a> or visit 3260 Duke St, Alexandria, VA 22314.</p>
-                  <p>Please do not include card details in order notes, chat or email. Your order remains pending until the showroom confirms it.</p>
-                </div>
-
-                <div className="pt-4 space-y-3 border-t border-editorial-border">
-                  <button
-                    type="submit"
-                    disabled={isProcessing}
-                    className="w-full py-4 bg-[#1a1a1a] hover:bg-black text-white font-bold uppercase tracking-widest text-sm rounded-none shadow transition flex justify-center items-center gap-2 cursor-pointer"
-                  >
-                    {isProcessing ? (
-                      <span className="animate-pulse flex items-center gap-2">
-                        Submitting order...
-                      </span>
-                    ) : (
-                      <>
-                        <Lock className="h-4 w-4" />
-                        <span>Place order — pay later</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
+                    billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress, notes}}} />
+              </div>
             )}
 
             {/* --- STEP 4: SUCCESS RECEIPT --- */}
@@ -842,14 +784,14 @@ export const CartView: React.FC = () => {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>Sales Tax (6%):</span>
+                  <span>{deliveryOption === "Pickup" ? "Sales tax (6%):" : "Applicable sales tax:"}</span>
                   <span className="font-sans font-medium text-editorial-text">
-                    ${tax.toFixed(2)}
+                    {deliveryOption === "Pickup" ? `$${tax.toFixed(2)}` : "Quoted before payment"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="flex items-center gap-1">
-                    {deliveryOption === "Pickup" ? "Store pickup:" : "Delivery estimate:"}
+                    {deliveryOption === "Pickup" ? "Store pickup:" : "Shipping:"}
                     <Truck className="h-3.5 w-3.5 text-gray-600" />
                   </span>
                   <span className="font-sans font-medium text-editorial-text">
@@ -858,13 +800,13 @@ export const CartView: React.FC = () => {
                         Free Pickup
                       </span>
                     ) : (
-                      `$${shipping.toFixed(2)}`
+                      "Quoted before payment"
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-editorial-border pt-3 text-sm font-light">
                   <span className="text-editorial-text uppercase tracking-wider">
-                    Estimated total:
+                    {deliveryOption === "Pickup" ? "Pickup total:" : "Rugs subtotal (before quote):"}
                   </span>
                   <span className="font-sans text-xl font-bold text-editorial-text">
                     ${total.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -935,7 +877,8 @@ export const CartView: React.FC = () => {
                       !shippingCity ||
                       !shippingState ||
                       !shippingZip) &&
-                      deliveryOption === "Delivery")
+                      deliveryOption === "Delivery") ||
+                    ((!billingSameAsShipping || deliveryOption === "Pickup") && !billingAddress.trim())
                   }
                   className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
@@ -950,3 +893,4 @@ export const CartView: React.FC = () => {
     </div>
   );
 };
+

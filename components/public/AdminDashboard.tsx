@@ -943,6 +943,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
 
           <nav className="space-y-1.5 text-sm" aria-label="Admin sections">
+{canAccess(staff, 'orders', 'read') && <a href="/admin/online-orders" className="w-full flex items-center gap-3 py-3 px-3 font-bold text-gray-300 hover:bg-white/10"><ClipboardList className="h-4.5 w-4.5"/><span>Online orders &amp; quotes</span></a>}
 {canAccess(staff, 'settings', 'read') && <a href="/admin/auctions" className="w-full flex items-center gap-3 py-3 px-3 rounded-none font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10"><ClipboardList className="h-4.5 w-4.5"/><span>Auction management <small className="block normal-case font-normal tracking-normal">Lots &amp; public previews</small></span></a>}
 {(allowed('analytics') || allowed('transactions')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Overview</p>}
 {allowed('analytics') && (<button
@@ -3618,3 +3619,4 @@ const AdminWorkspace: React.FC = () => {
     </div>
   );
 };
+
