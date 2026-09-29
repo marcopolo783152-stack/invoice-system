@@ -139,3 +139,16 @@ test('embedded checkout stays on page and retries preserve the original UI mode'
  const retry=await reservePayment(d,o.id,'customer',o.version,now+20,'hosted');
  assert.equal(retry.paymentUi,'embedded');
 });
+
+test('inclusive sale price needs no shipping quote and weight changes invalidate payment',async()=>{
+ const d=db();d.change('showroom_rugs/rug-1',{price:100,weightLbs:10,sizeCategory:'Small'});
+ const o=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now,true);
+ assert.equal(o.subtotal,12000);assert.equal(o.shipping,0);assert.equal(o.status,'Ready for payment');
+ assert.equal(o.automaticTax,true);assert.equal(o.pricingPolicy,'weight-inclusive-v1');
+ const r=await reservePayment(d,o.id,'customer',1,now+10,'embedded');
+ const p=liveSessionParams(r,'https://www.marcopolorugs.com');
+ assert.equal(p.line_items[0].price_data.unit_amount,12000);assert.equal(p.shipping_options[0].shipping_rate_data.fixed_amount.amount,0);
+ const changed=db();changed.change('showroom_rugs/rug-1',{price:100,weightLbs:10,sizeCategory:'Small'});
+ const q=await createQuote(changed,'customer','customer@example.com',body('Delivery'),attempt,now,true);
+ changed.change('showroom_rugs/rug-1',{weightLbs:20});await assert.rejects(reservePayment(changed,q.id,'customer',1,now+10),/price changed/);
+});

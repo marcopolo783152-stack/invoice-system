@@ -12,6 +12,6 @@ export function dollarsToCents(value:string){
   const [d,c='']=value.trim().split('.');const n=Number(d)*100+Number(c.padEnd(2,'0'));
   if(!Number.isSafeInteger(n)||n>99999999)throw Error('Amount is too large.');return n;
 }
-export type LiveOrder={id:string;customerInfo:{name:string;email:string;phone:string;shippingAddress:string;billingAddress:string;notes:string};
+export type LiveOrder={pricingPolicy?:string;id:string;customerInfo:{name:string;email:string;phone:string;shippingAddress:string;billingAddress:string;notes:string};
   deliveryOption:'Pickup'|'Delivery';items:{id:string;name:string;sku:string;image:string;dimensions:string;unitAmount:number}[];
   subtotal:number;discount:number;shipping:number|null;tax:number|null;total:number|null;status:string;version:number;quoteExpiresAt:number;quoteNote:string;taxNote:string;paymentStatus:string;createdAt:string;paidAt?:string;fulfillment:string;trackingNumber?:string;carrier?:string;reviewReason?:string;refundedAmount?:number;restockedAt?:string;freeShipping?:boolean;shippingIncluded?:boolean;automaticTax?:boolean;shippingService?:string};

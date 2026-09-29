@@ -1,3 +1,4 @@
+import {deliveredCents,saleLabel} from '@/lib/delivered-price.mjs';
 import {auth as firebaseAuth} from '@/lib/auth';
 import ListingStats from "@/components/ListingStats";
 import { matchesSearch as matchesInventorySearch } from "@/lib/rug-discovery.mjs";
@@ -515,6 +516,7 @@ const AdminWorkspace: React.FC = () => {
 
   const handleSaveRug = (e: React.FormEvent) => {
     e.preventDefault();
+    if(!Number.isFinite(Number(rugWeight))||Number(rugWeight)<=0){alert('Enter the rug weight in pounds.');return;}
     const colorsArr = rugColors.split(",").map(c => c.trim()).filter(Boolean);
     const finalImages = rugImages.length > 0 ? rugImages : ["https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"];
     const payload: any = {
@@ -531,7 +533,7 @@ const AdminWorkspace: React.FC = () => {
       age: rugAge as Rug["age"],
       condition: rugCondition as Rug["condition"],
       colors: colorsArr,
-      weightLbs: Number(rugWeight) || 3.5,
+      weightLbs: Number(rugWeight),
       shippingPackage: Object.values(packed).every(v=>Number(v)>0) ? {length:Number(packed.length),width:Number(packed.width),height:Number(packed.height),weight:Number(packed.weight)} : null,
         isFreeShipping: rugIsFreeShipping,
       shape: rugShape as Rug["shape"],
@@ -3137,6 +3139,7 @@ const AdminWorkspace: React.FC = () => {
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Packed rug + padding — UPS</label>
                   <p>Measure the finished package. All four values are required for automatic UPS rates.</p>
+                  <p>Customer sale price: {saleLabel({price:Number(rugPrice),weightLbs:Number(rugWeight),sizeCategory:rugSizeCategory,dimensions:rugDimensions,name:rugName})}. Free Shipping. Rates per lb: Small/Runner $2 · Medium $3 · Large $3.50 · Extra Large/Oversize $4.50.</p>
                   {(['length','width','height','weight'] as const).map(key=><label key={key} className="block">{key} ({key==='weight'?'lb':'in'})<input type="number" min="0.1" max="1000" step="0.1" value={packed[key]} onChange={e=>setPacked({...packed,[key]:e.target.value})} className="w-full border rounded p-2" /></label>)}
                   <label className="block text-neutral-500 font-semibold uppercase">Shipping Offer</label>
                   <label className="flex items-center gap-2 mt-2 cursor-pointer h-full pb-2">

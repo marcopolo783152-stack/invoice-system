@@ -1,3 +1,4 @@
+import {salePrice,saleLabel,deliveredCents} from '@/lib/delivered-price.mjs';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -129,7 +130,7 @@ export const CartView: React.FC = () => {
   if (!cartOpen) return null;
 
   const rawSubtotal = cart.reduce(
-    (sum, item) => sum + item.rug.price * item.quantity,
+    (sum, item) => sum + salePrice(item.rug) * item.quantity,
     0,
   );
 
@@ -345,7 +346,7 @@ export const CartView: React.FC = () => {
                                 Quantity: {item.quantity}
                               </span>
                               <span className="font-sans text-base font-semibold text-editorial-text">
-                                ${item.rug.price.toLocaleString()}
+                                {saleLabel(item.rug)}
                               </span>
                             </div>
                           </div>
@@ -535,8 +536,8 @@ export const CartView: React.FC = () => {
                         </div>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        Shipping and applicable tax: <strong>quoted before payment</strong>.
-                        UPS shipping options are calculated from your address and the packed rugs.
+                        Shipping: <strong>Free</strong>. Applicable tax is shown before payment.
+                        Free shipping is included in each displayed sale price.
                       </p>
                     </div>
                   ) : (
@@ -800,13 +801,13 @@ export const CartView: React.FC = () => {
                         Free Pickup
                       </span>
                     ) : (
-                      "Calculated at checkout"
+                      "Free Shipping"
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-editorial-border pt-3 text-sm font-light">
                   <span className="text-editorial-text uppercase tracking-wider">
-                    {deliveryOption === "Pickup" ? "Pickup total:" : "Rugs subtotal (before shipping and tax):"}
+                    {deliveryOption === "Pickup" ? "Pickup total:" : "Sale total (before tax):"}
                   </span>
                   <span className="font-sans text-xl font-bold text-editorial-text">
                     ${total.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}

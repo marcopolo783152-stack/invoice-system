@@ -36,7 +36,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
         o=(await orderRequest('/api/live-orders',{action:'create',payload:value},attempt.current.id)).order;setOrder(o);
       }
       if(!o)throw Error('Please retry checkout.');
-      if(action==='review'&&o.deliveryOption==='Pickup')return;
+      if(action==='review'&&(o.deliveryOption==='Pickup'||o.pricingPolicy==='weight-inclusive-v1'))return;
       const d=await orderRequest('/api/live-orders',{action:action==='review'?'rates':action,id:o.id,version:o.version,...extra});
       if(d.rates)setRates(d.rates);
       if(d.order){setOrder(d.order);setAgreed(false);}
@@ -51,7 +51,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
       {order&&<>
         <div className={styles.items}>{order.items.map(i=><div key={i.id}><strong>{i.name}</strong> · SKU {i.sku} · {usd(i.unitAmount)}</div>)}</div>
         <p>{order.customerInfo.name}<br/>{order.customerInfo.shippingAddress}</p>
-        {order.deliveryOption==='Delivery'&&!payment&&order.paymentStatus!=='Paid'&&order.status!=='Payment pending'&&<><h4>UPS delivery</h4>{rates.map(rate=><button type="button" key={rate.id} disabled={busy} onClick={()=>run('selectShipping',{rateId:rate.id})}>{rate.service} · {usd(order.subtotal-order.discount+(order.freeShipping?0:rate.amount))} delivered before tax{rate.days?' · '+rate.days+' business days':''}</button>)}<button type="button" disabled={busy} onClick={()=>run('rates')}>Refresh UPS options</button></>}
+        {order.deliveryOption==='Delivery'&&order.pricingPolicy!=='weight-inclusive-v1'&&!payment&&order.paymentStatus!=='Paid'&&order.status!=='Payment pending'&&<><h4>UPS delivery</h4>{rates.map(rate=><button type="button" key={rate.id} disabled={busy} onClick={()=>run('selectShipping',{rateId:rate.id})}>{rate.service} · {usd(order.subtotal-order.discount+(order.freeShipping?0:rate.amount))} delivered before tax{rate.days?' · '+rate.days+' business days':''}</button>)}<button type="button" disabled={busy} onClick={()=>run('rates')}>Refresh UPS options</button></>}
         {order.shipping!==null&&<dl className={styles.totals}><div><dt>Rugs{order.shippingIncluded?' including delivery':''}</dt><dd>{usd(order.subtotal-order.discount+(order.shipping||0))}</dd></div><div><dt>{order.deliveryOption==='Pickup'?'Pickup':'Shipping'}</dt><dd>Free{order.deliveryOption==='Delivery'?' — included in price':''}</dd></div><div><dt>Tax</dt><dd>{order.automaticTax?'Shown below before payment':usd(order.tax)}</dd></div>{!order.automaticTax&&<div><dt>Total</dt><dd>{usd(order.total)}</dd></div>}</dl>}
         {order.paymentStatus==='Paid'?<p role="status">Payment confirmed. Thank you! Order {order.id}. <a href={'/orders/pay?order='+encodeURIComponent(order.id)}>View receipt</a></p>:payment?<div ref={mount} style={{minHeight:400}}/>:['Ready for payment','Payment pending'].includes(order.status)&&<>
           <label className={styles.check}><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/><span>I reviewed my order and U.S. addresses. All sales are final; exchanges are available within one week. Full payment is required before pickup or delivery.</span></label>

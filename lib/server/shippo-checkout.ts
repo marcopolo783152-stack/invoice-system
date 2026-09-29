@@ -7,6 +7,7 @@ import {isRugOnReviewHold} from '../catalog-visibility.mjs';
 import {checkoutOriginKnown} from './checkout-region.mjs';
 
 export async function shippingRates(o:any){
+  if(o.pricingPolicy==='weight-inclusive-v1')throw new CheckoutError('Free shipping is already included in this order.',409);
   if(o.deliveryOption!=='Delivery'||o.sessionAttemptedAt||!['Awaiting quote','Ready for payment'].includes(o.status))throw new CheckoutError('This order cannot change shipping.',409);
   const a=o.customerInfo.deliveryAddress;
   if(!a)throw new CheckoutError('Start a new checkout and enter your complete delivery address.',409);
@@ -26,6 +27,7 @@ export async function shippingRates(o:any){
   const result={rates,shipmentId:shipment.object_id,parcels,version:o.version,expiresAt:Date.now()+15*60000,requestedAt:Date.now()};await cacheRef.set(result);return result;
 }
 export async function selectShipping(o:any,rateId:string,version:number){
+  if(o.pricingPolicy==='weight-inclusive-v1')throw new CheckoutError('Free shipping is already included in this order.',409);
   const db=serverDb(),ref=db.collection(LIVE_ORDERS).doc(o.id);
   return db.runTransaction(async tx=>{
     const [order,quote]=await tx.getAll(ref,ref.collection('private').doc('shipping'));const current=order.data(),q=quote.data();
