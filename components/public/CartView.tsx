@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import RugCheckoutButton from "./RugCheckoutButton";
 import AddressAutocomplete from "../AddressAutocomplete";
@@ -65,11 +65,69 @@ export const CartView: React.FC = () => {
   const [deliveryOption, setDeliveryOption] = useState<"Pickup" | "Delivery">(
     "Delivery",
   );
+  const [shippingRate, setShippingRate] = useState<number | null>(null);
+  const [shippingRateLoading, setShippingRateLoading] = useState(false);
+  const [shippingRateError, setShippingRateError] = useState("");
 
   const derivedShippingAddress =
     deliveryOption === "Pickup"
       ? "Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314"
       : `${shippingStreet}${shippingApt.trim() ? " " + shippingApt.trim() : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
+
+  useEffect(() => {
+    if (deliveryOption === "Pickup") {
+      setShippingRate(0);
+      setShippingRateError("");
+      setShippingRateLoading(false);
+      return;
+    }
+
+    if (!shippingStreet.trim() || !shippingCity.trim() || !shippingState.trim() || !shippingZip.trim()) {
+      setShippingRate(null);
+      setShippingRateError("");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setShippingRateLoading(true);
+      setShippingRateError("");
+      try {
+        const response = await fetch("/api/shipping/rates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            address: {
+              street1: shippingStreet,
+              street2: shippingApt,
+              city: shippingCity,
+              state: shippingState,
+              zip: shippingZip,
+            },
+          }),
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !Number.isFinite(Number(payload.amount))) {
+          throw new Error(payload.error || "Unable to calculate shipping.");
+        }
+        setShippingRate(Number(payload.amount));
+      } catch (error: any) {
+        if (error?.name !== "AbortError") {
+          setShippingRate(null);
+          setShippingRateError(error?.message || "Unable to calculate shipping.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setShippingRateLoading(false);
+      }
+    }, 450);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [deliveryOption, shippingStreet, shippingApt, shippingCity, shippingState, shippingZip, name]);
 
   const [printFeedback, setPrintFeedback] = useState<string | null>(null);
 
@@ -134,28 +192,22 @@ export const CartView: React.FC = () => {
     return sum + rugWeight * item.quantity;
   }, 0);
 
-  // Calculate shipping cost based on weight & delivery option
-  // "shiping cost like 2-5 lbs gonna be 16 dollar"
-  let shipping = 0;
-  if (deliveryOption === "Delivery" && appliedPromo?.discountType !== "free_shipping") {
-    if (totalWeightLbs === 0) {
-      shipping = 0;
-    } else if (totalWeightLbs <= 1.9) {
-      shipping = 8;
-    } else if (totalWeightLbs >= 2 && totalWeightLbs <= 5) {
-      shipping = 16;
-    } else {
-      shipping = 45; // heavier luxury items
-    }
-  }
+  // Shippo calculates the real delivery cost for the customer's address.
+  // We keep the amount internally so the order total covers delivery, while the customer sees "Free Shipping".
+  const shipping =
+    deliveryOption === "Delivery" && appliedPromo?.discountType !== "free_shipping"
+      ? (shippingRate ?? 0)
+      : 0;
 
   // 6% sales taxes
   const tax = subtotal * 0.06;
-  const total = subtotal + shipping + tax;
+  const customerVisibleSubtotal = subtotal + shipping;
+  const total = customerVisibleSubtotal + tax;
 
   const handleNextStep = () => {
     if (checkoutStep === "cart") setCheckoutStep("shipping");
     else if (checkoutStep === "shipping") {
+      if (deliveryOption === "Delivery" && (shippingRateLoading || shippingRate === null)) return;
       if (billingSameAsShipping) {
         setBillingAddress(derivedShippingAddress);
       }
@@ -802,7 +854,7 @@ export const CartView: React.FC = () => {
                 <div className="flex justify-between">
                   <span>Showroom Subtotal:</span>
                   <span className="font-serif font-light text-editorial-text">
-                    ${rawSubtotal.toLocaleString()}
+                    ${(rawSubtotal + shipping).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 {appliedPromo && (
@@ -836,7 +888,9 @@ export const CartView: React.FC = () => {
                         Free Pickup
                       </span>
                     ) : (
-                      `$${shipping.toFixed(2)}`
+                      <span className="text-green-700 font-sans uppercase text-sm font-semibold">
+                        Free Shipping
+                      </span>
                     )}
                   </span>
                 </div>
