@@ -11,7 +11,7 @@ function loadStripeScript(){
 }
 export default function LiveOrderRequest({payload}:{payload:any}){
   const [signed,setSigned]=useState(false),[enabled,setEnabled]=useState(false),[payments,setPayments]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[agreed,setAgreed]=useState(false);
-  const [order,setOrder]=useState<LiveOrder|null>(null),[rates,setRates]=useState<any[]>([]),[payment,setPayment]=useState<any>(null);
+  const [order,setOrder]=useState<LiveOrder|null>(null),[rates,setRates]=useState<any[]>([]),[payment,setPayment]=useState<any>(null),[blocked,setBlocked]=useState<LiveOrder[]>([]);
   const mount=useRef<HTMLDivElement>(null),attempt=useRef({body:'',id:''}),running=useRef(false);
   useEffect(()=>onAuthStateChanged(auth,u=>{setSigned(!!u&&!u.isAnonymous&&u.emailVerified);setOrder(null);setPayment(null);setAgreed(false);}),[]);
   useEffect(()=>{let active=true;fetch('/api/live-orders?config=1',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(active){setEnabled(d.quotesEnabled===true);setPayments(d.paymentsEnabled===true);}}).catch(()=>{});return()=>{active=false;};},[]);
@@ -27,7 +27,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
   },[payment]);
   useEffect(()=>{if(signed&&enabled)void run('review');},[signed,enabled]);
   async function run(action:string,extra:any={}){
-    if(running.current)return;running.current=true;setBusy(true);setError('');
+    if(running.current)return;running.current=true;setBusy(true);setError('');setBlocked([]);
     try{
       let o=order;
       if(!o){
@@ -42,12 +42,14 @@ export default function LiveOrderRequest({payload}:{payload:any}){
       if(d.order){setOrder(d.order);setAgreed(false);}
       if(d.clientSecret)setPayment({...d,orderId:o.id});
       else if(d.url)throw Error('This order already uses a separate payment page. Open My orders to finish it.');
-    }catch(e){setError(e instanceof Error?e.message:'Could not complete checkout.');}finally{running.current=false;setBusy(false);}
+    }catch(e){setError(e instanceof Error?e.message:'Could not complete checkout.');
+      try{const d=await orderRequest('/api/live-orders');setBlocked((d.orders||[]).filter((saved:LiveOrder)=>saved.status==='Payment pending'&&saved.paymentStatus!=='Paid'&&saved.items.some(i=>payload.items.some((item:any)=>item.id===i.id))));}catch{}
+    }finally{running.current=false;setBusy(false);}
   }
   return <section className={styles.request}>
     <h3 className="font-semibold text-lg">Review &amp; payment</h3>
     {!signed?<p><a href="/sign-in" className="underline">Sign in or create an account</a> and verify your email to pay securely.</p>:<>
-      {!order&&<><p>Review your contact and shipping details, then load secure payment here.</p><button type="button" disabled={!enabled||busy} onClick={()=>run('review')}>{busy?'Calculating…':'Review total & payment'}</button></>}
+      {!order&&<><p>Your order summary and secure payment will appear here.</p><button type="button" disabled={!enabled||busy} onClick={()=>run('review')}>{busy?'Loading your order…':'Retry checkout'}</button></>}
       {order&&<>
         <div className={styles.items}>{order.items.map(i=><div key={i.id}><strong>{i.name}</strong> · SKU {i.sku} · {usd(i.unitAmount)}</div>)}</div>
         <p>{order.customerInfo.name}<br/>{order.customerInfo.shippingAddress}</p>
@@ -63,5 +65,6 @@ export default function LiveOrderRequest({payload}:{payload:any}){
     {!enabled&&<p>Online checkout is unavailable. Call <a href="tel:+17034610207">(703) 461-0207</a>.</p>}
     {enabled&&!payments&&<p>Card payments are temporarily unavailable.</p>}
     {error&&<p role="alert" className={styles.error}>{error}</p>}
+    {blocked.map(saved=><div className={styles.notice} key={saved.id}><strong>Unfinished checkout</strong><p>{saved.items.map(i=>'SKU '+i.sku).join(', ')} · {usd(saved.subtotal-saved.discount)} before tax</p><p>You can cancel this unpaid checkout to release its rugs, then retry your current cart.</p><button type="button" disabled={busy} onClick={async()=>{setBusy(true);try{const d=await orderRequest('/api/live-orders',{action:'cancel',id:saved.id});if(d.order.paymentStatus==='Paid')throw Error('This order has already been paid. Its rugs cannot be released.');if(!['Cancelled','Expired'].includes(d.order.status))throw Error('Payment is still processing. Check its status before retrying.');setBlocked(prev=>prev.filter(o=>o.id!==saved.id));setError('Unpaid checkout closed. Retry checkout to continue with your cart.');}catch(e){setError(e instanceof Error?e.message:'Could not close checkout.');}finally{setBusy(false);}}}>Cancel unfinished checkout</button></div>)}
   </section>;
 }

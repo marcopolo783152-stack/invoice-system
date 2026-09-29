@@ -152,3 +152,11 @@ test('inclusive sale price needs no shipping quote and weight changes invalidate
  const q=await createQuote(changed,'customer','customer@example.com',body('Delivery'),attempt,now,true);
  changed.change('showroom_rugs/rug-1',{weightLbs:20});await assert.rejects(reservePayment(changed,q.id,'customer',1,now+10),/price changed/);
 });
+
+test('same customer can resume reserved checkout after reopening cart without duplicating it',async()=>{
+ const d=db(),o=await reserved(d);
+ const resumed=await createQuote(d,'customer','customer@example.com',body(),'87654321-1234-1234-1234-123456789012',now+2000);
+ assert.equal(resumed.id,o.id);assert.equal(resumed.status,'Payment pending');assert.equal(d.count(LIVE_ORDERS),1);
+ await assert.rejects(createQuote(d,'other','customer@example.com',body(),'87654321-1234-1234-1234-123456789012',now+2000),/reserved/);
+ await assert.rejects(createQuote(d,'customer','customer@example.com',body('Delivery'),'87654321-1234-1234-1234-123456789012',now+2000),/reserved/);
+});
