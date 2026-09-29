@@ -32,6 +32,7 @@ export default function RugCheckoutButton({payload}: {payload: unknown}) {
     <label style={{display: "block", marginTop: 12}}><input type="checkbox" checked={countriesConfirmed} onChange={e => setCountriesConfirmed(e.target.checked)} /> I confirm both test billing and delivery addresses are in the United States. Pickup does not waive the billing-country requirement.</label>
     {error && <p role="alert" style={{color: '#9b281e', marginTop: 12}}>{error}</p>}
     <button type="button" disabled={busy || !countriesConfirmed} onClick={start} style={{background: '#183e35', color: 'white', padding: '14px 18px', marginTop: 14, opacity: busy ? .5 : 1}}>{busy ? 'Opening secure checkout…' : 'Test rug payment with Stripe'}</button>
-    <p style={{marginTop: 12}}><a href="/checkout/result" style={{textDecoration: 'underline'}}>View test orders</a></p>
+    <p style={{marginTop: 12}}><a href="/checkout/result" style={{textDecoration: 'underline'}}>View test orders</a> · <a href="/payment-setup" style={{textDecoration: 'underline'}}>Check live connection</a></p>
   </section>;
 }
+
