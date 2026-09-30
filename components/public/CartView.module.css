@@ -16,3 +16,12 @@
 }
 
 .dialog{border:1px solid #e5ded1;background:#fffdf9;border-radius:24px;box-shadow:0 24px 80px #193e3430}.body{background:#fffdf9}.summary{background:#f5f1e8;border-top:1px solid #e5ded1}.dialog button{border-radius:10px}.dialog input,.dialog select,.dialog textarea{border-radius:10px;border-color:#c8cec1;min-height:46px}.dialog h2,.dialog h3{color:#193e34}.dialog img{border-radius:12px}@media(max-width:640px){.dialog{border-radius:0;border:0}.summary{max-height:44dvh}}
+
+/* Checkout refresh: one clear summary and comfortable payment space. */
+.dialog{max-width:900px;background:#fffdf9;border-radius:26px}
+.dialog>div:first-child{background:#f4eee2;border-bottom:1px solid #e2d6bf}
+.body{padding:clamp(20px,3vw,32px)}
+.summary{background:#f7f2e8;padding:22px 28px;box-shadow:0 -8px 28px #193e3405}
+.summary>div{max-width:100%;font-variant-numeric:tabular-nums}
+.dialog button{line-height:1.45}
+@media(max-width:640px){.dialog{border-radius:0}.body{padding:18px}.summary{padding:18px;max-height:42dvh}}

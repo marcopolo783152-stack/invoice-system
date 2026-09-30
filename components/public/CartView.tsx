@@ -155,6 +155,8 @@ export const CartView: React.FC = () => {
   const shipping = 0;
   const tax = deliveryOption === "Pickup" ? Math.round(subtotal * 100 * 0.06) / 100 : 0;
   const total = subtotal + tax;
+  const displayedTax = Math.round(Math.round(subtotal * 100) * 0.06) / 100;
+  const displayedTotal = subtotal + displayedTax;
 
   const handleNextStep = () => {
     if (checkoutStep === "cart") setCheckoutStep("shipping");
@@ -794,9 +796,9 @@ export const CartView: React.FC = () => {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>{deliveryOption === "Pickup" ? "Sales tax (6%):" : "Applicable sales tax:"}</span>
+                  <span>{deliveryOption === "Pickup" ? "Sales tax (6%):" : "Sales tax (6% estimate):"}</span>
                   <span className="font-sans font-medium text-editorial-text">
-                    {deliveryOption === "Pickup" ? `$${tax.toFixed(2)}` : "Calculated at checkout"}
+                    {`${displayedTax.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -816,10 +818,10 @@ export const CartView: React.FC = () => {
                 </div>
                 <div className="flex justify-between border-t border-editorial-border pt-3 text-sm font-light">
                   <span className="text-editorial-text uppercase tracking-wider">
-                    {deliveryOption === "Pickup" ? "Pickup total:" : "Sale total (before tax):"}
+                    {deliveryOption === "Pickup" ? "Total including tax:" : "Estimated total including tax:"}
                   </span>
                   <span className="font-sans text-xl font-bold text-editorial-text">
-                    ${total.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    ${displayedTotal.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </span>
                 </div>
               </div>
