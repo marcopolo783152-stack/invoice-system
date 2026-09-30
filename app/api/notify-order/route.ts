@@ -1,3 +1,4 @@
+import {invoiceEmailFields} from '@/lib/invoice-email-fields.mjs';
 import {sendLiveReceipt} from '@/lib/server/live-receipt';
 import {caller,serverDb} from '@/lib/server/firebase-admin';
 import {requireStaff} from '@/lib/server/staff-permission';
@@ -136,6 +137,7 @@ export async function POST(request: Request) {
             user_id: EMAILJS_PUBLIC_KEY,
             accessToken: EMAILJS_PRIVATE_KEY,
             template_params: {
+              ...invoiceEmailFields(customerInfo.name, order.id, 'https://www.marcopolorugs.com/?track=' + encodeURIComponent(order.id)),
               to_email: customerInfo.email,
               subject: subjectLine,
               message: emailHtml,
