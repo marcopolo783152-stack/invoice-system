@@ -1,5 +1,6 @@
 import 'server-only';
 import Stripe from 'stripe';
+import {checkoutIdentity} from './checkout-identity.mjs';
 import {NextResponse} from 'next/server';
 import {serverDb,caller} from './firebase-admin';
 import {liveSecret,MARCO_POLO_STRIPE_ACCOUNT} from './stripe-live-status.mjs';
@@ -18,8 +19,9 @@ export function sameSite(req:Request){
 }
 export async function customer(req:Request){
   let u;try{u=await caller(req);}catch{throw new CheckoutError('Sign in to your customer account.',401);}
-  if(!u.email_verified||!u.email||u.firebase?.sign_in_provider==='anonymous')throw new CheckoutError('Verify your account email before requesting an order.',403);
-  return u;
+  const identity=checkoutIdentity(u,req.headers.get('x-checkout-guest')==='true');
+  if(!identity)throw new CheckoutError('Verify your account email before requesting an order.',403);
+  return identity;
 }
 export async function bodyJson(req:Request){
   const raw=await req.text();if(raw.length>14000)throw new CheckoutError('Order details are too long.',400);

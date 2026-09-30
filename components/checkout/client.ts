@@ -1,8 +1,8 @@
 import {auth} from '@/lib/auth';
 export const usd=(cents:number|null)=>cents===null?'To be confirmed':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(cents/100);
 export async function orderRequest(path:string,body?:unknown,attempt?:string){
-  const user=auth.currentUser;if(!user||user.isAnonymous||!user.emailVerified)throw Error('Please sign in and verify your account email.');
-  const response=await fetch(path,{method:body?'POST':'GET',cache:'no-store',headers:{Authorization:'Bearer '+await user.getIdToken(),...(body?{'Content-Type':'application/json'}:{}),...(attempt?{'X-Checkout-Attempt':attempt}:{})},...(body?{body:JSON.stringify(body)}:{})});
+  const user=auth.currentUser;const guest=!!user?.isAnonymous&&(path==='/api/live-orders'||path.startsWith('/api/live-orders?'));if(!user||(!guest&&(user.isAnonymous||!user.emailVerified)))throw Error('Please sign in and verify your account email.');
+  const response=await fetch(path,{method:body?'POST':'GET',cache:'no-store',headers:{...(guest?{'X-Checkout-Guest':'true'}:{}),Authorization:'Bearer '+await user.getIdToken(),...(body?{'Content-Type':'application/json'}:{}),...(attempt?{'X-Checkout-Attempt':attempt}:{})},...(body?{body:JSON.stringify(body)}:{})});
   let data;try{data=await response.json();}catch{throw Error('The website could not complete this request. Please retry.');}
   if(auth.currentUser?.uid!==user.uid)throw Error('Your sign-in changed. Please refresh.');
   if(!response.ok)throw Error(data.error||'The request could not be completed.');return data;

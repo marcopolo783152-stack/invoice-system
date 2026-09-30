@@ -16,7 +16,7 @@ export default function LiveOrders({admin=false}:{admin?:boolean}){
     setOrders(prev=>more?[...prev,...data.orders]:data.orders);setCursor(data.nextCursor||null);setEnabled(data.paymentsEnabled===true);
   },[endpoint]);
   useEffect(()=>onAuthStateChanged(auth,u=>{
-    const ready=!!u&&!u.isAnonymous&&u.emailVerified;setSigned(ready);setLoaded(true);setOrders([]);setSelected(null);setError('');
+    const ready=!!u&&(admin?(!u.isAnonymous&&u.emailVerified):(u.isAnonymous||u.emailVerified));setSigned(ready);setLoaded(true);setOrders([]);setSelected(null);setError('');
     if(ready){void load().catch(e=>setError(e.message));const id=new URLSearchParams(window.location.search).get('order');
       if(id)void orderRequest(endpoint+'?order='+encodeURIComponent(id)).then(d=>{setSelected(d.order);setEnabled(d.paymentsEnabled===true);}).catch(e=>setError(e.message));}
   }),[load,endpoint]);

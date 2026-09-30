@@ -1,6 +1,8 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import {onAuthStateChanged} from 'firebase/auth';
+import {onAuthStateChanged,sendEmailVerification,signInAnonymously} from 'firebase/auth';
+import AccountAccess from '@/components/AccountAccess';
+import {browserSessionReady} from '@/lib/firebase';
 import {auth} from '@/lib/auth';
 import {LiveOrder,orderRequest,usd} from './client';
 import styles from './LiveOrders.module.css';
@@ -10,10 +12,19 @@ function loadStripeScript(){
   return stripeScript ||= new Promise<void>((resolve,reject)=>{const script=document.createElement('script');script.src='https://js.stripe.com/v3/';script.onload=()=>resolve();script.onerror=()=>{stripeScript=undefined;script.remove();reject(Error('Secure payment could not load. Please retry.'));};document.head.appendChild(script);});
 }
 export default function LiveOrderRequest({payload}:{payload:any}){
+  const [accountOpen,setAccountOpen]=useState(false),[accountUser,setAccountUser]=useState<any>(null),[verificationNote,setVerificationNote]=useState('');
   const [signed,setSigned]=useState(false),[enabled,setEnabled]=useState(false),[payments,setPayments]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[agreed,setAgreed]=useState(false);
   const [order,setOrder]=useState<LiveOrder|null>(null),[rates,setRates]=useState<any[]>([]),[payment,setPayment]=useState<any>(null),[blocked,setBlocked]=useState<LiveOrder[]>([]);
   const mount=useRef<HTMLDivElement>(null),attempt=useRef({body:'',id:''}),running=useRef(false);
-  useEffect(()=>onAuthStateChanged(auth,u=>{setSigned(!!u&&!u.isAnonymous&&u.emailVerified);setOrder(null);setPayment(null);setAgreed(false);}),[]);
+  useEffect(()=>onAuthStateChanged(auth,u=>{setAccountUser(u);setSigned(!!u&&(u.isAnonymous||u.emailVerified));setOrder(null);setPayment(null);setAgreed(false);}),[]);
+  useEffect(()=>{void browserSessionReady.then(async()=>{if(!auth.currentUser)await signInAnonymously(auth);}).catch(()=>setError('Guest checkout could not connect. Please retry.'));},[]);
+  useEffect(()=>{
+    if(!accountUser||accountUser.isAnonymous||accountUser.emailVerified)return;
+    let stopped=false;
+    const check=async()=>{try{await accountUser.reload();const current=auth.currentUser;if(!stopped&&current&&current.uid===accountUser.uid&&current.emailVerified){await current.getIdToken(true);setAccountUser(current);setSigned(true);setAccountOpen(false);setVerificationNote('Email confirmed. Continuing checkout…');}}catch{}};
+    const timer=setInterval(check,5000);window.addEventListener('focus',check);
+    return()=>{stopped=true;clearInterval(timer);window.removeEventListener('focus',check);};
+  },[accountUser]);
   useEffect(()=>{let active=true;fetch('/api/live-orders?config=1',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(active){setEnabled(d.quotesEnabled===true);setPayments(d.paymentsEnabled===true);}}).catch(()=>{});return()=>{active=false;};},[]);
   useEffect(()=>{
     if(!payment)return;let active=true,checkout:any;
@@ -31,7 +42,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
     try{
       let o=order;
       if(!o){
-        const value={...payload,customerInfo:{...payload.customerInfo,email:auth.currentUser?.email||payload.customerInfo.email,billingCountry:'US',shippingCountry:'US'}};
+        const value={...payload,customerInfo:{...payload.customerInfo,email:auth.currentUser?.isAnonymous?payload.customerInfo.email:auth.currentUser?.email||payload.customerInfo.email,billingCountry:'US',shippingCountry:'US'}};
         const body=JSON.stringify(value);if(attempt.current.body!==body||!attempt.current.id)attempt.current={body,id:crypto.randomUUID()};
         o=(await orderRequest('/api/live-orders',{action:'create',payload:value},attempt.current.id)).order;setOrder(o);
       }
@@ -48,7 +59,9 @@ export default function LiveOrderRequest({payload}:{payload:any}){
   }
   return <section className={styles.request}>
     <h3 className="font-semibold text-lg">Review &amp; payment</h3>
-    {!signed?<p><a href="/sign-in" className="underline">Sign in or create an account</a> and verify your email to pay securely.</p>:<>
+    {signed&&accountUser?.isAnonymous&&<p>Guest checkout · No account required. <button type="button" onClick={()=>setAccountOpen(!accountOpen)}>Sign in or create an account (optional)</button></p>}
+    {accountOpen&&<AccountAccess onComplete={()=>{setAccountOpen(false);setAccountUser(auth.currentUser);setSigned(!!auth.currentUser&&(auth.currentUser.isAnonymous||auth.currentUser.emailVerified));}}/>}
+    {!signed?<div><p>Open the verification email sent to <strong>{accountUser?.email}</strong>. Check your <strong>Spam or Junk</strong> folder too. Keep this page open—we’ll continue automatically once your email is confirmed.</p><button type="button" disabled={busy} onClick={async()=>{if(!auth.currentUser)return;setBusy(true);try{await sendEmailVerification(auth.currentUser);setVerificationNote('Verification email sent. Please check your inbox and Spam or Junk folder.');}catch{setVerificationNote('Please wait a moment before requesting another email.');}finally{setBusy(false);}}}>Resend verification email</button></div>:<>
       {!order&&<><p>Your order summary and secure payment will appear here.</p><button type="button" disabled={!enabled||busy} onClick={()=>run('review')}>{busy?'Loading your order…':'Retry checkout'}</button></>}
       {order&&<>
         <div className={styles.items}>{order.items.map(i=><div key={i.id}><strong>{i.name}</strong> · SKU {i.sku} · {usd(i.unitAmount)}</div>)}</div>
@@ -62,6 +75,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
         {order.status==='Payment pending'&&!payment&&<button type="button" disabled={busy} onClick={()=>run('sync')}>Check payment status</button>}
       </>}
     </>}
+    {verificationNote&&<p role="status">{verificationNote}</p>}
     {!enabled&&<p>Online checkout is unavailable. Call <a href="tel:+17034610207">(703) 461-0207</a>.</p>}
     {enabled&&!payments&&<p>Card payments are temporarily unavailable.</p>}
     {error&&<p role="alert" className={styles.error}>{error}</p>}

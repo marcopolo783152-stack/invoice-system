@@ -19,7 +19,7 @@ export async function POST(req:NextRequest){
     sameSite(req);const u=await customer(req),b=await bodyJson(req),flags=orderFlags();
     if(b.action==='create'){
       if(!flags.quotesEnabled)throw new CheckoutError('Online order requests are being prepared. Please call (703) 461-0207.',503);
-      return respond({order:publicOrder(await createQuote(serverDb(),u.uid,u.email!,b.payload,req.headers.get('x-checkout-attempt'),Date.now(),true))});
+      return respond({order:publicOrder(await createQuote(serverDb(),u.uid,('guest' in u&&u.guest)?String(b.payload?.customerInfo?.email||''):u.email!,b.payload,req.headers.get('x-checkout-attempt'),Date.now(),true))});
     }
     const o=await ownOrder(b.id,u.uid);
     if(b.action==='rates'){const q=await shippingRates(o);return respond({rates:q.rates,expiresAt:q.expiresAt});}
