@@ -1,3 +1,4 @@
+import {checkoutContact} from '@/lib/checkout-contact.mjs';
 import {auth} from "@/lib/auth";
 import {salePrice,saleLabel,deliveredCents} from '@/lib/delivered-price.mjs';
 /**
@@ -74,6 +75,8 @@ export const CartView: React.FC = () => {
     deliveryOption === "Pickup"
       ? "Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314"
       : `${shippingStreet}${shippingApt.trim() ? " " + shippingApt.trim() : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
+
+  const [contactError,setContactError]=useState('');
 
   const [printFeedback, setPrintFeedback] = useState<string | null>(null);
 
@@ -156,6 +159,9 @@ export const CartView: React.FC = () => {
   const handleNextStep = () => {
     if (checkoutStep === "cart") setCheckoutStep("shipping");
     else if (checkoutStep === "shipping") {
+      try { checkoutContact({name,phone,email,shippingAddress:derivedShippingAddress,billingAddress:billingSameAsShipping && deliveryOption==='Delivery'?derivedShippingAddress:billingAddress,notes,deliveryAddress:deliveryOption==='Delivery'?{street1:shippingStreet,street2:shippingApt,city:shippingCity,state:shippingState,zip:shippingZip}:undefined}); }
+      catch(error){setContactError(error instanceof Error?error.message:'Check your contact details.');return;}
+      setContactError('');
       if (billingSameAsShipping && deliveryOption === "Delivery") {
         setBillingAddress(derivedShippingAddress);
       }
@@ -370,6 +376,7 @@ export const CartView: React.FC = () => {
             {/* --- STEP 2: SHIPPING FORM --- */}
             {checkoutStep === "shipping" && (
               <div className="space-y-4 text-sm">
+                {contactError&&<p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">{contactError}</p>}
                 <h4 className="text-sm uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
                   Contact details
                 </h4>
@@ -613,7 +620,7 @@ export const CartView: React.FC = () => {
             {/* Review the server-priced order before any payment. */}
             {checkoutStep === "payment" && (
               <div className="space-y-4 text-sm text-left">
-                <LiveOrderRequest key={JSON.stringify([cart.map(i=>[i.rug.id,i.quantity]),deliveryOption,appliedPromo?.code,name,phone,email,derivedShippingAddress,billingAddress,notes])} payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
+                <LiveOrderRequest onEditDetails={()=>setCheckoutStep("shipping")} key={JSON.stringify([cart.map(i=>[i.rug.id,i.quantity]),deliveryOption,appliedPromo?.code,name,phone,email,derivedShippingAddress,billingAddress,notes])} payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
                     billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress,
                     notes, deliveryAddress: deliveryOption === 'Delivery' ? {street1:shippingStreet,street2:shippingApt,city:shippingCity,state:shippingState,zip:shippingZip,country:'US'} : undefined}}} />

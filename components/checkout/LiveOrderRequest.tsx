@@ -12,7 +12,7 @@ function loadStripeScript(){
   if((window as any).Stripe)return Promise.resolve();
   return stripeScript ||= new Promise<void>((resolve,reject)=>{const script=document.createElement('script');script.src='https://js.stripe.com/v3/';script.onload=()=>resolve();script.onerror=()=>{stripeScript=undefined;script.remove();reject(Error('Secure payment could not load. Please retry.'));};document.head.appendChild(script);});
 }
-export default function LiveOrderRequest({payload}:{payload:any}){
+export default function LiveOrderRequest({payload,onEditDetails}:{payload:any;onEditDetails?:()=>void}){
   const [accountOpen,setAccountOpen]=useState(false),[accountUser,setAccountUser]=useState<any>(null),[verificationNote,setVerificationNote]=useState('');
   const [signed,setSigned]=useState(false),[enabled,setEnabled]=useState(false),[payments,setPayments]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[agreed,setAgreed]=useState(false);
   const [order,setOrder]=useState<LiveOrder|null>(null),[rates,setRates]=useState<any[]>([]),[payment,setPayment]=useState<any>(null),[blocked,setBlocked]=useState<LiveOrder[]>([]);
@@ -65,7 +65,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
     }finally{running.current=false;setBusy(false);}
   }
   return <section className={styles.request}>
-    <h3 className="font-semibold text-lg">Review &amp; payment</h3>
+    <h3 className="font-semibold text-lg">Review &amp; payment</h3>{onEditDetails&&!payment&&<button type="button" className={styles.secondary} onClick={onEditDetails}>Edit contact &amp; shipping details</button>}
     {signed&&accountUser?.isAnonymous&&<p>Guest checkout · No account required. <button type="button" onClick={()=>setAccountOpen(!accountOpen)}>Sign in or create an account (optional)</button></p>}
     {accountOpen&&<AccountAccess onComplete={()=>{setAccountOpen(false);setAccountUser(auth.currentUser);setSigned(!!auth.currentUser&&(auth.currentUser.isAnonymous||auth.currentUser.emailVerified));}}/>}
     {!signed?<div><p>Open the verification email sent to <strong>{accountUser?.email}</strong>. Check your <strong>Spam or Junk</strong> folder too. Keep this page open—we’ll continue automatically once your email is confirmed.</p><button type="button" disabled={busy} onClick={async()=>{if(!auth.currentUser)return;setBusy(true);try{await sendEmailVerification(auth.currentUser);setVerificationNote('Verification email sent. Please check your inbox and Spam or Junk folder.');}catch{setVerificationNote('Please wait a moment before requesting another email.');}finally{setBusy(false);}}}>Resend verification email</button></div>:<>
