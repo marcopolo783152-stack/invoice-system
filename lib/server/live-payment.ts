@@ -25,7 +25,15 @@ export async function bodyJson(req:Request){
   const raw=await req.text();if(raw.length>14000)throw new CheckoutError('Order details are too long.',400);
   try{return JSON.parse(raw);}catch{throw new CheckoutError('Invalid request.',400);}
 }
-export function failure(e:unknown){return respond({error:e instanceof CheckoutError?e.message:'The request could not be completed. Your payment status has not been assumed; retry or contact Marco Polo Rugs.'},e instanceof CheckoutError?e.status:503);}
+export function failure(e:unknown){
+  if(e instanceof CheckoutError)return respond({error:e.message},e.status);
+  const stripeError=e instanceof Stripe.errors.StripeError?e:null;
+  const reference=stripeError?.requestId&&/^req_[A-Za-z0-9]+$/.test(stripeError.requestId)?stripeError.requestId:crypto.randomUUID();
+  // Log identifiers only: never key values, customer details, or raw provider messages.
+  const parameter=stripeError?.param&&/^[A-Za-z0-9_\[\].]+$/.test(stripeError.param)?stripeError.param:undefined;
+  console.error('Live checkout failed',{reference,type:stripeError?.type||'InternalError',code:stripeError?.code,parameter});
+  return respond({error:'Secure payment could not load. Retry this checkout or contact Marco Polo Rugs. Reference: '+reference+(parameter?' (payment setting: '+parameter+')':'')},503);
+}
 export function liveStripe(){return new Stripe(liveSecret(process.env.STRIPE_LIVE_SECRET_KEY),{maxNetworkRetries:2,timeout:15000});}
 export async function ownOrder(id:string,uid:string,staff=false){
   if(!validOrderId(id))throw new CheckoutError('Invalid order.',400);

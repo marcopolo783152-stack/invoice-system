@@ -134,7 +134,7 @@ test('embedded checkout stays on page and retries preserve the original UI mode'
  const d=db(),o=await quote(d);
  const r=await reservePayment(d,o.id,'customer',o.version,now+10,'embedded');
  const p=liveSessionParams(r,'https://www.marcopolorugs.com');
- assert.equal(p.ui_mode,'embedded');assert.equal(p.redirect_on_completion,'never');
+ assert.equal(p.ui_mode,'embedded_page');assert.equal(p.redirect_on_completion,'never');
  assert.equal(p.success_url,undefined);assert.equal(p.cancel_url,undefined);
  const retry=await reservePayment(d,o.id,'customer',o.version,now+20,'hosted');
  assert.equal(retry.paymentUi,'embedded');
