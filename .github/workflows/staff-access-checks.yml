@@ -43,6 +43,8 @@ jobs:
         run: node --test tests/access/stripe-test.test.mjs tests/access/listing-stats.test.mjs tests/access/rug-checkout.test.mjs tests/access/checkout-contact.test.mjs tests/upgrade/integrations.test.mjs tests/access/invoice-email-fields.test.mjs tests/access/login-destination.test.mjs tests/access/order-number.test.mjs
       - name: Test loan ledger safeguards
         run: node --test tests/loans/ledger.test.mjs
+      - name: Test washing custody and company link safeguards
+        run: node --test tests/access/washing.test.mjs tests/invoices/wash-sku.test.mjs
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
@@ -82,4 +84,3 @@ jobs:
         with:
           name: dashboard-browser-screenshots
           path: tests/access/screenshots
-
