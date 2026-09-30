@@ -157,7 +157,7 @@ function AppContent({initialRugId,initialRug}: Props) {
         <div className="max-w-7xl mx-auto grid gap-8 md:grid-cols-3">
           <div><h2 className="text-2xl font-serif">Marco Polo Rugs</h2><p className="mt-3">Alexandria, Virginia · Since 1988</p><p className="mt-3">3260 Duke St, Alexandria, VA 22314</p><a href="tel:+17034610207">(703) 461-0207</a><p>Daily, 10:00 AM–6:00 PM</p></div>
           <div className="flex flex-col gap-3"><a href="/?view=shop">Shop rugs</a><a href="/?view=shop&saved=1">Saved rugs</a><a href="/?view=book">Book a showroom visit</a><a href="/services/rug-cleaning-alexandria-va">Cleaning & repair</a><a href="/?view=track">Track your order</a></div>
-          <div><h3 className="font-bold">Shop with clear expectations</h3><p className="mt-3">Free padding with every rug. Delivery is quoted before payment.</p><p className="mt-3">All sales are final. Exchanges within one week. Full payment is required before pickup or delivery.</p></div>
+          <div><h3 className="font-bold">Shop with clear expectations</h3><p className="mt-3">Free shipping and free padding with every rug. Shipping is included in the displayed sale price.</p><p className="mt-3">All sales are final. Exchanges within one week. Full payment is required before pickup or delivery.</p></div>
         </div>
         <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-white/20 flex flex-wrap gap-5">
           {socialLinks?.filter(l=>l.url).map(l=><a key={l.platform} href={l.url} target="_blank" rel="noopener noreferrer">{l.platform}</a>)}
