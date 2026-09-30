@@ -11,7 +11,7 @@ export async function GET(req:NextRequest){
     const u=await customer(req),id=req.nextUrl.searchParams.get('order');
     if(id)return respond({order:publicOrder(await ownOrder(id,u.uid)),...orderFlags()});
     const docs=await serverDb().collection(LIVE_ORDERS).where('customerId','==',u.uid).get();
-    return respond({orders:docs.docs.map(d=>publicOrder(d.data())).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),...orderFlags()});
+    return respond({orders:(await Promise.all(docs.docs.map(async d=>publicOrder(await ownOrder(d.id,u.uid))))).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),...orderFlags()});
   }catch(e){return failure(e);}
 }
 export async function POST(req:NextRequest){
@@ -19,7 +19,7 @@ export async function POST(req:NextRequest){
     sameSite(req);const u=await customer(req),b=await bodyJson(req),flags=orderFlags();
     if(b.action==='create'){
       if(!flags.quotesEnabled)throw new CheckoutError('Online order requests are being prepared. Please call (703) 461-0207.',503);
-      return respond({order:publicOrder(await createQuote(serverDb(),u.uid,('guest' in u&&u.guest)?String(b.payload?.customerInfo?.email||''):u.email!,b.payload,req.headers.get('x-checkout-attempt'),Date.now(),true))});
+      const created=await createQuote(serverDb(),u.uid,('guest' in u&&u.guest)?String(b.payload?.customerInfo?.email||''):u.email!,b.payload,req.headers.get('x-checkout-attempt'),Date.now(),true);return respond({order:publicOrder(await ownOrder(created.id,u.uid))});
     }
     const o=await ownOrder(b.id,u.uid);
     if(b.action==='rates'){const q=await shippingRates(o);return respond({rates:q.rates,expiresAt:q.expiresAt});}

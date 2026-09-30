@@ -15,7 +15,7 @@ export async function GET(req:NextRequest){
     let q=serverDb().collection(LIVE_ORDERS).orderBy('createdAt','desc').orderBy('__name__','desc').limit(50);
     const cursor=req.nextUrl.searchParams.get('cursor');
     if(cursor){const o=await ownOrder(cursor,u.uid,true);q=q.startAfter(o.createdAt,o.id);}
-    const docs=await q.get();return respond({orders:docs.docs.map(d=>publicOrder(d.data())),nextCursor:docs.size===50?docs.docs[49].id:null});
+    const docs=await q.get();return respond({orders:await Promise.all(docs.docs.map(async d=>publicOrder(await ownOrder(d.id,u.uid,true)))),nextCursor:docs.size===50?docs.docs[49].id:null});
   }catch(e){return failure(e);}
 }
 export async function POST(req:NextRequest){

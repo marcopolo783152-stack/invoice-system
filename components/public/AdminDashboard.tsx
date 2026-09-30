@@ -1,3 +1,4 @@
+import {orderReference} from '@/lib/order-reference.mjs';
 import LiveOrderAdminControls from '@/components/checkout/LiveOrderAdminControls';
 import {deliveredCents,saleLabel} from '@/lib/delivered-price.mjs';
 import {auth as firebaseAuth} from '@/lib/auth';
@@ -1234,7 +1235,7 @@ const AdminWorkspace: React.FC = () => {
                     orders.map(order => (
                       <tr key={order.id} className="hover:bg-neutral-50 transition-colors">
                         <td className="px-4 py-3">{new Date(order.createdAt || 0).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{order.id.split('-').pop()?.toUpperCase() || order.id}</td>
+                        <td className="px-4 py-3 font-mono text-xs">{orderReference(order)}</td>
                         <td className="px-4 py-3 font-medium text-editorial-text">{order.customerInfo?.name || 'Unknown'}</td>
                         <td className="px-4 py-3 capitalize">{order.paymentDetails?.cardBrand || 'Card'}</td>
                         <td className="px-4 py-3">
@@ -2244,7 +2245,7 @@ const AdminWorkspace: React.FC = () => {
                     const searchLower = orderSearchQuery.toLowerCase();
                     const matchesSearch =
                       !orderSearchQuery ||
-                      o.id.toLowerCase().includes(searchLower) ||
+                      o.id.toLowerCase().includes(searchLower) || (o.orderNumber||'').toLowerCase().includes(searchLower) ||
                       o.customerInfo.name.toLowerCase().includes(searchLower) ||
                       o.customerInfo.phone.toLowerCase().includes(searchLower) ||
                       o.customerInfo.email.toLowerCase().includes(searchLower) ||
@@ -2272,7 +2273,7 @@ const AdminWorkspace: React.FC = () => {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-amber-700 text-sm">{o.id}</span>
+                          <span className="font-mono font-bold text-amber-700 text-sm">{orderReference(o)}</span>
                           <span className="text-xs text-neutral-400">({new Date(o.createdAt).toLocaleDateString()})</span>
                         </div>
                         <p className="text-xs text-neutral-600 font-sans mt-0.5">

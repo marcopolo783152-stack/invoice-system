@@ -136,6 +136,7 @@ export interface ShippingDetails {
 }
 
 export interface Order {
+  orderNumber?: string;
   customerId?: string;
   id: string;
   customerInfo: CustomerInfo;

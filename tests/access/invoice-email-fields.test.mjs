@@ -38,15 +38,17 @@ function assertFields(params) {
   assert.equal(params.invoice_link, 'https://www.marcopolorugs.com/?track=MPR-123');
   assert.equal(params.invoice_url, params.invoice_link);
 }
-test('paid receipt sends all invoice template fields to EmailJS', async () => {
+test('paid receipt uses its dedicated template and short order number', async () => {
   let body;
   const {sendLiveReceipt} = load('lib/server/live-receipt.ts', {
-    'server-only':{},'../invoice-email-fields.mjs':{invoiceEmailFields},
+    'server-only':{},'./order-number.mjs':{assignOrderNumber:async()=>{}},
     './receipt-email-error.mjs':{receiptEmailError:()=>''},
-    './firebase-admin':{serverDb:()=>fakeDb(sample)},'./live-orders.mjs':{LIVE_ORDERS:'live_orders'},
-  }, {process:{env:{EMAILJS_PRIVATE_KEY:'test-only'}},fetch:async(_,options)=>{body=JSON.parse(options.body);return {ok:true};}});
+    './firebase-admin':{serverDb:()=>fakeDb({...sample,orderNumber:'MP-000001'})},'./live-orders.mjs':{LIVE_ORDERS:'live_orders'},
+  }, {process:{env:{EMAILJS_PRIVATE_KEY:'test-only',EMAILJS_TEMPLATE_ORDER_RECEIPT:'order-receipt'}},fetch:async(_,options)=>{body=JSON.parse(options.body);return {ok:true};}});
   assert.equal(await sendLiveReceipt('MPR-123'), 'sent');
-  assertFields(body.template_params);
+  assert.equal(body.template_id,'order-receipt');
+  assert.equal(body.template_params.order_number,'MP-000001');
+  assert.ok(body.template_params.message.includes('Payment receipt'));
   assert.ok(body.template_params.message.includes('$10.00'));
 });
 test('staff order invoice sends all invoice template fields to EmailJS', async () => {
@@ -61,3 +63,4 @@ test('staff order invoice sends all invoice template fields to EmailJS', async (
   assert.equal(response.status,200);
   assertFields(body.template_params);
 });
+

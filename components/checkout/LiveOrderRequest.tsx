@@ -1,4 +1,5 @@
 'use client';
+import {orderReference} from '@/lib/order-reference.mjs';
 import {useEffect,useRef,useState} from 'react';
 import {onAuthStateChanged,sendEmailVerification,signInAnonymously} from 'firebase/auth';
 import AccountAccess from '@/components/AccountAccess';
@@ -74,7 +75,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
         <p>{order.customerInfo.name}<br/>{order.customerInfo.shippingAddress}</p>
         {order.deliveryOption==='Delivery'&&order.pricingPolicy!=='weight-inclusive-v1'&&!payment&&order.paymentStatus!=='Paid'&&order.status!=='Payment pending'&&<><h4>UPS delivery</h4>{rates.map(rate=><button type="button" key={rate.id} disabled={busy} onClick={()=>run('selectShipping',{rateId:rate.id})}>{rate.service} · {usd(order.subtotal-order.discount+(order.freeShipping?0:rate.amount))} delivered before tax{rate.days?' · '+rate.days+' business days':''}</button>)}<button type="button" disabled={busy} onClick={()=>run('rates')}>Refresh UPS options</button></>}
         {order.shipping!==null&&<dl className={styles.totals}><div><dt>Rugs{order.shippingIncluded?' including delivery':''}</dt><dd>{usd(order.subtotal-order.discount+(order.shipping||0))}</dd></div><div><dt>{order.deliveryOption==='Pickup'?'Pickup':'Shipping'}</dt><dd>Free{order.deliveryOption==='Delivery'?' — included in price':''}</dd></div><div><dt>Tax</dt><dd>{order.automaticTax&&order.paymentStatus!=='Paid'?'Shown below before payment':usd(order.tax)}</dd></div>{(!order.automaticTax||order.paymentStatus==='Paid')&&<div><dt>Total</dt><dd>{usd(order.total)}</dd></div>}</dl>}
-        {order.paymentStatus==='Paid'?<p role="status">Payment confirmed. Thank you! Order {order.id}. <br/>Receipt email: {order.receiptEmailStatus||'Being prepared'}.<br/><button type="button" onClick={()=>window.print()}>Print receipt / save PDF</button></p>:payment?<div ref={mount} style={{minHeight:400}}/>:['Ready for payment','Payment pending'].includes(order.status)&&<>
+        {order.paymentStatus==='Paid'?<p role="status">Payment confirmed. Thank you! Order {orderReference(order)}. <br/>Receipt email: {order.receiptEmailStatus||'Being prepared'}.<br/><button type="button" onClick={()=>window.print()}>Print receipt / save PDF</button></p>:payment?<div ref={mount} style={{minHeight:400}}/>:['Ready for payment','Payment pending'].includes(order.status)&&<>
           <label className={styles.check}><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/><span>I reviewed my order and U.S. addresses. All sales are final; exchanges are available within one week. Full payment is required before pickup or delivery.</span></label>
           <button type="button" disabled={!payments||!agreed||busy} onClick={()=>run('pay',{accepted:true,embedded:true})}>{busy?'Loading secure payment…':'Continue to payment'}</button>
         </>}

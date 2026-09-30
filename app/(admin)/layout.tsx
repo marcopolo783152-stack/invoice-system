@@ -50,7 +50,7 @@ export default function RootLayout({
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  const handleLogout=async()=>{await logout();syncLegacyStaffSession(null);window.location.assign('/staff-login');};
+  const handleLogout=async()=>{await logout();syncLegacyStaffSession(null);window.location.assign('/sign-in');};
 
   const isPrintPage = pathname?.includes('/print');
   const isPublicPage = pathname?.startsWith('/public');

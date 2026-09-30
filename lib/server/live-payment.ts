@@ -1,3 +1,4 @@
+import {assignOrderNumber} from './order-number.mjs';
 import {sendLiveReceipt} from './live-receipt';
 import 'server-only';
 import Stripe from 'stripe';
@@ -41,7 +42,7 @@ export function liveStripe(){return new Stripe(liveSecret(process.env.STRIPE_LIV
 export async function ownOrder(id:string,uid:string,staff=false){
   if(!validOrderId(id))throw new CheckoutError('Invalid order.',400);
   const o=(await serverDb().collection(LIVE_ORDERS).doc(id).get()).data();
-  if(!o||(!staff&&o.customerId!==uid))throw new CheckoutError('Order not found.',404);return o;
+  if(!o||(!staff&&o.customerId!==uid))throw new CheckoutError('Order not found.',404);return assignOrderNumber(serverDb(),id);
 }
 export async function checkPaymentAccount(stripe:Stripe){
   const a=await stripe.accounts.retrieve(null);

@@ -1,4 +1,5 @@
 'use client';
+import {orderReference} from '@/lib/order-reference.mjs';
 import {useStore} from '@/context/StoreContext';
 import React, { useEffect, useState, useRef } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -220,7 +221,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
       if(!canAccess(staff,'orders'))return;
       if(knownOrderIds.current){
         for(const order of orders)if(!knownOrderIds.current.has(order.id)&&new Date(order.createdAt).getTime()>Date.now()-60000){
-          addToast({title:'New order: '+order.id,message:(order.customerInfo?.name||'Customer')+' placed an order.',type:'order',link:'/?view=admin&adminTab=orders&orderId='+encodeURIComponent(order.id)});
+          addToast({title:'New order: '+orderReference(order),message:(order.customerInfo?.name||'Customer')+' placed an order.',type:'order',link:'/?view=admin&adminTab=orders&orderId='+encodeURIComponent(order.id)});
         }
       }
       knownOrderIds.current=new Set(orders.map(order=>order.id));

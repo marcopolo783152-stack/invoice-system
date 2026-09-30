@@ -8,7 +8,7 @@ export default function StaffAccount() {
  const {user,loading} = useStaffAccess();
  const [password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
  if(loading) return <p>Checking account…</p>;
- if(!user || user.isAnonymous) return <main className={styles.panel}><a href="/staff-login">Sign in first</a></main>;
+ if(!user || user.isAnonymous) return <main className={styles.panel}><a href="/sign-in">Sign in first</a></main>;
  return <main className={styles.panel} style={{maxWidth:480}}>
  <h1>Account settings</h1><p>{user.email}</p>
  <form onSubmit={async e=>{e.preventDefault();setMessage('');setBusy(true);try{
@@ -23,7 +23,7 @@ export default function StaffAccount() {
  <label>Confirm password<input type="password" required autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)}/></label>
  <button disabled={busy}>Save password</button></form>
  {message&&<p role="status">{message}</p>}
- <button onClick={async()=>{await signOut(auth);window.location.assign('/staff-login');}}>Sign out</button>
+ <button onClick={async()=>{await signOut(auth);window.location.assign('/sign-in');}}>Sign out</button>
  <a href="/?view=admin">Back to staff area</a>
  </main>;
 }
