@@ -1,3 +1,4 @@
+import LiveOrderAdminControls from '@/components/checkout/LiveOrderAdminControls';
 import {deliveredCents,saleLabel} from '@/lib/delivered-price.mjs';
 import {auth as firebaseAuth} from '@/lib/auth';
 import ListingStats from "@/components/ListingStats";
@@ -2370,13 +2371,14 @@ const AdminWorkspace: React.FC = () => {
                         <div className="text-xs text-neutral-500 pt-2 font-mono space-y-1">
                           <p>Payment method: {o.paymentDetails?.cardBrand || 'Confirm with showroom'}</p>
                           {o.paymentDetails?.last4 && <p>Ending in {o.paymentDetails.last4}</p>}
-                          <p className="text-neutral-400">Payment is confirmed separately by the showroom.</p>
-                          <OrderPaymentControls orderId={o.id}/>
+                          <p className="text-neutral-400">{o.id.startsWith("MPR-LIVE-")?"Payment verified by Stripe.":"Payment is confirmed separately by the showroom."}</p>
+                          {!o.id.startsWith("MPR-LIVE-")&&<OrderPaymentControls orderId={o.id}/>}
 
                         </div>
                       </div>
 
                       {/* Actions workflow */}
+                      {o.id.startsWith("MPR-LIVE-") ? <div className="bg-white p-4 rounded-xl border border-neutral-200/50"><LiveOrderAdminControls id={o.id}/><button type="button" className="mt-4 py-2 px-4 border rounded" onClick={()=>generateAndDownloadReceiptPDF(o,shopProfile,logoUrl)}>Print / download receipt PDF</button></div> : (
                       <div className="space-y-2 bg-white p-4 rounded-xl border border-neutral-200/50 flex flex-col justify-between">
                         <span className="text-sm uppercase tracking-wider text-neutral-400 font-bold block">Advisory Workflows</span>
 
@@ -2547,6 +2549,7 @@ const AdminWorkspace: React.FC = () => {
                           </button>
                         </div>
                       </div>
+                      )}
 
                     </div>
 

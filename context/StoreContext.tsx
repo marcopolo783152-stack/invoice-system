@@ -636,7 +636,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     shipping?: ShippingDetails,
     cancellationReason?: string
   ) => {
-    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
+    if (orderId.startsWith("MPR-LIVE-")) { alert("Use the payment and order controls in this Customer Orders card."); return; }
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
@@ -664,19 +664,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteOrderPaymentDetails = (orderId: string) => {
-    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
+    if (orderId.startsWith("MPR-LIVE-")) { alert("Use the payment and order controls in this Customer Orders card."); return; }
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, paymentDetails: undefined as any } : o));
     updateShowroomDoc(SHOWROOM_ORDERS, orderId, { paymentDetails: null });
   };
 
   const updateOrder = (orderId: string, updates: Partial<Order>) => {
-    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
+    if (orderId.startsWith("MPR-LIVE-")) { alert("Use the payment and order controls in this Customer Orders card."); return; }
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updates } : o));
     updateShowroomDoc(SHOWROOM_ORDERS, orderId, updates);
   };
 
   const deleteOrder = (orderId: string) => {
-    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
+    if (orderId.startsWith("MPR-LIVE-")) { alert("Use the payment and order controls in this Customer Orders card."); return; }
     setOrders(prev => prev.filter(o => o.id !== orderId)); // Optimistic UI
     deleteShowroomDoc(SHOWROOM_ORDERS, orderId);
   };

@@ -165,3 +165,15 @@ test('new checkouts allow Stripe dynamic methods while legacy attempts retain th
  const d=db(),o=await reserved(d);assert.equal(liveSessionParams(o,'https://www.marcopolorugs.com').payment_method_types,undefined);
  assert.deepEqual(liveSessionParams({...o,paymentMethods:undefined},'https://www.marcopolorugs.com').payment_method_types,['card']);
 });
+
+test('new checkout requests a Stripe email receipt without changing older saved requests',async()=>{
+ const d=db(),o=await reserved(d);
+ assert.equal(liveSessionParams({...o,receiptEmail:true},'https://www.marcopolorugs.com').payment_intent_data.receipt_email,'customer@example.com');
+ assert.equal(liveSessionParams({...o,receiptEmail:false},'https://www.marcopolorugs.com').payment_intent_data.receipt_email,undefined);
+});
+test('pending refund cannot restock a rug even if an earlier total appears fully refunded',async()=>{
+ const d=db(),o=await reserved(d);await settleSession(d,o.id,session(o),'test',now+2);
+ d.change(LIVE_ORDERS+'/'+o.id,{refundedAmount:o.total,refundPending:true});
+ await assert.rejects(restockRefund(d,o.id,'staff'),/full Stripe refund/);
+ assert.equal(d.read('showroom_rugs/rug-1').availability,'Sold');
+});

@@ -1,3 +1,4 @@
+import {sendLiveReceipt} from './live-receipt';
 import 'server-only';
 import Stripe from 'stripe';
 import {checkoutIdentity} from './checkout-identity.mjs';
@@ -85,10 +86,13 @@ export async function sessionForOrder(o:any,stripe:Stripe){
   await attachSession(serverDb(),o.id,s);return s;
 }
 export async function reconcile(o:any,expire=false){
-  if(!o.sessionAttemptedAt||o.paymentStatus==='Paid')return o;
+  if(o.paymentStatus==='Paid'){await sendLiveReceipt(o.id);return ownOrder(o.id,'',true);}
+  if(!o.sessionAttemptedAt)return o;
   const stripe=liveStripe();let s=await sessionForOrder(o,stripe);
   if(expire&&s.status==='open'){
     try{s=await stripe.checkout.sessions.expire(s.id);}catch{s=await stripe.checkout.sessions.retrieve(s.id);}
   }
-  return settleSession(serverDb(),o.id,s,'server reconciliation');
+  const settled=await settleSession(serverDb(),o.id,s,'server reconciliation');
+  if(settled.paymentStatus==='Paid')await sendLiveReceipt(o.id);
+  return ownOrder(o.id,'',true);
 }

@@ -1,3 +1,5 @@
+import {sendLiveReceipt} from '@/lib/server/live-receipt';
+import {refundLiveOrder,syncLiveRefund} from '@/lib/server/live-refund';
 import {NextRequest} from 'next/server';
 import {requireStaff} from '@/lib/server/staff-permission';
 import {serverDb} from '@/lib/server/firebase-admin';
@@ -19,8 +21,10 @@ export async function GET(req:NextRequest){
 export async function POST(req:NextRequest){
   try{
     sameSite(req);const u=await staff(req,'write'),b=await bodyJson(req),o=await ownOrder(b.id,u.uid,true);let updated;
-    if(b.action==='approve')updated=await approveQuote(serverDb(),o.id,u.uid,b);
-    else if(b.action==='sync')updated=await reconcile(o);
+    if(b.action==='refund'){if(b.accepted!==true)throw new CheckoutError('Confirm the refund amount first.',400);updated=await refundLiveOrder(o,u.uid);}
+    else if(b.action==='receipt'){const status=await sendLiveReceipt(o.id,true);if(status!=='sent')throw new CheckoutError('Receipt email '+status+'. Check email configuration and retry.',503);updated=await ownOrder(o.id,u.uid,true);}
+    else if(b.action==='approve')updated=await approveQuote(serverDb(),o.id,u.uid,b);
+    else if(b.action==='sync'){updated=await reconcile(o);if(updated.paymentStatus==='Paid'&&(updated.refundRequest||updated.refundPending||updated.refundedAmount))updated=await syncLiveRefund(updated);}
     else if(b.action==='cancel')updated=o.sessionAttemptedAt?await reconcile(o,true):await cancelQuote(serverDb(),o.id,u.uid,true);
     else if(b.action==='fulfill')updated=await fulfillOrder(serverDb(),o.id,u.uid,b);
     else if(b.action==='restock')updated=await restockRefund(serverDb(),o.id,u.uid);
