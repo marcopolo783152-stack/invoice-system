@@ -160,3 +160,8 @@ test('same customer can resume reserved checkout after reopening cart without du
  await assert.rejects(createQuote(d,'other','customer@example.com',body(),'87654321-1234-1234-1234-123456789012',now+2000),/reserved/);
  await assert.rejects(createQuote(d,'customer','customer@example.com',body('Delivery'),'87654321-1234-1234-1234-123456789012',now+2000),/reserved/);
 });
+
+test('new checkouts allow Stripe dynamic methods while legacy attempts retain their card parameters',async()=>{
+ const d=db(),o=await reserved(d);assert.equal(liveSessionParams(o,'https://www.marcopolorugs.com').payment_method_types,undefined);
+ assert.deepEqual(liveSessionParams({...o,paymentMethods:undefined},'https://www.marcopolorugs.com').payment_method_types,['card']);
+});

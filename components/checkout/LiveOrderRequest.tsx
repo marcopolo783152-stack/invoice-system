@@ -37,6 +37,12 @@ export default function LiveOrderRequest({payload}:{payload:any}){
     return()=>{active=false;checkout?.destroy();};
   },[payment]);
   useEffect(()=>{if(signed&&enabled)void run('review');},[signed,enabled]);
+  useEffect(()=>{
+    if(order?.status!=='Payment pending'||payment)return;
+    let active=true;
+    const timer=setInterval(async()=>{if(running.current)return;try{const d=await orderRequest('/api/live-orders',{action:'sync',id:order.id});if(active&&d.order.status!==order.status){setOrder(d.order);setError('');}}catch{}},15000);
+    return()=>{active=false;clearInterval(timer);};
+  },[order?.id,order?.status,payment]);
   async function run(action:string,extra:any={}){
     if(running.current)return;running.current=true;setBusy(true);setError('');setBlocked([]);
     try{
@@ -54,7 +60,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
       if(d.clientSecret)setPayment({...d,orderId:o.id});
       else if(d.url)throw Error('This order already uses a separate payment page. Open My orders to finish it.');
     }catch(e){setError(e instanceof Error?e.message:'Could not complete checkout.');
-      try{const d=await orderRequest('/api/live-orders');setBlocked((d.orders||[]).filter((saved:LiveOrder)=>saved.status==='Payment pending'&&saved.paymentStatus!=='Paid'&&saved.items.some(i=>payload.items.some((item:any)=>item.id===i.id))));}catch{}
+      try{const d=await orderRequest('/api/live-orders');setBlocked((d.orders||[]).filter((saved:LiveOrder)=>saved.id!==order?.id&&saved.status==='Payment pending'&&saved.paymentStatus!=='Paid'&&saved.items.some(i=>payload.items.some((item:any)=>item.id===i.id))));}catch{}
     }finally{running.current=false;setBusy(false);}
   }
   return <section className={styles.request}>
@@ -72,7 +78,7 @@ export default function LiveOrderRequest({payload}:{payload:any}){
           <label className={styles.check}><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/><span>I reviewed my order and U.S. addresses. All sales are final; exchanges are available within one week. Full payment is required before pickup or delivery.</span></label>
           <button type="button" disabled={!payments||!agreed||busy} onClick={()=>run('pay',{accepted:true,embedded:true})}>{busy?'Loading secure payment…':'Continue to payment'}</button>
         </>}
-        {order.status==='Payment pending'&&!payment&&<button type="button" disabled={busy} onClick={()=>run('sync')}>Check payment status</button>}
+        {order.status==='Payment pending'&&!payment&&<p role="status">Your checkout is saved. Continue to payment above; payment confirmation updates automatically.</p>}
       </>}
     </>}
     {verificationNote&&<p role="status">{verificationNote}</p>}
