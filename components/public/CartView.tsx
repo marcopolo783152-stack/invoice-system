@@ -1,3 +1,4 @@
+import {auth} from "@/lib/auth";
 import {salePrice,saleLabel,deliveredCents} from '@/lib/delivered-price.mjs';
 /**
  * @license
@@ -143,6 +144,7 @@ export const CartView: React.FC = () => {
     }
   }
 
+  discount = Math.min(rawSubtotal, Math.round(discount * 100) / 100);
   const subtotal = Math.max(0, rawSubtotal - discount);
 
   // Delivery and destination tax are quoted by the showroom before payment.
@@ -828,15 +830,22 @@ export const CartView: React.FC = () => {
                       className="w-full bg-white border border-editorial-border py-2 px-3 text-sm outline-none focus:border-editorial-accent uppercase"
                     />
                     <button
-                      onClick={() => {
-                        const promo = promoCodes?.find(
-                          (p) => p.code === promoInput && p.isActive,
-                        );
-                        if (promo) {
-                          setAppliedPromo(promo);
-                          setPromoError("");
-                        } else {
-                          setPromoError("Invalid or expired promo code");
+                      onClick={async () => {
+                        setPromoError("");
+                        try {
+                          const user=auth.currentUser;
+                          if(!user) throw new Error("Checkout is loading. Please try again.");
+                          const token=await user.getIdToken();
+                          const response=await fetch('/api/checkout-promo', {
+                            method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+                            body:JSON.stringify({code:promoInput.trim()})
+                          });
+                          const result=await response.json();
+                          if(!response.ok) throw new Error(result.error||"Could not check this promo code.");
+                          setAppliedPromo(result.promo);
+                        } catch(error) {
+                          setAppliedPromo(null);
+                          setPromoError(error instanceof Error?error.message:"Could not check this promo code.");
                         }
                       }}
                       className="bg-[#1A1A1A] text-white px-4 text-sm font-bold uppercase tracking-widest cursor-pointer hover:bg-[#333]"
