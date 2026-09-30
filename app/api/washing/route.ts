@@ -2,7 +2,8 @@ import {NextResponse} from 'next/server';
 import {randomBytes,createHash} from 'node:crypto';
 import {serverDb} from '@/lib/server/firebase-admin';
 import {requireStaff} from '@/lib/server/staff-permission';
-import {WashError,text,date,today,tokenHash,schedule,invoiceRug,vendorJob,transition,photo,resolveCompanyLink,createHandoff,updateJob} from '@/lib/server/washing.mjs';
+import {WashError,text,date,today,tokenHash,schedule,invoiceRug,vendorJob,transition,photo,resolveCompanyLink,createHandoff,updateJob,addCompany,cleanupCompanies,archiveCompany,planReturns} from '@/lib/server/washing.mjs';
+import {priorityInfo,priorityOrder} from '@/lib/washing-priority.mjs';
 export const dynamic='force-dynamic';
 export const runtime='nodejs';
 const headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'};
@@ -19,20 +20,32 @@ async function list(companyId:string,vendor:boolean){
  const query=companyId?jobs().where('companyId','==',companyId):jobs();
  const [open,closed]=await Promise.all([query.where('closed','==',false).limit(501).get(),query.where('closed','==',true).limit(100).get()]);
  if(open.size>500)throw new WashError('More than 500 active rugs. Filter by company.',409);
- return [...open.docs,...closed.docs].map(d=>vendor?vendorJob({...d.data(),id:d.id}):{...d.data(),id:d.id}).sort((a:any,b:any)=>a.dueDate.localeCompare(b.dueDate));
+ return [...open.docs,...closed.docs].map(d=>vendor?vendorJob({...d.data(),id:d.id,...priorityInfo(d.data(),today())}):{...d.data(),id:d.id,...priorityInfo(d.data(),today())}).sort((a:any,b:any)=>priorityOrder(a,b));
 }
-export async function GET(request:Request){try{const a=await access(request),companyId=a.vendor?a.companyId:new URL(request.url).searchParams.get('company')||'';if(companyId)id(companyId);const historyId=new URL(request.url).searchParams.get('history');if(historyId){if(a.vendor)throw new WashError('Staff access required.',403);const ref=jobs().doc(id(historyId));if(!(await ref.get()).exists)throw new WashError('Rug not found.',404);return reply({history:(await ref.collection('history').orderBy('at','desc').limit(100).get()).docs.map(d=>({...d.data(),id:d.id}))});}const cs=a.vendor?[{id:a.companyId,name:(await companies().doc(a.companyId).get()).data()?.name}]:(await companies().get()).docs.map(d=>({id:d.id,name:d.data().name,linkEnabled:d.data().linkEnabled===true}));const exceptions=companyId?(await serverDb().collection('wash_tracking_exceptions').where('companyId','==',companyId).limit(100).get()).docs.map(d=>{const x=d.data();return {id:d.id,note:x.note,photo:x.photo,reportedBy:x.reportedBy,createdAt:x.createdAt,resolved:x.resolved,resolution:x.resolution||''};}):[];return reply({companies:cs,jobs:await list(companyId,a.vendor),exceptions,today:today()});}catch(e){return failure(e);}}
+export async function GET(request:Request){try{
+ const a=await access(request),url=new URL(request.url),companyId=a.vendor?a.companyId:url.searchParams.get('company')||'';if(companyId)id(companyId);
+ if(url.searchParams.has('alerts')){if(a.vendor)throw new WashError('Staff access required.',403);const pending=await jobs().where('closed','==',false).select('sku','companyName','dueDate','pickupDate','sentDate','status','closed','plannedDate','updatedAt','leftBehind').limit(501).get();if(pending.size>500)throw new WashError('Too many active rugs for the alert summary.',409);const records=pending.docs.map(d=>({...d.data(),id:d.id,...priorityInfo(d.data(),today())}));return reply({alerts:records.filter((j:any)=>j.alert||j.pickupRisk).map(alertSummary),planned:records.filter((j:any)=>!j.closed&&['Delivery planned','On the way'].includes(j.status)).map(alertSummary),today:today()});}
+ if(url.searchParams.has('reports')){const resolved=url.searchParams.get('reports')==='solved',cursor=url.searchParams.get('cursor');let q:any=serverDb().collection('wash_tracking_exceptions').where('resolved','==',resolved);if(companyId)q=q.where('companyId','==',companyId);if(cursor){const last=await serverDb().doc('wash_tracking_exceptions/'+id(cursor)).get();if(!last.exists||last.data()?.resolved!==resolved||companyId&&last.data()?.companyId!==companyId)throw new WashError('Invalid report page.');q=q.startAfter(last);}const result=await q.limit(51).get(),docs=result.docs.slice(0,50);return reply({reports:docs.map((d:any)=>report(d)),nextCursor:result.size>50?docs.at(-1).id:null});}
+ const historyId=url.searchParams.get('history');if(historyId){if(a.vendor)throw new WashError('Staff access required.',403);const ref=jobs().doc(id(historyId));if(!(await ref.get()).exists)throw new WashError('Rug not found.',404);return reply({history:(await ref.collection('history').orderBy('at','desc').limit(100).get()).docs.map(d=>({...d.data(),id:d.id}))});}
+ const cs=a.vendor?[{id:a.companyId,name:(await companies().doc(a.companyId).get()).data()?.name}]:(await companies().get()).docs.filter(d=>!d.data().archived).map(d=>({id:d.id,name:d.data().name,linkEnabled:d.data().linkEnabled===true}));
+ return reply({companies:cs,jobs:await list(companyId,a.vendor),exceptions:[],today:today()});
+ }catch(e){return failure(e);}}
+function alertSummary(j:any){return {id:j.id,sku:j.sku,companyName:j.companyName,priority:j.priority,returnBy:j.returnBy,pickupRisk:j.pickupRisk,status:j.status,plannedDate:j.plannedDate||'',updatedAt:j.updatedAt,leftBehind:j.leftBehind||[]};}
+function report(d:any){const x=d.data();return {id:d.id,companyId:x.companyId,companyName:x.companyName||'',note:x.note,photo:x.photo,reportedBy:x.reportedBy,createdAt:x.createdAt,resolved:x.resolved,resolvedAt:x.resolvedAt||'',resolution:x.resolution||''};}
 export async function POST(request:Request){try{
  if(request.headers.get('origin')&&request.headers.get('origin')!==new URL(request.url).origin)throw new WashError('Please use the showroom website.',403);
  const a=await access(request,true),raw=await request.text();if(raw.length>3000000)throw new WashError('Request too large.');let b:any;try{b=JSON.parse(raw);}catch{throw new WashError('Invalid request.');}
  if(!b||typeof b!=='object'||Array.isArray(b))throw new WashError('Invalid request.');
  const db=serverDb(),now=new Date().toISOString();
  if(b.action==='company'){
-  if(a.vendor)throw new WashError('Staff access required.',403);const name=text(b.name,120);if(!name)throw new WashError('Enter the washing company name.');const ref=companies().doc();await ref.create({name,linkEnabled:false,createdAt:now,createdBy:a.uid});return reply({id:ref.id});
+  if(a.vendor)throw new WashError('Staff access required.',403);return reply({id:await addCompany(db,b.name,a.uid,now)});
  }
+ if(b.action==='cleanupCompanies'){if(a.vendor)throw new WashError('Staff access required.',403);return reply({mapping:await cleanupCompanies(db,a.uid,now)});}
+ if(b.action==='archiveCompany'){if(a.vendor)throw new WashError('Staff access required.',403);await archiveCompany(db,id(b.companyId),a.uid,now);return reply({});}
+ if(['planReturns','dispatchReturns'].includes(b.action)){if(!a.vendor)throw new WashError('Use the washing company link to confirm its delivery list.',403);const rugs=Array.isArray(b.rugs)?b.rugs.map((r:any)=>({id:id(r.id),version:r.version})):[];return reply(await planReturns(db,{companyId:a.companyId,rugs,plannedDate:b.plannedDate,acknowledged:b.priorityAcknowledged===true,note:b.note||'',dispatch:b.action==='dispatchReturns',loadedChecked:b.loadedChecked===true,uid:a.uid,now}));}
  if(['link','revoke'].includes(b.action)){
   if(a.vendor)throw new WashError('Staff access required.',403);const ref=companies().doc(id(b.companyId)),token=randomBytes(32).toString('hex'),hash=tokenHash(token);
-  await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists)throw new WashError('Company not found.',404);const old=s.data()?.linkHash;if(old)tx.delete(db.doc('wash_tracking_links/'+old));if(b.action==='link')tx.create(db.doc('wash_tracking_links/'+hash),{companyId:ref.id,createdAt:now});tx.update(ref,{linkHash:b.action==='link'?hash:'',linkEnabled:b.action==='link',updatedAt:now});tx.create(ref.collection('history').doc(),{action:b.action,by:a.uid,at:now});});
+  await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists||s.data()?.archived)throw new WashError('Company not found.',404);const old=s.data()?.linkHash;if(old)tx.delete(db.doc('wash_tracking_links/'+old));if(b.action==='link')tx.create(db.doc('wash_tracking_links/'+hash),{companyId:ref.id,createdAt:now});tx.update(ref,{linkHash:b.action==='link'?hash:'',linkEnabled:b.action==='link',updatedAt:now});tx.create(ref.collection('history').doc(),{action:b.action,by:a.uid,at:now});});
   return reply(b.action==='link'?{token}:{});
  }
  if(b.action==='batch'){
@@ -45,9 +58,10 @@ export async function POST(request:Request){try{
   const result=await createHandoff(db,{companyId,dates,batch,prepared,requestId,fingerprint,uid:a.uid,now});return reply({ids:result});
  }
  if(b.action==='exception'){
-  const companyId=a.vendor?a.companyId:id(b.companyId),note=text(b.note,500);if(!note)throw new WashError('Describe the wrong rug or delivery problem.');if(!(await companies().doc(companyId).get()).exists)throw new WashError('Company not found.',404);const ref=db.collection('wash_tracking_exceptions').doc();await ref.create({companyId,note,photo:photo(b.photo),reportedBy:a.vendor?'Washing company':'Showroom',createdAt:now,resolved:false});return reply({id:ref.id});
+  const companyId=a.vendor?a.companyId:id(b.companyId),note=text(b.note,500);if(!note)throw new WashError('Describe the wrong rug or delivery problem.');const companyRecord=(await companies().doc(companyId).get()).data();if(!companyRecord||companyRecord.archived)throw new WashError('Company not found.',404);const ref=db.collection('wash_tracking_exceptions').doc();await ref.create({companyId,companyName:companyRecord.name,note,photo:photo(b.photo),reportedBy:a.vendor?'Washing company':'Showroom',createdAt:now,resolved:false});return reply({id:ref.id});
  }
  if(b.action==='resolveException'){if(a.vendor)throw new WashError('Staff access required.',403);const ref=db.doc('wash_tracking_exceptions/'+id(b.id));await ref.update({resolved:true,resolvedAt:now,resolution:text(b.note||'',500),resolvedBy:a.uid});return reply({});}
+ if(a.vendor&&b.action==='plan')return reply(await planReturns(db,{companyId:a.companyId,rugs:[{id:id(b.id),version:b.version}],plannedDate:b.plannedDate,acknowledged:b.priorityAcknowledged===true,note:b.note||'',uid:a.uid,now}));
  await updateJob(db,{id:id(b.id),companyId:a.companyId,vendor:a.vendor,uid:a.uid,action:b.action,input:b,now});return reply({});
  }catch(e){return failure(e);}}
-function failure(e:any){const m=e instanceof Error?e.message:'';return reply({error:e instanceof WashError?m:m==='FORBIDDEN'?'You need permission for this section.':/SIGN_IN_REQUIRED|auth\//.test(m)?'Please sign in again.':'Could not save or load washing records. Please retry.'},e instanceof WashError?e.status:m==='FORBIDDEN'?403:/SIGN_IN_REQUIRED|auth\//.test(m)?401:503);}
+function failure(e:any){const m=e instanceof Error?e.message:'';return reply({...(e instanceof WashError&&e.existingId?{existingId:e.existingId}:{}),error:e instanceof WashError?m:m==='FORBIDDEN'?'You need permission for this section.':/SIGN_IN_REQUIRED|auth\//.test(m)?'Please sign in again.':'Could not save or load washing records. Please retry.'},e instanceof WashError?e.status:m==='FORBIDDEN'?403:/SIGN_IN_REQUIRED|auth\//.test(m)?401:503);}

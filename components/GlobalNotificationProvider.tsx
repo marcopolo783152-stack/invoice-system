@@ -8,6 +8,7 @@ import { db as firestoreDb } from '@/lib/firebase';
 import { AlertCircle, CheckCircle, Bell, MessageCircle, Calendar, FileText, ShoppingBag, X } from 'lucide-react';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
 import { canAccess } from '@/lib/access-policy';
+import {auth} from '@/lib/auth';
 import { AdminChatBox } from './public/AdminChatBox';
 
 // Using a custom global event or context for toasts
@@ -25,6 +26,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
     const {orders}=useStore();
     const knownOrderIds=useRef<Set<string>|null>(null);
     useEffect(()=>{knownOrderIds.current=null;},[staff?.uid]);
+    const [washSummary,setWashSummary]=useState<{urgent:number;planned:number}>({urgent:0,planned:0});
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [activeAdminChatSession, setActiveAdminChatSession] = useState<string | null>(null);
     
@@ -227,6 +229,14 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
       knownOrderIds.current=new Set(orders.map(order=>order.id));
     },[orders,staff]);
 
+    useEffect(()=>{
+      setWashSummary({urgent:0,planned:0});
+      if(!canAccess(staff,'services','read'))return;
+      let active=true,running=false;const seen=new Set<string>();
+      const check=async()=>{if(running||!auth.currentUser)return;running=true;try{const response=await fetch('/api/washing?alerts=1',{headers:{Authorization:'Bearer '+await auth.currentUser.getIdToken()},cache:'no-store'});if(!response.ok)return;const d=await response.json();if(!active)return;setWashSummary({urgent:d.alerts.length,planned:d.planned.length});const fresh=d.alerts.filter((j:any)=>!seen.has('urgent:'+d.today+':'+j.id));if(fresh.length)addToast({title:'Washing return alert',message:fresh.map((j:any)=>j.sku).slice(0,3).join(', ')+' need priority attention before customer pickup.',type:'system',link:'/admin/invoices/washing'});for(const j of d.alerts)seen.add('urgent:'+d.today+':'+j.id);const changes=d.planned.filter((j:any)=>!seen.has('delivery:'+j.id+':'+j.updatedAt));if(changes.length)addToast({title:'Washing company delivery update',message:changes.length+' rugs marked for return.'+(changes.some((j:any)=>j.leftBehind?.length)?' Earlier rugs were left behind—check the list.':' Open the delivery list.'),type:'system',link:'/admin/invoices/washing'});for(const j of d.planned)seen.add('delivery:'+j.id+':'+j.updatedAt);}catch{}finally{running=false;}};
+      void check();const timer=setInterval(check,60000);window.addEventListener('focus',check);return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',check);};
+    },[staff?.uid,staff?.role,staff?.permissions]);
+
     const getIconForType = (type: string) => {
         switch (type) {
             case 'order': return <ShoppingBag className="text-emerald-500" size={24} />;
@@ -240,9 +250,10 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
 
     return (
         <>
+            {(washSummary.urgent>0||washSummary.planned>0)&&<div className="washing-admin-banner" role="status" style={{padding:'12px 20px',background:washSummary.urgent?'#fff0df':'#e7eee4',color:'#203e37',borderBottom:'1px solid #dce3d9'}}><a href="/admin/invoices/washing"><strong>Washing tracker:</strong> {washSummary.urgent} priority alerts · {washSummary.planned} rugs marked for delivery. View schedule →</a></div>}
             {children}
             {/* Toast Container */}
-            <div className="fixed top-20 right-4 md:right-8 z-[9999] flex flex-col gap-3 pointer-events-none">
+            <div className="admin-live-toasts fixed top-20 right-4 md:right-8 z-[9999] flex flex-col gap-3 pointer-events-none">
                 {toasts.map((toast) => (
                     <div 
                         key={toast.id}
@@ -272,6 +283,7 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
             </div>
             
             <style jsx global>{`
+                @media print { .washing-admin-banner, .admin-live-toasts { display:none!important; } }
                 @keyframes slideInRight {
                     from { transform: translateX(120%); opacity: 0; }
                     to { transform: translateX(0); opacity: 1; }
