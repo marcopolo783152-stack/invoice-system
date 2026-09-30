@@ -543,10 +543,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     }
     
-    // Mark checked out rugs as "Reserved" (pending confirmation) in Firebase
-    cart.forEach(item => {
-      updateShowroomDoc(SHOWROOM_RUGS, item.rug.id, { availability: "Reserved" });
-    });
+    // An unpaid request must not take a rug off sale. Live payments are settled by the server.
 
     // Empty the cart
     clearCart();
@@ -565,10 +562,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addShowroomDoc(SHOWROOM_RUGS, rug);
   };
 
-  const updateRug = (id: string, updatedFields: Partial<Rug>) => {
-    if (rugs.find(r => r.id === id)?.liveOrderId) { alert("This rug belongs to an online payment order. Open Online orders & quotes to manage it."); return; }
-    setRugs(prev => prev.map(r => r.id === id ? { ...r, ...updatedFields } : r)); // Optimistic UI
-    updateShowroomDoc(SHOWROOM_RUGS, id, updatedFields);
+  const updateRug = async (id: string, updatedFields: Partial<Rug>) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("Sign in to edit inventory.");
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/api/inventory/edit', {
+        method: 'POST', headers: {'Content-Type':'application/json', Authorization:'Bearer '+token},
+        body: JSON.stringify({id, fields:updatedFields})
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Inventory could not be updated.");
+      setRugs(prev => prev.map(r => r.id === id ? {...r, ...updatedFields} : r));
+    } catch (error) { alert(error instanceof Error ? error.message : "Inventory could not be updated."); }
   };
 
   const recordEngagement = async (id: string, kind: 'visit' | 'favorite' | 'unfavorite') => {
