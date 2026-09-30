@@ -48,14 +48,38 @@ export async function sessionForOrder(o:any,stripe:Stripe){
   if(!o.sessionAttemptedAt)throw new CheckoutError('Start payment after reviewing your quote.');
   // After 24 hours Stripe may forget an idempotency key. Never recreate an unknown session then.
   if(!o.sessionId&&Date.now()-Date.parse(o.sessionAttemptedAt)>=23*3600000)throw new CheckoutError('Payment recovery needs showroom assistance. Inventory remains held; do not pay a second time.',409);
-  const params=liveSessionParams(o,LIVE_ORIGIN) as Stripe.Checkout.SessionCreateParams;
+  let params=liveSessionParams(o,LIVE_ORIGIN) as Stripe.Checkout.SessionCreateParams;
   if(o.automaticTax&&!o.sessionId){
     if(process.env.MARCO_POLO_STRIPE_TAX_CONFIRMED!=='true')throw new CheckoutError('Automatic delivery tax is being configured. Please choose pickup or contact the showroom.',503);
     const a=o.customerInfo.deliveryAddress;
     const customer=await stripe.customers.create({name:o.customerInfo.name,email:o.customerInfo.email,shipping:{name:o.customerInfo.name,address:{line1:a.street1,line2:a.street2,city:a.city,state:a.state,postal_code:a.zip,country:'US'}},metadata:{orderId:o.id}},{idempotencyKey:o.id+'-shipping-customer'});
     params.customer=customer.id;delete params.customer_email;
   }
-  const s=o.sessionId?await stripe.checkout.sessions.retrieve(o.sessionId):await stripe.checkout.sessions.create(params,{idempotencyKey:o.id});
+  let s:Stripe.Checkout.Session;
+  if(o.sessionId)s=await stripe.checkout.sessions.retrieve(o.sessionId);
+  else{
+    try{s=await stripe.checkout.sessions.create(params,{idempotencyKey:o.sessionRecoveryKey||o.id});}
+    catch(error){
+      if(!(error instanceof Stripe.errors.StripeIdempotencyError)||o.paymentUi!=='embedded'||o.sessionRecoveryKey)throw error;
+      // Replay the original request first. A successful replay must be attached,
+      // never replaced: it may already contain a real payment.
+      try{s=await stripe.checkout.sessions.create({...params,ui_mode:'embedded'},{idempotencyKey:o.id});}
+      catch(original){
+        if(!(original instanceof Stripe.errors.StripeInvalidRequestError)||original.param!=='ui_mode'||!original.message.includes('no longer supported')||!original.message.includes('embedded_page'))throw original;
+        // Stripe has confirmed the original attempt created no Checkout Session.
+        o=await serverDb().runTransaction(async tx=>{
+          const ref=serverDb().collection(LIVE_ORDERS).doc(o.id),saved=(await tx.get(ref)).data();
+          if(!saved||saved.sessionId||saved.paymentStatus==='Paid'||saved.status!=='Payment pending')throw new CheckoutError('The order changed. Check its payment status before retrying.',409);
+          if(saved.sessionRecoveryKey)return saved;
+          const update={sessionRecoveryKey:saved.id+'-embedded-page-v2',sessionExpiresAt:Math.floor(Date.now()/1000)+3600,sessionRecoveryReason:'Stripe rejected deprecated embedded UI mode'};
+          tx.update(ref,update);return {...saved,...update};
+        });
+        const corrected=liveSessionParams(o,LIVE_ORIGIN) as Stripe.Checkout.SessionCreateParams;
+        if(params.customer){corrected.customer=params.customer;delete corrected.customer_email;}
+        s=await stripe.checkout.sessions.create(corrected,{idempotencyKey:o.sessionRecoveryKey});
+      }
+    }
+  }
   await attachSession(serverDb(),o.id,s);return s;
 }
 export async function reconcile(o:any,expire=false){
