@@ -50,7 +50,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
   };
 
   return (
-    <div className="bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
+    <div className="customer-surface bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* --- FULL BLOG POST READING MODE --- */}

@@ -100,13 +100,13 @@ export const TrackingView: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
+    <div className="customer-surface bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 text-left">
         
         {/* Title */}
         <div className="text-center space-y-2">
-          <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-bold block">Live Freight Logistics</span>
-          <h1 className="font-serif text-3xl font-light text-editorial-text tracking-tight">Track Your Masterpiece</h1>
+          <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-bold block">Your order, at a glance</span>
+          <h1 className="font-serif text-3xl font-light text-editorial-text tracking-tight">Track your order</h1>
           <p className="text-xs text-gray-500 max-w-md mx-auto font-light">
             Input your purchase tracking ID (e.g., MPR-10294) to monitor hand-knotted authenticity approvals, packaging logs, and freight delivery.
           </p>

@@ -87,7 +87,7 @@ export default function AppointmentForm({publicRugs=[]}:{publicRugs?:Rug[]}) {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="bg-white border border-neutral-100 p-8 shadow-sm rounded-sm max-w-3xl mx-auto space-y-6">{selectedRugs.length>0&&<div className="col-span-full rounded-lg bg-stone-100 p-4"><h3 className="font-semibold">Rugs for your visit</h3>{selectedRugs.map(r=><p key={r.id}>{r.name} · {r.dimensions} <button type="button" className="underline ml-2" onClick={()=>setSelectedIds(ids=>ids.filter(id=>id!==r.id))}>Remove</button></p>)}</div>}
+        <form onSubmit={handleSubmit} className="customer-surface customer-booking bg-white border border-neutral-100 p-8 shadow-sm rounded-sm max-w-3xl mx-auto space-y-6">{selectedRugs.length>0&&<div className="col-span-full rounded-lg bg-stone-100 p-4"><h3 className="font-semibold">Rugs for your visit</h3>{selectedRugs.map(r=><p key={r.id}>{r.name} · {r.dimensions} <button type="button" className="underline ml-2" onClick={()=>setSelectedIds(ids=>ids.filter(id=>id!==r.id))}>Remove</button></p>)}</div>}
             <div className="text-center mb-8">
                 <h2 className="text-3xl font-serif text-neutral-900 mb-2">Book an Appointment</h2>
                 <p className="text-neutral-500">Open every day, 10:00 AM–6:00 PM. Lunch: 1:30–2:00 PM. Appointments are 30 minutes, in Alexandria time.</p>

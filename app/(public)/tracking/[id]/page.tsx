@@ -32,7 +32,7 @@ export default function TrackingPage({ params }: { params: { id: string } }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+      <div className="customer-surface min-h-screen bg-neutral-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-editorial-accent" />
       </div>
     );
@@ -40,7 +40,7 @@ export default function TrackingPage({ params }: { params: { id: string } }) {
 
   if (error || !invoice) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center p-4 text-center">
+      <div className="customer-surface min-h-screen bg-neutral-50 flex flex-col items-center justify-center p-4 text-center">
         <Search className="w-12 h-12 text-neutral-300 mb-4" />
         <h1 className="text-2xl font-serif text-neutral-800 mb-2">Tracking Not Found</h1>
         <p className="text-neutral-500 mb-8 max-w-md">We couldn't find an order with this tracking number. Please check the link and try again.</p>
@@ -86,7 +86,7 @@ export default function TrackingPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-12 px-4 md:px-8">
+    <div className="customer-surface min-h-screen bg-neutral-50 py-12 px-4 md:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
         
         <div className="text-center mb-12">

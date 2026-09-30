@@ -3,3 +3,6 @@
 @media print{.page{background:white;padding:0}.grid{display:block}.sidebar,.actions,.form,.header a,.header button,.check{display:none!important}.card{border:0}.notice{background:white}.wrap{max-width:none}}
 
 .page{padding:32px clamp(16px,4vw,64px)}.wrap{max-width:1440px}.grid{grid-template-columns:340px minmax(0,1fr)}.sidebar{max-height:76vh;overflow:auto}.request{background:white;border:0;padding:0}.request h3{margin-bottom:14px}.request button{width:100%}.request .items{border-bottom:1px solid #d8dfd8;padding-bottom:16px}.request .check{font-size:14px}.request .error{margin-top:18px}@media(max-width:760px){.grid{grid-template-columns:1fr}.sidebar{max-height:320px}}
+
+/* On-page checkout uses the same materials as the collection. */
+.request{color:#193e34}.request h3{font:400 27px/1.25 Georgia,serif}.request .form{background:#fcfaf6;padding:20px;border:1px solid #e5ded1;border-radius:18px}.request .form input,.request .form select,.request .form textarea{border-radius:10px;min-height:48px}.request button{border-radius:12px}.request .item img{border-radius:10px}.request .notice,.request .error{border-radius:12px}.request .totals{padding:16px;background:#f5f1e8;border-radius:14px}.request .check{line-height:1.65}@media(max-width:540px){.request .form{padding:16px}.request .item{flex-wrap:wrap}.request .amount{margin-left:auto}}
