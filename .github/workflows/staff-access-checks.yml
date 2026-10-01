@@ -44,7 +44,7 @@ jobs:
       - name: Test loan ledger safeguards
         run: node --test tests/loans/ledger.test.mjs
       - name: Test washing custody and company link safeguards
-        run: node --test tests/access/washing.test.mjs tests/invoices/wash-sku.test.mjs
+        run: node --test tests/access/washing.test.mjs tests/access/washing-invoices.test.mjs tests/invoices/wash-sku.test.mjs
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
