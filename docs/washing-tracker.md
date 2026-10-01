@@ -64,7 +64,7 @@ Invoice washingProgress is stored by item ID and confirmed MPW identity. Already
 
 Historical completed-list views retain the existing 100-record limit, so counts shown for old groups cover loaded records. Active work is complete within the enforced 500-rug limit. No historical invoice migration is performed automatically.
 
-Validation: 85 combined tests for washing, live orders, checkout contact and wash SKU allocation; TypeScript and production build.
+Validation: 87 combined tests for washing, live orders, checkout contact and wash SKU allocation; TypeScript and production build.
 
 ## New-intake boundary and persistent company links
 
@@ -75,3 +75,7 @@ The server picker scans invoice pages, then excludes per-item washing progress, 
 New company links are saved at creation. Legacy hash-only links are preserved when the company opens its existing link or authorized staff paste it once. Recovery validates the same active company/hash and never rotates it. The selected company's saved link reloads across sessions and refreshes, with Copy link. Replacement, revocation, archive and duplicate merge remove obsolete copies. Company links cannot fetch staff links or handoff candidates.
 
 Additional server-only collections: wash_tracking_settings, wash_tracking_intake_items, wash_tracking_link_secrets. Initialization runs after deployment when authorized staff opens the tracker; no production Firebase session was used during development.
+
+## Received folder
+
+The default pickup list contains only rugs physically with the washing company (At company, Washing, Ready, Delivery planned, On the way). Received rugs automatically move into the separate Received folder, including Needs inspection, Inspection issue and Checked & ready. The same separation appears in the admin and private company portal. Inspection remains required before invoice readiness. Sending a rug for correction returns it to company work. Folder membership derives from the existing Firebase job state; it does not delete, duplicate or rewrite historical records. Company return-priority banners exclude rugs already at the showroom.
