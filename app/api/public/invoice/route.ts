@@ -1,8 +1,9 @@
 import {serverDb} from '@/lib/server/firebase-admin';
+import {washingSummary} from '@/lib/washing-invoice.mjs';
 import {tokenHash,customerInvoice} from '@/lib/server/invoice-share.mjs';
 import {respond} from '@/lib/server/live-payment';
 export const runtime='nodejs';export const dynamic='force-dynamic';
-function result(id:string,data:any){return {invoice:{id,data:customerInvoice(data),createdAt:'',updatedAt:'',documentType:data.documentType||'INVOICE'}};}
+function result(id:string,data:any){const service=data.mode==='wash'||data.mode==='repair'||data.documentType==='WASH'||data.documentType==='REPAIR';return {...(service?{serviceProgress:((summary:any)=>({readyCount:summary.readyCount,total:summary.total}))(washingSummary(data))}:{}),invoice:{id,data:customerInvoice(data),createdAt:'',updatedAt:'',documentType:data.documentType||'INVOICE'}};}
 export async function GET(req:Request){
  try{const hash=tokenHash(new URL(req.url).searchParams.get('token')),db=serverDb(),link=(await db.collection('invoice_customer_links').doc(hash).get()).data();
  if(!link||link.revoked||link.expiresAt<Date.now())return respond({error:'This invoice link is unavailable or expired. Ask the showroom for a new link.'},404);
