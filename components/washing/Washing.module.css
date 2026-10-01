@@ -9,3 +9,81 @@
 
 .bulkBar{border:2px solid #c4dacf;background:#f2f8f4}.bulkCheck{border:1px solid #d6e3dd;border-radius:10px;padding:12px;margin:12px 0}.bulkCheck legend{font-weight:700}.bulkCheck img{max-width:150px;max-height:140px;object-fit:contain;display:block;margin:8px 0}
 .invoiceDialog{width:min(1120px,96vw);max-width:1120px}.invoiceUpload{display:grid;gap:10px;border:2px dashed #c8d6cf;border-radius:16px;padding:20px;background:#f5f9f6;margin:18px 0}.invoiceFiles{display:grid;gap:10px;margin:16px 0}.invoiceFile{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px;border:1px solid #dce5df;border-radius:12px}.invoiceFields{border:0;padding:0;min-width:0}.invoiceTable{overflow-x:auto;margin:18px 0}.invoiceTable table{width:100%;border-collapse:collapse}.invoiceTable th,.invoiceTable td{padding:8px;text-align:left;border-bottom:1px solid #e1e8e3}.invoiceTable td:nth-child(1){min-width:130px}.invoiceTable td:nth-child(2){min-width:180px}.invoiceTable td:nth-child(3){min-width:65px}.invoiceTable td:nth-child(4){min-width:90px}.storeRugCheck{display:flex;gap:10px;align-items:center;background:#fff7e4;border:1px solid #ead7a5;padding:12px;border-radius:10px;margin:8px 0}@media(max-width:640px){.invoiceFile{align-items:flex-start;flex-direction:column}.invoiceDialog{width:96vw;padding:16px}}
+
+/* Shared control design for staff, company pages and every washing dialog. */
+.shell{--wash-ink:#1e4036;--wash-muted:#61756b;--wash-border:#cad8cf;--wash-gold:#ae8447;background:linear-gradient(155deg,#f7f5ee 0%,#f0f6f1 100%);line-height:1.55}
+.shell :is(button,input,select,textarea){font-family:inherit;font-size:15px;line-height:1.4;border-radius:12px;transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.shell button{min-height:44px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;letter-spacing:.1px;background:linear-gradient(145deg,#2d5a48,#1c3e33);border:1px solid #173c2f;box-shadow:0 3px 0 #153b2d,0 5px 12px #203e3714;color:#fff;white-space:normal;text-align:center}
+.shell button:not(:disabled):hover{background:linear-gradient(145deg,#376b56,#254e40);border-color:#376b56;box-shadow:0 3px 0 #153b2d,0 7px 16px #203e3726;transform:translateY(-1px)}
+.shell button:not(:disabled):active{transform:translateY(1px);box-shadow:0 1px 0 #153b2d,0 2px 6px #203e3714}
+.shell button.secondary{background:linear-gradient(145deg,#fffefb,#edf3ed)!important;border:1px solid #becfc2;color:#244b3a!important;box-shadow:0 2px 0 #d3dfd5,0 3px 8px #203e370a}
+.shell button.secondary:not(:disabled):hover{background:#e5eee6!important;border-color:#8faf99;box-shadow:0 2px 0 #b8cbbd,0 6px 12px #203e3714}
+.shell button:disabled{background:#edf0eb!important;color:#7b877f!important;border-color:#d7ddd6;box-shadow:none;opacity:1;cursor:not-allowed;transform:none}
+.shell :is(button,input,select,textarea,summary):focus-visible{outline:3px solid #a98043;outline-offset:3px}
+.shell :is(input:not([type=checkbox]):not([type=file]),select,textarea){min-height:46px;padding:12px 14px;border:1.5px solid var(--wash-border);background:#fcfdf9;color:var(--wash-ink);box-shadow:inset 0 2px 3px #203e3705,0 1px 2px #203e3705}
+.shell :is(input,textarea)::placeholder{color:#7b897f;opacity:1;font-weight:400}
+.shell :is(input:not([type=checkbox]),select,textarea):hover{border-color:#97b19e}
+.shell :is(input:not([type=checkbox]),select,textarea):focus{background:#fff;border-color:#4d7960;box-shadow:0 0 0 4px #47785a14}
+.shell :is(input,select,textarea):disabled{background:#f0f2ed;color:#77837a;border-color:#d7ddd6;cursor:not-allowed}
+.shell input[readonly]{background:#eef3eb;border-color:#c3d2c1;color:#315940}
+.shell select{appearance:none;padding-right:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%23345843' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer}
+.shell select:focus{background-repeat:no-repeat;background-position:right 14px center;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%23345843' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.shell label{font-weight:600;color:#345341;line-height:1.6}
+.shell label :is(input:not([type=checkbox]),select,textarea){display:block;margin-top:7px;font-weight:400}
+.shell input[type=checkbox]{appearance:auto;accent-color:#315c45;width:20px;height:20px;min-width:20px;min-height:20px;padding:0;border-radius:5px;margin:0 9px 0 0;vertical-align:middle;cursor:pointer;box-shadow:none}
+.shell input[type=checkbox]:disabled{cursor:not-allowed}
+.shell input[type=file]{display:block;width:100%;padding:10px;background:#fff;border:1.5px solid #c5d4c8;color:#5f7264;cursor:pointer}
+.shell input[type=file]::file-selector-button{font:inherit;font-weight:700;border:1px solid #214c36;border-radius:9px;background:#315c45;color:#fff;padding:10px 14px;margin-right:12px;cursor:pointer}
+.shell input[type=file]:disabled::file-selector-button{background:#dce3da;color:#73806f;border-color:#ccd7c8;cursor:not-allowed}
+.shell input[type=date]{color-scheme:light}
+.shell input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer;padding:5px;background-color:#e9f0e7;border-radius:6px}
+.shell textarea{resize:vertical;min-height:110px;width:100%}
+.formGrid label :is(input:not([type=checkbox]),select){width:100%}
+.toolbar{background:#fffdf9;border:1px solid #dce5da;padding:16px;border-radius:18px;box-shadow:0 4px 16px #203e3707;gap:12px}
+.toolbar input[aria-label="Find a rug"]{flex:1 1 240px}
+.shell nav[aria-label="Washing folders"]{display:inline-flex;background:#e7eee5;padding:7px;border:1px solid #d2dece;border-radius:16px;gap:8px}
+.shell nav[aria-label="Washing folders"] button[aria-pressed=true]{background:linear-gradient(140deg,#aa854e,#87652e);border-color:#87652e;box-shadow:0 2px 0 #745625,0 3px 8px #87652e20;color:#fff}
+.hero{background:linear-gradient(120deg,#193e32,#315a43);border:1px solid #284f3c;box-shadow:0 10px 28px #203e3712}
+.shell .hero button{background:#fff9eb;color:#264b38;border-color:#d2bd90;box-shadow:0 2px 0 #ad976c,0 4px 12px #00000012;flex-shrink:0}
+.shell .hero button:not(:disabled):hover{background:#f4e8cd;border-color:#d2bd90}
+.panel,.stat,.card{box-shadow:0 5px 18px #203e3707;border-color:#d8e1d4}
+.panel{padding:26px}
+.panel h2{color:#294b38}
+.shell details.panel>summary{font-weight:700;font-size:17px;min-height:44px;cursor:pointer;background:#eff4e9;border:1px solid #cbd8c2;border-radius:12px;padding:12px 16px;color:#355336;list-style-position:inside}
+.shell details.panel>summary:hover{background:#e4eddd}
+.bulkBar{border:1px solid #c8dbc7;background:linear-gradient(140deg,#f7faf1,#eaf3e6);box-shadow:0 5px 18px #294b3808}
+.bulkBar .actions{gap:10px;margin-top:16px}
+.bulkBar h2{margin-bottom:14px}
+.selection{padding:10px;background:#f5f8f1;border:1px solid #d2dfcc;border-radius:14px}
+.selection label{background:#fff;border:1px solid #dce4d7;border-radius:10px;margin:6px 0;padding:12px;cursor:pointer;font-weight:400}
+.selection label:has(input:checked){background:#e9f2e2;border-color:#8ca67c;box-shadow:inset 3px 0 #557346}
+.body>label:has(input[type=checkbox]){padding:10px 12px;min-height:44px;border-radius:10px;border:1px solid #d3dfca;background:#f4f8ee;font-size:14px;cursor:pointer}
+.body>label:has(input:checked){background:#e6f0db;border-color:#95ad7c}
+.shell .previewTitle{display:flex;width:100%;padding:11px 13px!important;border:1px solid #c5d6bd!important;border-radius:11px;background:#edf4e6!important;color:#345336!important;font-weight:700!important;font-size:16px;text-align:left!important;justify-content:space-between;box-shadow:0 2px 0 #d2dfca!important;margin:0 0 12px;gap:12px}
+.shell .previewTitle::after{content:'›';font-size:24px;line-height:1;flex-shrink:0;color:#587a47}
+.shell .previewTitle:not(:disabled):hover{background:#e1edd8!important;border-color:#94ae80!important}
+.batchHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:8px 8px 14px}
+.batchHeader h2{font-family:Georgia,serif}
+.pickupBatch{background:#f3f7ef;border-color:#d3dfcc;padding:20px;border-radius:22px}
+.pickupBatch>.actions{margin-bottom:18px}
+.dates{background:#f7f9f2;border:1px solid #e3e9dc;border-radius:11px;padding:13px;margin:14px 0}
+.dates strong{color:#33513c}
+.modal{background:#112d25b3;backdrop-filter:blur(5px);z-index:1100;overflow-y:auto;overscroll-behavior:contain}
+.dialog{background:#fffefb;border:1px solid #e0e5d8;border-radius:24px;box-shadow:0 24px 70px #10281d38;padding:30px}
+.dialog label{margin:16px 0}
+.dialog .actions{gap:12px;padding-top:14px;border-top:1px solid #e5eadf;margin-top:22px}
+.invoiceUpload{background:linear-gradient(135deg,#f3f8ed,#edf3e5);border:2px dashed #98b184;box-shadow:inset 0 0 0 5px #fff9;border-radius:18px;padding:24px}
+.invoiceFile{border:1px solid #d4dfcc;background:#fffefb;box-shadow:0 3px 12px #203e3705;padding:16px;border-radius:14px}
+.invoiceTable{border:1px solid #d2dfc9;border-radius:14px;background:#fff}
+.invoiceTable th{background:#edf4e5;color:#44613b;font-size:13px;padding:13px 10px;white-space:nowrap}
+.invoiceTable td{padding:12px 10px;vertical-align:top}
+.invoiceTable input:not([type=checkbox]){min-height:44px;width:100%;padding:10px 11px}
+.invoiceTable .small{display:block;margin:8px 0 0;font-weight:400;font-size:12px}
+.invoiceFields:disabled{opacity:.8}
+.storeRugCheck{padding:14px;border-radius:12px;border-color:#ddcba5;background:#fcf5e3}
+.bulkCheck{background:#f7faf2;border:1px solid #cadbc0;border-radius:14px;padding:18px}
+.bulkCheck legend{color:#416237;padding:0 8px}
+@media(max-width:900px){.toolbar>*{flex:1 1 200px}.toolbar button{flex:0 1 auto}.invoiceDialog{padding:22px}.hero{align-items:flex-start}}
+@media(max-width:580px){.toolbar{padding:12px}.toolbar>*{flex:1 1 100%}.toolbar button{flex:1 1 140px}.shell button{padding:12px 14px;font-size:14px}.hero button{margin-top:14px}.panel{padding:18px}.pickupBatch{padding:12px}.dialog{padding:20px;max-height:88vh}.batchHeader{flex-wrap:wrap}.invoiceUpload{padding:16px}.shell nav[aria-label="Washing folders"]{display:flex}.shell nav[aria-label="Washing folders"] button{flex:1}.actions{gap:10px}}
+@media(prefers-reduced-motion:reduce){.shell :is(button,input,select,textarea){transition:none}.shell button:not(:disabled):hover,.shell button:not(:disabled):active{transform:none}}
+@media print{.modal{display:none!important}.shell{background:#fff}.panel,.stat,.card,.hero{box-shadow:none}.shell .previewTitle{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;min-height:0;color:#203e37!important}.shell .previewTitle::after{content:none}.dates{background:#fff}}
