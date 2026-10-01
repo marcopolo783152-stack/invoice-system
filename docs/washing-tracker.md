@@ -22,7 +22,7 @@ The company sees only its rugs: MPW tag, reference photo, description, dimension
 - Staff checks cleaning and condition separately. Passing inspection completes the job and releases its washing custody lock. A cleaning/damage problem stays open and can be sent for correction with new dates. Historical actions are retained.
 - Wrong rugs, missing deliveries and other exceptions are recorded separately, with optional uploaded photos. An exception never marks an expected rug returned. Only staff can resolve exceptions.
 
-The customer invoice status is managed separately. This feature does not mark an invoice ready automatically, change inventory, contact customers, send messages to the company, or modify legacy Service Tracking records. Existing jobs need to be added through a handoff if staff wants them tracked here.
+Staff receipt and inspection update the source wash invoice in the same Firestore transaction. Receipt alone keeps washing pending; passing inspection marks only that rug checked. The entire invoice becomes ready only when every rug is checked and each required repair has a recorded completion. Repairs are confirmed per rug in the existing invoice editor. Financial data, payments and inventory are preserved. No customer or company messages are sent. Existing rugs must be added through a handoff to be tracked here.
 
 ## Access and data
 
@@ -53,3 +53,15 @@ The completed change passed 50 combined tests (washing, MPW allocation, live ord
 - Alerts appear on the company page, washing board and active staff admin dashboard. Admin alert checks run every 60 seconds while that dashboard is open, with focus refresh, persistent summary and notification toasts. These are in-app alerts; no email, SMS or device push service is configured or claimed. Alerts are recalculated from saved dates when pages are opened. Pickup dates must be recorded and kept accurate by staff.
 
 Validation: 64 combined tests passed, including duplicate registration/merge, company removal, three-day targets across month boundaries, priority acknowledgement, tagged departures, report pagination and company isolation. TypeScript and the production build passed with the same local filesystem cleanup retry described above. No production records were changed by testing. Duplicate cleanup runs under the signed-in admin account on the first post-deployment tracker load.
+
+## Pickup batches, work queue and invoice readiness
+
+Each saved handoff has an immutable batch ID and original pickup date; separate pickups on the same date remain separate. Retries reuse the same batch. Corrections preserve the original group while tracking a new correction sent date. Legacy groups are inferred from company, original saved sent date, label and creation timestamp.
+
+The admin and company portal group the displayed rugs by pickup. Older pickups lead the washing queue, with urgent return deadlines promoted first. Company actions are Start washing and Finished / ready to return; finishing advances the next rug automatically. Skipping earlier work requires acknowledgement and a written reason, checked server-side and saved in history. Delivery priority warnings remain separate and enforced.
+
+Invoice washingProgress is stored by item ID and confirmed MPW identity. New handoffs reset that rug's readiness. Missing, mismatched or collected invoices block receipt/inspection changes atomically. Partial returns show N of total ready. Required repair completion is tracked per item; repairing remains pending until checked. Invoice edits preserve the newest tracker progress transactionally. Staff previews use live invoice summaries; company responses never expose invoices or customer details.
+
+Historical completed-list views retain the existing 100-record limit, so counts shown for old groups cover loaded records. Active work is complete within the enforced 500-rug limit. No historical invoice migration is performed automatically.
+
+Validation: 75 combined tests for washing, live orders, checkout contact and wash SKU allocation; TypeScript and production build.

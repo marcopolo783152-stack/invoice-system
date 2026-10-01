@@ -1,3 +1,4 @@
+import {mergeWashingProgress} from './washing-invoice.mjs';
 import { getStorePrefix } from './user-storage';
 /**
  * FIREBASE STORAGE SERVICE
@@ -230,13 +231,14 @@ export async function updateInvoiceInCloud(
 
   try {
     const docRef = doc(db, getCollectionName(), id);
-    await updateDoc(docRef, {
-      invoiceNumber,
-      customerName,
-      date: data.date,
-      totalAmount,
-      data,
-      updatedAt: Timestamp.now()
+    await runTransaction(db, async transaction => {
+      const current = await transaction.get(docRef);
+      if (!current.exists()) throw new Error('Invoice not found.');
+      const merged = mergeWashingProgress(current.data().data || {}, data);
+      transaction.update(docRef, {
+        invoiceNumber, customerName, date: data.date, totalAmount,
+        data: merged, updatedAt: Timestamp.now()
+      });
     });
   } catch (error) {
     checkFirebaseQuotaError(error);

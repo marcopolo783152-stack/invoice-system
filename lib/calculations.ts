@@ -37,6 +37,7 @@ export interface InvoiceItem {
     wash: boolean;
     repair: boolean;
   };
+  repairCompletedAt?: string;
   // Condition tracking
   conditions?: {
     used?: boolean;
@@ -108,6 +109,7 @@ export interface InvoiceData {
   // Wash/Repair specific
   pickupDate?: string;
   status?: 'washing' | 'repairing' | 'ready' | 'picked_up';
+  washingProgress?: Record<string, {sku:string;jobId:string;status:string;updatedAt:string;checkedAt?:string}>;
   pickupSignature?: string; // Signature collected at pickup
   isDraft?: boolean; // True if invoice is in draft mode
   downpayment?: number; // Optional downpayment for consignment

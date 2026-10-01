@@ -3,6 +3,7 @@ import {randomBytes,createHash} from 'node:crypto';
 import {serverDb} from '@/lib/server/firebase-admin';
 import {requireStaff} from '@/lib/server/staff-permission';
 import {WashError,text,date,today,tokenHash,schedule,invoiceRug,vendorJob,transition,photo,resolveCompanyLink,createHandoff,updateJob,addCompany,cleanupCompanies,archiveCompany,planReturns} from '@/lib/server/washing.mjs';
+import {washingSummary} from '@/lib/washing-invoice.mjs';
 import {priorityInfo,priorityOrder} from '@/lib/washing-priority.mjs';
 export const dynamic='force-dynamic';
 export const runtime='nodejs';
@@ -20,7 +21,10 @@ async function list(companyId:string,vendor:boolean){
  const query=companyId?jobs().where('companyId','==',companyId):jobs();
  const [open,closed]=await Promise.all([query.where('closed','==',false).limit(501).get(),query.where('closed','==',true).limit(100).get()]);
  if(open.size>500)throw new WashError('More than 500 active rugs. Filter by company.',409);
- return [...open.docs,...closed.docs].map(d=>vendor?vendorJob({...d.data(),id:d.id,...priorityInfo(d.data(),today())}):{...d.data(),id:d.id,...priorityInfo(d.data(),today())}).sort((a:any,b:any)=>priorityOrder(a,b));
+ const invoiceSummaries=new Map();
+ if(!vendor){const paths=[...new Set([...open.docs,...closed.docs].map(d=>{const j=d.data();return j.invoiceId&&/^([a-zA-Z0-9_-]+_)?invoices$/.test(j.invoiceCollection||'')?j.invoiceCollection+'/'+j.invoiceId:'';}).filter(Boolean))];await Promise.all(paths.map(async path=>{const s=await serverDb().doc(path).get();if(s.exists)invoiceSummaries.set(path,washingSummary(s.data()?.data||s.data()));}));}
+ const invoiceProgress=(j:any)=>{const summary=invoiceSummaries.get(j.invoiceCollection+'/'+j.invoiceId);return summary?{invoiceReadyCount:summary.readyCount,invoiceRugCount:summary.total,invoiceStatus:summary.status}:{};};
+ return [...open.docs,...closed.docs].map(d=>vendor?vendorJob({...d.data(),id:d.id,...priorityInfo(d.data(),today())}):{...d.data(),id:d.id,...priorityInfo(d.data(),today()),...invoiceProgress(d.data())}).sort((a:any,b:any)=>priorityOrder(a,b));
 }
 export async function GET(request:Request){try{
  const a=await access(request),url=new URL(request.url),companyId=a.vendor?a.companyId:url.searchParams.get('company')||'';if(companyId)id(companyId);
