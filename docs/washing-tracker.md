@@ -11,7 +11,7 @@ Company route: `/washing-company#<private-token>`.
 4. Save customer wash invoices with their individual MPW numbers and rug photos.
 5. Choose **Weekly handoff**, select the rugs, set the sent date and agreed return deadline, and save. Up to 40 rugs per handoff; use several handoffs for larger collections.
 
-The company sees only its rugs: MPW tag, reference photo, description, dimensions, recorded rug condition, handoff, return deadline, inspection feedback and delivery history. Customer names, contact details, invoice numbers, prices and customer pickup dates are excluded from its job response. The private link is a bearer capability: anyone possessing it can view that company’s jobs and submit permitted delivery updates. Keep it private; admin can replace or disable it. The random token is kept in the URL fragment, sent in an API header, stored only as a SHA-256 digest, and is never saved in plaintext on the server. The portal has no analytics and uses no-referrer/no-index metadata.
+The company sees only its rugs: MPW tag, reference photo, description, dimensions, recorded rug condition, handoff, return deadline, inspection feedback and delivery history. Customer names, contact details, invoice numbers, prices and customer pickup dates are excluded from its job response. The private link is a bearer capability: anyone possessing it can view that company’s jobs and submit permitted delivery updates. Keep it private; admin can replace or disable it. The random token is kept in the URL fragment, sent in an API header, validated using a SHA-256 digest. A retrievable copy is saved in the server-only wash_tracking_link_secrets collection for staff with services.write. Client Firestore access remains denied; company lists and job responses never contain tokens. The portal has no analytics and uses no-referrer/no-index metadata.
 
 ## Weekly workflow
 
@@ -22,7 +22,7 @@ The company sees only its rugs: MPW tag, reference photo, description, dimension
 - Staff checks cleaning and condition separately. Passing inspection completes the job and releases its washing custody lock. A cleaning/damage problem stays open and can be sent for correction with new dates. Historical actions are retained.
 - Wrong rugs, missing deliveries and other exceptions are recorded separately, with optional uploaded photos. An exception never marks an expected rug returned. Only staff can resolve exceptions.
 
-Staff receipt and inspection update the source wash invoice in the same Firestore transaction. Receipt alone keeps washing pending; passing inspection marks only that rug checked. The entire invoice becomes ready only when every rug is checked and each required repair has a recorded completion. Repairs are confirmed per rug in the existing invoice editor. Financial data, payments and inventory are preserved. No customer or company messages are sent. Existing rugs must be added through a handoff to be tracked here.
+Staff receipt and inspection update the source wash invoice in the same Firestore transaction. Receipt alone keeps washing pending; passing inspection marks only that rug checked. The entire invoice becomes ready only when every rug is checked and each required repair has a recorded completion. Repairs are confirmed per rug in the existing invoice editor. Financial data, payments and inventory are preserved. No customer or company messages are sent. Previously assigned rugs remain in service. Older unassigned rugs are excluded from new handoffs as Nazif confirmed they have already returned; original records are preserved without bulk status changes.
 
 ## Access and data
 
@@ -60,8 +60,18 @@ Each saved handoff has an immutable batch ID and original pickup date; separate 
 
 The admin and company portal group the displayed rugs by pickup. Older pickups lead the washing queue, with urgent return deadlines promoted first. Company actions are Start washing and Finished / ready to return; finishing advances the next rug automatically. Skipping earlier work requires acknowledgement and a written reason, checked server-side and saved in history. Delivery priority warnings remain separate and enforced.
 
-Invoice washingProgress is stored by item ID and confirmed MPW identity. New handoffs reset that rug's readiness. Missing, mismatched or collected invoices block receipt/inspection changes atomically. Partial returns show N of total ready. Required repair completion is tracked per item; repairing remains pending until checked. Invoice edits preserve the newest tracker progress transactionally. Staff previews use live invoice summaries; company responses never expose invoices or customer details.
+Invoice washingProgress is stored by item ID and confirmed MPW identity. Already handed-off items cannot be selected as new handoffs; corrections use the existing job. Missing, mismatched or collected invoices block receipt/inspection changes atomically. Partial returns show N of total ready. Required repair completion is tracked per item; repairing remains pending until checked. Invoice edits preserve the newest tracker progress transactionally. Staff previews use live invoice summaries; company responses never expose invoices or customer details.
 
 Historical completed-list views retain the existing 100-record limit, so counts shown for old groups cover loaded records. Active work is complete within the enforced 500-rug limit. No historical invoice migration is performed automatically.
 
-Validation: 75 combined tests for washing, live orders, checkout contact and wash SKU allocation; TypeScript and production build.
+Validation: 85 combined tests for washing, live orders, checkout contact and wash SKU allocation; TypeScript and production build.
+
+## New-intake boundary and persistent company links
+
+Nazif confirmed on October 1, 2026 at 12:30:47 PM America/New_York that older unassigned rugs had returned. First authorized tracker use initializes a permanent per-invoice-collection intake setting in Firebase at `2026-10-01T16:30:47.000Z`. New service invoices created after that boundary may appear; old, missing-creation-date, draft, ready and collected invoices do not. Invoice dates may be backdated; eligibility uses record creation time. Assigned jobs stay in service. No invoices, payments, jobs or historical records are deleted or automatically marked ready. For new service work, create a new service invoice rather than adding it to an older invoice.
+
+The server picker scans invoice pages, then excludes per-item washing progress, active canonical MPW locks across all companies, and permanent intake receipts. Handoff creation rechecks eligibility transactionally and saves the item receipt. Retries reuse the handoff. Completed items cannot reappear after custody release or removal of a progress field.
+
+New company links are saved at creation. Legacy hash-only links are preserved when the company opens its existing link or authorized staff paste it once. Recovery validates the same active company/hash and never rotates it. The selected company's saved link reloads across sessions and refreshes, with Copy link. Replacement, revocation, archive and duplicate merge remove obsolete copies. Company links cannot fetch staff links or handoff candidates.
+
+Additional server-only collections: wash_tracking_settings, wash_tracking_intake_items, wash_tracking_link_secrets. Initialization runs after deployment when authorized staff opens the tracker; no production Firebase session was used during development.
