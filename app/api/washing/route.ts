@@ -2,7 +2,7 @@ import {NextResponse} from 'next/server';
 import {randomBytes,createHash} from 'node:crypto';
 import {serverDb} from '@/lib/server/firebase-admin';
 import {requireStaff} from '@/lib/server/staff-permission';
-import {WashError,text,date,today,tokenHash,schedule,invoiceRug,vendorJob,transition,photo,resolveCompanyLink,createHandoff,updateJob,addCompany,cleanupCompanies,archiveCompany,planReturns} from '@/lib/server/washing.mjs';
+import {WashError,text,date,today,tokenHash,schedule,invoiceRug,vendorJob,transition,photo,resolveCompanyLink,createHandoff,updateJob,updateJobs,addCompany,cleanupCompanies,archiveCompany,planReturns} from '@/lib/server/washing.mjs';
 import {washingSummary} from '@/lib/washing-invoice.mjs';
 import {initializeIntake,handoffCandidates,rememberLink,savedLink} from '@/lib/server/washing-intake.mjs';
 import {priorityInfo,priorityOrder} from '@/lib/washing-priority.mjs';
@@ -47,12 +47,18 @@ export async function POST(request:Request){try{
  if(b.action==='initializeIntake'){if(a.vendor)throw new WashError('Staff access required.',403);await requireStaff(request,'invoices','read');return reply(await initializeIntake(db,invoiceCol(b.invoiceCollection),a.uid,now));}
  if(b.action==='getLink'){if(a.vendor)throw new WashError('Staff access required.',403);return reply({token:await savedLink(db,id(b.companyId))});}
  if(b.action==='rememberLink'){const companyId=a.vendor?a.companyId:id(b.companyId),token=a.vendor?request.headers.get('x-wash-link'):b.token;await rememberLink(db,companyId,token);return reply({});}
+ if(b.action==='bulk'){
+  if(!['acknowledge','start','ready','delay','receive','accept','rewash'].includes(b.bulkAction))throw new WashError('Choose a supported bulk action.');
+  const rugs=Array.isArray(b.rugs)?b.rugs.map((r:any)=>({id:id(r.id),version:r.version})):[];
+  const result=await updateJobs(db,{rugs,companyId:a.companyId,vendor:a.vendor,uid:a.uid,action:b.bulkAction,input:{note:b.note||'',priorityAcknowledged:b.priorityAcknowledged===true,receivedDate:b.receivedDate,clean:b.clean===true,conditionChecked:b.conditionChecked===true,sentDate:b.sentDate,dueDate:b.dueDate,checks:b.checks||{}},operationId:id(b.requestId),now});
+  return reply({ids:result.ids,count:result.ids.length,replayed:result.replayed});
+ }
  if(b.action==='company'){
   if(a.vendor)throw new WashError('Staff access required.',403);return reply({id:await addCompany(db,b.name,a.uid,now)});
  }
  if(b.action==='cleanupCompanies'){if(a.vendor)throw new WashError('Staff access required.',403);return reply({mapping:await cleanupCompanies(db,a.uid,now)});}
  if(b.action==='archiveCompany'){if(a.vendor)throw new WashError('Staff access required.',403);await archiveCompany(db,id(b.companyId),a.uid,now);return reply({});}
- if(['planReturns','dispatchReturns'].includes(b.action)){if(!a.vendor)throw new WashError('Use the washing company link to confirm its delivery list.',403);const rugs=Array.isArray(b.rugs)?b.rugs.map((r:any)=>({id:id(r.id),version:r.version})):[];return reply(await planReturns(db,{companyId:a.companyId,rugs,plannedDate:b.plannedDate,acknowledged:b.priorityAcknowledged===true,note:b.note||'',dispatch:b.action==='dispatchReturns',loadedChecked:b.loadedChecked===true,uid:a.uid,now}));}
+ if(['planReturns','dispatchReturns'].includes(b.action)){const deliveryCompany=a.vendor?a.companyId:id(b.companyId);const rugs=Array.isArray(b.rugs)?b.rugs.map((r:any)=>({id:id(r.id),version:r.version})):[];return reply(await planReturns(db,{companyId:deliveryCompany,rugs,plannedDate:b.plannedDate,acknowledged:b.priorityAcknowledged===true,note:b.note||'',dispatch:b.action==='dispatchReturns',loadedChecked:b.loadedChecked===true,uid:a.uid,now,operationId:b.requestId?id(b.requestId):''}));}
  if(['link','revoke'].includes(b.action)){
   if(a.vendor)throw new WashError('Staff access required.',403);const ref=companies().doc(id(b.companyId)),token=randomBytes(32).toString('hex'),hash=tokenHash(token);
   await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists||s.data()?.archived)throw new WashError('Company not found.',404);const old=s.data()?.linkHash;if(old)tx.delete(db.doc('wash_tracking_links/'+old));if(b.action==='link')tx.create(db.doc('wash_tracking_links/'+hash),{companyId:ref.id,createdAt:now});if(b.action==='link')tx.set(db.doc('wash_tracking_link_secrets/'+ref.id),{token,hash});else tx.delete(db.doc('wash_tracking_link_secrets/'+ref.id));tx.update(ref,{linkHash:b.action==='link'?hash:'',linkEnabled:b.action==='link',updatedAt:now});tx.create(ref.collection('history').doc(),{action:b.action,by:a.uid,at:now});});

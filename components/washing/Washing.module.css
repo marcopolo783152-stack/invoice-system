@@ -6,3 +6,5 @@
 @media print{.printing> :not(.printReport){display:none!important}.printing .printReport{display:block!important;color:#203e37}.printReport p{white-space:pre-wrap}.printReport img{max-width:100%}}
 
 .pickupBatch{margin:24px 0 36px;border:1px solid #d6e3dd;border-radius:18px;padding:18px;background:#f6faf8}.batchHeader{margin-bottom:18px;padding:4px 6px;border-bottom:1px solid #d6e3dd}.batchHeader h2{margin:7px 0;color:#183e31}.batchHeader p{margin:6px 0 14px;color:#4c665c}@media(max-width:600px){.pickupBatch{padding:10px}.batchHeader h2{font-size:20px}}
+
+.bulkBar{border:2px solid #c4dacf;background:#f2f8f4}.bulkCheck{border:1px solid #d6e3dd;border-radius:10px;padding:12px;margin:12px 0}.bulkCheck legend{font-weight:700}.bulkCheck img{max-width:150px;max-height:140px;object-fit:contain;display:block;margin:8px 0}

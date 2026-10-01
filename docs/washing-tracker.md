@@ -64,7 +64,7 @@ Invoice washingProgress is stored by item ID and confirmed MPW identity. Already
 
 Historical completed-list views retain the existing 100-record limit, so counts shown for old groups cover loaded records. Active work is complete within the enforced 500-rug limit. No historical invoice migration is performed automatically.
 
-Validation: 87 combined tests for washing, live orders, checkout contact and wash SKU allocation; TypeScript and production build.
+Validation: 99 combined tests for washing, live orders, checkout contact and wash SKU allocation; TypeScript and production build.
 
 ## New-intake boundary and persistent company links
 
@@ -79,3 +79,13 @@ Additional server-only collections: wash_tracking_settings, wash_tracking_intake
 ## Received folder
 
 The default pickup list contains only rugs physically with the washing company (At company, Washing, Ready, Delivery planned, On the way). Received rugs automatically move into the separate Received folder, including Needs inspection, Inspection issue and Checked & ready. The same separation appears in the admin and private company portal. Inspection remains required before invoice readiness. Sending a rug for correction returns it to company work. Folder membership derives from the existing Firebase job state; it does not delete, duplicate or rewrite historical records. Company return-priority banners exclude rugs already at the showroom.
+
+## Bulk rug actions
+
+Staff and company portals support selecting individual eligible rugs, all visible eligible rugs or a pickup batch. Changing company, folder or search clears the selection. Closed rugs stay read-only. The handoff picker also has Select all matching and Clear selection; its existing 40-rug handoff limit remains explicit.
+
+Bulk actions cover company receipt, Start washing, Finished / ready to return, Plan delivery, Confirm departure, Report delay, and staff-only Receive at showroom, Pass inspection and Send for correction. Buttons enable only when every selected rug is at the correct stage. Delivery must belong to one company; authenticated staff may record plans/departures on its behalf. Up to 100 rugs are processed atomically per update, below Firestore's transaction write limit. Larger selections must be reduced; no rugs are silently skipped.
+
+The confirmation dialog freezes job IDs and versions. Physical MPW entry and photo/description matching are required for each selected receipt. Bulk inspection explicitly confirms cleaning and original condition for every selected rug; affected invoices still wait for missing rugs and required repairs. Correction retains each rug's customer pickup date and original pickup batch. Earlier unselected work/returns still require acknowledgement and a reason.
+
+All selected records and source invoices are validated before any writes. Invalid tags, stale versions, missing invoices, closed jobs and company-scope violations roll back the entire action. Multiple selected rugs on one invoice share one staged invoice update, preserving financial data and every rug's progress. Each job keeps its history event. Bulk requests and delivery manifests use actor-bound request receipts in the server-only wash_tracking_bulk_requests collection so retries do not duplicate updates. The caller cannot reuse a request ID for different inputs.
