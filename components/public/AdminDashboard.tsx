@@ -1,3 +1,4 @@
+import StockCheck from '@/components/inventory/StockCheck';
 import {unreadOrderCount,needsOrderAttention} from '@/lib/order-inbox.mjs';
 import {markOrdersSeen} from '@/lib/order-inbox-client';
 import {orderReference} from '@/lib/order-reference.mjs';
@@ -1819,6 +1820,7 @@ const AdminWorkspace: React.FC = () => {
               </div>
             </div>
 
+            <StockCheck items={rugs} source="Website rug listings"/>
             <div className={listingStyles.searchBar}>
               <label htmlFor="admin-inventory-search" className={listingStyles.searchLabel}>Search your rug inventory</label>
               <div className={listingStyles.searchField}>
