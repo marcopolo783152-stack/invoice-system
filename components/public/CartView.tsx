@@ -150,10 +150,10 @@ export const CartView: React.FC = () => {
   discount = Math.min(rawSubtotal, Math.round(discount * 100) / 100);
   const subtotal = Math.max(0, rawSubtotal - discount);
 
-  // Delivery and destination tax are quoted by the showroom before payment.
+  // Show the same 6% sales tax as the server-authoritative checkout.
   const totalWeightLbs = 0;
   const shipping = 0;
-  const tax = deliveryOption === "Pickup" ? Math.round(subtotal * 100 * 0.06) / 100 : 0;
+  const tax = Math.round(subtotal * 100 * 0.06) / 100;
   const total = subtotal + tax;
 
   const handleNextStep = () => {
@@ -545,7 +545,7 @@ export const CartView: React.FC = () => {
                         </div>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        Shipping: <strong>Free</strong>. Applicable tax is shown before payment.
+                        Shipping: <strong>Free</strong>. Sales tax (6%) is included in the total below.
                         Free shipping is included in each displayed sale price.
                       </p>
                     </div>
@@ -794,9 +794,9 @@ export const CartView: React.FC = () => {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>{deliveryOption === "Pickup" ? "Sales tax (6%):" : "Applicable sales tax:"}</span>
+                  <span>Sales tax (6%):</span>
                   <span className="font-sans font-medium text-editorial-text">
-                    {deliveryOption === "Pickup" ? `$${tax.toFixed(2)}` : "Calculated at checkout"}
+                    {`$${tax.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -816,7 +816,7 @@ export const CartView: React.FC = () => {
                 </div>
                 <div className="flex justify-between border-t border-editorial-border pt-3 text-sm font-light">
                   <span className="text-editorial-text uppercase tracking-wider">
-                    {deliveryOption === "Pickup" ? "Pickup total:" : "Sale total (before tax):"}
+                    Total including sales tax:
                   </span>
                   <span className="font-sans text-xl font-bold text-editorial-text">
                     ${total.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}

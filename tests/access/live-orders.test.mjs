@@ -144,10 +144,10 @@ test('inclusive sale price needs no shipping quote and weight changes invalidate
  const d=db();d.change('showroom_rugs/rug-1',{price:100,weightLbs:10,sizeCategory:'Small'});
  const o=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now,true);
  assert.equal(o.subtotal,12000);assert.equal(o.shipping,0);assert.equal(o.status,'Ready for payment');
- assert.equal(o.automaticTax,true);assert.equal(o.pricingPolicy,'weight-inclusive-v1');
+ assert.equal(o.automaticTax,false);assert.equal(o.tax,720);assert.equal(o.total,12720);assert.equal(o.pricingPolicy,'weight-inclusive-v1');
  const r=await reservePayment(d,o.id,'customer',1,now+10,'embedded');
  const p=liveSessionParams(r,'https://www.marcopolorugs.com');
- assert.equal(p.line_items[0].price_data.unit_amount,12000);assert.equal(p.shipping_options[0].shipping_rate_data.fixed_amount.amount,0);
+ assert.equal(p.line_items[0].price_data.unit_amount,12000);assert.equal(p.shipping_options,undefined);assert.equal(p.automatic_tax,undefined);assert.equal(p.line_items.at(-1).price_data.unit_amount,720);assert.equal(p.line_items.reduce((sum,l)=>sum+l.price_data.unit_amount*l.quantity,0),12720);
  const changed=db();changed.change('showroom_rugs/rug-1',{price:100,weightLbs:10,sizeCategory:'Small'});
  const q=await createQuote(changed,'customer','customer@example.com',body('Delivery'),attempt,now,true);
  changed.change('showroom_rugs/rug-1',{weightLbs:20});await assert.rejects(reservePayment(changed,q.id,'customer',1,now+10),/price changed/);
@@ -185,4 +185,29 @@ test('fulfillment updates preserve purchased label metadata',async()=>{
  await fulfillOrder(d,o.id,'staff',{fulfillment:'Collected'},now+3);
  const saved=d.read('showroom_orders/'+o.id).shippingDetails;
  assert.equal(saved.labelUrl,label.labelUrl);assert.equal(saved.transactionId,label.transactionId);assert.equal(saved.cost,'20');
+});
+
+
+test('inclusive delivery collects 6% from the start and rejects a payment omitting tax',async()=>{
+ const d=db();d.change('showroom_rugs/rug-1',{price:101,weightLbs:9,sizeCategory:'Small'});
+ const o=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now,true);
+ assert.equal(o.subtotal,11900);assert.equal(o.tax,714);assert.equal(o.total,12614);
+ const r=await reservePayment(d,o.id,'customer',o.version,now+10,'embedded');
+ const params=liveSessionParams(r,'https://www.marcopolorugs.com');
+ assert.equal(params.automatic_tax,undefined);assert.equal(params.line_items.reduce((sum,l)=>sum+l.price_data.unit_amount*l.quantity,0),12614);
+ await assert.rejects(settleSession(d,o.id,session(r,{amount_total:11900}),'webhook',now+20),/does not match/);
+ await settleSession(d,o.id,session(r),'webhook',now+21);
+ assert.equal(d.read('showroom_orders/'+o.id).tax,7.14);assert.equal(d.read('showroom_orders/'+o.id).total,126.14);
+});
+
+test('old unstarted inclusive quote upgrades to visible tax; existing payment session stays immutable',async()=>{
+ const d=db();d.change('showroom_rugs/rug-1',{price:101,weightLbs:9,sizeCategory:'Small'});
+ const o=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now,true);
+ d.change(LIVE_ORDERS+'/'+o.id,{tax:null,total:null,automaticTax:true,taxPolicy:null});
+ const updated=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now+1,true);
+ assert.equal(updated.tax,714);assert.equal(updated.total,12614);assert.equal(updated.version,2);assert.equal(updated.automaticTax,false);
+ const r=await reservePayment(d,o.id,'customer',updated.version,now+2,'embedded');
+ d.change(LIVE_ORDERS+'/'+o.id,{tax:null,total:null,automaticTax:true,taxPolicy:null});
+ const legacy=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now+3,true);
+ assert.equal(legacy.automaticTax,true);assert.equal(legacy.tax,null);assert.equal(legacy.sessionAttemptedAt,r.sessionAttemptedAt);
 });
