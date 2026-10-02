@@ -305,7 +305,7 @@ const AdminWorkspace: React.FC = () => {
 
   // States for inventory filters
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
-  const [orderStatusFilter, setOrderStatusFilter] = useState("All");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("Active");
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [inventoryViewMode, setInventoryViewMode] = useState<"list" | "gallery">("gallery");
   const [listingSort, setListingSort] = useState("name");
@@ -2233,7 +2233,7 @@ const AdminWorkspace: React.FC = () => {
 
                     const matchesStatus =
                       orderStatusFilter === "All" ||
-                      (orderStatusFilter === "Active" && o.status !== "Delivered" && o.status !== "Cancelled") ||
+                      (orderStatusFilter === "Active" && !["Delivered", "Cancelled", "Returned"].includes(o.status)) ||
                       (orderStatusFilter === "Shipped" && o.status === "Shipped") ||
                       (orderStatusFilter === "Delivered" && o.status === "Delivered") ||
                       (orderStatusFilter === "Cancelled" && o.status === "Cancelled");
