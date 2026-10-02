@@ -1,4 +1,5 @@
 'use client';
+import {needsOrderAttention} from '@/lib/order-inbox.mjs';
 import {orderReference} from '@/lib/order-reference.mjs';
 import {useStore} from '@/context/StoreContext';
 import React, { useEffect, useState, useRef } from 'react';
@@ -23,7 +24,7 @@ interface Toast {
 
 export const GlobalNotificationProvider = ({ children }: { children: React.ReactNode }) => {
     const {staff}=useStaffAccess();
-    const {orders}=useStore();
+    const {orders,ordersLoading,orderLoadError}=useStore();
     const knownOrderIds=useRef<Set<string>|null>(null);
     useEffect(()=>{knownOrderIds.current=null;},[staff?.uid]);
     const [washSummary,setWashSummary]=useState<{urgent:number;planned:number}>({urgent:0,planned:0});
@@ -220,14 +221,11 @@ export const GlobalNotificationProvider = ({ children }: { children: React.React
     }, [staff]);
 
     useEffect(()=>{
-      if(!canAccess(staff,'orders'))return;
-      if(knownOrderIds.current){
-        for(const order of orders)if(!knownOrderIds.current.has(order.id)&&new Date(order.createdAt).getTime()>Date.now()-60000){
-          addToast({title:'New order: '+orderReference(order),message:(order.customerInfo?.name||'Customer')+' placed an order.',type:'order',link:'/?view=admin&adminTab=orders&orderId='+encodeURIComponent(order.id)});
-        }
-      }
+      if(!canAccess(staff,'orders')||ordersLoading||orderLoadError)return;
+      const fresh=orders.filter(order=>needsOrderAttention(order)&&(!knownOrderIds.current||!knownOrderIds.current.has(order.id)));
+      if(fresh.length){const one=fresh[0];addToast({title:fresh.length===1?'New order: '+orderReference(one):fresh.length+' orders need attention',message:fresh.length===1?(one.customerInfo?.name||'Customer')+' placed an order.':'Open Customer Orders to review them.',type:'order',link:'/?view=admin&adminTab=orders&orderId='+encodeURIComponent(one.id)});}
       knownOrderIds.current=new Set(orders.map(order=>order.id));
-    },[orders,staff]);
+    },[orders,ordersLoading,orderLoadError,staff?.uid]);
 
     useEffect(()=>{
       setWashSummary({urgent:0,planned:0});

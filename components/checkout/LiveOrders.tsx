@@ -1,4 +1,6 @@
 'use client';
+import ShippoLabelControls from './ShippoLabelControls';
+import {markOrdersSeen} from '@/lib/order-inbox-client';
 import {orderReference} from '@/lib/order-reference.mjs';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {onAuthStateChanged} from 'firebase/auth';
@@ -19,7 +21,7 @@ export default function LiveOrders({admin=false}:{admin?:boolean}){
   useEffect(()=>onAuthStateChanged(auth,u=>{
     const ready=!!u&&(admin?(!u.isAnonymous&&u.emailVerified):(u.isAnonymous||u.emailVerified));setSigned(ready);setLoaded(true);setOrders([]);setSelected(null);setError('');
     if(ready){void load().catch(e=>setError(e.message));const id=new URLSearchParams(window.location.search).get('order');
-      if(id)void orderRequest(endpoint+'?order='+encodeURIComponent(id)).then(d=>{setSelected(d.order);setEnabled(d.paymentsEnabled===true);}).catch(e=>setError(e.message));}
+      if(id)void orderRequest(endpoint+'?order='+encodeURIComponent(id)).then(d=>{setSelected(d.order);setEnabled(d.paymentsEnabled===true);if(admin&&d.order.paymentStatus==='Paid')void markOrdersSeen([d.order.id]).catch(()=>{});}).catch(e=>setError(e.message));}
   }),[load,endpoint]);
   async function act(action:string,extra:Record<string,unknown>={}){
     if(!selected||running.current)return;running.current=true;setBusy(true);setError('');setNotice('');
@@ -30,7 +32,7 @@ export default function LiveOrders({admin=false}:{admin?:boolean}){
       if(data.order){setRates([]);setSelected(data.order);setAgreed(false);}await load();setNotice(action==='approve'?'Quote saved. Copy the customer link and contact the customer. No email was sent.':'Order status updated.');
     }catch(e){setError(e instanceof Error?e.message:'Please retry.');}finally{running.current=false;setBusy(false);}
   }
-  function select(o:LiveOrder){setRates([]);setSelected(o);setAgreed(false);setNotice('');setError('');window.history.replaceState(null,'','?order='+encodeURIComponent(o.id));}
+  function select(o:LiveOrder){if(admin&&o.paymentStatus==='Paid')void markOrdersSeen([o.id]).catch(()=>{});setRates([]);setSelected(o);setAgreed(false);setNotice('');setError('');window.history.replaceState(null,'','?order='+encodeURIComponent(o.id));}
   const o=selected,paid=o?.paymentStatus==='Paid',expired=!!o&&o.quoteExpiresAt<=Date.now();
   return <main className={styles.page}><div className={styles.wrap}>
     <header className={styles.header}><div><p className={styles.eyebrow}>Marco Polo Rugs · Since 1988</p><h1>{admin?'Online orders':'Your order, clearly priced.'}</h1></div><a className={styles.button+' '+styles.secondary} href={admin?'/?view=admin':'/?view=shop'}>{admin?'Return to admin':'Browse rugs'}</a></header>
@@ -53,6 +55,7 @@ export default function LiveOrders({admin=false}:{admin?:boolean}){
         {o.reviewReason&&<p className={styles.error}>Payment received. {o.reviewReason} Contact the showroom before arranging delivery or pickup.</p>}
         {paid&&<><h3>{o.fulfillment}</h3>{o.trackingNumber&&<p>{o.carrier}: {o.trackingNumber}</p>}<div className={styles.actions}><button className={styles.secondary} onClick={()=>window.print()}>Print receipt / save PDF</button></div></>}
         {admin?<>
+          <ShippoLabelControls key={o.id} order={o} onUpdated={()=>{void orderRequest(endpoint+'?order='+encodeURIComponent(o.id)).then(d=>setSelected(d.order)).catch(e=>setError(e.message));}}/>
           {!o.automaticTax&&o.deliveryOption==='Delivery'&&['Awaiting quote','Ready for payment'].includes(o.status)&&<QuoteForm key={o.id+o.version} order={o} busy={busy} save={data=>act('approve',data)} error={setError}/>}
           {paid&&!o.reviewReason&&!o.refundedAmount&&<FulfillmentForm key={o.id+o.fulfillment} order={o} busy={busy} save={data=>act('fulfill',data)}/>}
           <div className={styles.actions}><button disabled={busy} className={styles.secondary} onClick={()=>act('sync')}>Check payment status</button><button className={styles.secondary} onClick={async()=>{try{await navigator.clipboard.writeText('https://www.marcopolorugs.com/orders/pay?order='+o.id);setNotice('Customer link copied. The customer must sign in with their account.');}catch{setNotice('Customer link: https://www.marcopolorugs.com/orders/pay?order='+o.id);}}}>Copy customer link</button></div>

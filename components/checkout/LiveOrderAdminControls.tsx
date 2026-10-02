@@ -1,4 +1,5 @@
 'use client';
+import ShippoLabelControls from './ShippoLabelControls';
 import {useEffect,useState} from 'react';
 import {LiveOrder,orderRequest,usd} from './client';
 import styles from './LiveOrders.module.css';
@@ -23,6 +24,7 @@ export default function LiveOrderAdminControls({id}:{id:string}){
       <button type="button" disabled={busy} onClick={()=>act('sync')}>Refresh order</button>
     </div>
     {paid&&!order.refundedAmount&&!order.refundPending&&!order.reviewReason&&<form className={styles.form} onSubmit={e=>{e.preventDefault();void act('fulfill',{fulfillment,carrier,trackingNumber});}}><label>Order status<select value={fulfillment} onChange={e=>setFulfillment(e.target.value)}><option value={order.fulfillment}>{order.fulfillment}</option>{(order.deliveryOption==='Pickup'?['Ready for pickup','Collected']:['Shipped','Delivered']).filter(s=>s!==order.fulfillment).map(s=><option key={s}>{s}</option>)}</select></label>{order.deliveryOption==='Delivery'&&<><label>Carrier<input required maxLength={80} value={carrier} onChange={e=>setCarrier(e.target.value)}/></label><label>Tracking number<input required maxLength={120} value={trackingNumber} onChange={e=>setTracking(e.target.value)}/></label></>}<button type="submit" disabled={busy}>Save order status</button></form>}
+    <ShippoLabelControls key={order.id} order={order} onUpdated={()=>{void orderRequest('/api/live-orders/manage?order='+encodeURIComponent(id)).then(d=>{setOrder(d.order);setCarrier(d.order.carrier||'');setTracking(d.order.trackingNumber||'');}).catch(e=>setMessage(e.message));}}/>
     {order.receiptEmailError&&<p role="alert">{order.receiptEmailError}</p>}
     {message&&<p role="status">{message}</p>}
   </section>;

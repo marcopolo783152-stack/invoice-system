@@ -11,11 +11,11 @@ async function staff(req:Request,action:string){try{return await requireStaff(re
 export async function GET(req:NextRequest){
   try{
     const u=await staff(req,'read'),id=req.nextUrl.searchParams.get('order');
-    if(id)return respond({order:publicOrder(await ownOrder(id,u.uid,true))});
+    if(id)return respond({order:publicOrder(await ownOrder(id,u.uid,true),true)});
     let q=serverDb().collection(LIVE_ORDERS).orderBy('createdAt','desc').orderBy('__name__','desc').limit(50);
     const cursor=req.nextUrl.searchParams.get('cursor');
     if(cursor){const o=await ownOrder(cursor,u.uid,true);q=q.startAfter(o.createdAt,o.id);}
-    const docs=await q.get();return respond({orders:await Promise.all(docs.docs.map(async d=>publicOrder(await ownOrder(d.id,u.uid,true)))),nextCursor:docs.size===50?docs.docs[49].id:null});
+    const docs=await q.get();return respond({orders:await Promise.all(docs.docs.map(async d=>publicOrder(await ownOrder(d.id,u.uid,true),true))),nextCursor:docs.size===50?docs.docs[49].id:null});
   }catch(e){return failure(e);}
 }
 export async function POST(req:NextRequest){
@@ -29,6 +29,6 @@ export async function POST(req:NextRequest){
     else if(b.action==='fulfill')updated=await fulfillOrder(serverDb(),o.id,u.uid,b);
     else if(b.action==='restock')updated=await restockRefund(serverDb(),o.id,u.uid);
     else throw new CheckoutError('Unknown order action.',400);
-    return respond({order:publicOrder(updated)});
+    return respond({order:publicOrder(updated,true)});
   }catch(e){return failure(e);}
 }

@@ -334,13 +334,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if(firebaseUser && !firebaseUser.isAnonymous && firebaseUser.emailVerified){
       let stopped=false;
       const controller=new AbortController();
+      const locallySeen=new Set<string>();
       const loadOrders=async()=>{try{
         const token=await firebaseUser.getIdToken();
         const response=await fetch('/api/account-orders',{headers:{Authorization:'Bearer '+token},signal:controller.signal});
         const data=await response.json();
         if(!response.ok)throw Error(data.error||'Orders could not load.');
-        if(!stopped){setOrders(data.orders||[]);setOrderLoadError('');}
-      }catch(error){if(!stopped){setOrders([]);setOrderLoadError('Orders could not load. Please try again or contact the showroom.');}}finally{if(!stopped)setOrdersLoading(false);}};
+        if(!stopped){setOrders((data.orders||[]).map((o:Order)=>locallySeen.has(o.id)?{...o,needsAttention:false}:o));setOrderLoadError('');}
+      }catch(error){if(!stopped){setOrderLoadError('Orders could not load. Please try again or contact the showroom.');}}finally{if(!stopped)setOrdersLoading(false);}};
+      const seen=(event:Event)=>{const d=(event as CustomEvent).detail;if(d?.uid===firebaseUser.uid&&Array.isArray(d.ids)){d.ids.forEach((id:string)=>locallySeen.add(id));setOrders(v=>v.map(o=>d.ids.includes(o.id)?{...o,needsAttention:false}:o));}};
+      const refreshOrders=()=>{if(!stopped)void loadOrders();};
+      window.addEventListener('marcopolo-orders-seen',seen);window.addEventListener('focus',refreshOrders);window.addEventListener('marcopolo-order-updated',refreshOrders);
+      unsubs.push(()=>{window.removeEventListener('marcopolo-orders-seen',seen);window.removeEventListener('focus',refreshOrders);window.removeEventListener('marcopolo-order-updated',refreshOrders);});
       loadOrders();const timer=setInterval(loadOrders,15000);
       unsubs.push(()=>{stopped=true;controller.abort();clearInterval(timer);});
     }else setOrdersLoading(false);

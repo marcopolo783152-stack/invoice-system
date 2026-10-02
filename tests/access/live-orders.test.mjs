@@ -177,3 +177,12 @@ test('pending refund cannot restock a rug even if an earlier total appears fully
  await assert.rejects(restockRefund(d,o.id,'staff'),/full Stripe refund/);
  assert.equal(d.read('showroom_rugs/rug-1').availability,'Sold');
 });
+
+test('fulfillment updates preserve purchased label metadata',async()=>{
+ const d=db(),o=await reserved(d);await settleSession(d,o.id,session(o),'webhook',now+2);
+ const label={labelUrl:'https://carrier.example/label',transactionId:'shippo-transaction',cost:'20'};
+ d.change('showroom_orders/'+o.id,{shippingDetails:label});
+ await fulfillOrder(d,o.id,'staff',{fulfillment:'Collected'},now+3);
+ const saved=d.read('showroom_orders/'+o.id).shippingDetails;
+ assert.equal(saved.labelUrl,label.labelUrl);assert.equal(saved.transactionId,label.transactionId);assert.equal(saved.cost,'20');
+});

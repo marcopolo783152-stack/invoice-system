@@ -1,3 +1,5 @@
+import {unreadOrderCount,needsOrderAttention} from '@/lib/order-inbox.mjs';
+import {markOrdersSeen} from '@/lib/order-inbox-client';
 import {orderReference} from '@/lib/order-reference.mjs';
 import LiveOrderAdminControls from '@/components/checkout/LiveOrderAdminControls';
 import {deliveredCents,saleLabel} from '@/lib/delivered-price.mjs';
@@ -179,37 +181,13 @@ const AdminWorkspace: React.FC = () => {
 
   // Review notification alert
   const unapprovedReviewsCount = reviews.filter(r => !r.isApproved).length;
-  // Order notification alert
-  const localLastSeenOrder = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (orders.length === 0) return;
-
-    const latestOrderTime = Math.max(...orders.map(o => new Date(o.createdAt).getTime()));
-
-    const savedTime = typeof window !== "undefined" ? sessionStorage.getItem('lastSeenOrder') : null;
-    const previousTime = savedTime ? parseInt(savedTime) : 0;
-
-    if (localLastSeenOrder.current === null) {
-      localLastSeenOrder.current = previousTime;
-    }
-
-    if (latestOrderTime > localLastSeenOrder.current) {
-      if (localLastSeenOrder.current > 0 || (Date.now() - latestOrderTime < 60000)) {
-        const audio = new Audio("/coin.mp3");
-        audio.play().catch(e => {
-          console.error("Audio playback blocked by browser", e);
-          alert("🔔🔔 NEW ORDER RECEIVED! 🔔🔔 (Audio blocked by browser, please click anywhere on the page first)");
-        });
-      }
-
-      localLastSeenOrder.current = latestOrderTime;
-      if (typeof window !== "undefined") sessionStorage.setItem('lastSeenOrder', latestOrderTime.toString());
-    } else if (localLastSeenOrder.current === 0) {
-      localLastSeenOrder.current = latestOrderTime;
-      if (typeof window !== "undefined") sessionStorage.setItem('lastSeenOrder', latestOrderTime.toString());
-    }
-  }, [orders]);
+  const unreadOrders = unreadOrderCount(orders);
+  const markingOrders = useRef(false);
+  useEffect(()=>{
+    if(activeTab!=='orders'||!canAccess(staff,'orders')||ordersLoading||markingOrders.current)return;
+    const ids=orders.filter(needsOrderAttention).map(o=>o.id);if(!ids.length)return;
+    markingOrders.current=true;void markOrdersSeen(ids).catch(()=>{}).finally(()=>{markingOrders.current=false;});
+  },[activeTab,orders,ordersLoading,staff?.uid]);
 
   const prevUnapprovedCount = useRef(unapprovedReviewsCount);
 
@@ -984,8 +962,8 @@ const AdminWorkspace: React.FC = () => {
 
               <ClipboardList className="h-4.5 w-4.5" />
               <span>Customer Orders</span>
-              {dynamicAnalytics.pendingOrders > 0 && (
-                <ActivityBadge count={dynamicAnalytics.pendingOrders} />
+              {unreadOrders > 0 && (
+                <ActivityBadge count={unreadOrders} />
               )}
             </button>)}
 {allowed('crm') && (<button

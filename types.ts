@@ -136,6 +136,8 @@ export interface ShippingDetails {
 }
 
 export interface Order {
+  needsAttention?: boolean;
+  notificationAt?: string;
   orderNumber?: string;
   customerId?: string;
   id: string;
