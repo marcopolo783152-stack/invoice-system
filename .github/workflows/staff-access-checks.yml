@@ -41,6 +41,8 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Test payment and listing safeguards
         run: node --test tests/access/stripe-test.test.mjs tests/access/listing-stats.test.mjs tests/access/rug-checkout.test.mjs tests/access/checkout-contact.test.mjs tests/upgrade/integrations.test.mjs tests/access/invoice-email-fields.test.mjs tests/access/login-destination.test.mjs tests/access/order-number.test.mjs tests/access/stock-check.test.mjs tests/access/order-inbox-label.test.mjs tests/access/live-orders.test.mjs tests/access/shipping-package.test.mjs
+      - name: Test auction preparation, invoice and payment safeguards
+        run: node --test tests/auction/*.test.mjs
       - name: Test loan ledger safeguards
         run: node --test tests/loans/ledger.test.mjs
       - name: Test washing custody and company link safeguards
