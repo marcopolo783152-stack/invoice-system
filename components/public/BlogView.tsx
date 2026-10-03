@@ -1,3 +1,4 @@
+import {salePrice,saleLabel,deliveredCents} from '@/lib/delivered-price.mjs';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -49,7 +50,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
   };
 
   return (
-    <div className="bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
+    <div className="customer-surface bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* --- FULL BLOG POST READING MODE --- */}
@@ -180,7 +181,7 @@ export const BlogView: React.FC<BlogViewProps> = ({ onSelectRugId, setCurrentTab
                         <div className="min-w-0">
                           <h5 className="font-serif text-xs font-light text-editorial-text truncate">{r.name}</h5>
                           <p className="text-sm text-gray-400 font-light">{r.dimensions} | {r.origin}</p>
-                          <span className="text-xs font-serif font-semibold text-editorial-accent block mt-0.5">${r.price.toLocaleString()}</span>
+                          <span className="text-xs font-serif font-semibold text-editorial-accent block mt-0.5">${salePrice(r).toLocaleString()}</span>
                         </div>
                       </div>
                     );

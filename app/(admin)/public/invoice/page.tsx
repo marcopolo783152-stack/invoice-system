@@ -12,7 +12,8 @@ import { generatePDF, openPDFInNewTab, viewPDFInCurrentTab } from '@/lib/pdf-uti
 
 function PublicInvoiceContent() {
     const searchParams = useSearchParams();
-    const id = searchParams.get('id');
+    const token = searchParams.get('token');
+    const id = token || searchParams.get('id');
 
     const [invoice, setInvoice] = useState<SavedInvoice | null>(null);
     const [calculations, setCalculations] = useState<InvoiceCalculations | null>(null);
@@ -52,14 +53,17 @@ function PublicInvoiceContent() {
         setInvoice(null);
         setCalculations(null);
         try {
-            const data = await getInvoiceByIdAsync(invoiceId);
+            if(!token)throw new Error('This older link needs to be reissued by the showroom.');
+            const response=await fetch('/api/public/invoice?token='+encodeURIComponent(token),{cache:'no-store'});
+            const body=await response.json();if(!response.ok)throw new Error(body.error);
+            const data = body.invoice;
             if (data) {
                 const totals = calculateInvoice(data.data);
                 setInvoice(data);
                 setCalculations(totals);
             }
         } catch (error) {
-            setLoadError('We could not open your invoice right now. Please try again or contact Marco Polo Rugs.');
+            setLoadError(error instanceof Error?error.message:'Please contact Marco Polo Rugs for a new invoice link.');
             console.error('Failed to load invoice:', error);
         } finally {
             setLoading(false);
@@ -100,7 +104,9 @@ function PublicInvoiceContent() {
                 signatureDate: new Date().toISOString()
             };
 
-            await saveInvoice(updatedInvoiceData, invoice.id);
+            const response=await fetch('/api/public/invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,signature:signatureData})});
+            const result=await response.json();if(!response.ok)throw new Error(result.error);
+            Object.assign(updatedInvoiceData,result.invoice.data);
             
             // Update local state to immediately show the invoice
             setInvoice({ ...invoice, data: updatedInvoiceData });
@@ -133,7 +139,7 @@ function PublicInvoiceContent() {
                 <div style={{ maxWidth: 600, margin: '0 auto', background: 'white', borderRadius: 16, padding: 32, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', position: 'relative' }}>
                     <div style={{ textAlign: 'center', marginBottom: 24 }}>
                         <h2 style={{ fontSize: 24, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>Signature Required</h2>
-                        <p style={{ color: '#64748b' }}>Please sign below to view and download your completed invoice #{invoice.data.invoiceNumber}.</p>
+                        <p style={{ color: '#64748b' }}>Review your invoice below, then sign to complete invoice #{invoice.data.invoiceNumber}.</p>
                     </div>
 
                     {isSavingSignature && (
@@ -145,6 +151,7 @@ function PublicInvoiceContent() {
                         </div>
                     )}
                     
+                    <div style={{overflowX:"auto",marginBottom:24}}><InvoiceTemplate data={invoice.data} calculations={calculations}/></div>
                     <SignaturePad
                         onSave={handleSaveSignature}
                         onCancel={() => {}}
@@ -232,3 +239,4 @@ export default function PublicInvoicePage() {
         </Suspense>
     );
 }
+

@@ -11,6 +11,6 @@ export default function Page(){
  <form onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const result=await resetPassword(email.trim());if(result.error)throw Error('We could not request a reset right now. Check the email format and try again.');setMessage('If an account uses this email, a password-reset link will arrive shortly. Check your inbox and spam folder.');}catch(e){setError(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}}>
  <label>Account email / username<input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)}/></label>
  <button disabled={busy}>{busy?'Sending…':'Send reset link'}</button></form>
- <p><a href="/sign-in">Back to customer sign in</a> · <a href="/staff-login">Staff sign in</a></p>
+ <p><a href="/sign-in">Back to sign in</a></p>
  </div></main>;
 }

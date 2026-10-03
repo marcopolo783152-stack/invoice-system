@@ -1,3 +1,4 @@
+'use client';
 /**
  * INVOICE FORM COMPONENT
  * 
@@ -5,8 +6,8 @@
  * Separated from template for clean architecture
  */
 
-'use client';
 
+import {washingSummary} from '@/lib/washing-invoice.mjs';
 import React, { useState, useEffect, useRef } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency, calculateInvoice, calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
@@ -558,6 +559,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       // Auto-calculate status if it's currently 'washing' or 'repairing' (initial states)
       // If it is already 'ready' or 'picked_up', keep it.
       status: documentType === 'WASH' ? (
+        initialData?.washingProgress ? washingSummary({...initialData,items,status}).status as InvoiceData['status'] :
         ['ready', 'picked_up'].includes(status || '') ? status :
           (items.some(i => i.serviceType?.wash) ? 'washing' : 'repairing')
       ) : undefined,
@@ -1176,6 +1178,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                   </label>
                 </div>
 
+                {initialData?.washingProgress?.[item.id]&&<p style={{fontSize:13,color:'#166534'}}>Washing: {initialData.washingProgress[item.id].status} · {washingSummary({...initialData,items}).readyCount} of {washingSummary({...initialData,items}).total} rugs ready</p>}
+                {item.serviceType?.repair&&<label style={{display:'flex',gap:6,fontSize:14}}><input type="checkbox" checked={!!item.repairCompletedAt} onChange={e=>handleItemChange(item.id,'repairCompletedAt',e.target.checked?new Date().toISOString():'')}/>Required repair completed and checked</label>}
                 <div style={{ marginTop: 12 }}>
                   <span style={{ fontWeight: 600, fontSize: 13, color: '#475569', display: 'block', marginBottom: 8 }}>Conditions:</span>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>

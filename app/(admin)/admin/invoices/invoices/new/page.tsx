@@ -1,3 +1,5 @@
+'use client';
+import {createCustomerInvoiceLink} from '@/lib/invoice-share-client';
 /**
  * MAIN INVOICE PAGE
  * 
@@ -5,7 +7,7 @@
  * Combines form, template, and actions
  */
 
-'use client';
+
 
 import { logActivity } from '@/lib/audit-logger';
 import { appendInvoicePayment } from '@/lib/firebase-storage';
@@ -397,7 +399,7 @@ function InvoicePageContent() {
     }
 
     // Generate Link using the actual ID
-    const link = `${window.location.origin}/public/invoice?id=${activeId}&pdf=true`;
+    let link = "";
 
     const sending = confirm(
       `Send invoice to ${customerEmail}?\n\n` +
@@ -409,6 +411,7 @@ function InvoicePageContent() {
     if (!sending) return;
 
     try {
+      link = await createCustomerInvoiceLink(activeId);
       const success = await sendInvoiceEmail(
         customerEmail,
         invoiceData.soldTo.name,
@@ -648,3 +651,4 @@ export default function Home() {
     </Suspense>
   );
 }
+

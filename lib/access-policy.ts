@@ -28,7 +28,7 @@ export function invoiceSection(path: string): AccessSection {
  if (/employees|clock/.test(path)) return 'employees';
  if (/settings/.test(path)) return 'settings';
  if (/inventory/.test(path)) return 'inventory';
- if (/service-tracking|service-vendors/.test(path)) return 'services';
+ if (/service-tracking|service-vendors|washing/.test(path)) return 'services';
  if (/reports|outstanding|audit-log/.test(path) || path === '/admin/invoices') return 'reports';
  return 'invoices';
 }

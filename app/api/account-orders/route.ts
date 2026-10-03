@@ -1,3 +1,4 @@
+import {assignOrderNumber} from '@/lib/server/order-number.mjs';
 import {classifyFirebaseFailure} from '@/lib/server/firebase-failure.mjs';
 import {NextRequest,NextResponse} from 'next/server';
 import {caller,serverDb} from '@/lib/server/firebase-admin';
@@ -13,18 +14,21 @@ export async function GET(req:NextRequest){
   const all=canAccess(staff,'orders');
   const ref=db.collection('showroom_orders');
   const snap=await (all?ref:ref.where('customerId','==',user.uid)).get();
-  const orders=snap.docs.map(doc=>{
+  const readDocs=all?await db.collection('showroom_order_inboxes').doc(user.uid).collection('seen').get():null;
+  const readIds=new Set(readDocs?.docs.map(d=>d.id)||[]);
+  const orders=await Promise.all(snap.docs.map(async doc=>{
    const d=doc.data();
+   if(d.liveManaged)d.orderNumber=(await assignOrderNumber(db,doc.id)).orderNumber;
    // Deliberate allowlist: never serialize raw legacy payment fields.
-   return {id:doc.id,customerId:d.customerId||'',...strings(d,['status','createdAt','deliveryOption','cancellationReason','appliedPromoCode']),
-    customerInfo:strings(d.customerInfo,['name','email','phone','address','street','city','state','zip','country']),
+   return {id:doc.id,...(all?{needsAttention:!readIds.has(doc.id)&&!['Cancelled','Delivered','Returned'].includes(d.status),notificationAt:d.paidAt||d.createdAt}:{}),customerId:d.customerId||'',...strings(d,['orderNumber','status','createdAt','deliveryOption','cancellationReason','appliedPromoCode']),
+    customerInfo:strings(d.customerInfo,['name','email','phone','address','street','city','state','zip','country','shippingAddress','billingAddress','address1','address2','notes']),
     subtotal:Number(d.subtotal||0),tax:Number(d.tax||0),shipping:Number(d.shipping||0),total:Number(d.total||0),discountAmount:Number(d.discountAmount||0),
     paymentDetails:strings(d.paymentDetails,['cardBrand','last4']),
     shippingDetails:strings(d.shippingDetails,all?['carrier','trackingNumber','trackingUrl','estimatedDelivery','shippedAt','labelCreatedAt','refundStatus','transactionId','labelUrl']:['carrier','trackingNumber','trackingUrl','estimatedDelivery','shippedAt']),
     notificationStatus:all?{confirmation:d.notifications?.confirmation?.status||'unknown',invoice:d.notifications?.invoice?.status||'unknown'}:undefined,
     cartItems:Array.isArray(d.cartItems)?d.cartItems.map((item:any)=>({quantity:Number(item.quantity||1),rug:{...strings(item.rug,['id','name','sku','material','origin','dimensions','sizeCategory','style','age']),price:Number(item.rug?.price||0),images:Array.isArray(item.rug?.images)?item.rug.images.filter((url:any)=>typeof url==='string').slice(0,2):[]}})):[]
    };
-  });
+  }));
   return NextResponse.json({orders},{headers:{'Cache-Control':'private, no-store'}});
  }catch(error){
   const failure=classifyFirebaseFailure(error);

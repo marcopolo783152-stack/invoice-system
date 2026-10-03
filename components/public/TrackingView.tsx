@@ -1,3 +1,4 @@
+import {orderReference} from '@/lib/order-reference.mjs';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -28,7 +29,7 @@ export const TrackingView: React.FC = () => {
         setSearchId(trackId);
         setSearched(true);
         const idClean = trackId.trim().toUpperCase();
-        const foundOrder = orders.find((o: any) => o.id === idClean);
+        const foundOrder = orders.find((o: any) => o.id.toUpperCase() === idClean || o.orderNumber === idClean);
         const foundCleaning = cleaningBookings.find((b: any) => b.id === idClean);
         setActiveOrder(foundOrder || null);
         setActiveCleaning(foundCleaning || null);
@@ -60,7 +61,7 @@ export const TrackingView: React.FC = () => {
     setSearched(true);
     const idClean = searchId.trim().toUpperCase();
     
-    const foundOrder = orders.find((o) => o.id === idClean);
+    const foundOrder = orders.find((o) => o.id.toUpperCase() === idClean || o.orderNumber === idClean);
     const foundCleaning = cleaningBookings.find((b) => b.id === idClean);
     
     setActiveOrder(foundOrder || null);
@@ -92,20 +93,20 @@ export const TrackingView: React.FC = () => {
 
   const handleContactSupport = () => {
     if (!activeOrder) return;
-    const inquiryText = `Hi! I am asking about my order tracking ID ${activeOrder.id}. Is there any update on shipping?`;
+    const inquiryText = `Hi! I am asking about my order tracking ID ${orderReference(activeOrder)}. Is there any update on shipping?`;
     window.dispatchEvent(new CustomEvent("open-marcopolo-chat", {
       detail: { initialMessage: inquiryText }
     }));
   };
 
   return (
-    <div className="bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
+    <div className="customer-surface bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 text-left">
         
         {/* Title */}
         <div className="text-center space-y-2">
-          <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-bold block">Live Freight Logistics</span>
-          <h1 className="font-serif text-3xl font-light text-editorial-text tracking-tight">Track Your Masterpiece</h1>
+          <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-bold block">Your order, at a glance</span>
+          <h1 className="font-serif text-3xl font-light text-editorial-text tracking-tight">Track your order</h1>
           <p className="text-xs text-gray-500 max-w-md mx-auto font-light">
             Input your purchase tracking ID (e.g., MPR-10294) to monitor hand-knotted authenticity approvals, packaging logs, and freight delivery.
           </p>
@@ -184,14 +185,14 @@ export const TrackingView: React.FC = () => {
                     {recoveredOrders.map((ro) => (
                       <div key={ro.id} className="p-4 border border-editorial-border bg-editorial-aside flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
-                          <p className="font-mono text-xs font-bold text-editorial-text">Order: {ro.id}</p>
+                          <p className="font-mono text-xs font-bold text-editorial-text">Order: {orderReference(ro)}</p>
                           <p className="text-xs text-gray-500 mt-1">Status: {ro.status}</p>
                           <p className="text-xs text-gray-500">Date: {new Date(ro.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                           <button 
                             onClick={() => {
-                              setSearchId(ro.id);
+                              setSearchId(orderReference(ro));
                               setActiveOrder(ro);
                               setRecoveredOrders([]);
                             }}
@@ -251,7 +252,7 @@ export const TrackingView: React.FC = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-editorial-border pb-4 gap-2">
                     <div>
                       <span className="text-sm uppercase tracking-wider text-gray-400 font-semibold block">Active Invoice Registry</span>
-                      <h3 className="font-serif text-base font-light text-editorial-text">{activeOrder.id}</h3>
+                      <h3 className="font-serif text-base font-light text-editorial-text">{orderReference(activeOrder)}</h3>
                     </div>
                     <div className="text-left sm:text-right">
                       <span className="text-sm uppercase tracking-wider text-gray-400 font-semibold block">Current Status</span>

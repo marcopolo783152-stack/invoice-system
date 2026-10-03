@@ -1,5 +1,6 @@
 'use client';
 
+import StockCheck from '@/components/inventory/StockCheck';
 import React, { useState, useEffect } from 'react';
 import { getInventoryItems, InventoryItem, importInventoryBatch, deleteInventoryItem, deleteInventoryBatch, deriveCategory, saveInventoryItem } from '@/lib/inventory-storage';
 import * as XLSX from 'xlsx';
@@ -315,6 +316,7 @@ export default function InventoryManager() {
 
     return (
         <div style={{ padding: 'var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
+            <StockCheck items={items} source="Invoice system store inventory" loading={isLoading}/>
             <header style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
                 <div className="animate-fade-in">
                     <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.03em', marginBottom: 6 }}>Portfolio Inventory</h1>

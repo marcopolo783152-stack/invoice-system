@@ -1,3 +1,5 @@
+import {sendLiveReceipt} from '@/lib/server/live-receipt';
+import {syncLiveRefund} from '@/lib/server/live-refund';
 import {NextRequest} from 'next/server';
 import Stripe from 'stripe';
 import {serverDb} from '@/lib/server/firebase-admin';
@@ -13,6 +15,14 @@ export async function POST(req:NextRequest){
     event=liveStripe().webhooks.constructEvent(raw,req.headers.get('stripe-signature')||'',secret);
   }catch{return respond({error:'Invalid signature.'},400);}
   if(!event.livemode||event.account)return respond({error:'Unexpected event mode or account.'},400);
+  if(['refund.updated','refund.failed','refund.created'].includes(event.type)){
+    try{
+      const refund=await liveStripe().refunds.retrieve((event.data.object as Stripe.Refund).id);
+      const id=refund.metadata?.orderId;
+      if(id&&validOrderId(id))await syncLiveRefund(await ownOrder(id,'',true));
+      return respond({received:true});
+    }catch{return respond({error:'Refund update incomplete; retry delivery.'},500);}
+  }
   if(event.type==='charge.refunded'){
     try{
       const stripe=liveStripe(),charge=await stripe.charges.retrieve((event.data.object as Stripe.Charge).id);
@@ -20,7 +30,7 @@ export async function POST(req:NextRequest){
       if(!piId)return respond({received:true});
       const pi=await stripe.paymentIntents.retrieve(piId),id=pi.metadata?.orderId;
       if(!validOrderId(id))return respond({received:true});
-      await reconcile(await ownOrder(id,'',true));await recordRefund(serverDb(),id,charge);return respond({received:true});
+      await reconcile(await ownOrder(id,'',true));await syncLiveRefund(await ownOrder(id,'',true));return respond({received:true});
     }catch{return respond({error:'Refund update incomplete; retry delivery.'},500);}
   }
   if(!['checkout.session.completed','checkout.session.expired','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed'].includes(event.type))return respond({received:true});
@@ -30,6 +40,6 @@ export async function POST(req:NextRequest){
   try{
     // Retrieve canonical payment state. Never fulfill from the return URL or event type alone.
     const latest=await liveStripe().checkout.sessions.retrieve(s.id);
-    await settleSession(serverDb(),id,latest,'signed live webhook');return respond({received:true});
+    const settled=await settleSession(serverDb(),id,latest,'signed live webhook');if(settled.paymentStatus==='Paid'){const status=await sendLiveReceipt(id);if(status==='failed')return respond({error:'Receipt email delivery failed; retry.'},500);}return respond({received:true});
   }catch{return respond({error:'Order update incomplete; retry delivery.'},500);}
 }
