@@ -40,3 +40,10 @@ The invoice action creates one test PaymentIntent and confirms it off-session. T
 - Database emulator contention/security, actual Stripe test account integration, signed-in mobile/browser tests and operational/legal sign-off.
 
 The public remains under construction until those launch steps are completed and separately authorized. Nothing in this release claims a live auction system.
+
+## Customer page availability
+Auction management now has a **Customer auction page** card. Settings are stored in Firebase at `auction_visibility/current`, with version checks and staff audit events. The default remains Under construction. Staff with settings write access can choose Under construction, Coming soon, or Open catalog and save. The switch affects `/auctions`, the showroom auction view, the catalog API and direct lot pages. Catalog clients refresh every 15 seconds. Closed modes expose no lots. Opening exposes only explicitly published preview lots whose linked showroom rug remains eligible; drafts, test lots, sold rugs and review holds remain hidden. Database read failures default to closed.
+
+**Open catalog is not live bidding activation.** Public bidding remains disabled, buyer registration remains under construction, and live charging is not enabled. Complete the remaining launch work before opening bidding.
+
+The planning inventory selector is collapsed by default and fetched when **Choose rugs from inventory** is clicked. CSV import loads inventory to match reviewed rugs. **Publish selected lots** provides separate draft creation and explicit preview publication; this never publishes the entire inventory or a test lot.
