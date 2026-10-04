@@ -1,0 +1,7 @@
+import {randomBytes} from 'crypto';
+import {NextResponse} from 'next/server';
+import {requireStaff} from '@/lib/server/staff-permission';
+import {serverDb} from '@/lib/server/firebase-admin';
+import {digest,clockFailure,clockHeaders} from '@/lib/server/employee-clock';
+export const dynamic='force-dynamic';
+export async function POST(req:Request){try{const user=await requireStaff(req,'employees','write');if(req.headers.get('origin')&&req.headers.get('origin')!==new URL(req.url).origin)return NextResponse.json({error:'Invalid origin.'},{status:403});const raw=await req.text();if(raw.length>1000)return NextResponse.json({error:'Request too large.'},{status:400});const b=JSON.parse(raw);const storeId=String(b.storeId||'');if(storeId&&!/^[\w-]{1,100}$/.test(storeId))return NextResponse.json({error:'Invalid store.'},{status:400});const db=serverDb(),ref=db.doc('employee_clock_access/'+(storeId||'default'));const token=randomBytes(32).toString('hex');const key=await db.runTransaction(async tx=>{const old=await tx.get(ref);if(old.exists&&b.rotate!==true)return old.data()!.token;const oldToken=old.data()?.token;if(oldToken)tx.set(db.doc('employee_clock_keys/'+digest(oldToken)),{active:false},{merge:true});tx.set(ref,{token,storeId,updatedBy:user.uid,updatedAt:Date.now()});tx.set(db.doc('employee_clock_keys/'+digest(token)),{active:true,storeId,createdBy:user.uid,createdAt:Date.now()});return token;});return NextResponse.json({token:key},{headers:clockHeaders});}catch(e){return clockFailure(e);}}

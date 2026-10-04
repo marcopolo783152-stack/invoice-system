@@ -55,6 +55,10 @@ export default function RootLayout({
   const isPrintPage = pathname?.includes('/print');
   const isPublicPage = pathname?.startsWith('/public');
 
+  if (pathname === '/admin/invoices/clock') {
+    return <html lang="en"><head><meta name="referrer" content="no-referrer" /></head><body className={inter.className}>{children}</body></html>;
+  }
+
   if (isPrintPage) {
     return (
       <html lang="en">
