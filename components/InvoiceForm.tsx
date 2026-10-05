@@ -8,6 +8,7 @@
 
 
 import {washingSummary} from '@/lib/washing-invoice.mjs';
+import ServiceProducts from './ServiceProducts';
 import React, { useState, useEffect, useRef } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency, calculateInvoice, calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
@@ -134,6 +135,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       setDebtStats(null);
     }
   };
+  const [serviceProducts,setServiceProducts]=useState<any[]>(initialData?.serviceProducts||[]);
   const [items, setItems] = useState<InvoiceItem[]>(
     () => initialData?.items || [createEmptyItem()]
   );
@@ -227,6 +229,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
               if (draft.mode) setMode(draft.mode);
               if (draft.soldTo) setSoldTo(draft.soldTo);
               if (draft.items) setItems(draft.items);
+              setServiceProducts(draft.serviceProducts||[]);
               if (draft.terms) setTerms(draft.terms);
               if (draft.additionalCharges) setAdditionalCharges(draft.additionalCharges);
               if (draft.discountValue) setDiscountValue(draft.discountValue);
@@ -259,7 +262,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
           documentType,
           mode,
           soldTo,
-          items,
+          items, serviceProducts,
           terms,
           additionalCharges,
           discountValue,
@@ -274,7 +277,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
         }
       }
     }
-  }, [documentType, mode, soldTo, items, terms, additionalCharges, discountValue, discountType, notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy, initialData]);
+  }, [documentType, mode, soldTo, items, serviceProducts, terms, additionalCharges, discountValue, discountType, notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy, initialData]);
 
   // AUTOMATIC TERMS UPDATE BASED ON BALANCE
   useEffect(() => {
@@ -284,7 +287,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
 
     if (isStandardStatus) {
       const calc = calculateInvoice({
-        items,
+        items, serviceProducts,
         mode: mode as InvoiceMode,
         documentType,
         invoiceNumber: '',
@@ -308,7 +311,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
         setTerms(newTerms);
       }
     }
-  }, [items, mode, documentType, discountValue, discountType, additionalCharges, downpayment, initialData?.payments]);
+  }, [items, serviceProducts, mode, documentType, discountValue, discountType, additionalCharges, downpayment, initialData?.payments]);
 
 
   const handleSkuChange = async (itemId: string, value: string) => {
@@ -535,6 +538,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
 
     if(documentType==='WASH'&&(washSkuBusy||items.some(needsWashSku))){setWashSkuError('Reserve all wash SKUs before saving. Use Retry below.');return;}
 
+    if(serviceProducts.some(p=>!p.description?.trim()||!Number.isInteger(p.quantity)||p.quantity<1||p.quantity>10000||!Number.isFinite(p.unitPrice)||p.unitPrice<0||p.unitPrice>1000000)){alert('Please enter a product name, valid quantity and unit price.');return;}
+
     // Customer signature is now optional for admin creation
 
     const invoiceData: InvoiceData & { servedBy?: string } = {
@@ -544,7 +549,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       date,
       terms,
       soldTo,
-      items,
+      items, serviceProducts,
       mode,
       additionalCharges,
       notes,
@@ -1270,6 +1275,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
           </div>
         ))}
 
+        {isWash&&<ServiceProducts products={serviceProducts} onChange={setServiceProducts}/>}
         <button type="button" onClick={handleAddItem} className={styles.addBtn}>
           + Add Item
         </button>
@@ -1337,7 +1343,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                   <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Subtotal:</td>
                   <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
                     {(() => {
-                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
+                      const calc = calculateInvoice({ items, serviceProducts, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
                       return formatCurrency(calc.subtotal);
                     })()}
                   </td>
@@ -1368,13 +1374,14 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                     </td>
                     <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
                       {(() => {
-                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType });
+                        const calc = calculateInvoice({ items, serviceProducts, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType });
                         return `-${formatCurrency(calc.discount)}`;
                       })()}
                     </td>
                   </tr>
                 )}
 
+                {serviceProducts.length>0&&<tr><td style={{padding:'8px 24px',textAlign:'right'}}>Product sales tax (6%):</td><td style={{textAlign:'right'}}>{formatCurrency(calculateInvoice({items,serviceProducts,mode:mode as InvoiceMode,documentType,invoiceNumber:'',date:'',terms:'',soldTo:{name:'',address:'',city:'',state:'',zip:'',phone:''}}).salesTax)}</td></tr>}
                 {additionalCharges.map(charge => (
                   <tr key={charge.id}>
                     <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>{charge.description}:</td>
@@ -1390,7 +1397,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                   </td>
                   <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
                     {(() => {
-                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, additionalCharges });
+                      const calc = calculateInvoice({ items, serviceProducts, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, additionalCharges });
                       return formatCurrency(calc.totalDue);
                     })()}
                   </td>
@@ -1401,7 +1408,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                     <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Balance Due:</td>
                     <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
                       {(() => {
-                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, downpayment, additionalCharges });
+                        const calc = calculateInvoice({ items, serviceProducts, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, downpayment, additionalCharges });
                         return formatCurrency(calc.balanceDue || 0);
                       })()}
                     </td>

@@ -1,3 +1,4 @@
+import {calculateServiceProducts} from './service-products.mjs';
 /**
  * CALCULATION ENGINE - BUSINESS LOGIC ONLY
  * 
@@ -80,7 +81,10 @@ export interface Payment {
   note?: string;
 }
 
+export interface ServiceProduct {id:string;description:string;quantity:number;unitPrice:number;taxable?:boolean;returned?:boolean;}
+
 export interface InvoiceData {
+  serviceProducts?: ServiceProduct[];
   documentType?: DocumentType; // 'INVOICE' (default) or 'CONSIGNMENT'
   invoiceNumber: string;
   date: string;
@@ -364,21 +368,22 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     balanceDue = 0;
   }
 
+  const products=calculateServiceProducts(data.serviceProducts||[]);
   return {
     items: calculatedItems,
-    subtotal,
+    subtotal:subtotal+products.subtotal,
     discount,
-    subtotalAfterDiscount,
-    salesTax,
+    subtotalAfterDiscount:subtotalAfterDiscount+products.subtotal,
+    salesTax:salesTax+products.tax,
     totalAdditionalCharges,
-    totalDue,
-    netSubtotal,
-    netTotalDue: netTotalDueFinal,
-    returnedAmount: totalDue - netTotalDue, // Total value of returned items including tax and discount
+    totalDue:totalDue+products.total,
+    netSubtotal:netSubtotal+products.netSubtotal,
+    netTotalDue: netTotalDueFinal+products.netTotal,
+    returnedAmount: totalDue - netTotalDue + products.total-products.netTotal, // Total value of returned items including tax and discount
     soldAmount,
     downpayment: data.downpayment || 0,
     totalPaid,
-    balanceDue
+    balanceDue:products.rows.length?netTotalDue+products.netTotal-totalPaid:balanceDue
   };
 }
 
