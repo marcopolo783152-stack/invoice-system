@@ -1,0 +1,16 @@
+import 'server-only';
+import {randomUUID} from 'crypto';
+import {serverDb,serverAuth} from './firebase-admin';
+import {storageSummary} from '@/lib/auction/settlement.mjs';
+const money=(v:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v/100);
+export async function sendAuctionNotices(deadline=Date.now()+30000){
+ const db=serverDb(),pending=await db.collection('auction_notification_outbox').where('status','==','pending').limit(10).get(),results:any[]=[];
+ for(const d of pending.docs){if(Date.now()>deadline-10000)break;const lease=randomUUID();let n:any;
+ await db.runTransaction(async tx=>{const snap=await tx.get(d.ref),v=snap.data();if(v?.status!=='pending')return;n=v;tx.update(d.ref,{status:'sending',lease,attemptedAt:Date.now()});});if(!n)continue;
+ try{if(!process.env.EMAILJS_PRIVATE_KEY||!process.env.EMAILJS_TEMPLATE_AUCTION_NOTICE)throw Error('Auction email configuration missing.');const profile=(await db.doc('auction_profiles/'+n.buyerId).get()).data();if(n.kind==='outbid'&&profile?.preferences?.emailOutbid===false){await d.ref.update({status:'skipped'});continue;}const buyer=await serverAuth().getUser(n.buyerId);if(!buyer.email)throw Error('Buyer email missing.');const invoice=n.invoiceId?(await db.doc('auction_buyer_invoices_v2/'+n.invoiceId).get()).data():null;
+ const subject=n.kind==='outbid'?'You have been outbid':n.kind==='receipt'?'Auction payment receipt':n.kind==='won'?'Your auction wins':n.kind==='ready'?'Your rugs are ready for pickup':n.kind==='dispatch'?'Your rugs have shipped':'Auction payment needs attention';
+ let message=subject+'. View your account: https://marcopolorugs.com/auctions/account';if(invoice){message+='\nInvoice '+invoice.number+' · '+invoice.paymentStatus+'\n'+invoice.items.map((r:any)=>r.sku+' — '+r.title+' — '+money(r.amount)).join('\n')+'\nSubtotal '+money(invoice.subtotal)+'\nPremium '+money(invoice.premium)+'\nLoading '+money(invoice.loading)+'\nShipping '+money(invoice.shipping)+'\nSales tax '+money(invoice.tax)+'\nTotal '+money(invoice.total);const storage=storageSummary(invoice);if(storage.dueDate)message+='\nPickup deadline '+storage.dueDate+'; storage afterwards '+money(invoice.policy.storageDailyCents)+' per rug per calendar day.';if(invoice.trackingReference)message+='\nTracking '+invoice.trackingReference;}
+ const response=await fetch('https://api.emailjs.com/api/v1.0/email/send',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(10000),body:JSON.stringify({service_id:process.env.EMAILJS_SERVICE_ID||'marcopolo2',template_id:process.env.EMAILJS_TEMPLATE_AUCTION_NOTICE,user_id:process.env.EMAILJS_PUBLIC_KEY||'Anj9zrEUo-VEWvMVw',accessToken:process.env.EMAILJS_PRIVATE_KEY,template_params:{to_email:buyer.email,subject:'Marco Polo Rugs — '+subject,message,invoice_number:invoice?.number||'',customer_name:invoice?.buyerName||buyer.displayName||'Customer'}})});if(!response.ok)throw Error('Email provider rejected the message.');await d.ref.update({status:'sent',sentAt:Date.now()});results.push({noticeId:d.id,status:'sent'});
+ }catch{await d.ref.update({status:'needs_review',error:'Delivery was not confirmed. Check the email provider before resending.'});results.push({noticeId:d.id,error:'Email needs review.'});}}
+ return results;
+}

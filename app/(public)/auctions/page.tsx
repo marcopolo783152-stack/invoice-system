@@ -1,6 +1,7 @@
+import styles from '@/components/auction/Auction.module.css';
 import AuctionUnderConstruction from '@/components/auction/AuctionUnderConstruction';
 import AuctionCatalog from '@/components/auction/AuctionCatalog';
 import {auctionVisibility} from '@/lib/auction/visibility';
 export const dynamic='force-dynamic';
 export const metadata={title:'Rug auctions | Marco Polo Rugs',robots:{index:false,follow:false}};
-export default async function Page(){const {mode}=await auctionVisibility();return mode==='open'?<main><AuctionCatalog/></main>:<AuctionUnderConstruction comingSoon={mode==='coming_soon'}/>;}
+export default async function Page(){const {mode}=await auctionVisibility();return mode==='open'?<main className={styles.page}><section className={styles.hero}><div><p className={styles.eyebrow}>Marco Polo Rugs · Alexandria, Virginia</p><h1>Discover your next<br/>remarkable rug.</h1><p>Explore selected rugs with detailed photographs, condition reports and clear bidding terms. Save your favorites and place a private maximum bid when the auction opens.</p><div className={styles.actions}><a className={styles.button} href="#auction-catalog">Explore auction rugs</a><a className={`${styles.button} ${styles.secondary}`} href="/auctions/account">My bids &amp; invoices</a></div></div><aside className={styles.card}><h2>Before your first bid</h2><ol><li>Complete your bidder profile and verify email, phone and card.</li><li>Choose pickup or approved shipping and review the full price.</li><li>Accept the terms, then bid. All your wins share one invoice.</li></ol><p className={styles.muted}>Questions? Call (703) 461-0207.</p></aside></section><AuctionCatalog/></main>:<AuctionUnderConstruction comingSoon={mode==='coming_soon'}/>;}
