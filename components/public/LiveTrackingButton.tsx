@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useStore } from "@/context/StoreContext";
+import {carrierToken,carrierTrackingUrl} from "@/lib/shipment-tracking.mjs";
 
-export default function LiveTrackingButton({ carrier, trackingNumber, orderId, currentOrderStatus }: { carrier: string, trackingNumber: string, orderId?: string, currentOrderStatus?: string }) {
-  const { updateOrderStatus } = useStore();
+export default function LiveTrackingButton({ carrier, trackingNumber, orderId, currentOrderStatus, trackingUrl }: { carrier: string, trackingNumber: string, orderId?: string, currentOrderStatus?: string, trackingUrl?: string }) {
+  const carrierUrl=carrierTrackingUrl(carrier,trackingNumber,trackingUrl);
   const [loading, setLoading] = useState(true);
   const [trackingData, setTrackingData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -13,18 +13,16 @@ export default function LiveTrackingButton({ carrier, trackingNumber, orderId, c
 
     const fetchTracking = async () => {
       try {
-        const formattedCarrier = carrier.toLowerCase();
-        const res = await fetch(`/api/shipping/track?carrier=${formattedCarrier}&trackingNumber=${trackingNumber}`);
-        if (!res.ok) throw new Error("Failed to fetch tracking details");
+        const formattedCarrier = carrierToken(carrier);
+        if(!formattedCarrier)throw Error("This carrier’s live updates are available through its tracking link.");
+        const res = await fetch(`/api/shipping/track?carrier=${encodeURIComponent(formattedCarrier)}&trackingNumber=${encodeURIComponent(trackingNumber)}`,{cache:"no-store",signal:AbortSignal.timeout(15000)});
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error||"Carrier updates are temporarily unavailable.");
         if (isMounted) {
           setTrackingData(data);
           setError(null);
           
-          // Automatically mark order as delivered in the system if Shippo says it's delivered
-          if (data?.tracking_status?.status === "DELIVERED" && orderId && currentOrderStatus === "Shipped") {
-            updateOrderStatus(orderId, "Delivered");
-          }
+
         }
       } catch (err: any) {
         if (isMounted) {
@@ -37,10 +35,14 @@ export default function LiveTrackingButton({ carrier, trackingNumber, orderId, c
       }
     };
 
+    setLoading(true);setTrackingData(null);setError(null);
     fetchTracking();
+    const timer=setInterval(fetchTracking,60000);
+    const focus=()=>{if(document.visibilityState==='visible')void fetchTracking();};
+    window.addEventListener('focus',focus);
 
     return () => {
-      isMounted = false;
+      isMounted = false;clearInterval(timer);window.removeEventListener('focus',focus);
     };
   }, [carrier, trackingNumber]);
 
@@ -58,7 +60,7 @@ export default function LiveTrackingButton({ carrier, trackingNumber, orderId, c
   if (error) {
     return (
       <div className="mt-4 p-4 bg-red-50 text-red-700 border border-red-200 text-xs">
-        Failed to load live tracking: {error}
+        {error}{carrierUrl&&<a href={carrierUrl} target="_blank" rel="noopener noreferrer" className="block mt-3 font-bold underline">Track directly with {carrier} →</a>}
       </div>
     );
   }
@@ -66,7 +68,7 @@ export default function LiveTrackingButton({ carrier, trackingNumber, orderId, c
   if (!trackingData || !trackingData.tracking_status) {
     return (
       <div className="mt-4 p-4 bg-gray-50 border border-gray-200 text-xs text-gray-500 italic">
-        Tracking information is currently unavailable. The carrier may still be processing the package.
+        Tracking information is currently unavailable. The carrier may still be processing the package. {carrierUrl&&<a href={carrierUrl} target="_blank" rel="noopener noreferrer" className="block mt-3 font-bold underline">Track directly with {carrier} →</a>}
       </div>
     );
   }
@@ -74,18 +76,19 @@ export default function LiveTrackingButton({ carrier, trackingNumber, orderId, c
   // Parse ETA if available
   let etaDate = null;
   if (trackingData.eta) {
-    etaDate = new Date(trackingData.eta);
+    const parsed=new Date(trackingData.eta);if(Number.isFinite(parsed.getTime()))etaDate=parsed;
   }
 
   const history = trackingData.tracking_history || [];
   // Reverse history so newest is at the top
-  const sortedHistory = [...history].reverse().slice(0, 5); 
+  const sortedHistory = [...history].sort((a,b)=>Date.parse(b.status_date)-Date.parse(a.status_date)).slice(0, 10); 
 
   const currentStatus = trackingData.tracking_status.status;
   const isDelivered = currentStatus === "DELIVERED";
+  if(isDelivered){const delivered=new Date(trackingData.tracking_status.status_date);etaDate=Number.isFinite(delivered.getTime())?delivered:null;}
 
   return (
-    <div className="mt-6 mb-2">
+    <div className="mt-6 mb-2"><p className="mb-3 text-xs text-gray-500">Updates from {carrier} · Checked {trackingData.checkedAt ? new Date(trackingData.checkedAt).toLocaleTimeString() : "just now"} · Refreshes every minute</p>
       <div className="flex flex-col md:flex-row shadow-sm border border-[#E1E6EB] bg-white text-[#333333] font-sans">
         
         {/* Left Side - ETA Panel */}
@@ -96,19 +99,19 @@ export default function LiveTrackingButton({ carrier, trackingNumber, orderId, c
             {isDelivered ? "Delivered On" : "Expected Delivery by"}
           </h3>
           
-          {etaDate || isDelivered ? (
+          {etaDate ? (
             <div className="flex items-end gap-3 mb-6">
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-[#185394] uppercase tracking-wide">
-                  {(etaDate || new Date(trackingData.tracking_status.status_date)).toLocaleDateString('en-US', { weekday: 'long' })}
+                  {etaDate.toLocaleDateString('en-US', { weekday: 'long' })}
                 </span>
                 <span className="text-5xl font-black text-[#333333] leading-none mt-1">
-                  {(etaDate || new Date(trackingData.tracking_status.status_date)).getDate()}
+                  {etaDate.getDate()}
                 </span>
               </div>
               <div className="flex flex-col pb-1">
                 <span className="text-sm font-bold text-[#333333]">
-                  {(etaDate || new Date(trackingData.tracking_status.status_date)).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  {etaDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </span>
                 {!isDelivered && etaDate && (
                   <span className="text-sm text-[#333333] font-medium">
@@ -129,9 +132,9 @@ export default function LiveTrackingButton({ carrier, trackingNumber, orderId, c
           </div>
           
           <div className="mt-4 pt-4 border-t border-[#D0DFE5]">
-            <a href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-[#185394] hover:underline flex items-center gap-1">
+            {carrierUrl&&<a href={carrierUrl} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-[#185394] hover:underline flex items-center gap-1">
               View Official {carrier.toUpperCase()} Tracking ↗
-            </a>
+            </a>}
           </div>
         </div>
 

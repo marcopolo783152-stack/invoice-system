@@ -1,4 +1,5 @@
 'use client';
+import LiveTrackingButton from '@/components/public/LiveTrackingButton';
 import {orderReference} from '@/lib/order-reference.mjs';
 import {useEffect,useState} from 'react';
 import {doc,onSnapshot,setDoc,collection,query,where} from 'firebase/firestore';
@@ -22,7 +23,7 @@ function CustomerAccount(){
   return()=>{a();b();setAppointments([]);};
  },[user?.uid,user?.emailVerified,loading]);
  if(loading||!user||user.isAnonymous||!user.emailVerified)return <main className={styles.page}><div className={styles.container}>Opening your account…</div></main>;
- const mine=orders.filter(o=>o.customerId===user.uid).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+ const mine=orders.filter(o=>o.customerId===user.uid||o.customerInfo?.email?.trim().toLowerCase()===user.email?.trim().toLowerCase()).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
  const saved=rugs.filter(r=>favoritedRugIds.includes(r.id));
  return <main className={styles.page}><div className={styles.container}>
  <header className={styles.header}><div><a className={styles.eyebrow} href="/">Marco Polo Oriental Rugs</a><h1>Your collection, your space.</h1></div><div className={styles.actions}><a className={styles.button} href="/orders/pay">Online orders &amp; quotes</a><a className={styles.button+' '+styles.secondary} href="/shop">Browse rugs</a>{staff&&<a className={styles.button} href="/admin">Staff workspace</a>}<button className={styles.secondary} onClick={async()=>{await logout();window.location.assign('/sign-in');}}>Sign out</button></div></header>
@@ -34,6 +35,7 @@ function CustomerAccount(){
  <section className={styles.card}><h2>Your purchases</h2>{!mine.length?<div className={styles.empty}><p>No purchases linked to this account yet.</p><p>For a previous purchase, contact the showroom with your order number so we can help.</p><a href="/shop">Find your next favorite rug →</a></div>:mine.map(o=><details key={o.id} className={styles.row} style={{display:'block'}}><summary style={{cursor:'pointer'}}><strong>{orderReference(o)}</strong> · <span className={styles.badge}>{o.status}</span> · ${Number(o.total||0).toFixed(2)}</summary><p className={styles.muted}>Placed {new Date(o.createdAt).toLocaleDateString()}</p>{o.cartItems?.map(item=><p key={item.rug.id}>{item.rug.name||item.rug.sku} · Quantity {item.quantity}</p>)}<div className={styles.notice}>
  <p><strong>{o.deliveryOption === 'Pickup' ? 'Showroom pickup' : 'Delivery'}</strong></p>
  {o.shippingDetails?.carrier && <p>Carrier: {o.shippingDetails.carrier}</p>}
+ {o.shippingDetails?.trackingNumber && o.shippingDetails?.carrier && <LiveTrackingButton carrier={o.shippingDetails.carrier} trackingNumber={o.shippingDetails.trackingNumber} trackingUrl={o.shippingDetails.trackingUrl}/>}
  {o.shippingDetails?.trackingNumber ? <p>Tracking number: <strong>{o.shippingDetails.trackingNumber}</strong></p> : <p>{o.deliveryOption === 'Pickup' ? 'Please contact the showroom to confirm when your order is ready for pickup.' : 'Tracking will appear here after the showroom adds shipment details.'}</p>}
  {o.shippingDetails?.estimatedDelivery && <p>Estimated delivery: {o.shippingDetails.estimatedDelivery}</p>}
  </div>

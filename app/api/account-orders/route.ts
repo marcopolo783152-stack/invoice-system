@@ -13,7 +13,10 @@ export async function GET(req:NextRequest){
   const staff:StaffAccess|null=role&&role.email?.toLowerCase()===user.email?.toLowerCase()&&(role.active===true||(owner&&role.active!==false))&&(role.role!=='admin'||owner)?{uid:user.uid,email:user.email||'',name:role.name||'',role:role.role,active:true,permissions:role.permissions||{}}:null;
   const all=canAccess(staff,'orders');
   const ref=db.collection('showroom_orders');
-  const snap=await (all?ref:ref.where('customerId','==',user.uid)).get();
+  const owned=await (all?ref:ref.where('customerId','==',user.uid)).get();
+  // A verified checkout email also recovers previous guest purchases without changing their owner ID.
+  const emailMatches=!all&&user.email?await ref.where('customerInfo.email','==',user.email.trim().toLowerCase()).get():null;
+  const snap={docs:[...new Map([...owned.docs,...(emailMatches?.docs||[])].map(d=>[d.id,d])).values()]};
   const readDocs=all?await db.collection('showroom_order_inboxes').doc(user.uid).collection('seen').get():null;
   const readIds=new Set(readDocs?.docs.map(d=>d.id)||[]);
   const orders=await Promise.all(snap.docs.map(async doc=>{
