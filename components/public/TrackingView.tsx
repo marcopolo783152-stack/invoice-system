@@ -339,34 +339,34 @@ export const TrackingView: React.FC = () => {
 
                   {/* Freight shipping tracking details if available */}
                   {(activeOrder.shippingDetails?.trackingNumber || activeOrder.shippingDetails?.carrier) && (
-                    <div className="p-5 bg-editorial-text rounded-none text-white border border-editorial-border space-y-3">
+                    <div className="p-5 bg-[#f7f4ed] rounded-2xl text-[#203e37] border border-[#e5ddcf] space-y-3">
                       <div className="flex items-center gap-2 text-editorial-accent font-bold uppercase tracking-wider text-xs">
                         <Truck className="h-4.5 w-4.5" />
                         <span>Shipment tracking</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs border-t border-gray-700 pt-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-xs border-t border-[#e5ddcf] pt-4">
                         <div>
-                          <span className="text-gray-400 block uppercase font-light">Carrier Partner:</span>
-                          <span className="font-semibold text-white">{activeOrder.shippingDetails.carrier}</span>
+                          <span className="text-[#817666] block uppercase tracking-wider text-[10px] font-semibold">Carrier:</span>
+                          <span className="font-semibold text-[#203e37]">{activeOrder.shippingDetails.carrier}</span>
                         </div>
                         <div>
-                          <span className="text-gray-400 block uppercase font-light">Tracking Number:</span>
+                          <span className="text-[#817666] block uppercase tracking-wider text-[10px] font-semibold">Tracking Number:</span>
                           {carrierTrackingUrl(activeOrder.shippingDetails.carrier,activeOrder.shippingDetails.trackingNumber,activeOrder.shippingDetails.trackingUrl) ? (
                             <a 
                               href={carrierTrackingUrl(activeOrder.shippingDetails.carrier,activeOrder.shippingDetails.trackingNumber,activeOrder.shippingDetails.trackingUrl)||undefined} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="font-mono font-bold text-[#C2B29F] hover:text-white transition underline"
+                              className="font-mono font-semibold text-[#203e37] hover:text-[#927951] transition underline break-all"
                             >
                               {activeOrder.shippingDetails.trackingNumber}
                             </a>
                           ) : (
-                            <span className="font-mono font-bold text-[#C2B29F]">{activeOrder.shippingDetails.trackingNumber}</span>
+                            <span className="font-mono font-semibold text-[#203e37] break-all">{activeOrder.shippingDetails.trackingNumber}</span>
                           )}
                         </div>
                         <div className="col-span-2">
-                          <span className="text-gray-400 block uppercase font-light">Estimated Delivery:</span>
-                          <span className="font-semibold text-white">{activeOrder.shippingDetails.estimatedDelivery || "See carrier updates below"}</span>
+                          <span className="text-[#817666] block uppercase tracking-wider text-[10px] font-semibold">Estimated Delivery:</span>
+                          <span className="font-semibold text-[#203e37]">{activeOrder.shippingDetails.estimatedDelivery || "See carrier updates below"}</span>
                         </div>
                         
                         {/* Live Tracking Feature */}
