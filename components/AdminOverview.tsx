@@ -1,4 +1,6 @@
 'use client';
+import PickupReminders from './pickups/PickupReminders';
+import {orderReference} from '@/lib/order-reference.mjs';
 import {useEffect,useState} from 'react';
 import {useStore} from '@/context/StoreContext';
 import {useStaffAccess} from '@/hooks/useStaffAccess';
@@ -17,9 +19,10 @@ export default function AdminOverview(){
  <div className={styles.hero}><div><span className={styles.eyebrow}>Your showroom, at a glance</span><h1>Welcome, {staff?.name?.split(' ')[0]||'team'}.</h1><p>Here’s what needs your attention. Keep customers informed and make every visit feel personal.</p></div><a className={styles.button} href="/admin/invoices/invoices/new">Create an invoice →</a></div>
  {orderLoadError&&<p role="alert" className={styles.error}>{orderLoadError}</p>}
  <div className={styles.stats}>{stats.filter(x=>canAccess(staff,String(x[2]))).map(([label,value])=><div className={styles.card} key={label}><span className={styles.muted}>{label}</span><strong className={styles.stat}>{value}</strong></div>)}</div>
+ <PickupReminders manageHref="/?view=admin&adminTab=pickups"/>
  <div className={styles.grid}>
  <section className={styles.card}><div className={styles.header}><h2>Recent orders</h2><a href="/?view=admin&adminTab=orders">View all →</a></div>
- {!orders.length?<p className={styles.empty}>Your orders will appear here as customers place them.</p>:orders.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,6).map(o=><a key={o.id} className={styles.row} href={'/?view=admin&adminTab=orders&orderId='+encodeURIComponent(o.id)}><div><strong>{o.customerInfo?.name||'Customer'}</strong><div className={styles.muted}>{o.id}</div></div><div><span className={styles.badge}>{o.status}</span><div>${Number(o.total||0).toLocaleString()}</div></div></a>)}</section>
+ {!orders.length?<p className={styles.empty}>Your orders will appear here as customers place them.</p>:orders.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,6).map(o=><a key={o.id} className={styles.row} href={'/?view=admin&adminTab=orders&orderId='+encodeURIComponent(o.id)}><div><strong>{o.customerInfo?.name||'Customer'}</strong><div className={styles.muted}>{orderReference(o)}</div></div><div><span className={styles.badge}>{o.status}</span><div>${Number(o.total||0).toLocaleString()}</div></div></a>)}</section>
  <section className={styles.card}><div className={styles.header}><h2>Upcoming visits</h2><a href="/?view=admin&adminTab=appointments">View all →</a></div>
  {!upcoming.length?<p className={styles.empty}>No upcoming appointments to show.</p>:upcoming.map(a=><a className={styles.row} key={a.id} href={'/?view=admin&adminTab=appointments&appointmentId='+encodeURIComponent(a.id)}><div><strong>{a.name}</strong><div className={styles.muted}>{a.date} · {a.time}</div></div><span className={styles.badge}>{a.manager}</span></a>)}
  <div className={styles.section}><h2>Quick actions</h2><div className={styles.actions}>

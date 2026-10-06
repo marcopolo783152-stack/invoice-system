@@ -1,3 +1,4 @@
+import {invoiceEmailFields} from './invoice-email-fields.mjs';
 /**
  * EMAIL SERVICE
  * Send invoices via email and security confirmations
@@ -100,7 +101,7 @@ export async function sendInvoiceEmail(
 
     const templateParams: Record<string, any> = {
       to_email: customerEmail,
-      to_name: customerName,
+      ...invoiceEmailFields(customerName, invoiceNumber, invoiceLink),
       from_name: 'Marco Polo Oriental Rugs',
       invoice_number: invoiceNumber,
       // Updated message with Direct Link

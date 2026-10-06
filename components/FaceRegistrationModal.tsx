@@ -22,10 +22,13 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, empl
     
     // Interval ref for continuous scanning
     const scanInterval = useRef<any>(null);
+    const cameraStream=useRef<MediaStream|null>(null),processing=useRef(false),samples=useRef(0);
+    const generation=useRef(0);
 
     // 1. Load Models
     useEffect(() => {
         if (!isOpen) return;
+        setIsReadyToCapture(false);setDetectedDescriptor(null);samples.current=0;
 
         const loadModels = async () => {
             try {
@@ -52,9 +55,12 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, empl
     useEffect(() => {
         if (!isOpen || !isModelsLoaded) return;
 
+        const cameraGeneration=generation.current;
         const startCamera = async () => {
             try {
                 const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                if(cameraGeneration!==generation.current){s.getTracks().forEach(t=>t.stop());return;}
+                cameraStream.current=s;
                 setStream(s);
                 if (videoRef.current) {
                     videoRef.current.srcObject = s;
@@ -79,14 +85,19 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, empl
         };
         faceapi.matchDimensions(canvasRef.current, displaySize);
 
+        if(scanInterval.current)clearInterval(scanInterval.current);
+        const scanGeneration=generation.current;
         scanInterval.current = setInterval(async () => {
-            if (!videoRef.current || !canvasRef.current) return;
+            if (!videoRef.current || !canvasRef.current || processing.current) return;
+            processing.current=true;
             
             try {
-                const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+                const faces = await faceapi.detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.75 }))
                                                .withFaceLandmarks()
-                                               .withFaceDescriptor();
+                                               .withFaceDescriptors();
 
+                if(generation.current!==scanGeneration)return;
+                const detection=faces.length===1?faces[0]:null;
                 const ctx = canvasRef.current.getContext('2d');
                 if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
@@ -99,28 +110,31 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, empl
                     const screenArea = displaySize.width * displaySize.height;
                     const ratio = faceArea / screenArea;
 
-                    if (ratio < 0.05) {
+                    if (ratio < 0.08) {
                         setStatus('Move closer to the camera');
-                        setIsReadyToCapture(false);
-                    } else if (detection.detection.score < 0.7) {
+                        setIsReadyToCapture(false);samples.current=0;setDetectedDescriptor(null);
+                    } else if (detection.detection.score < 0.85) {
                         setStatus('Hold still. Finding clear image...');
-                        setIsReadyToCapture(false);
+                        setIsReadyToCapture(false);samples.current=0;setDetectedDescriptor(null);
                     } else {
-                        setStatus('Perfect! Press Capture Face');
-                        setIsReadyToCapture(true);
+                        samples.current++;
+                        setStatus(samples.current>=4?'Clear face confirmed. Check the employee name, then capture.':'Hold still for a clear registration…');
+                        setIsReadyToCapture(samples.current>=4);
                         setDetectedDescriptor(Array.from(detection.descriptor));
                     }
                 } else {
                     setStatus('No face detected. Look directly at the camera.');
-                    setIsReadyToCapture(false);
+                    setIsReadyToCapture(false);samples.current=0;setDetectedDescriptor(null);
                 }
             } catch (err) {
-                console.error(err);
-            }
+                console.error(err);setIsReadyToCapture(false);samples.current=0;setDetectedDescriptor(null);
+            }finally{processing.current=false;}
         }, 300); // scan ~3 times a second
     };
 
     const stopCamera = () => {
+        generation.current++;samples.current=0;
+        cameraStream.current?.getTracks().forEach(t=>t.stop());cameraStream.current=null;
         if (scanInterval.current) clearInterval(scanInterval.current);
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
@@ -129,7 +143,7 @@ export default function FaceRegistrationModal({ isOpen, onClose, onSuccess, empl
     };
 
     const handleCapture = () => {
-        if (!detectedDescriptor) return;
+        if (!detectedDescriptor || !isReadyToCapture) return;
         
         setStatus('Face successfully registered!');
         stopCamera();

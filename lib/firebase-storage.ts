@@ -1,3 +1,5 @@
+import {pickupRequest} from './service-pickup-client';
+import {mergeWashingProgress} from './washing-invoice.mjs';
 import { getStorePrefix } from './user-storage';
 /**
  * FIREBASE STORAGE SERVICE
@@ -50,6 +52,7 @@ export async function saveInvoiceToCloud(
     throw new Error('Firebase not configured. Please set up your Firebase project.');
   }
 
+  if(data.sourcePickupId){const result=await pickupRequest('',{action:'invoice',pickupId:data.sourcePickupId,collection:getCollectionName(),data});return result.id;}
   try {
     const now = Timestamp.now();
     const docRef = doc(collection(db, getCollectionName()));
@@ -230,13 +233,14 @@ export async function updateInvoiceInCloud(
 
   try {
     const docRef = doc(db, getCollectionName(), id);
-    await updateDoc(docRef, {
-      invoiceNumber,
-      customerName,
-      date: data.date,
-      totalAmount,
-      data,
-      updatedAt: Timestamp.now()
+    await runTransaction(db, async transaction => {
+      const current = await transaction.get(docRef);
+      if (!current.exists()) throw new Error('Invoice not found.');
+      const merged = mergeWashingProgress(current.data().data || {}, data);
+      transaction.update(docRef, {
+        invoiceNumber, customerName, date: data.date, totalAmount,
+        data: merged, updatedAt: Timestamp.now()
+      });
     });
   } catch (error) {
     checkFirebaseQuotaError(error);

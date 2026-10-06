@@ -24,6 +24,7 @@ export interface Rug {
   description: string;
   images: string[]; // list of image URLs (up to 15)
   rating: number; // average rating
+  shippingPackage?: {length: number; width: number; height: number; weight: number} | null;
   weightLbs?: number; // shipping weight in pounds
   isSpecialSale?: boolean;
   isFreeShipping?: boolean;
@@ -135,6 +136,9 @@ export interface ShippingDetails {
 }
 
 export interface Order {
+  needsAttention?: boolean;
+  notificationAt?: string;
+  orderNumber?: string;
   customerId?: string;
   id: string;
   customerInfo: CustomerInfo;

@@ -1,4 +1,5 @@
 'use client';
+import PickupReminders from './pickups/PickupReminders';
 
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search, Calculator } from 'lucide-react';
@@ -360,6 +361,7 @@ export default function Dashboard() {
 
     return (
         <div style={{ padding: '16px var(--dashboard-padding) var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
+            <PickupReminders/>
             <RugCalculatorModal isOpen={isRugCalcOpen} onClose={() => setIsRugCalcOpen(false)} />
             <header style={{
                 display: 'flex',
