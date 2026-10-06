@@ -1,3 +1,4 @@
+import {pickupRequest} from './service-pickup-client';
 import {mergeWashingProgress} from './washing-invoice.mjs';
 import { getStorePrefix } from './user-storage';
 /**
@@ -51,6 +52,7 @@ export async function saveInvoiceToCloud(
     throw new Error('Firebase not configured. Please set up your Firebase project.');
   }
 
+  if(data.sourcePickupId){const result=await pickupRequest('',{action:'invoice',pickupId:data.sourcePickupId,collection:getCollectionName(),data});return result.id;}
   try {
     const now = Timestamp.now();
     const docRef = doc(collection(db, getCollectionName()));

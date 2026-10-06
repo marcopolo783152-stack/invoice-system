@@ -84,6 +84,8 @@ export interface Payment {
 export interface ServiceProduct {id:string;description:string;quantity:number;unitPrice:number;taxable?:boolean;returned?:boolean;}
 
 export interface InvoiceData {
+  sourcePickupId?: string;
+  sourcePickupVersion?: number;
   serviceProducts?: ServiceProduct[];
   documentType?: DocumentType; // 'INVOICE' (default) or 'CONSIGNMENT'
   invoiceNumber: string;

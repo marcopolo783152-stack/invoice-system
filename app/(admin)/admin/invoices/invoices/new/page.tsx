@@ -1,4 +1,5 @@
 'use client';
+import {pickupRequest} from '@/lib/service-pickup-client';
 import {createCustomerInvoiceLink} from '@/lib/invoice-share-client';
 /**
  * MAIN INVOICE PAGE
@@ -37,6 +38,8 @@ function InvoicePageContent() {
   const { rugs, updateRug } = useStore();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
+  const pickupId=searchParams.get('pickup');
+  const [pickupReady,setPickupReady]=useState(!pickupId);
   // Settings dropdown state
   const [savingInvoice, setSavingInvoice] = useState(false);
   const savingInvoiceRef = useRef(false);
@@ -108,6 +111,7 @@ function InvoicePageContent() {
   }, []);
 
   useEffect(() => {
+    if(pickupId&&!editId){setPickupReady(false);pickupRequest('?id='+encodeURIComponent(pickupId)).then(d=>{if(d.booking.invoiceId){window.location.replace('/admin/invoices/invoices/new?edit='+encodeURIComponent(d.booking.invoiceId));return;}if(d.booking.status!=='picked_up')throw Error('Mark the pickup collected before creating its invoice.');setFormInitialData(d.prefill);setPickupReady(true);}).catch(e=>setErrors([e.message]));return;}
     if (editId) {
       getAllInvoices().then(invoices => {
         const found = invoices.find(inv => inv.id === editId || inv.data.invoiceNumber === editId);
@@ -162,6 +166,7 @@ function InvoicePageContent() {
 
   useEffect(() => {
     // Check for converted items from Consignment (Sold Workflow)
+    if(pickupId)return;
     if (typeof window !== 'undefined') {
       const convertItemsStr = sessionStorage.getItem('convert_items');
       const convertInvoiceDataStr = sessionStorage.getItem('convert_invoice_data');
@@ -197,7 +202,8 @@ function InvoicePageContent() {
     }
   }, []);
 
-  const handleFormSubmit = (data: InvoiceData) => {
+  const handleFormSubmit = (submitted: InvoiceData) => {
+    const data={...submitted,...((pickupId||formInitialData?.sourcePickupId)?{sourcePickupId:pickupId||formInitialData?.sourcePickupId,sourcePickupVersion:formInitialData?.sourcePickupVersion}: {})};
     if (savingInvoiceRef.current) return;
     // Validate data
     const validationErrors = validateInvoiceData(data);
@@ -214,7 +220,7 @@ function InvoicePageContent() {
     // Save invoice to storage (async)
     savingInvoiceRef.current = true;
     setSavingInvoice(true);
-    saveInvoice(data, editId || undefined).then(async (savedInv) => {
+    saveInvoice(data, editId || (data.sourcePickupId?savedInvoiceId||undefined:undefined)).then(async (savedInv) => {
       if (!editId) { try { localStorage.removeItem('mp_invoice_draft'); } catch {} }
       try { logActivity('Invoice Saved', `${data.documentType || 'INVOICE'} #${data.invoiceNumber} for ${data.soldTo.name} has been saved.`); } catch { console.warn('Invoice saved, but the local activity log could not be updated.'); }
       // Save succeeded, so we can now safely swap the UI to the preview page
@@ -431,6 +437,7 @@ function InvoicePageContent() {
   };
 
   const handleNewInvoice = () => {
+    if(pickupId){window.location.assign('/admin/invoices/invoices/new');return;}
     setInvoiceData(null);
     setShowPreview(false);
     setShowSearch(false);
@@ -512,7 +519,8 @@ function InvoicePageContent() {
         )}
 
         {/* Invoice Form */}
-        {!showSearch && !showPreview && (
+        {!showSearch && !showPreview && !pickupReady&&<p>Loading pickup details. If this booking cannot load, return to Customer pickups and try again.</p>}
+        {!showSearch && !showPreview && pickupReady && (
           <div className={styles.formSection}>
             <InvoiceForm
               onSubmit={handleFormSubmit}

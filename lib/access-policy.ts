@@ -25,6 +25,7 @@ export function sectionForTab(tab: string): AccessSection | null {
  return tabs[tab] || null;
 }
 export function invoiceSection(path: string): AccessSection {
+ if (/\/pickups(?:\/|$)/.test(path)) return 'appointments';
  if (/employees|clock/.test(path)) return 'employees';
  if (/settings/.test(path)) return 'settings';
  if (/inventory/.test(path)) return 'inventory';
