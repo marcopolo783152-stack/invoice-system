@@ -1,5 +1,5 @@
 import {auth} from "@/lib/auth";
-import {carrierTrackingUrl} from "@/lib/shipment-tracking.mjs";
+import {carrierTrackingUrl,shipmentCarrierName} from "@/lib/shipment-tracking.mjs";
 import {useRef} from "react";
 import {orderReference} from '@/lib/order-reference.mjs';
 /**
@@ -347,7 +347,7 @@ export const TrackingView: React.FC = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-xs border-t border-[#e5ddcf] pt-4">
                         <div>
                           <span className="text-[#817666] block uppercase tracking-wider text-[10px] font-semibold">Carrier:</span>
-                          <span className="font-semibold text-[#203e37]">{activeOrder.shippingDetails.carrier}</span>
+                          <span className="font-semibold text-[#203e37]">{shipmentCarrierName(activeOrder.shippingDetails.carrier,activeOrder.shippingDetails.trackingNumber,activeOrder.shippingDetails.trackingUrl)}</span>
                         </div>
                         <div>
                           <span className="text-[#817666] block uppercase tracking-wider text-[10px] font-semibold">Tracking Number:</span>
@@ -370,10 +370,11 @@ export const TrackingView: React.FC = () => {
                         </div>
                         
                         {/* Live Tracking Feature */}
-                        {activeOrder.shippingDetails.carrier && activeOrder.shippingDetails.trackingNumber && (
+                        {activeOrder.shippingDetails.trackingNumber && (
                           <div className="col-span-2 pt-2 border-t border-gray-700/50 mt-1">
                             <LiveTrackingButton 
-                              carrier={activeOrder.shippingDetails.carrier} 
+                              carrier={activeOrder.shippingDetails.carrier||''} 
+                              trackingUrl={activeOrder.shippingDetails.trackingUrl} 
                               trackingNumber={activeOrder.shippingDetails.trackingNumber} 
                             />
                           </div>

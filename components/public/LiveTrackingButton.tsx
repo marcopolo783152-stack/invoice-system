@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import {Truck,MapPin,ExternalLink,PackageCheck} from "lucide-react";
 import styles from "./ShipmentTracking.module.css";
-import {carrierToken,carrierTrackingUrl} from "@/lib/shipment-tracking.mjs";
+import {carrierToken,carrierTrackingUrl,shipmentCarrierName} from "@/lib/shipment-tracking.mjs";
 
-export default function LiveTrackingButton({ carrier, trackingNumber, orderId, currentOrderStatus, trackingUrl }: { carrier: string, trackingNumber: string, orderId?: string, currentOrderStatus?: string, trackingUrl?: string }) {
+export default function LiveTrackingButton({ carrier: savedCarrier, trackingNumber, orderId, currentOrderStatus, trackingUrl }: { carrier: string, trackingNumber: string, orderId?: string, currentOrderStatus?: string, trackingUrl?: string }) {
+  const carrier=shipmentCarrierName(savedCarrier,trackingNumber,trackingUrl);
   const carrierUrl=carrierTrackingUrl(carrier,trackingNumber,trackingUrl);
   const [loading, setLoading] = useState(true);
   const [trackingData, setTrackingData] = useState<any>(null);

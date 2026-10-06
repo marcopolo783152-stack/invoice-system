@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {findCustomerOrder,trackingLimit} from '../../lib/server/customer-tracking.mjs';
-import {carrierToken,carrierTrackingUrl,safeTracking} from '../../lib/shipment-tracking.mjs';
+import {carrierToken,carrierTrackingUrl,safeTracking,shipmentCarrier,shipmentCarrierName} from '../../lib/shipment-tracking.mjs';
 function database(){
  const values=new Map([['showroom_orders/MPR-LIVE-abc',{orderNumber:'MP-000015',customerId:'guest-session',customerInfo:{name:'Buyer',email:'buyer@example.com',phone:'private',shippingAddress:'private'},shippingDetails:{carrier:'UPS',trackingNumber:'1Z123456789',labelUrl:'private',transactionId:'private'},status:'Shipped',total:100,cartItems:[],paymentDetails:{secret:'private'}}]]);let queue=Promise.resolve();
  const doc=(c,id)=>({id,path:c+'/'+id,get:async()=>({id,exists:values.has(c+'/'+id),data:()=>values.get(c+'/'+id)})});
@@ -28,3 +28,6 @@ test('carrier mapping and official links follow the saved carrier without USPS f
 test('carrier response exposes scans and ETA but excludes addresses, metadata and label IDs',()=>{
  const safe=safeTracking({carrier:'ups',tracking_number:'1Z12345',eta:'2026-10-08',address_to:{street:'private'},metadata:'private',transaction:'private',tracking_status:{status:'TRANSIT',status_date:'2026-10-06',location:{city:'Richmond',state:'VA',zip:'private',street:'private'}},tracking_history:[{status:'PRE_TRANSIT'}]});assert.equal(safe.tracking_status.location.city,'Richmond');assert.equal(safe.address_to,undefined);assert.equal(safe.metadata,undefined);assert.equal(safe.tracking_status.location.zip,undefined);assert.equal(safe.tracking_history.length,1);
 });
+
+test('distinctive UPS number repairs an old USPS link and carrier display',()=>{const n='1Z1V17X50397684151';assert.equal(shipmentCarrier('USPS',n,'https://tools.usps.com/track'),'ups');assert.equal(shipmentCarrierName('USPS',n),'UPS');assert.equal(new URL(carrierTrackingUrl('USPS',n)).hostname,'www.ups.com');});
+test('label service names and known links resolve carriers without guessing ambiguous digits',()=>{assert.equal(shipmentCarrier('UPS Ground','123456789012'),'ups');assert.equal(shipmentCarrier('FedEx Home Delivery','123456789012'),'fedex');assert.equal(shipmentCarrier('', '9400100000000000000000'),'usps');assert.equal(shipmentCarrier('', 'CA000588895US'),'usps');assert.equal(shipmentCarrier('', '123456789012'),null);assert.equal(shipmentCarrier('', '123456789012','https://www.fedex.com/fedextrack'),'fedex');assert.equal(shipmentCarrier('', '123456789012','https://ups.com.evil.test'),null);assert.equal(new URL(carrierTrackingUrl('FedEx','123456789012','https://tools.usps.com/track')).hostname,'www.fedex.com');});
