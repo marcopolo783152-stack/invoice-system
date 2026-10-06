@@ -11,6 +11,7 @@ import listingStyles from "@/components/ListingInventory.module.css";
 import OrderPaymentControls from '@/components/OrderPaymentControls';
 import {AdminChatBox} from "./AdminChatBox";
 import portal from "@/components/Portal.module.css";
+import PickupManager from '@/components/pickups/PickupManager';
 import AdminOverview from "@/components/AdminOverview";
 import { useStaffAccess } from "@/hooks/useStaffAccess";
 import { canAccess, sectionForTab } from "@/lib/access-policy";
@@ -136,7 +137,7 @@ const AdminWorkspace: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "pickups" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -155,7 +156,7 @@ const AdminWorkspace: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "pickups" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm") => {
     if(!allowed(tab))return;
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
@@ -167,7 +168,7 @@ const AdminWorkspace: React.FC = () => {
   };
   useEffect(()=>{
     if(staff && !allowed(activeTab)){
-      const next=['analytics','orders','inventory','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','loans','settings','users'].find(allowed);
+      const next=['analytics','orders','inventory','pickups','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','loans','settings','users'].find(allowed);
       if(next)setActiveTabState(next as any);
     }
   },[staff,activeTab]);
@@ -1041,6 +1042,13 @@ const AdminWorkspace: React.FC = () => {
                 <ActivityBadge count={estimates.filter(e => e.status === "New").length} />
               )}
             </button>)}
+{allowed('pickups') && (<button
+              onClick={() => setActiveTab("pickups")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 font-bold uppercase tracking-wider transition cursor-pointer rounded-lg ${activeTab === "pickups" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"}`}
+            >
+              <Truck className="h-4.5 w-4.5" />
+              <span>Customer Pickups</span>
+            </button>)}
 {allowed('appointments') && (<button
               onClick={() => setActiveTab("appointments")}
               className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer relative ${
@@ -1150,6 +1158,7 @@ const AdminWorkspace: React.FC = () => {
               {activeTab === "orders" && "Customer Orders & Dispatch Logs"}
               {activeTab === "cleaning" && "Cleaning & Repair Bookings"}
               {activeTab === "estimates" && "Service Estimate Requests"}
+              {activeTab === "pickups" && "Customer Pickup Scheduling"}
               {activeTab === "appraisals" && "Certificates of Authenticity & Appraisals"}
               {activeTab === "employees" && "HR & Employee Management"}
               {activeTab === "loans" && "Loans & Repayments"}
@@ -1170,6 +1179,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
         </div>
 
+        {activeTab === 'pickups' && allowed('pickups') && <PickupManager />}
         {activeTab === 'users' && allowed('users') && <StaffUsers />}
         {!allowed(activeTab) && <p>Your account has no access to this section. Ask the owner or General Manager to assign permissions.</p>}
         {/* --- TAB: TRANSACTIONS --- */}

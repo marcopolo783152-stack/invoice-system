@@ -31,7 +31,7 @@ export default function AppointmentsAdminTab() {
   }, []);
 
   return (
-    <div className="space-y-6"><PickupReminders/>
+    <div className="space-y-6"><PickupReminders manageHref="/?view=admin&adminTab=pickups"/>
       <div className="flex items-center justify-between">
         <div>
             <h2 className="text-xl font-serif text-neutral-900">Scheduled Appointments</h2>

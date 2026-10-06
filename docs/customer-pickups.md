@@ -1,6 +1,6 @@
 # Customer pickup scheduling
 
-After deployment, open **Invoice System → Customer Pickups**. The showroom dashboard, invoice dashboard, and existing Appointments tab also show Pickup reminders with a link to schedule/manage collections.
+After deployment, open **Showroom admin → Customer Pickups**. The showroom dashboard, invoice dashboard, and existing Appointments tab also show Pickup reminders with a link to schedule/manage collections. Showroom reminders open the Customer Pickups section inside showroom admin. The existing Invoice System pickup route is also retained.
 
 1. Click Schedule pickup. Record customer name, phone, optional email, full pickup address, date/time, requested service (cleaning, repair, both, or other), estimated rug count, assigned driver and access/service notes. Times are Alexandria / America/New_York wall time. Save.
 2. The booking is persisted in Firebase `service_pickup_bookings`; it is not an invoice and does not change rug stock. Active is the default list. Search by name, phone, address or driver. Edit/reschedule as needed. Cancellation requires a reason and keeps history.

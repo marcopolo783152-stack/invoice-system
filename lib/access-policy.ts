@@ -18,7 +18,7 @@ export function canAccess(staff: StaffAccess | null, section: string, action = '
 export function sectionForTab(tab: string): AccessSection | null {
  const tabs: Record<string, AccessSection> = {
   analytics:'reports', inventory:'inventory', bulk_import:'inventory', orders:'orders', transactions:'reports',
-  cleaning:'services', estimates:'services', appointments:'appointments', appraisals:'invoices', employees:'employees', loans:'loans',
+  cleaning:'services', estimates:'services', appointments:'appointments', pickups:'appointments', appraisals:'invoices', employees:'employees', loans:'loans',
   clock:'employees', reviews:'reviews', messages:'messages', blogs:'content', promotions:'promotions', settings:'settings',
   builder:'content', crm:'customers', users:'users'
  };
