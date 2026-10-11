@@ -1,3 +1,4 @@
+import {categorizeRug} from '@/lib/rug-categorization.mjs';
 import { isRugOnReviewHold } from '@/lib/catalog-visibility.mjs';
 import {recordListingActivity} from "@/lib/record-listing-activity";
 import {chatRequest} from "@/lib/chat-client";
@@ -559,7 +560,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addRug = (newRug: Omit<Rug, "id" | "rating">) => {
     const id = `rug-${Date.now()}`;
     const rug: Rug = {
-      ...newRug,
+      ...categorizeRug(newRug),
       id,
       rating: 5.0
     };

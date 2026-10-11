@@ -4,6 +4,7 @@
  */
 
 export interface Rug {
+  categoryMode?: "auto" | "manual";
   liveOrderId?: string | null;
   id: string;
   name: string;

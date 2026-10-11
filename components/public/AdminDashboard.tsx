@@ -1,3 +1,4 @@
+import {suggestRugCategory,categorizeRug} from '@/lib/rug-categorization.mjs';
 import StockCheck from '@/components/inventory/StockCheck';
 import {unreadOrderCount,needsOrderAttention} from '@/lib/order-inbox.mjs';
 import {markOrdersSeen} from '@/lib/order-inbox-client';
@@ -255,6 +256,7 @@ const AdminWorkspace: React.FC = () => {
   const [rugOriginalPrice, setRugOriginalPrice] = useState<number | "">("");
   const [rugSizeCategory, setRugSizeCategory] = useState<Rug["sizeCategory"] | "">("");
   const [rugDimensions, setRugDimensions] = useState("");
+  const [autoCategory,setAutoCategory]=useState(true);
   const [rugOrigin, setRugOrigin] = useState("");
   const [rugStyle, setRugStyle] = useState<Rug["style"] | "">("");
   const [rugMaterial, setRugMaterial] = useState("");
@@ -442,7 +444,10 @@ const AdminWorkspace: React.FC = () => {
     };
   }, [orders, rugs, chatMessages]);
 
+  const suggestedCategory=suggestRugCategory({dimensions:rugDimensions,shape:rugShape,name:rugName});
+  const selectedCategory=autoCategory ? suggestedCategory.sizeCategory||"" : rugSizeCategory;
   const handleOpenRugModal = (r?: Rug) => {
+    setAutoCategory(r ? r.categoryMode==='auto' : true);
     if (r) {
       setEditingRugId(r.id);
       setRugName(r.name);
@@ -507,7 +512,8 @@ const AdminWorkspace: React.FC = () => {
       sku: rugSKU,
       price: Number(rugPrice),
       originalPrice: rugOriginalPrice === "" ? null : Number(rugOriginalPrice),
-      sizeCategory: rugSizeCategory as Rug["sizeCategory"],
+      sizeCategory: selectedCategory,
+      categoryMode: autoCategory ? "auto" : "manual",
       dimensions: rugDimensions,
       origin: rugOrigin,
       style: rugStyle as Rug["style"],
@@ -525,10 +531,12 @@ const AdminWorkspace: React.FC = () => {
       images: finalImages
     };
 
+    let categorized;
+    try{categorized=categorizeRug(payload);}catch(error){alert(error instanceof Error?error.message:"Check the rug category.");return;}
     if (editingRugId) {
-      updateRug(editingRugId, payload);
+      updateRug(editingRugId, categorized);
     } else {
-      addRug(payload);
+      addRug(categorized);
     }
     setRugModalOpen(false);
   };
@@ -2876,11 +2884,16 @@ const AdminWorkspace: React.FC = () => {
 
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Size Category</label>
+                  <label className="flex items-center gap-2 text-sm py-2"><input type="checkbox" checked={autoCategory} onChange={e=>{if(!e.target.checked)setRugSizeCategory(selectedCategory);setAutoCategory(e.target.checked);}}/>Choose category automatically</label>
+                  {autoCategory&&<p className="text-sm text-[#203e37]">{suggestedCategory.sizeCategory ? `Automatic: ${suggestedCategory.sizeCategory} · ${suggestedCategory.shape}` : suggestedCategory.reason}</p>}
                   <select
-                    value={rugSizeCategory}
+                    value={selectedCategory}
+                    disabled={autoCategory}
                     onChange={(e) => setRugSizeCategory(e.target.value as any)}
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 text-xs max-h-48 overflow-y-auto"
                   >
+                    <option value="">Enter size or select category</option>
+                    {selectedCategory&&!ALL_SIZES.includes(selectedCategory)&&<option value={selectedCategory}>{selectedCategory}</option>}
                     <optgroup label="Rectangles">
                       <option value="1x2">1x2</option>
                       <option value="2x3">2x3</option>
@@ -3023,7 +3036,7 @@ const AdminWorkspace: React.FC = () => {
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Shape</label>
                   <select
-                    value={rugShape}
+                    value={rugShape || (autoCategory?suggestedCategory.shape||"":"")}
                     onChange={(e) => setRugShape(e.target.value as any)}
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500"
                   >
@@ -3133,7 +3146,7 @@ const AdminWorkspace: React.FC = () => {
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Packed rug + padding — UPS</label>
                   <p>Measure the finished package. All four values are required for automatic UPS rates.</p>
-                  <p>Customer sale price: {saleLabel({price:Number(rugPrice),weightLbs:Number(rugWeight),sizeCategory:rugSizeCategory,dimensions:rugDimensions,name:rugName})}. Free Shipping. Rates per lb: Small/Runner $2 · Medium $3 · Large $3.50 · Extra Large/Oversize $4.50.</p>
+                  <p>Customer sale price: {saleLabel({price:Number(rugPrice),weightLbs:Number(rugWeight),sizeCategory:selectedCategory,dimensions:rugDimensions,name:rugName})}. Free Shipping. Rates per lb: Small/Runner $2 · Medium $3 · Large $3.50 · Extra Large/Oversize $4.50.</p>
                   {(['length','width','height','weight'] as const).map(key=><label key={key} className="block">{key} ({key==='weight'?'lb':'in'})<input type="number" min="0.1" max="1000" step="0.1" value={packed[key]} onChange={e=>setPacked({...packed,[key]:e.target.value})} className="w-full border rounded p-2" /></label>)}
                   <label className="block text-neutral-500 font-semibold uppercase">Shipping Offer</label>
                   <label className="flex items-center gap-2 mt-2 cursor-pointer h-full pb-2">
