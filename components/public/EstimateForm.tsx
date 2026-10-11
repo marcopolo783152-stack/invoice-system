@@ -2,10 +2,11 @@
 
 import React, { useState, useRef } from 'react';
 import { Camera, Send, CheckCircle2, UploadCloud, X, Loader2 } from 'lucide-react';
-import { addShowroomDoc, SHOWROOM_ESTIMATES } from '@/lib/showroom-firebase';
-import { ServiceEstimate } from '@/types';
+import { SHOWROOM_ESTIMATES } from '@/lib/showroom-firebase';
+import { submitServiceEstimate } from '@/lib/service-estimate.mjs';
+import { collection, doc, setDoc } from 'firebase/firestore';
 import { calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
-import { storage } from '@/lib/firebase';
+import { db, storage, isFirebaseConfigured } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import AddressAutocomplete from '../AddressAutocomplete';
 
@@ -65,7 +66,7 @@ export default function EstimateForm() {
   };
 
   const uploadImages = async () => {
-    if (!storage) throw new Error("Firebase storage not initialized");
+    if (!storage) throw new Error("Photo uploads are temporarily unavailable. Please try again, or remove the photos to submit your request.");
     const urls: string[] = [];
     for (const file of files) {
       const fileRef = ref(storage, `estimates/${Date.now()}-${file.name}`);
@@ -78,35 +79,25 @@ export default function EstimateForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setError('');
 
     try {
-      let imageUrls: string[] = [];
-      if (files.length > 0) {
-        try {
-          imageUrls = await uploadImages();
-        } catch (imgError) {
-          console.error("Image upload failed:", imgError);
-          // If storage unauthorized, proceed without images but warn
-        }
-      }
-
-      const estimateData: Omit<ServiceEstimate, 'id'> = {
-        ...formData,
-        status: 'New',
-        createdAt: new Date().toISOString(),
-        images: imageUrls,
-      };
-
-      await addShowroomDoc(SHOWROOM_ESTIMATES, estimateData);
-      
-      // We assume email is handled via Firebase Functions or similar, 
-      // or we can just show success to the user.
+      if (!db || !isFirebaseConfigured()) throw new Error("The request form is temporarily unavailable. Please call (703) 461-0207.");
+      await submitServiceEstimate({
+        formData,
+        files,
+        createReference: () => doc(collection(db!, SHOWROOM_ESTIMATES)),
+        uploadImages,
+        write: (reference: any, data: any) => setDoc(reference, data),
+      });
       setIsSuccess(true);
 
     } catch (err: any) {
-      setError(err.message || "Failed to submit request.");
+      setError(err.code === 'permission-denied'
+        ? "We couldn’t save your request. Your details are still here—please try again or call (703) 461-0207."
+        : err.message || "We couldn’t submit your request. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +118,7 @@ export default function EstimateForm() {
   return (
     <form onSubmit={handleSubmit} className="bg-white border border-neutral-100 p-8 shadow-sm rounded-sm max-w-3xl mx-auto space-y-6">
       {error && (
-        <div className="bg-red-50 text-red-700 p-4 text-sm font-medium border border-red-200">
+        <div role="alert" className="bg-red-50 text-red-700 p-4 text-sm font-medium border border-red-200">
           {error}
         </div>
       )}
