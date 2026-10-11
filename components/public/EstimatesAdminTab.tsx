@@ -1,4 +1,5 @@
 import React from "react";
+import {estimateRugs} from "@/lib/service-estimate.mjs";
 import { useStore } from "@/context/StoreContext";
 import { Calendar, Mail, MapPin, Phone, ExternalLink } from "lucide-react";
 
@@ -40,28 +41,18 @@ export function EstimatesAdminTab() {
                 <p className="flex items-center"><Calendar className="w-4 h-4 mr-2" /> {est.pickupPreference}</p>
               </div>
 
-              <div className="bg-neutral-50 p-4 border border-neutral-100 rounded-sm space-y-2 text-sm">
-                <p><strong>Service:</strong> {est.service}</p>
-                <p><strong>Rug Type:</strong> {est.rugType} ({est.dimensions || "Size not provided"})</p>
-                {est.description && <p><strong>Description:</strong> {est.description}</p>}
-                {est.notes && <p><strong>Notes:</strong> {est.notes}</p>}
-              </div>
-              
-              {est.images && est.images.length > 0 && (
-                <div className="pt-2 border-t border-neutral-100">
-                  <p className="text-xs font-bold uppercase tracking-widest mb-2">Attached Photos</p>
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {est.images.map((img: string, i: number) => (
-                      <a key={i} href={img} target="_blank" rel="noopener noreferrer" className="relative group block shrink-0">
-                        <img src={img} alt="Estimate photo" className="w-20 h-20 object-cover rounded-sm border border-neutral-200" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <ExternalLink className="text-white w-5 h-5" />
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <p className="text-sm font-semibold text-[#203e37]">{estimateRugs(est).length} {estimateRugs(est).length===1?'rug':'rugs'} in this request</p>
+              {estimateRugs(est).map((rug:any,index:number)=>(
+                <section key={rug.id||index} className="bg-[#fffdf8] p-4 border border-[#e5ddcf] rounded-xl space-y-3 text-sm">
+                  <h5 className="font-serif text-lg text-[#203e37]">Rug {index+1}</h5>
+                  <p><strong>Service:</strong> {rug.service}</p>
+                  <p><strong>Rug Type:</strong> {rug.rugType}</p>
+                  <p><strong>Size:</strong> {rug.dimensions||'Size not provided'}</p>
+                  {rug.description&&<p className="whitespace-pre-wrap"><strong>Description:</strong> {rug.description}</p>}
+                  {rug.images?.length>0&&<div><p className="text-xs font-bold uppercase tracking-widest mb-2">Photos for rug {index+1}</p><div className="flex gap-2 overflow-x-auto pb-2">{rug.images.map((img:string,i:number)=><a key={i} href={img} target="_blank" rel="noopener noreferrer" className="relative group block shrink-0"><img src={img} alt={`Rug ${index+1}, photo ${i+1}`} className="w-20 h-20 object-cover rounded-lg border border-neutral-200"/><div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><ExternalLink className="text-white w-5 h-5"/></div></a>)}</div></div>}
+                </section>
+              ))}
+              {est.notes&&<p className="text-sm whitespace-pre-wrap"><strong>Notes:</strong> {est.notes}</p>}
             </div>
             
             <div className="w-full md:w-48 flex flex-col gap-2 shrink-0 border-l border-neutral-100 pl-0 md:pl-6 pt-4 md:pt-0">

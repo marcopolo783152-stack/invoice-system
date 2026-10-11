@@ -214,7 +214,9 @@ export interface ShopProfile {
   logoUrl?: string;
 }
 
-export interface ServiceEstimate { id: string; name: string; phone: string; email: string; zip: string; service: string; rugType: string; dimensions: string; description: string; pickupPreference: string; appointmentDate: string; status: 'New' | 'Contacted' | 'Estimate Provided' | 'Pickup Scheduled' | 'In Service' | 'Ready' | 'Delivered' | 'Cancelled'; createdAt: string; images: string[]; notes?: string; }
+export interface ServiceEstimateRug { id: string; service: string; rugType: string; dimensions: string; description: string; images: string[]; widthFeet?: number; widthInches?: number; lengthFeet?: number; lengthInches?: number; }
+
+export interface ServiceEstimate { rugs?: ServiceEstimateRug[]; rugCount?: number; id: string; name: string; phone: string; email: string; zip: string; service: string; rugType: string; dimensions: string; description: string; pickupPreference: string; appointmentDate: string; status: 'New' | 'Contacted' | 'Estimate Provided' | 'Pickup Scheduled' | 'In Service' | 'Ready' | 'Delivered' | 'Cancelled'; createdAt: string; images: string[]; notes?: string; }
 
 export interface AuctionBid {
   id: string;
