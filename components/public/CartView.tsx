@@ -1,3 +1,6 @@
+import {checkoutContact} from '@/lib/checkout-contact.mjs';
+import {auth} from "@/lib/auth";
+import {salePrice,saleLabel,deliveredCents} from '@/lib/delivered-price.mjs';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -73,6 +76,8 @@ export const CartView: React.FC = () => {
       ? "Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314"
       : `${shippingStreet}${shippingApt.trim() ? " " + shippingApt.trim() : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
 
+  const [contactError,setContactError]=useState('');
+
   const [printFeedback, setPrintFeedback] = useState<string | null>(null);
 
   const downloadReceiptAsPDF = (order: any) => {
@@ -129,7 +134,7 @@ export const CartView: React.FC = () => {
   if (!cartOpen) return null;
 
   const rawSubtotal = cart.reduce(
-    (sum, item) => sum + item.rug.price * item.quantity,
+    (sum, item) => sum + salePrice(item.rug) * item.quantity,
     0,
   );
 
@@ -142,17 +147,21 @@ export const CartView: React.FC = () => {
     }
   }
 
+  discount = Math.min(rawSubtotal, Math.round(discount * 100) / 100);
   const subtotal = Math.max(0, rawSubtotal - discount);
 
-  // Delivery and destination tax are quoted by the showroom before payment.
+  // Show the same 6% sales tax as the server-authoritative checkout.
   const totalWeightLbs = 0;
   const shipping = 0;
-  const tax = deliveryOption === "Pickup" ? Math.round(subtotal * 100 * 0.06) / 100 : 0;
+  const tax = Math.round(subtotal * 100 * 0.06) / 100;
   const total = subtotal + tax;
 
   const handleNextStep = () => {
     if (checkoutStep === "cart") setCheckoutStep("shipping");
     else if (checkoutStep === "shipping") {
+      try { checkoutContact({name,phone,email,shippingAddress:derivedShippingAddress,billingAddress:billingSameAsShipping && deliveryOption==='Delivery'?derivedShippingAddress:billingAddress,notes,deliveryAddress:deliveryOption==='Delivery'?{street1:shippingStreet,street2:shippingApt,city:shippingCity,state:shippingState,zip:shippingZip}:undefined}); }
+      catch(error){setContactError(error instanceof Error?error.message:'Check your contact details.');return;}
+      setContactError('');
       if (billingSameAsShipping && deliveryOption === "Delivery") {
         setBillingAddress(derivedShippingAddress);
       }
@@ -232,7 +241,7 @@ export const CartView: React.FC = () => {
               <h2 id="cart-window-title" className="font-serif text-lg font-light text-editorial-text flex items-center gap-2">
                 {checkoutStep === "cart" && "Your cart"}
                 {checkoutStep === "shipping" && "Delivery details"}
-                {checkoutStep === "payment" && "Review your order"}
+                {checkoutStep === "payment" && "Review & payment"}
                 {checkoutStep === "success" && "Order Submitted!"}
               </h2>
             </div>
@@ -270,7 +279,7 @@ export const CartView: React.FC = () => {
                 disabled
                 className={`py-3.5 transition-colors cursor-default ${checkoutStep === "payment" ? "bg-editorial-accent text-white" : "text-gray-600 bg-editorial-aside"}`}
               >
-                3. Review & Reserve
+                3. Review & Payment
               </button>
             </div>
           )}
@@ -345,7 +354,7 @@ export const CartView: React.FC = () => {
                                 Quantity: {item.quantity}
                               </span>
                               <span className="font-sans text-base font-semibold text-editorial-text">
-                                ${item.rug.price.toLocaleString()}
+                                {saleLabel(item.rug)}
                               </span>
                             </div>
                           </div>
@@ -367,6 +376,7 @@ export const CartView: React.FC = () => {
             {/* --- STEP 2: SHIPPING FORM --- */}
             {checkoutStep === "shipping" && (
               <div className="space-y-4 text-sm">
+                {contactError&&<p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">{contactError}</p>}
                 <h4 className="text-sm uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
                   Contact details
                 </h4>
@@ -535,8 +545,8 @@ export const CartView: React.FC = () => {
                         </div>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        Shipping and applicable tax: <strong>quoted before payment</strong>.
-                        Our showroom will confirm delivery arrangements before payment.
+                        Shipping: <strong>Free</strong>. Sales tax (6%) is included in the total below.
+                        Free shipping is included in each displayed sale price.
                       </p>
                     </div>
                   ) : (
@@ -610,10 +620,10 @@ export const CartView: React.FC = () => {
             {/* Review the server-priced order before any payment. */}
             {checkoutStep === "payment" && (
               <div className="space-y-4 text-sm text-left">
-                <LiveOrderRequest payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
+                <LiveOrderRequest onEditDetails={()=>setCheckoutStep("shipping")} key={JSON.stringify([cart.map(i=>[i.rug.id,i.quantity]),deliveryOption,appliedPromo?.code,name,phone,email,derivedShippingAddress,billingAddress,notes])} payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
                     billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress,
-                    notes}}} />
+                    notes, deliveryAddress: deliveryOption === 'Delivery' ? {street1:shippingStreet,street2:shippingApt,city:shippingCity,state:shippingState,zip:shippingZip,country:'US'} : undefined}}} />
                 <RugCheckoutButton payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
                     billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress, notes}}} />
@@ -784,9 +794,9 @@ export const CartView: React.FC = () => {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>{deliveryOption === "Pickup" ? "Sales tax (6%):" : "Applicable sales tax:"}</span>
+                  <span>Sales tax (6%):</span>
                   <span className="font-sans font-medium text-editorial-text">
-                    {deliveryOption === "Pickup" ? `$${tax.toFixed(2)}` : "Quoted before payment"}
+                    {`$${tax.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -800,13 +810,13 @@ export const CartView: React.FC = () => {
                         Free Pickup
                       </span>
                     ) : (
-                      "Quoted before payment"
+                      "Free Shipping"
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-editorial-border pt-3 text-sm font-light">
                   <span className="text-editorial-text uppercase tracking-wider">
-                    {deliveryOption === "Pickup" ? "Pickup total:" : "Rugs subtotal (before quote):"}
+                    Total including sales tax:
                   </span>
                   <span className="font-sans text-xl font-bold text-editorial-text">
                     ${total.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -827,15 +837,22 @@ export const CartView: React.FC = () => {
                       className="w-full bg-white border border-editorial-border py-2 px-3 text-sm outline-none focus:border-editorial-accent uppercase"
                     />
                     <button
-                      onClick={() => {
-                        const promo = promoCodes?.find(
-                          (p) => p.code === promoInput && p.isActive,
-                        );
-                        if (promo) {
-                          setAppliedPromo(promo);
-                          setPromoError("");
-                        } else {
-                          setPromoError("Invalid or expired promo code");
+                      onClick={async () => {
+                        setPromoError("");
+                        try {
+                          const user=auth.currentUser;
+                          if(!user) throw new Error("Checkout is loading. Please try again.");
+                          const token=await user.getIdToken();
+                          const response=await fetch('/api/checkout-promo', {
+                            method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+                            body:JSON.stringify({code:promoInput.trim()})
+                          });
+                          const result=await response.json();
+                          if(!response.ok) throw new Error(result.error||"Could not check this promo code.");
+                          setAppliedPromo(result.promo);
+                        } catch(error) {
+                          setAppliedPromo(null);
+                          setPromoError(error instanceof Error?error.message:"Could not check this promo code.");
                         }
                       }}
                       className="bg-[#1A1A1A] text-white px-4 text-sm font-bold uppercase tracking-widest cursor-pointer hover:bg-[#333]"

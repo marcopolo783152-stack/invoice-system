@@ -1,3 +1,3 @@
 'use client';
-import AuctionUnderConstruction from '@/components/auction/AuctionUnderConstruction';
-export const AuctionView = () => <AuctionUnderConstruction/>;
+import AuctionCatalog from '@/components/auction/AuctionCatalog';
+export const AuctionView=()=> <AuctionCatalog/>;

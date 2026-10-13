@@ -397,6 +397,8 @@ export default function InvoiceTemplate(props: any) {
                         </tr>
                       )}
 
+                      {!!data.serviceProducts?.length&&<tr><td colSpan={2} className={styles.totalLabel}>Products included in subtotal:</td></tr>}
+                      {data.serviceProducts?.map((p:any)=><tr key={'product-'+p.id}><td className={styles.totalLabel}>{p.description} · {p.quantity} × {formatCurrency(p.unitPrice)}{p.returned?' (Returned)':''}{p.taxable===false?' (No tax)':''}:</td><td className={styles.totalValue}>{formatCurrency(p.quantity*p.unitPrice)}</td></tr>)}
                       {/* Discount Row - ALL MODES */}
                       {calculations.discount > 0 && (
                         <tr>
@@ -408,7 +410,7 @@ export default function InvoiceTemplate(props: any) {
                       )}
 
                       {/* Sales Tax - Retail Only (Never for Wash or Appraisals) */}
-                      {isRetail && data.mode !== 'wash' && !isAppraisal && (
+                      {((isRetail && data.mode !== 'wash' && !isAppraisal) || !!data.serviceProducts?.some((p:any)=>p.taxable!==false)) && (
                         <tr>
                           <td className={styles.totalLabel}>Sales Tax (6%):</td>
                           <td className={styles.totalValue}>{formatCurrency(calculations.salesTax)}</td>

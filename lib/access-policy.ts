@@ -18,17 +18,18 @@ export function canAccess(staff: StaffAccess | null, section: string, action = '
 export function sectionForTab(tab: string): AccessSection | null {
  const tabs: Record<string, AccessSection> = {
   analytics:'reports', inventory:'inventory', bulk_import:'inventory', orders:'orders', transactions:'reports',
-  cleaning:'services', estimates:'services', appointments:'appointments', appraisals:'invoices', employees:'employees', loans:'loans',
+  cleaning:'services', estimates:'services', appointments:'appointments', pickups:'appointments', appraisals:'invoices', employees:'employees', loans:'loans',
   clock:'employees', reviews:'reviews', messages:'messages', blogs:'content', promotions:'promotions', settings:'settings',
   builder:'content', crm:'customers', users:'users'
  };
  return tabs[tab] || null;
 }
 export function invoiceSection(path: string): AccessSection {
+ if (/\/pickups(?:\/|$)/.test(path)) return 'appointments';
  if (/employees|clock/.test(path)) return 'employees';
  if (/settings/.test(path)) return 'settings';
  if (/inventory/.test(path)) return 'inventory';
- if (/service-tracking|service-vendors/.test(path)) return 'services';
+ if (/service-tracking|service-vendors|washing/.test(path)) return 'services';
  if (/reports|outstanding|audit-log/.test(path) || path === '/admin/invoices') return 'reports';
  return 'invoices';
 }

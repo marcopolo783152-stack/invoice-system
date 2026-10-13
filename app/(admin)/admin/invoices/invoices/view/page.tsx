@@ -1,5 +1,7 @@
 'use client';
 
+import {createCustomerInvoiceLink} from '@/lib/invoice-share-client';
+
 import { appendInvoicePayment } from '@/lib/firebase-storage';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -833,10 +835,13 @@ function InvoiceViewContent() {
                                             <Edit size={16} /> Edit Invoice
                                         </button>
 
-                                                                                <button onClick={() => { 
-                                            navigator.clipboard.writeText(`${window.location.origin}/tracking/${invoice.id}`);
-                                            alert('Tracking link copied to clipboard!');
-                                            setShowMoreMenu(false); 
+                                                                                <button onClick={async () => {
+                                            try {
+                                                const link = await createCustomerInvoiceLink(invoice.id, 'tracking');
+                                                await navigator.clipboard.writeText(link);
+                                                alert('Secure tracking link copied to clipboard!');
+                                                setShowMoreMenu(false);
+                                            } catch (error: any) { alert(error.message || 'Could not copy the tracking link.'); }
                                         }} className="dropdown-item">
                                             <Package size={16} /> Copy Tracking Link
                                         </button>
@@ -917,8 +922,8 @@ function InvoiceViewContent() {
                             // Generate Link
                             const isService = (invoice.data.mode as any) === 'wash' || (invoice.data.mode as any) === 'repair';
                             const link = isService 
-                                ? `${window.location.origin}/tracking/${invoice.id}`
-                                : `${window.location.origin}/public/invoice?id=${invoice.id}&pdf=true`;
+                                ? await createCustomerInvoiceLink(invoice.id, 'tracking')
+                                : await createCustomerInvoiceLink(invoice.id);
 
                             // Send Link (Client Side - Free Tier Compatible)
                             const { sendInvoiceEmail } = await import('@/lib/email-service');
@@ -1087,3 +1092,4 @@ export default function InvoiceViewPage() {
         </Suspense>
     );
 }
+

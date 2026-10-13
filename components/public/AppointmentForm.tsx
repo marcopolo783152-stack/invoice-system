@@ -8,10 +8,12 @@ import { reserveAppointment } from '@/lib/appointment-booking';
 import { APPOINTMENT_STAFF, appointmentSlots, showroomNow, isFutureSlot } from '@/lib/appointment-slots';
 import {Rug} from '@/types';
 import AddressAutocomplete from '../AddressAutocomplete';
+import {appointmentEmailFeedback} from '@/lib/appointment-email-feedback.mjs';
 
 export default function AppointmentForm({publicRugs=[]}:{publicRugs?:Rug[]}) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [emailStatus,setEmailStatus]=useState('unavailable');
     
     const [formData, setFormData] = useState({
         name: '',
@@ -60,7 +62,8 @@ export default function AppointmentForm({publicRugs=[]}:{publicRugs?:Rug[]}) {
         setIsSubmitting(true);
 
         try {
-            await reserveAppointment({...formData, notes: [selectedRugs.length ? 'Rugs to view: ' + selectedRugs.map(r=>r.name+' (SKU '+r.sku+', '+r.dimensions+')').join('; ') : '', formData.notes].filter(Boolean).join('\n')});
+            const result=await reserveAppointment({...formData, notes: [selectedRugs.length ? 'Rugs to view: ' + selectedRugs.map(r=>r.name+' (SKU '+r.sku+', '+r.dimensions+')').join('; ') : '', formData.notes].filter(Boolean).join('\n')});
+            setEmailStatus(result.emailStatus);
             setIsSuccess(true);
         } catch (err) {
             console.error(err);
@@ -79,6 +82,9 @@ export default function AppointmentForm({publicRugs=[]}:{publicRugs?:Rug[]}) {
                 <p className="text-emerald-700 font-light max-w-md mx-auto">
                     Thank you, {formData.name}. We received your request to meet {APPOINTMENT_STAFF.find(s => s.id === formData.staffId)?.name} on {formData.date} at {appointmentSlots().find(s => s.value === formData.time)?.label} (Alexandria time). Your appointment is pending staff confirmation.
                 </p>
+                <p role="status" className="mt-6 mx-auto max-w-lg rounded-xl border border-emerald-200 bg-white p-5 text-emerald-950">
+                    <strong className="block text-base font-bold leading-7">{appointmentEmailFeedback(emailStatus).message}</strong>
+                </p>
                 <button onClick={() => window.location.href = '/'} className="mt-8 px-6 py-3 bg-emerald-700 text-white font-bold uppercase tracking-wider text-sm rounded-sm hover:bg-emerald-800 transition-colors">
                     Return to Home
                 </button>
@@ -87,7 +93,7 @@ export default function AppointmentForm({publicRugs=[]}:{publicRugs?:Rug[]}) {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="bg-white border border-neutral-100 p-8 shadow-sm rounded-sm max-w-3xl mx-auto space-y-6">{selectedRugs.length>0&&<div className="col-span-full rounded-lg bg-stone-100 p-4"><h3 className="font-semibold">Rugs for your visit</h3>{selectedRugs.map(r=><p key={r.id}>{r.name} · {r.dimensions} <button type="button" className="underline ml-2" onClick={()=>setSelectedIds(ids=>ids.filter(id=>id!==r.id))}>Remove</button></p>)}</div>}
+        <form onSubmit={handleSubmit} className="customer-surface customer-booking bg-white border border-neutral-100 p-8 shadow-sm rounded-sm max-w-3xl mx-auto space-y-6">{selectedRugs.length>0&&<div className="col-span-full rounded-lg bg-stone-100 p-4"><h3 className="font-semibold">Rugs for your visit</h3>{selectedRugs.map(r=><p key={r.id}>{r.name} · {r.dimensions} <button type="button" className="underline ml-2" onClick={()=>setSelectedIds(ids=>ids.filter(id=>id!==r.id))}>Remove</button></p>)}</div>}
             <div className="text-center mb-8">
                 <h2 className="text-3xl font-serif text-neutral-900 mb-2">Book an Appointment</h2>
                 <p className="text-neutral-500">Open every day, 10:00 AM–6:00 PM. Lunch: 1:30–2:00 PM. Appointments are 30 minutes, in Alexandria time.</p>

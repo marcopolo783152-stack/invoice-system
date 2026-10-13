@@ -9,6 +9,6 @@ export async function POST(request:Request){try{
  let input:any;try{input=JSON.parse(text);}catch{return NextResponse.json({error:'Invalid request.'},{status:400});}
  if(!input||typeof input.id!=='string'||!/^[a-zA-Z0-9_-]{1,100}$/.test(input.id)||typeof input.saved!=='boolean')return NextResponse.json({error:'Invalid request.'},{status:400});
  const db=serverDb(),ref=db.collection('auction_watchlists').doc(user.uid).collection('lots').doc(input.id);
- if(input.saved){const lot=await db.doc('auction_lots/'+input.id).get();if(lot.data()?.status!=='preview')return NextResponse.json({error:'Lot is no longer available.'},{status:404});await ref.set({savedAt:Date.now()});}else await ref.delete();
+ if(input.saved){const lot=await db.doc('auction_lots/'+input.id).get();if(!['preview','scheduled'].includes(lot.data()?.status))return NextResponse.json({error:'Lot is no longer available.'},{status:404});await ref.set({savedAt:Date.now()});}else await ref.delete();
  return NextResponse.json({saved:input.saved});
 }catch(error){return auctionFailure(error);}}
