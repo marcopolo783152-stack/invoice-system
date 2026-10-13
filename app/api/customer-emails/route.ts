@@ -22,7 +22,11 @@ export async function POST(request:Request){
    const rateRef=db.doc('customer_email_event_limits/'+user.uid),now=Date.now();
    const allowed=await db.runTransaction(async tx=>{const p=(await tx.get(rateRef)).data(),active=p&&now-p.at<60000;if(active&&p.count>=30)return false;tx.set(rateRef,{at:active?p.at:now,count:active?p.count+1:1});return true;});
    if(!allowed)return response({error:'Please wait before retrying.'},429);
-   const ids=await observeCustomerSource(b.collection,b.id);if(b.action==='event'&&ids[0])await deliverCustomerEmail(ids[0]);return response({queued:ids.length});
+   const control=await emailSettings();if(!control.enabled)return response({queued:0,status:'paused'});
+   const ids=await observeCustomerSource(b.collection,b.id);
+   let status=ids.length?'pending':'not_queued';
+   if(b.action==='event'&&ids[0]){const result=await deliverCustomerEmail(ids[0]);status=result==='skipped'?'pending':result;}
+   return response({queued:ids.length,status});
   }
   const staff=await requireStaff(request,'settings','write');
   if(b.action==='test'){

@@ -30,7 +30,8 @@ export async function reserveAppointment(input: {
     // Public availability contains no customer contact information.
     tx.set(slotRef, { staffId: staff.id, date: input.date, time: input.time, appointmentId: appointmentRef.id });
   });
-  await customerEmailEvent('showroom_appointments',appointmentRef.id);
+  const emailStatus=await customerEmailEvent('showroom_appointments',appointmentRef.id);
+  return {appointmentId:appointmentRef.id,emailStatus};
 }
 
 export async function changeAppointmentStatus(id: string, status: 'confirmed' | 'rejected' | 'cancelled') {

@@ -8,10 +8,12 @@ import { reserveAppointment } from '@/lib/appointment-booking';
 import { APPOINTMENT_STAFF, appointmentSlots, showroomNow, isFutureSlot } from '@/lib/appointment-slots';
 import {Rug} from '@/types';
 import AddressAutocomplete from '../AddressAutocomplete';
+import {appointmentEmailFeedback} from '@/lib/appointment-email-feedback.mjs';
 
 export default function AppointmentForm({publicRugs=[]}:{publicRugs?:Rug[]}) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [emailStatus,setEmailStatus]=useState('unavailable');
     
     const [formData, setFormData] = useState({
         name: '',
@@ -60,7 +62,8 @@ export default function AppointmentForm({publicRugs=[]}:{publicRugs?:Rug[]}) {
         setIsSubmitting(true);
 
         try {
-            await reserveAppointment({...formData, notes: [selectedRugs.length ? 'Rugs to view: ' + selectedRugs.map(r=>r.name+' (SKU '+r.sku+', '+r.dimensions+')').join('; ') : '', formData.notes].filter(Boolean).join('\n')});
+            const result=await reserveAppointment({...formData, notes: [selectedRugs.length ? 'Rugs to view: ' + selectedRugs.map(r=>r.name+' (SKU '+r.sku+', '+r.dimensions+')').join('; ') : '', formData.notes].filter(Boolean).join('\n')});
+            setEmailStatus(result.emailStatus);
             setIsSuccess(true);
         } catch (err) {
             console.error(err);
@@ -78,6 +81,9 @@ export default function AppointmentForm({publicRugs=[]}:{publicRugs?:Rug[]}) {
                 <h3 className="text-2xl font-serif text-emerald-900 mb-4">Appointment Request Received</h3>
                 <p className="text-emerald-700 font-light max-w-md mx-auto">
                     Thank you, {formData.name}. We received your request to meet {APPOINTMENT_STAFF.find(s => s.id === formData.staffId)?.name} on {formData.date} at {appointmentSlots().find(s => s.value === formData.time)?.label} (Alexandria time). Your appointment is pending staff confirmation.
+                </p>
+                <p role="status" className="mt-6 mx-auto max-w-lg rounded-xl border border-emerald-200 bg-white p-5 text-emerald-950">
+                    <strong className="block text-base font-bold leading-7">{appointmentEmailFeedback(emailStatus).message}</strong>
                 </p>
                 <button onClick={() => window.location.href = '/'} className="mt-8 px-6 py-3 bg-emerald-700 text-white font-bold uppercase tracking-wider text-sm rounded-sm hover:bg-emerald-800 transition-colors">
                     Return to Home

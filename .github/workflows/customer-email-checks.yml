@@ -4,6 +4,9 @@ on:
     branches: [main, feature/shippo-invoice-links-20260929]
     paths:
       - 'lib/customer-email*'
+      - 'lib/appointment-email-feedback.mjs'
+      - 'components/public/AppointmentForm.tsx'
+      - 'tests/access/appointment-email-feedback.test.mjs'
       - 'lib/email-service.ts'
       - 'lib/server/customer-emails.ts'
       - 'lib/server/live-receipt.ts'
@@ -34,7 +37,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/access/customer-email.test.mjs tests/access/service-estimate.test.mjs tests/access/rug-categorization.test.mjs
+      - run: node --test tests/access/appointment-email-feedback.test.mjs tests/access/customer-email.test.mjs tests/access/service-estimate.test.mjs tests/access/rug-categorization.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run build
         env:
