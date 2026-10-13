@@ -1,10 +1,10 @@
 # Shared customer emails
 
-Customer communications reuse the current EmailJS sending service and one shared HTML template. The application generates the green/cream design, customer-specific subject, details and action button. No additional template subscription is required for this implementation; EmailJS sending quotas still apply.
+Manual invoice/signature-link emails and automated customer communications reuse the current EmailJS sending service and one shared HTML template. The application generates the green/cream design, customer-specific subject, details and action button. No additional template subscription is required for this implementation; EmailJS sending quotas still apply.
 
 ## Setup and activation
 
-1. Reuse the existing order receipt template, or edit another existing template. Set To Email to `{{to_email}}`, Subject to `{{subject}}`, and the HTML body to `{{{message}}}`. Set From Name to Marco Polo Oriental Rugs and Reply To to `{{reply_to}}`. Do not leave a fixed invoice title or invoice-specific wrapper around the message.
+1. Reuse the existing invoice template or order receipt template. Manual invoice and signature-link messages now also provide the complete shared HTML design. Set To Email to `{{to_email}}`, Subject to `{{subject}}`, and the HTML body to `{{{message}}}`. Set From Name to Marco Polo Oriental Rugs and Reply To to `{{reply_to}}`. Do not leave a fixed invoice title or invoice-specific wrapper around the message.
 2. In Vercel Production, set `EMAILJS_TEMPLATE_CUSTOMER_MESSAGES` to that existing template ID. The existing `EMAILJS_TEMPLATE_ORDER_RECEIPT` is the fallback. Keep `EMAILJS_SERVICE_ID`, `EMAILJS_PUBLIC_KEY`, and `EMAILJS_PRIVATE_KEY` from the same account. Private keys remain server-side. EmailJS must allow server/non-browser requests.
 3. Set a random `CRON_SECRET` in Vercel Production and redeploy. The daily cron in `vercel.json` invokes the authenticated worker at 13:00 UTC (9 AM EDT / 8 AM EST). Day-before reminders use the Alexandria calendar and include the correct Eastern timezone in the message.
 4. Open Showroom Admin → Appointments → Customer emails. Send a preview to the signed-in manager's email. Check its design, inbox/spam, sending address and Reply To. Enable automatic customer emails and save. Sending remains paused until this step; a successful provider test is required before activation.

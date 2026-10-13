@@ -4,6 +4,7 @@ on:
     branches: [main, feature/shippo-invoice-links-20260929]
     paths:
       - 'lib/customer-email*'
+      - 'lib/email-service.ts'
       - 'lib/server/customer-emails.ts'
       - 'lib/server/live-receipt.ts'
       - 'lib/server/live-refund.ts'

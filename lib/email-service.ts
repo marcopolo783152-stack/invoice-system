@@ -1,3 +1,4 @@
+import {renderCustomerEmail,SHOP} from './customer-email.mjs';
 import {invoiceEmailFields} from './invoice-email-fields.mjs';
 /**
  * EMAIL SERVICE
@@ -105,7 +106,8 @@ export async function sendInvoiceEmail(
       from_name: 'Marco Polo Oriental Rugs',
       invoice_number: invoiceNumber,
       // Updated message with Direct Link
-      message: `Dear ${customerName},\n\nYou can view and download your invoice #${invoiceNumber} at the link below:\n\n${invoiceLink}\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
+      message: renderCustomerEmail({title:'Your invoice is ready',name:customerName,intro:'You can review, print, or download your invoice using the button below.',details:[['Invoice',invoiceNumber]],button:{label:'View your invoice',url:invoiceLink}}),
+      reply_to: SHOP.email,
       invoice_link: invoiceLink, // Sending as separate param too just in case template uses it
       // invoice_html: removed to save size
     };
@@ -492,7 +494,8 @@ export async function sendSignatureRequestEmail(
         signature_link: signatureLink,
         invoice_link: signatureLink,
         invoice_url: signatureLink,
-        message: `Dear ${customerName},\n\nYour signature is required for invoice #${invoiceNumber}. Please click the link below to sign electronically. You can review and sign your invoice here:\n\n${signatureLink}\n\nThank you!`
+        message: renderCustomerEmail({title:'Please review and sign your invoice',name:customerName,intro:'Your signature is requested for the invoice below. Please review its details before signing.',details:[['Invoice',invoiceNumber]],button:{label:'Review and sign',url:signatureLink}}),
+        reply_to: SHOP.email
       },
       config.publicKey
     );
