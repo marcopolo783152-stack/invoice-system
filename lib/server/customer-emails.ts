@@ -48,7 +48,7 @@ export async function deliverCustomerEmail(id:string,force=false){
    return null;
   }
   if(!(e.status==='pending'||force&&['failed','uncertain','not_configured'].includes(e.status)))return null;
-  if(!force&&(!control.enabled||!control.kinds.includes(e.kind)))return null;
+  if(!force&&!control.kinds.includes(e.kind)){tx.update(ref,{status:'suppressed',updatedAt:now,error:'This message category was disabled before sending.'});return null;}
   // Serialize account sends and respect EmailJS's per-second limit across all workers.
   const rateRef=db.doc('customer_email_control/send_rate'),rate=(await tx.get(rateRef)).data();
   if(now-(rate?.at||0)<1100)return null;
@@ -109,7 +109,7 @@ export async function runCustomerEmailWorker(){
   const sorted=pending.docs.sort((a,b)=>a.data().createdAt-b.data().createdAt);
   for(const e of sorted){if(Date.now()-start>47000||processed>=25)break;const result=await deliverCustomerEmail(e.id);if(result==='accepted')accepted++;processed++;await new Promise(r=>setTimeout(r,1100));}
   const sending=await db.collection(QUEUE).where('status','==','sending').limit(30).get();
-  for(const e of sending)if(Date.now()-e.data().attemptAt>120000)await deliverCustomerEmail(e.id);
+  for(const e of sending.docs)if(Date.now()-e.data().attemptAt>120000)await deliverCustomerEmail(e.id);
   await workerRef.set({lastCompletedAt:Date.now(),scanned,accepted,processed,error:''},{merge:true});return {scanned,accepted,processed};
  }catch{await workerRef.set({error:'Processing did not finish. Saved email events are retained; check configuration and run again.',lastFailedAt:Date.now()},{merge:true});throw Error('EMAIL_WORKER_FAILED');}
  finally{await db.runTransaction(async tx=>{const w=await tx.get(workerRef);if(w.data()?.lease===lease)tx.update(workerRef,{leaseUntil:0});});}
