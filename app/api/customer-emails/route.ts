@@ -13,6 +13,15 @@ export async function POST(request:Request){
  try{
   if(request.headers.get('origin')&&request.headers.get('origin')!==new URL(request.url).origin)return response({error:'Use the showroom website.'},403);
   const raw=await request.text();if(raw.length>4000)return response({error:'Request too large.'},413);const b=JSON.parse(raw),db=serverDb();
+  if(b.action==='appointment_confirmation'){
+   await requireStaff(request,'appointments','write');
+   if(typeof b.id!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(b.id))return response({error:'Invalid appointment.'},400);
+   const control=await emailSettings();if(!control.enabled||!control.kinds.includes('appointment_confirmation'))return response({error:'Enable appointment confirmation emails first.'},409);
+   const saved=(await db.doc('showroom_appointments/'+b.id).get()).data();if(!saved||saved.status!=='confirmed')return response({error:'Accept the appointment before sending its confirmation.'},409);
+   const ids=await observeCustomerSource('showroom_appointments',b.id,true);if(!ids[0])return response({error:'A valid customer email address is required.'},400);
+   const result=await deliverCustomerEmail(ids[0]);const status=result==='skipped'?(await db.doc('customer_email_outbox/'+ids[0]).get()).data()?.status||'pending':result;
+   return response({status});
+  }
   if(b.action==='event'||b.action==='observe'){
    if(!EMAIL_COLLECTIONS.includes(b.collection)||typeof b.id!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(b.id))return response({error:'Invalid customer event.'},400);
    const user=await caller(request),saved=(await db.doc(b.collection+'/'+b.id).get()).data();if(!saved)return response({error:'Saved record not found.'},404);

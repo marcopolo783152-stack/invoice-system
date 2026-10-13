@@ -1,6 +1,7 @@
 import 'server-only';
 import {createHash,randomBytes,randomUUID} from 'node:crypto';
 import {FieldPath} from 'firebase-admin/firestore';
+import {queueEmailRecord} from '../customer-email-queue.mjs';
 import {serverDb} from './firebase-admin';
 import {receiptEmailError} from './receipt-email-error.mjs';
 import {tokenHash,customerInvoice} from './invoice-share.mjs';
@@ -13,7 +14,7 @@ const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function emailConfiguration(){return {configured:!!process.env.EMAILJS_PRIVATE_KEY?.trim()&&!!(process.env.EMAILJS_TEMPLATE_CUSTOMER_MESSAGES?.trim()||process.env.EMAILJS_TEMPLATE_ORDER_RECEIPT?.trim()),templateId:process.env.EMAILJS_TEMPLATE_CUSTOMER_MESSAGES?.trim()||process.env.EMAILJS_TEMPLATE_ORDER_RECEIPT?.trim()||'',schedulerSecretSet:!!process.env.CRON_SECRET?.trim()};}
 export async function emailSettings(){const s=(await serverDb().doc(EMAIL_SETTINGS).get()).data();return {enabled:false,enabledAt:0,lastTestAt:0,kinds:EMAIL_KINDS,...s};}
 /** Source read, snapshot change, and queue creation are one Firestore transaction. */
-export async function observeCustomerSource(collection:string,id:string){
+export async function observeCustomerSource(collection:string,id:string,recoverConfirmation=false){
  if(!EMAIL_COLLECTIONS.includes(collection)||!/^[A-Za-z0-9_-]{1,100}$/.test(id))return [] as string[];
  const db=serverDb(),control=await emailSettings();if(!control.enabled)return [] as string[];
  const path=collection+'/'+id,stateRef=db.doc(STATE+'/'+hash(path)),sourceRef=db.doc(path),now=Date.now();
@@ -21,11 +22,12 @@ export async function observeCustomerSource(collection:string,id:string){
   const [source,prior]=await tx.getAll(sourceRef,stateRef);if(!source.exists)return [] as string[];
   const raw={...source.data(),id:source.id},current=emailSource(collection,raw),previous=prior.data()?.source;
   const revision=(prior.data()?.revision||0)+(JSON.stringify(current)!==JSON.stringify(previous)?1:0);
-  const events=customerEmailEvents(current,previous,control.enabledAt,now).filter((e:any)=>control.kinds.includes(e.kind));
-  const pending=events.map((e:any)=>{const version=eventVersion(e,current),dedup=e.kind.endsWith('_reminder')?version:String(revision)+':'+version;return {...e,version,id:hash(path+':'+e.kind+':'+dedup),sourcePath:path,createdAt:now,status:'pending',attempts:0};});
+  const recovery=recoverConfirmation&&collection==='showroom_appointments'&&current.status==='confirmed';
+  const events=customerEmailEvents(current,recovery?{...current,status:'pending'}:previous,control.enabledAt,now).filter((e:any)=>control.kinds.includes(e.kind)&&(!recovery||e.kind==='appointment_confirmation'));
+  const pending=events.map((e:any)=>{const version=eventVersion(e,current),dedup=e.kind.endsWith('_reminder')?version:String(revision)+':'+version;return queueEmailRecord({...e,version,id:hash(path+':'+e.kind+':'+dedup),sourcePath:path,createdAt:now,status:'pending',attempts:0});});
   const existing=pending.length?await tx.getAll(...pending.map((e:any)=>db.doc(QUEUE+'/'+e.id))):[];
   tx.set(stateRef,{source:current,revision,observedAt:now});
-  const ids:string[]=[];pending.forEach((e:any,i:number)=>{if(!existing[i].exists){tx.create(db.doc(QUEUE+'/'+e.id),e);ids.push(e.id);}});
+  const ids:string[]=[];pending.forEach((e:any,i:number)=>{if(!existing[i].exists){tx.create(db.doc(QUEUE+'/'+e.id),e);ids.push(e.id);}else if(recovery)ids.push(e.id);});
   return ids;
  });
 }
