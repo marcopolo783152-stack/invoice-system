@@ -11,7 +11,7 @@ const QUEUE='customer_email_outbox',STATE='customer_email_sources';
 export const EMAIL_COLLECTIONS=['showroom_appointments','showroom_estimates','service_pickup_bookings','invoices','showroom_orders','showroom_live_orders'];
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function emailConfiguration(){return {configured:!!process.env.EMAILJS_PRIVATE_KEY?.trim()&&!!(process.env.EMAILJS_TEMPLATE_CUSTOMER_MESSAGES?.trim()||process.env.EMAILJS_TEMPLATE_ORDER_RECEIPT?.trim()),templateId:process.env.EMAILJS_TEMPLATE_CUSTOMER_MESSAGES?.trim()||process.env.EMAILJS_TEMPLATE_ORDER_RECEIPT?.trim()||'',schedulerSecretSet:!!process.env.CRON_SECRET?.trim()};}
-export async function emailSettings(){const s=(await serverDb().doc(EMAIL_SETTINGS).get()).data();return {enabled:false,enabledAt:0,kinds:EMAIL_KINDS,...s};}
+export async function emailSettings(){const s=(await serverDb().doc(EMAIL_SETTINGS).get()).data();return {enabled:false,enabledAt:0,lastTestAt:0,kinds:EMAIL_KINDS,...s};}
 /** Source read, snapshot change, and queue creation are one Firestore transaction. */
 export async function observeCustomerSource(collection:string,id:string){
  if(!EMAIL_COLLECTIONS.includes(collection)||!/^[A-Za-z0-9_-]{1,100}$/.test(id))return [] as string[];
