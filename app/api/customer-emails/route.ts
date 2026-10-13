@@ -36,6 +36,7 @@ export async function POST(request:Request){
   if(b.action==='configure'){
    if(typeof b.enabled!=='boolean'||!Array.isArray(b.kinds)||b.kinds.some((k:any)=>!EMAIL_KINDS.includes(k)))return response({error:'Invalid email settings.'},400);
    const current=await emailSettings();if(b.enabled&&(!emailConfiguration().configured||!current.lastTestAt))return response({error:'Send and check the test email before enabling automatic customer emails.'},409);
+   if(b.enabled){const config=(await db.doc('settings/global_config').get()).data()?.emailConfig;if(config&&(config.serviceId!==(process.env.EMAILJS_SERVICE_ID?.trim()||'marcopolo2')||config.publicKey!==(process.env.EMAILJS_PUBLIC_KEY?.trim()||'Anj9zrEUo-VEWvMVw')))return response({error:'Use the same EmailJS Service ID and Public Key in Vercel as your existing Invoice Settings before sharing one template.'},409);await db.doc('settings/global_config').set({emailConfig:{templateIdShared:emailConfiguration().templateId}},{merge:true});}
    await db.doc(EMAIL_SETTINGS).set({enabled:b.enabled,kinds:[...new Set(b.kinds)],enabledAt:b.enabled&&!current.enabled?Date.now():current.enabledAt,updatedAt:Date.now(),updatedBy:staff.uid},{merge:true});return response({success:true});
   }
   if(b.action==='run')return response(await runCustomerEmailWorker());
