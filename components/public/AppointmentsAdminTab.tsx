@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { subscribeToCollection, SHOWROOM_APPOINTMENTS, updateShowroomDoc, deleteShowroomDoc } from '@/lib/showroom-firebase';
 import { Calendar, User, Clock, CheckCircle2, XCircle, Trash2, Plus } from 'lucide-react';
 import AppointmentForm from './AppointmentForm';
+import CustomerEmailCenter from '@/components/customer-emails/CustomerEmailCenter';
 
 export default function AppointmentsAdminTab() {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -32,6 +33,7 @@ export default function AppointmentsAdminTab() {
 
   return (
     <div className="space-y-6"><PickupReminders manageHref="/?view=admin&adminTab=pickups"/>
+      <details className="rounded-xl border border-emerald-100 bg-stone-50"><summary className="cursor-pointer p-4 font-semibold text-[#183d32]">Customer emails · confirmations, reminders &amp; history</summary><CustomerEmailCenter/></details>
       <div className="flex items-center justify-between">
         <div>
             <h2 className="text-xl font-serif text-neutral-900">Scheduled Appointments</h2>

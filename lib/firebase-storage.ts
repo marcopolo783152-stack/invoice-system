@@ -24,6 +24,7 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured, checkFirebaseQuotaError } from './firebase';
 import { InvoiceData, Payment, calculateInvoice } from './calculations';
+import {customerEmailEvent} from './customer-email-client';
 
 export interface SavedInvoice {
   id: string;
@@ -63,6 +64,7 @@ export async function saveInvoiceToCloud(
       tx.set(numberRef, {invoiceId:docRef.id, invoiceNumber, createdAt:now});
       tx.set(docRef, {invoiceNumber, customerName, date:data.date, totalAmount, data, createdAt:now, updatedAt:now});
     });
+    if(getCollectionName()==='invoices')await customerEmailEvent('invoices',docRef.id);
     return docRef.id;
   } catch (error) {
     checkFirebaseQuotaError(error);
@@ -233,6 +235,7 @@ export async function updateInvoiceInCloud(
 
   try {
     const docRef = doc(db, getCollectionName(), id);
+    if(getCollectionName()==='invoices')await customerEmailEvent('invoices',id,true);
     await runTransaction(db, async transaction => {
       const current = await transaction.get(docRef);
       if (!current.exists()) throw new Error('Invoice not found.');
@@ -242,6 +245,7 @@ export async function updateInvoiceInCloud(
         data: merged, updatedAt: Timestamp.now()
       });
     });
+    if(getCollectionName()==='invoices')await customerEmailEvent('invoices',id);
   } catch (error) {
     checkFirebaseQuotaError(error);
     console.error('Error updating invoice in cloud:', error);

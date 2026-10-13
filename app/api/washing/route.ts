@@ -1,3 +1,4 @@
+import {baselineCustomerSource,observeCustomerSource,deliverCustomerEmail} from '@/lib/server/customer-emails';
 import {NextResponse} from 'next/server';
 import {randomBytes,createHash} from 'node:crypto';
 import {serverDb} from '@/lib/server/firebase-admin';
@@ -7,7 +8,7 @@ import {washingSummary} from '@/lib/washing-invoice.mjs';
 import {initializeIntake,handoffCandidates,rememberLink,savedLink} from '@/lib/server/washing-intake.mjs';
 import {priorityInfo,priorityOrder} from '@/lib/washing-priority.mjs';
 export const dynamic='force-dynamic';
-export const runtime='nodejs';
+export const runtime='nodejs';export const maxDuration=60;
 const headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'};
 const reply=(value:any,status=200)=>NextResponse.json(value,{status,headers});
 const id=(value:any)=>{if(typeof value!=='string'||!/^[a-zA-Z0-9_-]{1,100}$/.test(value))throw new WashError('Invalid record.');return value;};
@@ -50,7 +51,9 @@ export async function POST(request:Request){try{
  if(b.action==='bulk'){
   if(!['acknowledge','start','ready','delay','receive','accept','rewash'].includes(b.bulkAction))throw new WashError('Choose a supported bulk action.');
   const rugs=Array.isArray(b.rugs)?b.rugs.map((r:any)=>({id:id(r.id),version:r.version})):[];
+  await washEmails(rugs.map((r:any)=>r.id),true);
   const result=await updateJobs(db,{rugs,companyId:a.companyId,vendor:a.vendor,uid:a.uid,action:b.bulkAction,input:{note:b.note||'',priorityAcknowledged:b.priorityAcknowledged===true,receivedDate:b.receivedDate,clean:b.clean===true,conditionChecked:b.conditionChecked===true,sentDate:b.sentDate,dueDate:b.dueDate,checks:b.checks||{}},operationId:id(b.requestId),now});
+  await washEmails(rugs.map((r:any)=>r.id));
   return reply({ids:result.ids,count:result.ids.length,replayed:result.replayed});
  }
  if(b.action==='company'){
@@ -78,6 +81,9 @@ export async function POST(request:Request){try{
  }
  if(b.action==='resolveException'){if(a.vendor)throw new WashError('Staff access required.',403);const ref=db.doc('wash_tracking_exceptions/'+id(b.id));await ref.update({resolved:true,resolvedAt:now,resolution:text(b.note||'',500),resolvedBy:a.uid});return reply({});}
  if(a.vendor&&b.action==='plan')return reply(await planReturns(db,{companyId:a.companyId,rugs:[{id:id(b.id),version:b.version}],plannedDate:b.plannedDate,acknowledged:b.priorityAcknowledged===true,note:b.note||'',uid:a.uid,now}));
- await updateJob(db,{id:id(b.id),companyId:a.companyId,vendor:a.vendor,uid:a.uid,action:b.action,input:b,now});return reply({});
+ await washEmails([id(b.id)],true);
+ await updateJob(db,{id:id(b.id),companyId:a.companyId,vendor:a.vendor,uid:a.uid,action:b.action,input:b,now});await washEmails([id(b.id)]);return reply({});
  }catch(e){return failure(e);}}
 function failure(e:any){const m=e instanceof Error?e.message:'';return reply({...(e instanceof WashError&&e.existingId?{existingId:e.existingId}:{}),error:e instanceof WashError?m:m==='FORBIDDEN'?'You need permission for this section.':/SIGN_IN_REQUIRED|auth\//.test(m)?'Please sign in again.':'Could not save or load washing records. Please retry.'},e instanceof WashError?e.status:m==='FORBIDDEN'?403:/SIGN_IN_REQUIRED|auth\//.test(m)?401:503);}
+
+async function washEmails(ids:string[],baseline=false){try{const records=await serverDb().getAll(...ids.map(id=>serverDb().doc('wash_tracking_jobs/'+id)));const paths=[...new Set(records.map(r=>r.data()).filter(r=>r?.invoiceCollection==='invoices'&&r.invoiceId).map(r=>r!.invoiceId as string))];const queued:string[]=[];for(const id of paths){if(baseline)await baselineCustomerSource('invoices',id);else queued.push(...await observeCustomerSource('invoices',id));}if(queued[0])await deliverCustomerEmail(queued[0]);}catch{console.error('Wash email events are retained for scheduled processing');}}

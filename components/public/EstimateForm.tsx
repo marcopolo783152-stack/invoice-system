@@ -8,6 +8,8 @@ import { collection, doc, setDoc } from 'firebase/firestore';
 import { calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
 import { db, storage, isFirebaseConfigured } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {auth} from '@/lib/auth';
+import {customerEmailEvent} from '@/lib/customer-email-client';
 
 
 type RugDraft = {id: string; service: string; rugType: string; widthFeet: number; widthInches: number; lengthFeet: number; lengthInches: number; description: string; files: File[]};
@@ -89,14 +91,16 @@ export default function EstimateForm() {
 
     try {
       if (!db || !isFirebaseConfigured()) throw new Error("The request form is temporarily unavailable. Please call (703) 461-0207.");
-      await submitServiceEstimate({
+      await auth.authStateReady();
+      const requestId = await submitServiceEstimate({
         formData,
         files: [],
         rugs,
         createReference: () => doc(collection(db!, SHOWROOM_ESTIMATES)),
         uploadImages,
-        write: (reference: any, data: any) => setDoc(reference, data),
+        write: (reference: any, data: any) => setDoc(reference, {...data,...(auth.currentUser?{ownerUid:auth.currentUser.uid}:{})}),
       });
+      await customerEmailEvent(SHOWROOM_ESTIMATES,requestId);
       setIsSuccess(true);
 
     } catch (err: any) {

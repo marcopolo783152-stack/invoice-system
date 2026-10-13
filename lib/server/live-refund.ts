@@ -4,7 +4,9 @@ import {serverDb} from './firebase-admin';
 import {liveStripe} from './live-payment';
 import {LIVE_ORDERS,recordRefund} from './live-orders.mjs';
 import {CheckoutError} from './rug-checkout.mjs';
+import {baselineCustomerSource,notifyCustomerSource} from './customer-emails';
 export async function syncLiveRefund(o:any){
+  await baselineCustomerSource(LIVE_ORDERS,o.id);
   const stripe=liveStripe(),pi=await stripe.paymentIntents.retrieve(o.paymentIntentId);
   if(pi.livemode!==true||pi.metadata.orderId!==o.id||pi.currency!=='usd'||pi.amount!==o.total)throw new CheckoutError('Payment does not match this order.',409);
   const chargeId=typeof pi.latest_charge==='string'?pi.latest_charge:pi.latest_charge?.id;
@@ -14,6 +16,7 @@ export async function syncLiveRefund(o:any){
   const amount=refunds.filter(r=>r.status==='succeeded').reduce((sum,r)=>sum+r.amount,0),pending=refunds.some(r=>!['succeeded','failed','canceled'].includes(r.status||''));
   await recordRefund(serverDb(),o.id,{...charge,amount_refunded:amount});
   await serverDb().collection(LIVE_ORDERS).doc(o.id).update({refundPending:pending});
+  await notifyCustomerSource(LIVE_ORDERS,o.id);
   return (await serverDb().collection(LIVE_ORDERS).doc(o.id).get()).data();
 }
 export async function refundLiveOrder(o:any,uid:string){

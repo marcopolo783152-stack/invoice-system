@@ -1,10 +1,10 @@
 import {assignOrderNumber} from './order-number.mjs';
-import {receiptEmailError} from './receipt-email-error.mjs';
 import 'server-only';
 import {serverDb} from './firebase-admin';
 import {LIVE_ORDERS} from './live-orders.mjs';
-const escape=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-const usd=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
+import {emailConfiguration,sendSharedEmail} from './customer-emails';
+import {renderCustomerEmail,SHOP} from '../customer-email.mjs';
+const usd=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(n||0)/100);
 export async function sendLiveReceipt(id:string,resend=false){
   await assignOrderNumber(serverDb(),id);
   const db=serverDb(),ref=db.collection(LIVE_ORDERS).doc(id),now=Date.now();
@@ -17,16 +17,14 @@ export async function sendLiveReceipt(id:string,resend=false){
   if(!order)return (await ref.get()).data()?.receiptEmailStatus||'unavailable';
   let status='failed',error='';
   try{
-    if(!process.env.EMAILJS_PRIVATE_KEY?.trim()){status='not configured';error='Add EMAILJS_PRIVATE_KEY to Vercel Production environment variables and redeploy.';}
-    else if(!process.env.EMAILJS_TEMPLATE_ORDER_RECEIPT?.trim()){status='not configured';error='Add EMAILJS_TEMPLATE_ORDER_RECEIPT in Vercel using a dedicated order receipt template. Invoice emails use a separate template.';}
+    if(!emailConfiguration().configured){status='not configured';error='Set EMAILJS_PRIVATE_KEY and EMAILJS_TEMPLATE_CUSTOMER_MESSAGES (or reuse EMAILJS_TEMPLATE_ORDER_RECEIPT) in Vercel, then redeploy.';}
     else {
-      const rows=order.items.map((i:any)=>`<tr><td>${escape(i.name)} · SKU ${escape(i.sku)}</td><td>${usd(i.unitAmount)}</td></tr>`).join('');
-      const message=`<div style="font-family:Arial;max-width:640px;margin:auto"><h1>Marco Polo Rugs</h1><h2>Payment receipt</h2><p>Thank you, ${escape(order.customerInfo.name)}. Your payment is confirmed.</p><p>Order: ${escape(order.orderNumber)}<br>Paid: ${escape(order.paidAt)}</p><table style="width:100%">${rows}<tr><td>Discount</td><td>−${usd(order.discount)}</td></tr><tr><td>${order.deliveryOption==='Pickup'?'Pickup':'Shipping'}</td><td>${order.shipping===0?'Free':usd(order.shipping)}</td></tr><tr><td>Tax</td><td>${usd(order.tax)}</td></tr><tr><th>Total paid</th><th>${usd(order.total)}</th></tr></table>${order.refundedAmount?'<p>Refunded: '+usd(order.refundedAmount)+'. Remaining paid amount: '+usd(order.total-order.refundedAmount)+'.</p>':''}<p>${escape(order.fulfillment)}<br>${escape(order.customerInfo.shippingAddress)}</p><p>Complimentary rug padding included. All sales final; exchanges within one week. Full payment required before pickup or delivery.</p><p><a href="https://www.marcopolorugs.com/?view=track&amp;track=${encodeURIComponent(order.orderNumber||id)}">Track your order</a> using this order number and the email you used at checkout. No account needed.</p><p>Save or print this email for your records. Questions: (703) 461-0207<br>3260 Duke St, Alexandria, VA 22314</p></div>`;
-      const response=await fetch('https://api.emailjs.com/api/v1.0/email/send',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(15000),body:JSON.stringify({service_id:process.env.EMAILJS_SERVICE_ID?.trim()||'marcopolo2',template_id:process.env.EMAILJS_TEMPLATE_ORDER_RECEIPT!.trim(),user_id:process.env.EMAILJS_PUBLIC_KEY?.trim()||'Anj9zrEUo-VEWvMVw',accessToken:process.env.EMAILJS_PRIVATE_KEY.trim(),template_params:{to_email:order.customerInfo.email,subject:'Order receipt — Marco Polo Rugs — '+order.orderNumber,message,customer_name:order.customerInfo.name,order_number:order.orderNumber,invoice_number:order.orderNumber,tracking_url:'https://www.marcopolorugs.com/?view=track&track='+encodeURIComponent(order.orderNumber||id),total_paid:usd(order.total),refunded_amount:usd(order.refundedAmount||0)}})});
-      status=response.ok?'sent':'failed';
-      if(!response.ok)error=receiptEmailError(response.status,(await response.text()).slice(0,4000));
+      const details=[['Order',order.orderNumber],['Payment date',order.paidAt],...order.items.map((i:any)=>[i.name+' · SKU '+i.sku,usd(i.unitAmount)]),['Subtotal',usd(order.subtotal)],['Discount','−'+usd(order.discount)],['Fulfillment',order.deliveryOption],['Shipping',order.deliveryOption==='Pickup'?'Showroom pickup':order.shipping===0?'Free shipping':usd(order.shipping)],['Sales tax',usd(order.tax)],['Total paid',usd(order.total)],...(order.refundedAmount?[['Refunded',usd(order.refundedAmount)],['Remaining paid',usd(order.total-order.refundedAmount)]]:[]),['Delivery address',order.deliveryOption==='Pickup'?SHOP.address:order.customerInfo.shippingAddress]];
+      const message=renderCustomerEmail({title:'Your payment receipt',name:order.customerInfo.name,intro:'Your payment is confirmed. Thank you for choosing Marco Polo. Please keep this receipt for your records.',details,paragraphs:['Complimentary rug padding included. All sales final; exchanges within one week. Full payment required before pickup or delivery.','Track your order using the order number above and the email you used at checkout. No account is needed.'],button:{label:'View your order',url:SHOP.url+'/?view=track&track='+encodeURIComponent(order.orderNumber||id)}});
+      const result=await sendSharedEmail(order.customerInfo.email,'Order receipt — Marco Polo Rugs — '+order.orderNumber,message);
+      status=result.status==='accepted'?'sent':result.status==='not_configured'?'not configured':'failed';error=result.error;
     }
-  }catch{status='failed';error='Email service could not be reached. Retry in a minute.';}
+  }catch{status='failed';error='Email service could not be reached. Check provider history before resending.';}
   await ref.update({receiptEmailStatus:status,receiptEmailError:error,receiptEmailUpdatedAt:new Date().toISOString()});
   await db.collection('showroom_orders').doc(id).update({'notifications.receipt':{status,updatedAt:new Date().toISOString()}});
   return status;

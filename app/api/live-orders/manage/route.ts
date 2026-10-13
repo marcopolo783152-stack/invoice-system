@@ -1,4 +1,5 @@
 import {sendLiveReceipt} from '@/lib/server/live-receipt';
+import {baselineCustomerSource,notifyCustomerSource} from '@/lib/server/customer-emails';
 import {refundLiveOrder,syncLiveRefund} from '@/lib/server/live-refund';
 import {NextRequest} from 'next/server';
 import {requireStaff} from '@/lib/server/staff-permission';
@@ -6,7 +7,7 @@ import {serverDb} from '@/lib/server/firebase-admin';
 import {CheckoutError} from '@/lib/server/rug-checkout.mjs';
 import {LIVE_ORDERS,publicOrder,approveQuote,cancelQuote,fulfillOrder,restockRefund} from '@/lib/server/live-orders.mjs';
 import {respond,failure,sameSite,bodyJson,ownOrder,reconcile} from '@/lib/server/live-payment';
-export const runtime='nodejs';export const dynamic='force-dynamic';
+export const runtime='nodejs';export const dynamic='force-dynamic';export const maxDuration=60;
 async function staff(req:Request,action:string){try{return await requireStaff(req,'orders',action);}catch{throw new CheckoutError('Order-management permission is required.',403);}}
 export async function GET(req:NextRequest){
   try{
@@ -26,7 +27,7 @@ export async function POST(req:NextRequest){
     else if(b.action==='approve')updated=await approveQuote(serverDb(),o.id,u.uid,b);
     else if(b.action==='sync'){updated=await reconcile(o);if(updated.paymentStatus==='Paid'&&(updated.refundRequest||updated.refundPending||updated.refundedAmount))updated=await syncLiveRefund(updated);}
     else if(b.action==='cancel')updated=o.sessionAttemptedAt?await reconcile(o,true):await cancelQuote(serverDb(),o.id,u.uid,true);
-    else if(b.action==='fulfill')updated=await fulfillOrder(serverDb(),o.id,u.uid,b);
+    else if(b.action==='fulfill'){await baselineCustomerSource('showroom_orders',o.id);updated=await fulfillOrder(serverDb(),o.id,u.uid,b);await notifyCustomerSource('showroom_orders',o.id);}
     else if(b.action==='restock')updated=await restockRefund(serverDb(),o.id,u.uid);
     else throw new CheckoutError('Unknown order action.',400);
     return respond({order:publicOrder(updated,true)});
