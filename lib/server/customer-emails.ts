@@ -62,7 +62,7 @@ export async function deliverCustomerEmail(id:string,force=false){
   if(!current||!eventStillCurrent(event,current)){status='superseded';}
   else{
    const kind=event.kind,path=event.sourcePath,button=path.startsWith('invoices/')?await invoiceButton(path.split('/')[1]):kind.startsWith('order_')||kind==='refund_confirmation'?{label:'View your order',url:SHOP.url+'/?view=track&track='+encodeURIComponent(current.reference)}:{label:'Visit Marco Polo',url:SHOP.url};
-   const result=await sendSharedEmail(event.to,event.title,renderCustomerEmail({...event,button}));status=result.status;error=result.error;
+   const result=await sendSharedEmail(event.to,event.title,renderCustomerEmail({title:String(event.title),name:String(event.name||''),intro:String(event.intro),details:event.details||[],paragraphs:event.paragraphs||[],button}));status=result.status;error=result.error;
   }
  }catch{status='failed';error='Email could not be prepared. Check the saved customer record and retry.';}
  await db.runTransaction(async tx=>{const s=await tx.get(ref);if(s.data()?.lease===lease)tx.update(ref,{status,error,updatedAt:Date.now(),...(status==='accepted'?{acceptedAt:Date.now()}:{} )});});
