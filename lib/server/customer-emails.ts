@@ -59,7 +59,7 @@ export async function deliverCustomerEmail(id:string,force=false){
  try{
   const raw=(await db.doc(event.sourcePath).get()).data();
   const current=raw?emailSource(event.sourcePath.split('/')[0],{...raw,id:event.sourcePath.split('/')[1]}):null;
-  if(!eventStillCurrent(event,current)){status='superseded';}
+  if(!current||!eventStillCurrent(event,current)){status='superseded';}
   else{
    const kind=event.kind,path=event.sourcePath,button=path.startsWith('invoices/')?await invoiceButton(path.split('/')[1]):kind.startsWith('order_')||kind==='refund_confirmation'?{label:'View your order',url:SHOP.url+'/?view=track&track='+encodeURIComponent(current.reference)}:{label:'Visit Marco Polo',url:SHOP.url};
    const result=await sendSharedEmail(event.to,event.title,renderCustomerEmail({...event,button}));status=result.status;error=result.error;
