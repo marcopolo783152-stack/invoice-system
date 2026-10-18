@@ -20,3 +20,12 @@ test('live mirror ships once while live payment record does not duplicate shipme
 test('refund notice uses newly confirmed amount and ignores pending refund flags',()=>{const previous={...appointment,collection:'showroom_live_orders',paid:true,refundedAmount:500},current={...previous,refundedAmount:1500};const events=customerEmailEvents(current,previous,enabledAt,now);assert.equal(events[0].kind,'refund_confirmation');assert.equal(events[0].details[1][1],'$10.00');assert.equal(customerEmailEvents({...previous,refundPending:true},previous,enabledAt,now).length,0);});
 test('missing email, drafts, and internal washing stages send no messages',()=>{assert.equal(customerEmailEvents({...appointment,email:''},null,enabledAt,now).length,0);assert.equal(customerEmailEvents({...appointment,draft:true},null,enabledAt,now).length,0);});
 test('pickup reminders use collection address and appointment requests do not get reminders',()=>{const pickup={...appointment,collection:'service_pickup_bookings',status:'scheduled',service:'cleaning',address:'Customer home'};const events=customerEmailEvents(pickup,null,enabledAt,now);assert.deepEqual(events.map(e=>e.kind),['pickup_confirmation','pickup_reminder']);assert.equal(customerEmailEvents(appointment,appointment,enabledAt,now).length,0);});
+
+test('every shared customer email includes the original Google profile review action',async()=>{
+ const {GOOGLE_REVIEW_URL}=await import('../../lib/customer-email.mjs');
+ const url=new URL(GOOGLE_REVIEW_URL);assert.equal(url.hostname,'www.google.com');assert.equal(url.searchParams.get('q'),'marco polo oriental rugs');assert.ok(url.searchParams.get('gs_ssp'));
+ for(const title of ['Your appointment is confirmed','Your invoice is ready','Your payment receipt','Your rugs are ready for pickup','Your order has shipped','Your refund has been processed']){
+  const html=renderCustomerEmail({title,intro:'Customer update',button:{label:'View details',url:'https://www.marcopolorugs.com/?view=track'}});
+  assert.ok(html.includes('Leave a Google review'));assert.ok(html.includes('open our Google profile here'));assert.ok(html.includes(GOOGLE_REVIEW_URL.replaceAll('&','&amp;')));assert.ok(html.includes('View details'));assert.ok(html.includes('honest review'));assert.ok(!html.includes('#8E7453'));
+ }
+});
