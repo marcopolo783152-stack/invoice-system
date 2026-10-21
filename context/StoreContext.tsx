@@ -1,3 +1,4 @@
+import {saveEstimateStatus,saveEstimateRead} from '@/lib/estimate-inbox.mjs';
 import {categorizeRug} from '@/lib/rug-categorization.mjs';
 import { isRugOnReviewHold } from '@/lib/catalog-visibility.mjs';
 import {recordListingActivity} from "@/lib/record-listing-activity";
@@ -85,7 +86,8 @@ interface StoreContextType {
   updateCleaningBookingStatus: (id: string, status: CleaningBooking["status"]) => void;
   deleteCleaningBooking: (id: string) => void;
   estimates: any[];
-  updateEstimateStatus: (id: string, status: string) => void;
+  updateEstimateStatus: (id: string, status: string) => Promise<void>;
+  markEstimateRead: (id: string) => Promise<void>;
   deleteEstimate: (id: string) => void;
   
   // Cart operations
@@ -831,8 +833,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  const updateEstimateStatus = (id: string, status: string) => {
-    updateShowroomDoc(SHOWROOM_ESTIMATES, id, { status });
+  const updateEstimateStatus = async (id: string, status: string) => {
+    await saveEstimateStatus({id,status,write:(requestId:string,patch:any)=>updateShowroomDoc(SHOWROOM_ESTIMATES,requestId,patch)});
+  };
+  const markEstimateRead = async (id:string) => {
+    await saveEstimateRead({id,write:(requestId:string,patch:any)=>updateShowroomDoc(SHOWROOM_ESTIMATES,requestId,patch)});
   };
 
   const deleteEstimate = (id: string) => {
@@ -897,6 +902,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteCleaningBooking,
         estimates,
         updateEstimateStatus,
+        markEstimateRead,
         deleteEstimate,
         addToCart,
         removeFromCart,

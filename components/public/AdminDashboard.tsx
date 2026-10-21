@@ -1,3 +1,4 @@
+import {estimateCounts} from '@/lib/estimate-inbox.mjs';
 import {suggestRugCategory,categorizeRug} from '@/lib/rug-categorization.mjs';
 import StockCheck from '@/components/inventory/StockCheck';
 import {unreadOrderCount,needsOrderAttention} from '@/lib/order-inbox.mjs';
@@ -1046,8 +1047,8 @@ const AdminWorkspace: React.FC = () => {
             >
               <Calculator className="h-4.5 w-4.5" />
               <span>Service Estimates</span>
-              {estimates && estimates.filter(e => e.status === "New").length > 0 && (
-                <ActivityBadge count={estimates.filter(e => e.status === "New").length} />
+              {estimates && estimateCounts(estimates).new > 0 && (
+                <ActivityBadge count={estimateCounts(estimates).new} />
               )}
             </button>)}
 {allowed('pickups') && (<button
