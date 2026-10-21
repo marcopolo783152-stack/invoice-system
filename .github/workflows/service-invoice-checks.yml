@@ -1,0 +1,30 @@
+name: Service invoice checks
+on:
+  push:
+    branches: [main, feature/shippo-invoice-links-20260929]
+    paths:
+      - 'lib/calculations.ts'
+      - 'lib/service-transport.mjs'
+      - 'lib/service-products.mjs'
+      - 'lib/server/invoice-share.mjs'
+      - 'components/ServiceTransport*'
+      - 'components/InvoiceForm.tsx'
+      - 'components/InvoiceTemplate.tsx'
+      - 'tests/invoices/service-products.test.mjs'
+      - '.github/workflows/service-invoice-checks.yml'
+permissions:
+  contents: read
+jobs:
+  invoice-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test tests/invoices/*.test.mjs tests/access/invoice-share.test.mjs tests/access/washing-invoices.test.mjs
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

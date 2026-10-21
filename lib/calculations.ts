@@ -1,3 +1,4 @@
+import {transportSummary, transportErrors} from './service-transport.mjs';
 import {calculateServiceProducts} from './service-products.mjs';
 /**
  * CALCULATION ENGINE - BUSINESS LOGIC ONLY
@@ -87,6 +88,7 @@ export interface InvoiceData {
   sourcePickupId?: string;
   sourcePickupVersion?: number;
   serviceProducts?: ServiceProduct[];
+  serviceTransport?: {method: string; pickup?: {pricing: string; amount: number}; delivery?: {pricing: string; amount: number}} | null;
   documentType?: DocumentType; // 'INVOICE' (default) or 'CONSIGNMENT'
   invoiceNumber: string;
   date: string;
@@ -312,7 +314,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
 
   // Calculate Additional Charges
   const additionalCharges = data.additionalCharges || [];
-  const totalAdditionalCharges = additionalCharges.reduce((sum, c) => sum + (c.amount || 0), 0);
+  const totalAdditionalCharges = additionalCharges.reduce((sum, c) => sum + (c.amount || 0), 0) + (isWash ? transportSummary(data.serviceTransport).total : 0);
 
   // Calculate total due
   const totalDue = subtotalAfterDiscount + salesTax + totalAdditionalCharges;
@@ -413,6 +415,7 @@ export function formatSquareFoot(sqft: number): string {
  */
 export function validateInvoiceData(data: InvoiceData): string[] {
   const errors: string[] = [];
+  if(data.documentType==='WASH'||data.mode==='wash') errors.push(...transportErrors(data.serviceTransport));
 
   if (!data.invoiceNumber.trim()) {
     errors.push('Invoice number is required');
