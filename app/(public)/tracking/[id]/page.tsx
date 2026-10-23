@@ -61,7 +61,7 @@ export default function TrackingPage({ params }: { params: { id: string } }) {
   const isRetail = data.mode === 'retail';
   
   // Normalize status. Default to received.
-  const currentStatus = data.status || 'received';
+  const currentStatus = data.serviceWorkflow?.delivered ? 'picked_up' : data.status || 'received';
   
   let steps = [];
   let currentStepIndex = 0;
@@ -70,8 +70,8 @@ export default function TrackingPage({ params }: { params: { id: string } }) {
     steps = [
       { id: 'received', label: 'Received', icon: Package },
       { id: 'washing', label: 'In Washing/Repair', icon: Droplets },
-      { id: 'ready', label: 'Ready for Pickup', icon: CheckCircle2 },
-      { id: 'picked_up', label: 'Picked Up', icon: Truck },
+      { id: 'ready', label: data.serviceWorkflow?.plan.method === 'delivery' ? 'Ready for Delivery' : 'Ready for Pickup', icon: CheckCircle2 },
+      { id: 'picked_up', label: data.serviceWorkflow?.delivered ? 'Delivered' : 'Picked Up', icon: Truck },
     ];
     if (currentStatus === 'received') currentStepIndex = 0;
     else if (currentStatus === 'washing' || currentStatus === 'repairing') currentStepIndex = 1;

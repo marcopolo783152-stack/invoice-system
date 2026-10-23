@@ -80,6 +80,7 @@ export interface Payment {
 }
 
 export interface InvoiceData {
+    serviceWorkflow?: import('./service-workflow').ServiceWorkflow;
   documentType?: DocumentType; // 'INVOICE' (default) or 'CONSIGNMENT'
   invoiceNumber: string;
   date: string;

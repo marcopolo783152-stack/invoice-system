@@ -223,10 +223,10 @@ export default function InvoiceTemplate(props: any) {
                       <td className={styles.label}>Terms:</td>
                       <td className={styles.value} style={data.terms.toLowerCase().includes('paid') ? { color: '#059669', fontWeight: 'bold' } : {}}>{data.terms}</td>
                     </tr>
-                    {data.pickupDate && (
+                    {(data.pickupDate || data.serviceWorkflow?.plan) && (
                       <tr>
-                        <td className={styles.label}>Pick up Date:</td>
-                        <td className={styles.value} style={{ color: '#0284c7', fontWeight: 'bold' }}>{formatDateMMDDYYYY(data.pickupDate)}</td>
+                        <td className={styles.label}>{data.serviceWorkflow?.plan.method === 'delivery' ? 'Delivery Date:' : 'Pick up Date:'}</td>
+                        <td className={styles.value} style={{ color: '#0284c7', fontWeight: 'bold' }}>{formatDateMMDDYYYY(data.serviceWorkflow?.plan.date || (data.serviceWorkflow?.plan.method === 'delivery' ? '' : data.pickupDate)) || 'To be scheduled'}</td>
                       </tr>
                     )}
                   </tbody>

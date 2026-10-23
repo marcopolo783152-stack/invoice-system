@@ -9,6 +9,8 @@ import Link from 'next/link';
 import Login from './Login';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
 import RugCalculatorModal from './RugCalculatorModal';
+import ServiceOperationsDashboard from './ServiceOperationsDashboard';
+import { servicePickupDate } from '@/lib/service-workflow';
 
 type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
@@ -346,9 +348,9 @@ export default function Dashboard() {
     const consignmentCount = consignmentInvoices.length;
 
     const hasUpcomingPickups = invoices.filter(inv => {
-        if (inv.data.status === 'picked_up') return false;
-        if (!inv.data.pickupDate) return false;
-        const pickup = new Date(inv.data.pickupDate);
+        if (inv.data.status === 'picked_up' || inv.data.serviceWorkflow?.delivered || inv.data.serviceWorkflow?.plan.method === 'delivery') return false;
+        if (!servicePickupDate(inv.data)) return false;
+        const pickup = new Date(servicePickupDate(inv.data) || '');
         const now = new Date();
         const diffTime = pickup.getTime() - now.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -532,12 +534,14 @@ export default function Dashboard() {
                 <BackupReminder invoices={invoices} />
             </div>
 
+            <ServiceOperationsDashboard onInvoicesUpdated={setInvoices} />
+
             {/* ALERTS SECTION */}
             <div className="no-print" style={{ marginBottom: 40 }}>
                 {invoices.filter(inv => {
-                    if (inv.data.status === 'picked_up') return false;
-                    if (!inv.data.pickupDate) return false;
-                    const pickup = new Date(inv.data.pickupDate);
+                    if (inv.data.status === 'picked_up' || inv.data.serviceWorkflow?.delivered || inv.data.serviceWorkflow?.plan.method === 'delivery') return false;
+                    if (!servicePickupDate(inv.data)) return false;
+                    const pickup = new Date(servicePickupDate(inv.data) || '');
                     const now = new Date();
                     const diffTime = pickup.getTime() - now.getTime();
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -549,9 +553,9 @@ export default function Dashboard() {
                             </h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24, marginTop: 24 }}>
                                 {invoices.filter(inv => {
-                                    if (inv.data.status === 'picked_up') return false;
-                                    if (!inv.data.pickupDate) return false;
-                                    const pickup = new Date(inv.data.pickupDate);
+                                    if (inv.data.status === 'picked_up' || inv.data.serviceWorkflow?.delivered || inv.data.serviceWorkflow?.plan.method === 'delivery') return false;
+                                    if (!servicePickupDate(inv.data)) return false;
+                                    const pickup = new Date(servicePickupDate(inv.data) || '');
                                     const now = new Date();
                                     const diffTime = pickup.getTime() - now.getTime();
                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -571,7 +575,7 @@ export default function Dashboard() {
                                         <div>
                                             <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 15 }}>{inv.data.soldTo.name}</div>
                                             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>ID: {inv.data.invoiceNumber}</div>
-                                            <div style={{ fontSize: 12, color: 'var(--accent-rose)', marginTop: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Due: {formatDateMMDDYYYY(inv.data.pickupDate)}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--accent-rose)', marginTop: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Due: {formatDateMMDDYYYY(servicePickupDate(inv.data))}</div>
                                         </div>
                                         <Link href={`/admin/invoices/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '8px 16px', fontSize: 11 }}>
                                             REVIEW

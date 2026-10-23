@@ -12,6 +12,7 @@ import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
+import ServiceInvoiceWorkflow from '@/components/ServiceInvoiceWorkflow';
 import PrintPortal from '@/components/PrintPortal';
 import PaymentModal from '@/components/PaymentModal';
 import AdditionalChargeModal from '@/components/AdditionalChargeModal';
@@ -447,6 +448,7 @@ function InvoicePageContent() {
   };
 
   const handleNewInvoice = () => {
+    setSavedInvoiceId(null);
     setInvoiceData(null);
     setShowPreview(false);
     setShowSearch(false);
@@ -462,6 +464,7 @@ function InvoicePageContent() {
   };
 
   const handleSelectInvoice = (savedInvoice: SavedInvoice) => {
+    setSavedInvoiceId(savedInvoice.id);
     setInvoiceData(savedInvoice.data);
     setShowPreview(true);
     setShowSearch(false);
@@ -604,6 +607,12 @@ function InvoicePageContent() {
                 </button>
               </div>
             </div>
+
+            {savedInvoiceId && <ServiceInvoiceWorkflow
+              key={savedInvoiceId}
+              invoice={{ id: savedInvoiceId, data: invoiceData, createdAt: '', updatedAt: '' }}
+              onUpdated={next => setInvoiceData(next.data)}
+            />}
 
             {/* Print-only wrapper: only this area will be printed */}
             {/* Screen Preview (Visible on Screen, Hidden on Print via CSS) */}

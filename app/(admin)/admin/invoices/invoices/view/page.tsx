@@ -19,6 +19,7 @@ import PaymentModal from '@/components/PaymentModal';
 import AdditionalChargeModal from '@/components/AdditionalChargeModal';
 import { InvoiceData } from '@/lib/calculations';
 import CustomerHistoryModal from '@/components/CustomerHistoryModal';
+import ServiceInvoiceWorkflow from '@/components/ServiceInvoiceWorkflow';
 import { MoreHorizontal, History } from 'lucide-react'; // Import icons
 
 function ConsignmentConversionModal({ isOpen, items, onClose, onConvert, initialSelectedIds }: { isOpen: boolean, items: any[], onClose: () => void, onConvert: (selectedIds: string[], note: string) => Promise<boolean>, initialSelectedIds?: string[] }) {
@@ -685,7 +686,7 @@ function InvoiceViewContent() {
                                         <Undo size={18} /> Convert to Sale
                                     </button>
                                 )}
-                                {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && (
+                                {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && !invoice.data.serviceWorkflow?.delivered && (
                                     <>
                                         <select
                                             value={invoice.data.status || 'received'}
@@ -1073,6 +1074,11 @@ function InvoiceViewContent() {
                             </div>
                         </div>
                     )}
+
+                    <ServiceInvoiceWorkflow invoice={invoice} onUpdated={next => {
+                        setInvoice(next);
+                        setCalculations(calculateInvoice(next.data));
+                    }} />
 
                     {/* Screen Preview */}
                     <div

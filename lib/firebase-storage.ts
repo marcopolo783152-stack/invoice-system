@@ -22,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured, checkFirebaseQuotaError } from './firebase';
 import { InvoiceData } from './calculations';
+import { preserveServiceWorkflow } from './service-workflow';
 
 export interface SavedInvoice {
   id: string;
@@ -224,13 +225,16 @@ export async function updateInvoiceInCloud(
 
   try {
     const docRef = doc(db, getCollectionName(), id);
-    await updateDoc(docRef, {
-      invoiceNumber,
-      customerName,
-      date: data.date,
-      totalAmount,
-      data,
-      updatedAt: Timestamp.now()
+    await runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(docRef);
+      if (!snapshot.exists()) throw new Error('Invoice no longer exists.');
+      // Call history and dispatch metadata have their own transactional writer.
+      // An older invoice edit/payment screen must not erase newer staff updates.
+      const nextData = preserveServiceWorkflow(data, snapshot.data().data || {});
+      transaction.update(docRef, {
+        invoiceNumber, customerName, date: data.date, totalAmount,
+        data: nextData, updatedAt: Timestamp.now()
+      });
     });
   } catch (error) {
     checkFirebaseQuotaError(error);
