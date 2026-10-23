@@ -30,7 +30,7 @@ export const DynamicPageRenderer = ({ slug, fallback }: { slug: string, fallback
     load();
   }, [slug]);
 
-  if (loading) return <div className="min-h-[50vh] flex items-center justify-center">Loading...</div>;
+  if (loading) return <div className="customer-loading" role="status"><span className="customer-loading-mark" aria-hidden="true"/><p>Preparing the showroom…</p><a href="/?view=shop">Browse the collection</a></div>;
 
   // If no dynamic page exists for this slug, or it has no sections, use the hardcoded fallback
   if (!page || page.sections.length === 0 || page.status !== 'published') {
@@ -46,7 +46,7 @@ export const DynamicPageRenderer = ({ slug, fallback }: { slug: string, fallback
   } as React.CSSProperties : {};
 
   return (
-    <div className="dynamic-page" style={style}>
+    <div className="customer-surface dynamic-page" style={style}>
       {page.sections.filter(s => s.enabled).sort((a,b) => a.order - b.order).map(section => (
         <SectionRenderer key={section.id} section={section} />
       ))}

@@ -1,3 +1,4 @@
+import {salePrice,saleLabel,deliveredCents} from '@/lib/delivered-price.mjs';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -167,7 +168,7 @@ export const LegacyHero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }
 
   // Filter rugs for carousel or featured sections
   const featuredRugs = rugs.filter(r => r.id === "rug-1" || r.id === "rug-3" || r.id === "rug-5");
-  const bestSellers = rugs.filter(r => r.price > 5000).slice(0, 3);
+  const bestSellers = rugs.filter(r => salePrice(r) > 5000).slice(0, 3);
   const newArrivals = rugs.filter(r => r.id === "rug-4" || r.id === "rug-6");
 
   // Approved reviews for home
@@ -533,10 +534,10 @@ export const LegacyHero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }
                     <div>
                       <span className="block text-sm uppercase text-gray-400 font-semibold tracking-wider">Luxury Curation</span>
                       <div className="flex items-center gap-2">
-                        {rug.originalPrice && rug.originalPrice > rug.price && (
+                        {rug.originalPrice && rug.originalPrice > salePrice(rug) && (
                           <span className="text-sm text-gray-400 line-through">${rug.originalPrice.toLocaleString()}</span>
                         )}
-                        <span className="text-base font-serif font-light text-editorial-text">${rug.price.toLocaleString()}</span>
+                        <span className="text-base font-serif font-light text-editorial-text">{saleLabel(rug)}</span>
                       </div>
                     </div>
                     <span className="text-xs uppercase tracking-widest font-bold text-editorial-accent group-hover:translate-x-1 transition-all inline-flex items-center gap-1">
@@ -599,10 +600,10 @@ export const LegacyHero: React.FC<HeroProps> = ({ setCurrentTab, onSelectRugId }
                   <div className="flex items-center justify-between pt-2 border-t border-editorial-border">
                     <span className="text-xs text-gray-400 font-light">{rug.material}</span>
                     <div className="flex items-center gap-2">
-                      {rug.originalPrice && rug.originalPrice > rug.price && (
+                      {rug.originalPrice && rug.originalPrice > salePrice(rug) && (
                         <span className="text-sm text-gray-400 line-through">${rug.originalPrice.toLocaleString()}</span>
                       )}
-                      <span className="font-serif text-lg font-light text-editorial-text">${rug.price.toLocaleString()}</span>
+                      <span className="font-serif text-lg font-light text-editorial-text">{saleLabel(rug)}</span>
                     </div>
                   </div>
                 </div>

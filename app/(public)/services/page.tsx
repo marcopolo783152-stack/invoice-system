@@ -42,7 +42,7 @@ export default function ServicesHub() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-editorial-text selection:bg-editorial-accent/20">
+    <div className="customer-surface min-h-screen bg-stone-50 text-editorial-text selection:bg-editorial-accent/20">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       
       {/* Header */}

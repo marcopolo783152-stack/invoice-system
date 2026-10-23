@@ -1,0 +1,45 @@
+name: Catalog and service checks
+on:
+  push:
+    branches: [main, feature/shippo-invoice-links-20260929]
+    paths:
+      - 'components/public/EstimateForm.tsx'
+      - 'components/public/EstimatesAdminTab.tsx'
+      - 'lib/service-estimate.mjs'
+      - 'lib/estimate-inbox.mjs'
+      - 'tests/access/estimate-inbox.test.mjs'
+      - 'types.ts'
+      - 'tests/access/service-estimate.test.mjs'
+      - '.github/workflows/service-estimate-checks.yml'
+      - 'lib/rug-categorization.mjs'
+      - 'tests/access/rug-categorization.test.mjs'
+      - 'components/public/AdminDashboard.tsx'
+      - 'context/StoreContext.tsx'
+      - 'app/api/inventory/edit/route.ts'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'components/public/EstimateForm.tsx'
+      - 'components/public/EstimatesAdminTab.tsx'
+      - 'lib/service-estimate.mjs'
+      - 'lib/estimate-inbox.mjs'
+      - 'tests/access/estimate-inbox.test.mjs'
+      - 'types.ts'
+      - 'tests/access/service-estimate.test.mjs'
+      - '.github/workflows/service-estimate-checks.yml'
+permissions:
+  contents: read
+jobs:
+  estimate-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/access/estimate-inbox.test.mjs tests/access/service-estimate.test.mjs tests/access/rug-categorization.test.mjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

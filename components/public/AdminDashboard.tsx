@@ -1,3 +1,11 @@
+import {estimateCounts} from '@/lib/estimate-inbox.mjs';
+import {suggestRugCategory,categorizeRug} from '@/lib/rug-categorization.mjs';
+import StockCheck from '@/components/inventory/StockCheck';
+import {unreadOrderCount,needsOrderAttention} from '@/lib/order-inbox.mjs';
+import {markOrdersSeen} from '@/lib/order-inbox-client';
+import {orderReference} from '@/lib/order-reference.mjs';
+import LiveOrderAdminControls from '@/components/checkout/LiveOrderAdminControls';
+import {deliveredCents,saleLabel} from '@/lib/delivered-price.mjs';
 import {auth as firebaseAuth} from '@/lib/auth';
 import ListingStats from "@/components/ListingStats";
 import { matchesSearch as matchesInventorySearch } from "@/lib/rug-discovery.mjs";
@@ -5,6 +13,7 @@ import listingStyles from "@/components/ListingInventory.module.css";
 import OrderPaymentControls from '@/components/OrderPaymentControls';
 import {AdminChatBox} from "./AdminChatBox";
 import portal from "@/components/Portal.module.css";
+import PickupManager from '@/components/pickups/PickupManager';
 import AdminOverview from "@/components/AdminOverview";
 import { useStaffAccess } from "@/hooks/useStaffAccess";
 import { canAccess, sectionForTab } from "@/lib/access-policy";
@@ -130,7 +139,7 @@ const AdminWorkspace: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "pickups" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -149,7 +158,7 @@ const AdminWorkspace: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "pickups" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm") => {
     if(!allowed(tab))return;
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
@@ -161,7 +170,7 @@ const AdminWorkspace: React.FC = () => {
   };
   useEffect(()=>{
     if(staff && !allowed(activeTab)){
-      const next=['analytics','orders','inventory','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','loans','settings','users'].find(allowed);
+      const next=['analytics','orders','inventory','pickups','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','loans','settings','users'].find(allowed);
       if(next)setActiveTabState(next as any);
     }
   },[staff,activeTab]);
@@ -176,37 +185,13 @@ const AdminWorkspace: React.FC = () => {
 
   // Review notification alert
   const unapprovedReviewsCount = reviews.filter(r => !r.isApproved).length;
-  // Order notification alert
-  const localLastSeenOrder = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (orders.length === 0) return;
-
-    const latestOrderTime = Math.max(...orders.map(o => new Date(o.createdAt).getTime()));
-
-    const savedTime = typeof window !== "undefined" ? sessionStorage.getItem('lastSeenOrder') : null;
-    const previousTime = savedTime ? parseInt(savedTime) : 0;
-
-    if (localLastSeenOrder.current === null) {
-      localLastSeenOrder.current = previousTime;
-    }
-
-    if (latestOrderTime > localLastSeenOrder.current) {
-      if (localLastSeenOrder.current > 0 || (Date.now() - latestOrderTime < 60000)) {
-        const audio = new Audio("/coin.mp3");
-        audio.play().catch(e => {
-          console.error("Audio playback blocked by browser", e);
-          alert("🔔🔔 NEW ORDER RECEIVED! 🔔🔔 (Audio blocked by browser, please click anywhere on the page first)");
-        });
-      }
-
-      localLastSeenOrder.current = latestOrderTime;
-      if (typeof window !== "undefined") sessionStorage.setItem('lastSeenOrder', latestOrderTime.toString());
-    } else if (localLastSeenOrder.current === 0) {
-      localLastSeenOrder.current = latestOrderTime;
-      if (typeof window !== "undefined") sessionStorage.setItem('lastSeenOrder', latestOrderTime.toString());
-    }
-  }, [orders]);
+  const unreadOrders = unreadOrderCount(orders);
+  const markingOrders = useRef(false);
+  useEffect(()=>{
+    if(activeTab!=='orders'||!canAccess(staff,'orders')||ordersLoading||markingOrders.current)return;
+    const ids=orders.filter(needsOrderAttention).map(o=>o.id);if(!ids.length)return;
+    markingOrders.current=true;void markOrdersSeen(ids).catch(()=>{}).finally(()=>{markingOrders.current=false;});
+  },[activeTab,orders,ordersLoading,staff?.uid]);
 
   const prevUnapprovedCount = useRef(unapprovedReviewsCount);
 
@@ -272,12 +257,14 @@ const AdminWorkspace: React.FC = () => {
   const [rugOriginalPrice, setRugOriginalPrice] = useState<number | "">("");
   const [rugSizeCategory, setRugSizeCategory] = useState<Rug["sizeCategory"] | "">("");
   const [rugDimensions, setRugDimensions] = useState("");
+  const [autoCategory,setAutoCategory]=useState(true);
   const [rugOrigin, setRugOrigin] = useState("");
   const [rugStyle, setRugStyle] = useState<Rug["style"] | "">("");
   const [rugMaterial, setRugMaterial] = useState("");
   const [rugAge, setRugAge] = useState<Rug["age"] | "">("");
   const [rugCondition, setRugCondition] = useState<Rug["condition"] | "">("");
   const [rugColors, setRugColors] = useState("");
+  const [packed, setPacked] = useState({length:"",width:"",height:"",weight:""});
   const [rugWeight, setRugWeight] = useState<number | "">("");
     const [rugIsFreeShipping, setRugIsFreeShipping] = useState<boolean>(false);
   const [rugShape, setRugShape] = useState<Rug["shape"] | "">("");
@@ -322,7 +309,7 @@ const AdminWorkspace: React.FC = () => {
 
   // States for inventory filters
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
-  const [orderStatusFilter, setOrderStatusFilter] = useState("All");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("Active");
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [inventoryViewMode, setInventoryViewMode] = useState<"list" | "gallery">("gallery");
   const [listingSort, setListingSort] = useState("name");
@@ -458,7 +445,10 @@ const AdminWorkspace: React.FC = () => {
     };
   }, [orders, rugs, chatMessages]);
 
+  const suggestedCategory=suggestRugCategory({dimensions:rugDimensions,shape:rugShape,name:rugName});
+  const selectedCategory=autoCategory ? suggestedCategory.sizeCategory||"" : rugSizeCategory;
   const handleOpenRugModal = (r?: Rug) => {
+    setAutoCategory(r ? r.categoryMode==='auto' : true);
     if (r) {
       setEditingRugId(r.id);
       setRugName(r.name);
@@ -475,6 +465,7 @@ const AdminWorkspace: React.FC = () => {
       setRugCondition(r.condition);
       setRugColors(r.colors.join(", "));
       setRugWeight(r.weightLbs || 3.5);
+      setPacked({length:String(r.shippingPackage?.length||""),width:String(r.shippingPackage?.width||""),height:String(r.shippingPackage?.height||""),weight:String(r.shippingPackage?.weight||"")});
         setRugIsFreeShipping(r.isFreeShipping || false);
       setRugShape(r.shape);
       setRugAvailability(r.availability);
@@ -498,6 +489,7 @@ const AdminWorkspace: React.FC = () => {
       setRugCondition("");
       setRugColors("");
       setRugWeight("");
+      setPacked({length:"",width:"",height:"",weight:""});
         setRugIsFreeShipping(false);
       setRugShape("");
       setRugAvailability("In Stock");
@@ -512,6 +504,7 @@ const AdminWorkspace: React.FC = () => {
 
   const handleSaveRug = (e: React.FormEvent) => {
     e.preventDefault();
+    if(!Number.isFinite(Number(rugWeight))||Number(rugWeight)<=0){alert('Enter the rug weight in pounds.');return;}
     const colorsArr = rugColors.split(",").map(c => c.trim()).filter(Boolean);
     const finalImages = rugImages.length > 0 ? rugImages : ["https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"];
     const payload: any = {
@@ -520,7 +513,8 @@ const AdminWorkspace: React.FC = () => {
       sku: rugSKU,
       price: Number(rugPrice),
       originalPrice: rugOriginalPrice === "" ? null : Number(rugOriginalPrice),
-      sizeCategory: rugSizeCategory as Rug["sizeCategory"],
+      sizeCategory: selectedCategory,
+      categoryMode: autoCategory ? "auto" : "manual",
       dimensions: rugDimensions,
       origin: rugOrigin,
       style: rugStyle as Rug["style"],
@@ -528,7 +522,8 @@ const AdminWorkspace: React.FC = () => {
       age: rugAge as Rug["age"],
       condition: rugCondition as Rug["condition"],
       colors: colorsArr,
-      weightLbs: Number(rugWeight) || 3.5,
+      weightLbs: Number(rugWeight),
+      shippingPackage: Object.values(packed).every(v=>Number(v)>0) ? {length:Number(packed.length),width:Number(packed.width),height:Number(packed.height),weight:Number(packed.weight)} : null,
         isFreeShipping: rugIsFreeShipping,
       shape: rugShape as Rug["shape"],
       availability: rugAvailability as Rug["availability"],
@@ -537,10 +532,12 @@ const AdminWorkspace: React.FC = () => {
       images: finalImages
     };
 
+    let categorized;
+    try{categorized=categorizeRug(payload);}catch(error){alert(error instanceof Error?error.message:"Check the rug category.");return;}
     if (editingRugId) {
-      updateRug(editingRugId, payload);
+      updateRug(editingRugId, categorized);
     } else {
-      addRug(payload);
+      addRug(categorized);
     }
     setRugModalOpen(false);
   };
@@ -943,7 +940,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
 
           <nav className="space-y-1.5 text-sm" aria-label="Admin sections">
-{canAccess(staff, 'orders', 'read') && <a href="/admin/online-orders" className="w-full flex items-center gap-3 py-3 px-3 font-bold text-gray-300 hover:bg-white/10"><ClipboardList className="h-4.5 w-4.5"/><span>Online orders &amp; quotes</span></a>}
+
 {canAccess(staff, 'settings', 'read') && <a href="/admin/auctions" className="w-full flex items-center gap-3 py-3 px-3 rounded-none font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10"><ClipboardList className="h-4.5 w-4.5"/><span>Auction management <small className="block normal-case font-normal tracking-normal">Lots &amp; public previews</small></span></a>}
 {(allowed('analytics') || allowed('transactions')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Overview</p>}
 {allowed('analytics') && (<button
@@ -976,8 +973,8 @@ const AdminWorkspace: React.FC = () => {
 
               <ClipboardList className="h-4.5 w-4.5" />
               <span>Customer Orders</span>
-              {dynamicAnalytics.pendingOrders > 0 && (
-                <ActivityBadge count={dynamicAnalytics.pendingOrders} />
+              {unreadOrders > 0 && (
+                <ActivityBadge count={unreadOrders} />
               )}
             </button>)}
 {allowed('crm') && (<button
@@ -1050,9 +1047,16 @@ const AdminWorkspace: React.FC = () => {
             >
               <Calculator className="h-4.5 w-4.5" />
               <span>Service Estimates</span>
-              {estimates && estimates.filter(e => e.status === "New").length > 0 && (
-                <ActivityBadge count={estimates.filter(e => e.status === "New").length} />
+              {estimates && estimateCounts(estimates).new > 0 && (
+                <ActivityBadge count={estimateCounts(estimates).new} />
               )}
+            </button>)}
+{allowed('pickups') && (<button
+              onClick={() => setActiveTab("pickups")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 font-bold uppercase tracking-wider transition cursor-pointer rounded-lg ${activeTab === "pickups" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"}`}
+            >
+              <Truck className="h-4.5 w-4.5" />
+              <span>Customer Pickups</span>
             </button>)}
 {allowed('appointments') && (<button
               onClick={() => setActiveTab("appointments")}
@@ -1163,6 +1167,7 @@ const AdminWorkspace: React.FC = () => {
               {activeTab === "orders" && "Customer Orders & Dispatch Logs"}
               {activeTab === "cleaning" && "Cleaning & Repair Bookings"}
               {activeTab === "estimates" && "Service Estimate Requests"}
+              {activeTab === "pickups" && "Customer Pickup Scheduling"}
               {activeTab === "appraisals" && "Certificates of Authenticity & Appraisals"}
               {activeTab === "employees" && "HR & Employee Management"}
               {activeTab === "loans" && "Loans & Repayments"}
@@ -1183,6 +1188,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
         </div>
 
+        {activeTab === 'pickups' && allowed('pickups') && <PickupManager />}
         {activeTab === 'users' && allowed('users') && <StaffUsers />}
         {!allowed(activeTab) && <p>Your account has no access to this section. Ask the owner or General Manager to assign permissions.</p>}
         {/* --- TAB: TRANSACTIONS --- */}
@@ -1227,7 +1233,7 @@ const AdminWorkspace: React.FC = () => {
                     orders.map(order => (
                       <tr key={order.id} className="hover:bg-neutral-50 transition-colors">
                         <td className="px-4 py-3">{new Date(order.createdAt || 0).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{order.id.split('-').pop()?.toUpperCase() || order.id}</td>
+                        <td className="px-4 py-3 font-mono text-xs">{orderReference(order)}</td>
                         <td className="px-4 py-3 font-medium text-editorial-text">{order.customerInfo?.name || 'Unknown'}</td>
                         <td className="px-4 py-3 capitalize">{order.paymentDetails?.cardBrand || 'Card'}</td>
                         <td className="px-4 py-3">
@@ -1833,6 +1839,7 @@ const AdminWorkspace: React.FC = () => {
               </div>
             </div>
 
+            <div className={listingStyles.stockTools}><StockCheck items={rugs} source="Website rug listings"/></div>
             <div className={listingStyles.searchBar}>
               <label htmlFor="admin-inventory-search" className={listingStyles.searchLabel}>Search your rug inventory</label>
               <div className={listingStyles.searchField}>
@@ -2237,7 +2244,7 @@ const AdminWorkspace: React.FC = () => {
                     const searchLower = orderSearchQuery.toLowerCase();
                     const matchesSearch =
                       !orderSearchQuery ||
-                      o.id.toLowerCase().includes(searchLower) ||
+                      o.id.toLowerCase().includes(searchLower) || (o.orderNumber||'').toLowerCase().includes(searchLower) ||
                       o.customerInfo.name.toLowerCase().includes(searchLower) ||
                       o.customerInfo.phone.toLowerCase().includes(searchLower) ||
                       o.customerInfo.email.toLowerCase().includes(searchLower) ||
@@ -2245,7 +2252,7 @@ const AdminWorkspace: React.FC = () => {
 
                     const matchesStatus =
                       orderStatusFilter === "All" ||
-                      (orderStatusFilter === "Active" && o.status !== "Delivered" && o.status !== "Cancelled") ||
+                      (orderStatusFilter === "Active" && !["Delivered", "Cancelled", "Returned"].includes(o.status)) ||
                       (orderStatusFilter === "Shipped" && o.status === "Shipped") ||
                       (orderStatusFilter === "Delivered" && o.status === "Delivered") ||
                       (orderStatusFilter === "Cancelled" && o.status === "Cancelled");
@@ -2265,7 +2272,7 @@ const AdminWorkspace: React.FC = () => {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-amber-700 text-sm">{o.id}</span>
+                          <span className="font-mono font-bold text-amber-700 text-sm">{orderReference(o)}</span>
                           <span className="text-xs text-neutral-400">({new Date(o.createdAt).toLocaleDateString()})</span>
                         </div>
                         <p className="text-xs text-neutral-600 font-sans mt-0.5">
@@ -2364,13 +2371,14 @@ const AdminWorkspace: React.FC = () => {
                         <div className="text-xs text-neutral-500 pt-2 font-mono space-y-1">
                           <p>Payment method: {o.paymentDetails?.cardBrand || 'Confirm with showroom'}</p>
                           {o.paymentDetails?.last4 && <p>Ending in {o.paymentDetails.last4}</p>}
-                          <p className="text-neutral-400">Payment is confirmed separately by the showroom.</p>
-                          <OrderPaymentControls orderId={o.id}/>
+                          <p className="text-neutral-400">{o.id.startsWith("MPR-LIVE-")?"Payment verified by Stripe.":"Payment is confirmed separately by the showroom."}</p>
+                          {!o.id.startsWith("MPR-LIVE-")&&<OrderPaymentControls orderId={o.id}/>}
 
                         </div>
                       </div>
 
                       {/* Actions workflow */}
+                      {o.id.startsWith("MPR-LIVE-") ? <div className="bg-white p-4 rounded-xl border border-neutral-200/50"><LiveOrderAdminControls id={o.id}/><button type="button" className="mt-4 py-2 px-4 border rounded" onClick={()=>generateAndDownloadReceiptPDF(o,shopProfile,logoUrl)}>Print / download receipt PDF</button></div> : (
                       <div className="space-y-2 bg-white p-4 rounded-xl border border-neutral-200/50 flex flex-col justify-between">
                         <span className="text-sm uppercase tracking-wider text-neutral-400 font-bold block">Advisory Workflows</span>
 
@@ -2541,6 +2549,7 @@ const AdminWorkspace: React.FC = () => {
                           </button>
                         </div>
                       </div>
+                      )}
 
                     </div>
 
@@ -2876,11 +2885,16 @@ const AdminWorkspace: React.FC = () => {
 
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Size Category</label>
+                  <label className="flex items-center gap-2 text-sm py-2"><input type="checkbox" checked={autoCategory} onChange={e=>{if(!e.target.checked)setRugSizeCategory(selectedCategory);setAutoCategory(e.target.checked);}}/>Choose category automatically</label>
+                  {autoCategory&&<p className="text-sm text-[#203e37]">{suggestedCategory.sizeCategory ? `Automatic: ${suggestedCategory.sizeCategory} · ${suggestedCategory.shape}` : suggestedCategory.reason}</p>}
                   <select
-                    value={rugSizeCategory}
+                    value={selectedCategory}
+                    disabled={autoCategory}
                     onChange={(e) => setRugSizeCategory(e.target.value as any)}
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 text-xs max-h-48 overflow-y-auto"
                   >
+                    <option value="">Enter size or select category</option>
+                    {selectedCategory&&!ALL_SIZES.includes(selectedCategory)&&<option value={selectedCategory}>{selectedCategory}</option>}
                     <optgroup label="Rectangles">
                       <option value="1x2">1x2</option>
                       <option value="2x3">2x3</option>
@@ -3023,7 +3037,7 @@ const AdminWorkspace: React.FC = () => {
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Shape</label>
                   <select
-                    value={rugShape}
+                    value={rugShape || (autoCategory?suggestedCategory.shape||"":"")}
                     onChange={(e) => setRugShape(e.target.value as any)}
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500"
                   >
@@ -3131,6 +3145,10 @@ const AdminWorkspace: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase">Packed rug + padding — UPS</label>
+                  <p>Measure the finished package. All four values are required for automatic UPS rates.</p>
+                  <p>Customer sale price: {saleLabel({price:Number(rugPrice),weightLbs:Number(rugWeight),sizeCategory:selectedCategory,dimensions:rugDimensions,name:rugName})}. Free Shipping. Rates per lb: Small/Runner $2 · Medium $3 · Large $3.50 · Extra Large/Oversize $4.50.</p>
+                  {(['length','width','height','weight'] as const).map(key=><label key={key} className="block">{key} ({key==='weight'?'lb':'in'})<input type="number" min="0.1" max="1000" step="0.1" value={packed[key]} onChange={e=>setPacked({...packed,[key]:e.target.value})} className="w-full border rounded p-2" /></label>)}
                   <label className="block text-neutral-500 font-semibold uppercase">Shipping Offer</label>
                   <label className="flex items-center gap-2 mt-2 cursor-pointer h-full pb-2">
                     <input

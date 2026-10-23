@@ -3,6 +3,7 @@ import {createHash} from 'crypto';
 import {requireStaff} from '@/lib/server/staff-permission';
 import {auctionFailure} from '@/lib/server/auction-errors';
 import {serverDb} from '@/lib/server/firebase-admin';
+import {SANDBOX_CHOICES,SANDBOX_SALES,choiceId,DEFAULT_SETTINGS,AUCTION_SETTINGS,termsText} from '@/lib/auction/settlement.mjs';
 import {check, validateLot, placeMaximum, settle} from '@/lib/auction/engine.mjs';
 export const dynamic = 'force-dynamic';
 const collection = 'auction_sandbox_lots';
@@ -22,7 +23,8 @@ export async function GET(request: Request) {
       const ref = db.collection(collection).doc(id);
       const [lot, events, bidders] = await Promise.all([ref.get(),ref.collection('events').orderBy('at','desc').limit(50).get(),ref.collection('bidders').get()]);
       if (!lot.exists) return NextResponse.json({error:'Lot not found.'},{status:404});
-      return NextResponse.json({lot:{id,...lot.data()}, events:events.docs.map(d=>d.data()), bidders:bidders.docs.map(d=>d.data()), serverNow:Date.now()},{headers:{'Cache-Control':'no-store'}});
+      const settings=(await db.doc(AUCTION_SETTINGS+'/current').get()).data()||DEFAULT_SETTINGS;const choices=await Promise.all(['test-a','test-b','test-c'].map(async buyerId=>{const saved=(await db.doc(SANDBOX_CHOICES+'/'+choiceId(lot.data()?.sourceAuction||id,buyerId)).get()).data();return saved?{buyerId,delivery:saved.delivery,acceptedPolicyVersion:saved.acceptedPolicyVersion}:null;}));
+      return NextResponse.json({choices:choices.filter(Boolean),terms:termsText(settings),lot:{id,...lot.data()}, events:events.docs.map(d=>d.data()), bidders:bidders.docs.map(d=>d.data()), serverNow:Date.now()},{headers:{'Cache-Control':'no-store'}});
     }
     const lots = await db.collection(collection).orderBy('createdAt','desc').limit(100).get();
     return NextResponse.json({lots:lots.docs.map(d=>({id:d.id,...d.data()})),serverNow:Date.now(),mode:'sandbox'},{headers:{'Cache-Control':'no-store'}});
@@ -69,6 +71,8 @@ export async function POST(request: Request) {
         }
         const lot = snap.data()!;
         check(lot.mode === 'sandbox','Only sandbox lots can be changed here.');
+        check(!lot.consolidatedInvoiceId,'Manage this lot through its consolidated invoice.');
+        check(!(await tx.get(db.doc(SANDBOX_SALES+'/'+(lot.sourceAuction||input.id)))).exists,'This auction has been consolidated and cannot receive more bids or changes.');
         const now = Date.now();
         let change: any = {};
         let detail: any = {};
@@ -79,7 +83,11 @@ export async function POST(request: Request) {
           case 'bid': {
             check(['test-a','test-b','test-c'].includes(input.bidderId),'Choose a sandbox bidder.');
             const bids = await tx.get(ref.collection('bidders'));
-            const result = placeMaximum(lot,bids.docs.map(d=>d.data()),input.bidderId,input.maximumCents,input.delivery,now);
+            const choiceRef=db.doc(SANDBOX_CHOICES+'/'+choiceId(lot.sourceAuction||input.id,input.bidderId)),savedChoice=(await tx.get(choiceRef)).data();
+            const settings=(await tx.get(db.doc(AUCTION_SETTINGS+'/current'))).data()||DEFAULT_SETTINGS;
+            if(!savedChoice)check(input.accepted===true,'Accept the test auction terms and card charge consent on the first bid.');
+            const result = placeMaximum(lot,bids.docs.map(d=>d.data()),input.bidderId,input.maximumCents,savedChoice?.delivery||input.delivery,now);
+            if(!savedChoice)tx.create(choiceRef,{buyerId:input.bidderId,auctionId:lot.sourceAuction||input.id,delivery:result.bidders.find((b:any)=>b.bidderId===input.bidderId)!.delivery,acceptedPolicyVersion:settings.policyVersion,acceptedAt:now,termsSnapshot:termsText(settings),mode:'sandbox',actor:user.uid,settings});
             change = result.lot;
             const own = result.bidders.find((b:any)=>b.bidderId===input.bidderId)!;
             tx.set(ref.collection('bidders').doc(input.bidderId),own);
@@ -92,6 +100,7 @@ export async function POST(request: Request) {
               const winning = (await tx.get(ref.collection('bidders').doc(lot.leaderId))).data();
               check(!!winning,'Winning bidder record is missing.');
               change.winningDelivery = winning!.delivery;
+              const accepted=(await tx.get(db.doc(SANDBOX_CHOICES+'/'+choiceId(lot.sourceAuction||input.id,lot.leaderId)))).data();change.winningPolicy=accepted?.settings||DEFAULT_SETTINGS;
               change.testOrderNumber = 'MPR-AUCTION-TEST-' + input.id;
             }
             break;
