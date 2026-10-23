@@ -5,8 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/admin', '/api/'],
+      disallow: ['/admin', '/api/', '/washing-company'],
     },
-    sitemap: 'https://marcopolorugs.com/sitemap.xml',
+    sitemap: 'https://www.marcopolorugs.com/sitemap.xml',
   }
 }

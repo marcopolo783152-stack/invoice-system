@@ -1,3 +1,5 @@
+import {renderCustomerEmail,SHOP} from './customer-email.mjs';
+import {invoiceEmailFields} from './invoice-email-fields.mjs';
 /**
  * EMAIL SERVICE
  * Send invoices via email and security confirmations
@@ -11,6 +13,7 @@ const STORAGE_KEY_EMAIL_CONFIG = 'emailjs_config';
 export interface EmailConfig {
   serviceId: string;
   templateIdInvoice: string;
+  templateIdShared?: string; // Activated only after the manager tests the generic HTML template
   templateIdSignature?: string; // Dedicated template for signatures
   templateIdConfirm: string; // Optional for now
   publicKey: string;
@@ -23,7 +26,6 @@ const DEFAULT_CONFIG: EmailConfig = {
   templateIdSignature: 'rm8govh',
   templateIdConfirm: '',
   publicKey: 'Anj9zrEUo-VEWvMVw',
-  privateKey: 'ZgV1UYxVUy0UQKBmgj3I5',
 };
 
 // Admin email for security confirmations
@@ -87,7 +89,9 @@ export async function sendInvoiceEmail(
   invoiceLink: string,
   configOverride?: EmailConfig
 ): Promise<boolean> {
-  const config = configOverride || getEmailConfig();
+  const cloudSettings = configOverride ? null : await import('./settings-storage').then(m => m.getSettingsFromCloud());
+  const config = configOverride || cloudSettings?.emailConfig || getEmailConfig();
+  const sharedTemplate = config.templateIdShared;
 
   // Basic validation
   if (!config.serviceId || !config.templateIdInvoice || !config.publicKey) {
@@ -100,18 +104,19 @@ export async function sendInvoiceEmail(
 
     const templateParams: Record<string, any> = {
       to_email: customerEmail,
-      to_name: customerName,
+      ...invoiceEmailFields(customerName, invoiceNumber, invoiceLink),
       from_name: 'Marco Polo Oriental Rugs',
       invoice_number: invoiceNumber,
       // Updated message with Direct Link
-      message: `Dear ${customerName},\n\nYou can view and download your invoice #${invoiceNumber} at the link below:\n\n${invoiceLink}\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
+      message: sharedTemplate ? renderCustomerEmail({title:'Your invoice is ready',name:customerName,intro:'You can review, print, or download your invoice using the button below.',details:[['Invoice',invoiceNumber]],button:{label:'View your invoice',url:invoiceLink}}) : `Dear ${customerName},\n\nYou can view and download your invoice #${invoiceNumber} at the link below:\n\n${invoiceLink}\n\nThank you for your business!\n\nBest regards,\nMarco Polo Oriental Rugs\n703-461-0207`,
+      reply_to: SHOP.email,
       invoice_link: invoiceLink, // Sending as separate param too just in case template uses it
       // invoice_html: removed to save size
     };
 
     const response = await emailjs.send(
       config.serviceId,
-      config.templateIdInvoice,
+      sharedTemplate || config.templateIdInvoice,
       templateParams
     );
 
@@ -120,7 +125,11 @@ export async function sendInvoiceEmail(
     }
     return false;
   } catch (error) {
-    console.error('Error sending invoice email:', error);
+    const message = (error as {text?: string; message?: string})?.text || (error as Error)?.message || '';
+    if (/account.*not found/i.test(message)) {
+      throw new Error('EmailJS account not found. Open Invoice Settings and check the Public Key, Service ID and Invoice Template ID against your EmailJS account, then save.');
+    }
+    console.error('Invoice email delivery failed');
     throw error; // Throw so UI can handle it
   }
 }
@@ -464,8 +473,9 @@ export async function sendSignatureRequestEmail(
   invoiceNumber: string,
   signatureLink: string
 ): Promise<boolean> {
-  const config = getEmailConfig();
-  const templateId = config.templateIdSignature || config.templateIdInvoice;
+  const cloudSettings = await import('./settings-storage').then(m => m.getSettingsFromCloud());
+  const config = cloudSettings?.emailConfig || getEmailConfig();
+  const templateId = config.templateIdShared || config.templateIdSignature || config.templateIdInvoice;
 
   if (!config.serviceId || !templateId || !config.publicKey) {
     console.warn('EmailJS not configured for signature request. Link:', signatureLink);
@@ -486,7 +496,8 @@ export async function sendSignatureRequestEmail(
         signature_link: signatureLink,
         invoice_link: signatureLink,
         invoice_url: signatureLink,
-        message: `Dear ${customerName},\n\nYour signature is required for invoice #${invoiceNumber}. Please click the link below to sign electronically. This link is for one-time use:\n\n${signatureLink}\n\nThank you!`
+        message: config.templateIdShared ? renderCustomerEmail({title:'Please review and sign your invoice',name:customerName,intro:'Your signature is requested for the invoice below. Please review its details before signing.',details:[['Invoice',invoiceNumber]],button:{label:'Review and sign',url:signatureLink}}) : `Dear ${customerName},\n\nYour signature is required for invoice #${invoiceNumber}. Please click the link below to sign electronically. You can review and sign your invoice here:\n\n${signatureLink}\n\nThank you!`,
+        reply_to: SHOP.email
       },
       config.publicKey
     );

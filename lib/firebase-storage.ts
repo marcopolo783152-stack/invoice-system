@@ -1,3 +1,5 @@
+import {pickupRequest} from './service-pickup-client';
+import {mergeWashingProgress} from './washing-invoice.mjs';
 import { getStorePrefix } from './user-storage';
 /**
  * FIREBASE STORAGE SERVICE
@@ -21,8 +23,8 @@ import {
   limit
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured, checkFirebaseQuotaError } from './firebase';
-import { InvoiceData } from './calculations';
-import { preserveServiceWorkflow } from './service-workflow';
+import { InvoiceData, Payment, calculateInvoice } from './calculations';
+import {customerEmailEvent} from './customer-email-client';
 
 export interface SavedInvoice {
   id: string;
@@ -51,17 +53,18 @@ export async function saveInvoiceToCloud(
     throw new Error('Firebase not configured. Please set up your Firebase project.');
   }
 
+  if(data.sourcePickupId){const result=await pickupRequest('',{action:'invoice',pickupId:data.sourcePickupId,collection:getCollectionName(),data});return result.id;}
   try {
     const now = Timestamp.now();
-    const docRef = await addDoc(collection(db, getCollectionName()), {
-      invoiceNumber,
-      customerName,
-      date: data.date,
-      totalAmount,
-      data,
-      createdAt: now,
-      updatedAt: now
+    const docRef = doc(collection(db, getCollectionName()));
+    const numberRef = doc(db, 'counters', `invoice-number-${encodeURIComponent(getCollectionName() + ':' + invoiceNumber)}`);
+    await runTransaction(db, async tx => {
+      const reserved = await tx.get(numberRef);
+      if (reserved.exists()) throw new Error(`Invoice number ${invoiceNumber} already exists. Please generate a new number.`);
+      tx.set(numberRef, {invoiceId:docRef.id, invoiceNumber, createdAt:now});
+      tx.set(docRef, {invoiceNumber, customerName, date:data.date, totalAmount, data, createdAt:now, updatedAt:now});
     });
+    if(getCollectionName()==='invoices')await customerEmailEvent('invoices',docRef.id);
     return docRef.id;
   } catch (error) {
     checkFirebaseQuotaError(error);
@@ -97,8 +100,15 @@ export async function getNextInvoiceNumber(): Promise<string> {
       }
     }
 
-    const next = maxNumber + 1;
-    // Format: MP########
+    const counterRef = doc(db, 'counters', `invoice-sequence-${encodeURIComponent(getCollectionName())}`);
+    const next = await runTransaction(db, async tx => {
+      const counter = await tx.get(counterRef);
+      const stored = Number(counter.data()?.lastNumber || 0);
+      if (!Number.isSafeInteger(stored) || stored < 0) throw new Error('Invalid invoice counter. Contact the owner.');
+      const value = Math.max(stored, maxNumber) + 1;
+      tx.set(counterRef, {lastNumber:value, updatedAt:Timestamp.now()});
+      return value;
+    });
     return `MP${next.toString().padStart(8, '0')}`;
   } catch (error) {
     checkFirebaseQuotaError(error);
@@ -225,17 +235,17 @@ export async function updateInvoiceInCloud(
 
   try {
     const docRef = doc(db, getCollectionName(), id);
+    if(getCollectionName()==='invoices')await customerEmailEvent('invoices',id,true);
     await runTransaction(db, async transaction => {
-      const snapshot = await transaction.get(docRef);
-      if (!snapshot.exists()) throw new Error('Invoice no longer exists.');
-      // Call history and dispatch metadata have their own transactional writer.
-      // An older invoice edit/payment screen must not erase newer staff updates.
-      const nextData = preserveServiceWorkflow(data, snapshot.data().data || {});
+      const current = await transaction.get(docRef);
+      if (!current.exists()) throw new Error('Invoice not found.');
+      const merged = mergeWashingProgress(current.data().data || {}, data);
       transaction.update(docRef, {
         invoiceNumber, customerName, date: data.date, totalAmount,
-        data: nextData, updatedAt: Timestamp.now()
+        data: merged, updatedAt: Timestamp.now()
       });
     });
+    if(getCollectionName()==='invoices')await customerEmailEvent('invoices',id);
   } catch (error) {
     checkFirebaseQuotaError(error);
     console.error('Error updating invoice in cloud:', error);
@@ -571,4 +581,27 @@ export async function markSignatureTokenUsed(tokenId: string): Promise<void> {
   } catch (error) {
     console.error('Error marking token as used:', error);
   }
+}
+
+// Append against the latest invoice so simultaneous payment additions are retained.
+export async function appendInvoicePayment(id:string, payment:Payment):Promise<InvoiceData> {
+  if (!db || !isFirebaseConfigured()) throw new Error('Firebase not configured.');
+  if (!payment.id || !Number.isFinite(payment.amount) || payment.amount <= 0) throw new Error('Invalid payment.');
+  const ref = doc(db, getCollectionName(), id);
+  return runTransaction(db, async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('Invoice not found.');
+    const data = snap.data().data as InvoiceData;
+    const payments = data.payments || [];
+    const existing = payments.find(p=>p.id === payment.id);
+    if (existing) {
+      if (existing.amount !== payment.amount || existing.method !== payment.method || existing.date !== payment.date) throw new Error('Payment reference conflict. Reload the invoice.');
+      return data;
+    }
+    const updated = {...data, payments:[...payments,payment]};
+    const totals = calculateInvoice(updated);
+    updated.terms = totals.balanceDue <= 0 ? 'Paid' : 'Outstanding';
+    tx.update(ref, {data:updated, totalAmount:totals.totalDue, updatedAt:Timestamp.now()});
+    return updated;
+  });
 }

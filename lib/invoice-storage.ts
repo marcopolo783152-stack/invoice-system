@@ -312,16 +312,10 @@ const sanitizeForFirestore = (obj: any): any => {
 
 /**
  * Save an invoice (Cloud-Only)
- * If the customer is Martinez, force invoice number to MP00000002
  */
 export async function saveInvoice(data: InvoiceData, existingId?: string): Promise<SavedInvoice> {
   if (!isFirebaseConfigured()) {
     throw new Error('Firebase not configured. Please connect to the cloud to save invoices.');
-  }
-
-  // Force invoice number for Martinez
-  if (data.soldTo && typeof data.soldTo.name === 'string' && data.soldTo.name.trim().toLowerCase() === 'martinez') {
-    data.invoiceNumber = 'MP00000002';
   }
 
   // Check for duplicate invoice number in the cloud

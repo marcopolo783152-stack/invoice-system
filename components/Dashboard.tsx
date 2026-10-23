@@ -1,4 +1,5 @@
 'use client';
+import PickupReminders from './pickups/PickupReminders';
 
 import React, { useEffect, useState } from 'react';
 import { DollarSign, FileText, TrendingUp, Users, Printer, Search, Calculator } from 'lucide-react';
@@ -9,8 +10,6 @@ import Link from 'next/link';
 import Login from './Login';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
 import RugCalculatorModal from './RugCalculatorModal';
-import ServiceOperationsDashboard from './ServiceOperationsDashboard';
-import { servicePickupDate } from '@/lib/service-workflow';
 
 type Period = 'today' | 'this-week' | 'last-week' | 'this-month' | 'this-year' | 'all-time' | 'custom';
 
@@ -348,9 +347,9 @@ export default function Dashboard() {
     const consignmentCount = consignmentInvoices.length;
 
     const hasUpcomingPickups = invoices.filter(inv => {
-        if (inv.data.status === 'picked_up' || inv.data.serviceWorkflow?.delivered || inv.data.serviceWorkflow?.plan.method === 'delivery') return false;
-        if (!servicePickupDate(inv.data)) return false;
-        const pickup = new Date(servicePickupDate(inv.data) || '');
+        if (inv.data.status === 'picked_up') return false;
+        if (!inv.data.pickupDate) return false;
+        const pickup = new Date(inv.data.pickupDate);
         const now = new Date();
         const diffTime = pickup.getTime() - now.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -362,6 +361,7 @@ export default function Dashboard() {
 
     return (
         <div style={{ padding: '16px var(--dashboard-padding) var(--dashboard-padding)', maxWidth: 1400, margin: '0 auto' }}>
+            <PickupReminders/>
             <RugCalculatorModal isOpen={isRugCalcOpen} onClose={() => setIsRugCalcOpen(false)} />
             <header style={{
                 display: 'flex',
@@ -534,14 +534,12 @@ export default function Dashboard() {
                 <BackupReminder invoices={invoices} />
             </div>
 
-            <ServiceOperationsDashboard onInvoicesUpdated={setInvoices} />
-
             {/* ALERTS SECTION */}
             <div className="no-print" style={{ marginBottom: 40 }}>
                 {invoices.filter(inv => {
-                    if (inv.data.status === 'picked_up' || inv.data.serviceWorkflow?.delivered || inv.data.serviceWorkflow?.plan.method === 'delivery') return false;
-                    if (!servicePickupDate(inv.data)) return false;
-                    const pickup = new Date(servicePickupDate(inv.data) || '');
+                    if (inv.data.status === 'picked_up') return false;
+                    if (!inv.data.pickupDate) return false;
+                    const pickup = new Date(inv.data.pickupDate);
                     const now = new Date();
                     const diffTime = pickup.getTime() - now.getTime();
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -553,9 +551,9 @@ export default function Dashboard() {
                             </h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24, marginTop: 24 }}>
                                 {invoices.filter(inv => {
-                                    if (inv.data.status === 'picked_up' || inv.data.serviceWorkflow?.delivered || inv.data.serviceWorkflow?.plan.method === 'delivery') return false;
-                                    if (!servicePickupDate(inv.data)) return false;
-                                    const pickup = new Date(servicePickupDate(inv.data) || '');
+                                    if (inv.data.status === 'picked_up') return false;
+                                    if (!inv.data.pickupDate) return false;
+                                    const pickup = new Date(inv.data.pickupDate);
                                     const now = new Date();
                                     const diffTime = pickup.getTime() - now.getTime();
                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -575,7 +573,7 @@ export default function Dashboard() {
                                         <div>
                                             <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 15 }}>{inv.data.soldTo.name}</div>
                                             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>ID: {inv.data.invoiceNumber}</div>
-                                            <div style={{ fontSize: 12, color: 'var(--accent-rose)', marginTop: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Due: {formatDateMMDDYYYY(servicePickupDate(inv.data))}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--accent-rose)', marginTop: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Due: {formatDateMMDDYYYY(inv.data.pickupDate)}</div>
                                         </div>
                                         <Link href={`/admin/invoices/invoices/view?id=${inv.id}`} className="luxury-button" style={{ padding: '8px 16px', fontSize: 11 }}>
                                             REVIEW
@@ -590,7 +588,7 @@ export default function Dashboard() {
             {/* KPI Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 24, marginBottom: 32 }}>
                 <KpiCard
-                    title="Current Balance"
+                    title="Net invoice total"
                     value={`$${totalNetRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<DollarSign size={22} />}
                     color="#1e50ff"
@@ -605,7 +603,7 @@ export default function Dashboard() {
                     link="/admin/invoices/employees"
                 />
                 <KpiCard
-                    title="Total Profit"
+                    title="Estimated margin (20%)"
                     value={`$${(totalNetRevenue * 0.2).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<TrendingUp size={22} />}
                     color="#10b981"

@@ -1,3 +1,6 @@
+'use client';
+import {pickupRequest} from '@/lib/service-pickup-client';
+import {createCustomerInvoiceLink} from '@/lib/invoice-share-client';
 /**
  * MAIN INVOICE PAGE
  * 
@@ -5,14 +8,15 @@
  * Combines form, template, and actions
  */
 
-'use client';
 
+
+import { logActivity } from '@/lib/audit-logger';
+import { appendInvoicePayment } from '@/lib/firebase-storage';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
-import ServiceInvoiceWorkflow from '@/components/ServiceInvoiceWorkflow';
 import PrintPortal from '@/components/PrintPortal';
 import PaymentModal from '@/components/PaymentModal';
 import AdditionalChargeModal from '@/components/AdditionalChargeModal';
@@ -34,7 +38,11 @@ function InvoicePageContent() {
   const { rugs, updateRug } = useStore();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
+  const pickupId=searchParams.get('pickup');
+  const [pickupReady,setPickupReady]=useState(!pickupId);
   // Settings dropdown state
+  const [savingInvoice, setSavingInvoice] = useState(false);
+  const savingInvoiceRef = useRef(false);
   const [showSettings, setShowSettings] = useState(false);
 
   // Logout function
@@ -76,10 +84,7 @@ function InvoicePageContent() {
     fullName: string;
     password: string;
     role: "admin" | "seller" | "manager";
-  }[]>([
-    { username: "admin@marcopolo.com", fullName: "Nazif", password: "Marcopolo$", role: "admin" },
-    { username: "manager@marcopolo.com", fullName: "Farid", password: "manager", role: "manager" }
-  ]);
+  }[]>([]);
   const [currentUser, setCurrentUser] = useState<{ username: string; fullName: string; role: string } | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
@@ -101,33 +106,12 @@ function InvoicePageContent() {
         try { setCurrentUser(JSON.parse(storedUser)); } catch { }
       }
 
-      // --- Logout after 2 hours of inactivity ---
-      let inactivityTimeout: ReturnType<typeof setTimeout> | undefined;
-      const resetInactivityTimer = () => {
-        if (inactivityTimeout) clearTimeout(inactivityTimeout);
-        inactivityTimeout = setTimeout(() => {
-          logout();
-          alert('Session timed out due to inactivity.'); // Inform user
-        }, 2 * 60 * 60 * 1000); // 2 hours
-      };
 
-      // Reset timer on user activity
-      const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll', 'click'];
-      events.forEach(evt => {
-        window.addEventListener(evt, resetInactivityTimer);
-      });
-      resetInactivityTimer();
-
-      return () => {
-        events.forEach(evt => {
-          window.removeEventListener(evt, resetInactivityTimer);
-        });
-        if (inactivityTimeout) clearTimeout(inactivityTimeout);
-      };
     }
   }, []);
 
   useEffect(() => {
+    if(pickupId&&!editId){setPickupReady(false);pickupRequest('?id='+encodeURIComponent(pickupId)).then(d=>{if(d.booking.invoiceId){window.location.replace('/admin/invoices/invoices/new?edit='+encodeURIComponent(d.booking.invoiceId));return;}if(d.booking.status!=='picked_up')throw Error('Mark the pickup collected before creating its invoice.');setFormInitialData(d.prefill);setPickupReady(true);}).catch(e=>setErrors([e.message]));return;}
     if (editId) {
       getAllInvoices().then(invoices => {
         const found = invoices.find(inv => inv.id === editId || inv.data.invoiceNumber === editId);
@@ -182,6 +166,7 @@ function InvoicePageContent() {
 
   useEffect(() => {
     // Check for converted items from Consignment (Sold Workflow)
+    if(pickupId)return;
     if (typeof window !== 'undefined') {
       const convertItemsStr = sessionStorage.getItem('convert_items');
       const convertInvoiceDataStr = sessionStorage.getItem('convert_invoice_data');
@@ -217,7 +202,9 @@ function InvoicePageContent() {
     }
   }, []);
 
-  const handleFormSubmit = (data: InvoiceData) => {
+  const handleFormSubmit = (submitted: InvoiceData) => {
+    const data={...submitted,...((pickupId||formInitialData?.sourcePickupId)?{sourcePickupId:pickupId||formInitialData?.sourcePickupId,sourcePickupVersion:formInitialData?.sourcePickupVersion}: {})};
+    if (savingInvoiceRef.current) return;
     // Validate data
     const validationErrors = validateInvoiceData(data);
     if (validationErrors.length > 0) {
@@ -231,7 +218,11 @@ function InvoicePageContent() {
     setInvoiceData(data);
 
     // Save invoice to storage (async)
-    saveInvoice(data, editId || undefined).then(async (savedInv) => {
+    savingInvoiceRef.current = true;
+    setSavingInvoice(true);
+    saveInvoice(data, editId || (data.sourcePickupId?savedInvoiceId||undefined:undefined)).then(async (savedInv) => {
+      if (!editId) { try { localStorage.removeItem('mp_invoice_draft'); } catch {} }
+      try { logActivity('Invoice Saved', `${data.documentType || 'INVOICE'} #${data.invoiceNumber} for ${data.soldTo.name} has been saved.`); } catch { console.warn('Invoice saved, but the local activity log could not be updated.'); }
       // Save succeeded, so we can now safely swap the UI to the preview page
       setShowPreview(true);
       setShowSearch(false);
@@ -275,10 +266,14 @@ function InvoicePageContent() {
         if (shouldRegen) {
           generateInvoiceNumber().then(newNumber => {
             localStorage.setItem('currentInvoiceNumber', newNumber);
+            savingInvoiceRef.current = false;
             handleFormSubmit({ ...data, invoiceNumber: newNumber });
           });
         }
       }
+    }).finally(() => {
+      savingInvoiceRef.current = false;
+      setSavingInvoice(false);
     });
 
     // Scroll to preview
@@ -332,25 +327,18 @@ function InvoicePageContent() {
       return;
     }
 
-    const currentPayments = invoiceData.payments || [];
-
-    // Create updated data object
-    const updatedData: InvoiceData = {
-      ...invoiceData,
-      payments: [...currentPayments, payment]
-    };
-
     try {
-      // Save to DB
-      await saveInvoice(updatedData, targetId);
+      const updatedData = await appendInvoicePayment(targetId, payment);
 
       // Update local state to reflect changes instantly
       setInvoiceData(updatedData);
       setShowPaymentModal(false);
       alert('Payment recorded successfully!');
+      return true;
     } catch (e) {
       console.error(e);
-      alert('Failed to save payment');
+      alert('Failed to save payment. Your entered details are kept so you can retry.');
+      return false;
     }
   };
 
@@ -417,7 +405,7 @@ function InvoicePageContent() {
     }
 
     // Generate Link using the actual ID
-    const link = `${window.location.origin}/public/invoice?id=${activeId}&pdf=true`;
+    let link = "";
 
     const sending = confirm(
       `Send invoice to ${customerEmail}?\n\n` +
@@ -429,6 +417,7 @@ function InvoicePageContent() {
     if (!sending) return;
 
     try {
+      link = await createCustomerInvoiceLink(activeId);
       const success = await sendInvoiceEmail(
         customerEmail,
         invoiceData.soldTo.name,
@@ -448,7 +437,7 @@ function InvoicePageContent() {
   };
 
   const handleNewInvoice = () => {
-    setSavedInvoiceId(null);
+    if(pickupId){window.location.assign('/admin/invoices/invoices/new');return;}
     setInvoiceData(null);
     setShowPreview(false);
     setShowSearch(false);
@@ -464,7 +453,6 @@ function InvoicePageContent() {
   };
 
   const handleSelectInvoice = (savedInvoice: SavedInvoice) => {
-    setSavedInvoiceId(savedInvoice.id);
     setInvoiceData(savedInvoice.data);
     setShowPreview(true);
     setShowSearch(false);
@@ -495,8 +483,8 @@ function InvoicePageContent() {
       <div className={styles.container}>
         <header className={styles.header}>
           <div>
-            <h1>Rug Business Invoice System</h1>
-            <p>Professional invoicing for Web, Android, and Windows</p>
+            <h1>Marco Polo Rugs · Invoices</h1>
+            <p>Create, review and send invoices from your showroom workspace.</p>
           </div>
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
             <div style={{ fontSize: 13, color: '#64748b', background: '#f1f5f9', padding: '6px 12px', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -512,7 +500,7 @@ function InvoicePageContent() {
                   marginTop: 4, display: 'flex', alignItems: 'center', gap: 4
                 }}
               >
-                <span>Mange Users</span> ⚙️
+                <span>Manage users</span> ⚙️
               </button>
             )}
           </div>
@@ -531,10 +519,12 @@ function InvoicePageContent() {
         )}
 
         {/* Invoice Form */}
-        {!showSearch && !showPreview && (
+        {!showSearch && !showPreview && !pickupReady&&<p>Loading pickup details. If this booking cannot load, return to Customer pickups and try again.</p>}
+        {!showSearch && !showPreview && pickupReady && (
           <div className={styles.formSection}>
             <InvoiceForm
               onSubmit={handleFormSubmit}
+              saving={savingInvoice}
               initialData={formInitialData}
               currentUser={currentUser}
               users={users}
@@ -608,12 +598,6 @@ function InvoicePageContent() {
               </div>
             </div>
 
-            {savedInvoiceId && <ServiceInvoiceWorkflow
-              key={savedInvoiceId}
-              invoice={{ id: savedInvoiceId, data: invoiceData, createdAt: '', updatedAt: '' }}
-              onUpdated={next => setInvoiceData(next.data)}
-            />}
-
             {/* Print-only wrapper: only this area will be printed */}
             {/* Screen Preview (Visible on Screen, Hidden on Print via CSS) */}
             <div className="screen-only invoice-paper" ref={invoiceRef} id="invoice-view">
@@ -675,3 +659,4 @@ export default function Home() {
     </Suspense>
   );
 }
+

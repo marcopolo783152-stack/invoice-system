@@ -1,5 +1,8 @@
 'use client';
 
+import {createCustomerInvoiceLink} from '@/lib/invoice-share-client';
+
+import { appendInvoicePayment } from '@/lib/firebase-storage';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -19,7 +22,6 @@ import PaymentModal from '@/components/PaymentModal';
 import AdditionalChargeModal from '@/components/AdditionalChargeModal';
 import { InvoiceData } from '@/lib/calculations';
 import CustomerHistoryModal from '@/components/CustomerHistoryModal';
-import ServiceInvoiceWorkflow from '@/components/ServiceInvoiceWorkflow';
 import { MoreHorizontal, History } from 'lucide-react'; // Import icons
 
 function ConsignmentConversionModal({ isOpen, items, onClose, onConvert, initialSelectedIds }: { isOpen: boolean, items: any[], onClose: () => void, onConvert: (selectedIds: string[], note: string) => Promise<boolean>, initialSelectedIds?: string[] }) {
@@ -423,37 +425,16 @@ function InvoiceViewContent() {
     const handleSavePayment = async (payment: any) => {
         if (!invoice) return;
 
-        // Use type assertion to handle the new field until types propagate fully
-        const currentData = invoice.data as any;
-        const currentPayments = currentData.payments || [];
-
-        const newPayments = [...currentPayments, payment];
-        const newData = {
-            ...currentData,
-            payments: newPayments
-        };
-        
-        const calcs = calculateInvoice(newData);
-        if (calcs.balanceDue <= 0.01) {
-            newData.terms = 'Paid';
-        } else {
-            newData.terms = 'Outstanding';
-        }
-
-        const updatedInvoice = {
-            ...invoice,
-            data: newData,
-            updatedAt: new Date().toISOString()
-        };
-
         try {
-            await saveInvoice(updatedInvoice.data, invoice.id);
+            await appendInvoicePayment(invoice.id, payment);
             await loadInvoice(invoice.id);
             setShowPaymentModal(false);
             alert('Payment recorded successfully');
+            return true;
         } catch (e) {
             console.error(e);
-            alert('Failed to save payment');
+            alert('Failed to save payment. Your entered details are kept so you can retry.');
+            return false;
         }
     }
 
@@ -686,7 +667,7 @@ function InvoiceViewContent() {
                                         <Undo size={18} /> Convert to Sale
                                     </button>
                                 )}
-                                {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && !invoice.data.serviceWorkflow?.delivered && (
+                                {invoice.data.documentType === 'WASH' && invoice.data.status !== 'picked_up' && (
                                     <>
                                         <select
                                             value={invoice.data.status || 'received'}
@@ -854,10 +835,13 @@ function InvoiceViewContent() {
                                             <Edit size={16} /> Edit Invoice
                                         </button>
 
-                                                                                <button onClick={() => { 
-                                            navigator.clipboard.writeText(`${window.location.origin}/tracking/${invoice.id}`);
-                                            alert('Tracking link copied to clipboard!');
-                                            setShowMoreMenu(false); 
+                                                                                <button onClick={async () => {
+                                            try {
+                                                const link = await createCustomerInvoiceLink(invoice.id, 'tracking');
+                                                await navigator.clipboard.writeText(link);
+                                                alert('Secure tracking link copied to clipboard!');
+                                                setShowMoreMenu(false);
+                                            } catch (error: any) { alert(error.message || 'Could not copy the tracking link.'); }
                                         }} className="dropdown-item">
                                             <Package size={16} /> Copy Tracking Link
                                         </button>
@@ -938,8 +922,8 @@ function InvoiceViewContent() {
                             // Generate Link
                             const isService = (invoice.data.mode as any) === 'wash' || (invoice.data.mode as any) === 'repair';
                             const link = isService 
-                                ? `${window.location.origin}/tracking/${invoice.id}`
-                                : `${window.location.origin}/public/invoice?id=${invoice.id}&pdf=true`;
+                                ? await createCustomerInvoiceLink(invoice.id, 'tracking')
+                                : await createCustomerInvoiceLink(invoice.id);
 
                             // Send Link (Client Side - Free Tier Compatible)
                             const { sendInvoiceEmail } = await import('@/lib/email-service');
@@ -1075,11 +1059,6 @@ function InvoiceViewContent() {
                         </div>
                     )}
 
-                    <ServiceInvoiceWorkflow invoice={invoice} onUpdated={next => {
-                        setInvoice(next);
-                        setCalculations(calculateInvoice(next.data));
-                    }} />
-
                     {/* Screen Preview */}
                     <div
                         id="invoice-view"
@@ -1113,3 +1092,4 @@ export default function InvoiceViewPage() {
         </Suspense>
     );
 }
+

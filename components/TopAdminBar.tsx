@@ -18,30 +18,6 @@ export default function TopAdminBar() {
     catch{sessionStorage.removeItem('showroom-logout');window.alert('Sign out failed. Please try again.');}
   };
 
-  // Inactivity auto-logout
-  useEffect(() => {
-    if (!isAdmin) return;
-
-    let timeoutId: NodeJS.Timeout;
-
-    const resetTimeout = () => {
-      clearTimeout(timeoutId);
-      // 15 minutes of inactivity logs out
-      timeoutId = setTimeout(() => {
-        handleLogout();
-      }, 15 * 60 * 1000);
-    };
-
-    resetTimeout();
-    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
-    events.forEach(e => document.addEventListener(e, resetTimeout));
-
-    return () => {
-      clearTimeout(timeoutId);
-      events.forEach(e => document.removeEventListener(e, resetTimeout));
-    };
-  }, [isAdmin]);
-
   if (!isAdmin) return null;
 
 

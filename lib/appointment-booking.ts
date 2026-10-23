@@ -2,6 +2,7 @@ import { collection, doc, runTransaction } from 'firebase/firestore';
 import { auth } from './auth';
 import { db } from './firebase';
 import { APPOINTMENT_STAFF, appointmentSlots, isFutureSlot } from './appointment-slots';
+import {customerEmailEvent} from './customer-email-client';
 
 export async function reserveAppointment(input: {
   name: string; email: string; phone: string; staffId: string; date: string; time: string; notes: string;
@@ -29,10 +30,13 @@ export async function reserveAppointment(input: {
     // Public availability contains no customer contact information.
     tx.set(slotRef, { staffId: staff.id, date: input.date, time: input.time, appointmentId: appointmentRef.id });
   });
+  const emailStatus=await customerEmailEvent('showroom_appointments',appointmentRef.id);
+  return {appointmentId:appointmentRef.id,emailStatus};
 }
 
 export async function changeAppointmentStatus(id: string, status: 'confirmed' | 'rejected' | 'cancelled') {
   const ref = doc(db, 'showroom_appointments', id);
+  await customerEmailEvent('showroom_appointments',id,true);
   await runTransaction(db, async tx => {
     const snap = await tx.get(ref);
     if (!snap.exists()) throw new Error('Appointment no longer exists.');
@@ -49,6 +53,7 @@ export async function changeAppointmentStatus(id: string, status: 'confirmed' | 
     tx.update(ref, { status });
     if (status !== 'confirmed' && slotRef && slot?.exists() && slot.data().appointmentId === id) tx.delete(slotRef);
   });
+  await customerEmailEvent('showroom_appointments',id);
 }
 
 export async function deleteAppointment(id: string) {

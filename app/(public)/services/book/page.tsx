@@ -3,7 +3,7 @@ import AppointmentForm from '@/components/public/AppointmentForm';
 
 export default function BookAppointmentPage() {
     return (
-        <div className="bg-neutral-50 py-16 px-4 sm:px-6 lg:px-8 min-h-screen">
+        <div className="customer-surface bg-neutral-50 py-16 px-4 sm:px-6 lg:px-8 min-h-screen">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <h1 className="text-4xl md:text-5xl font-serif text-neutral-900 mb-6">Schedule a Consultation</h1>

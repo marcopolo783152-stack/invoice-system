@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Payment } from '@/lib/calculations';
 
 interface PaymentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (payment: Payment) => void;
+    onSave: (payment: Payment) => void | Promise<boolean | void>;
     totalDue: number; // To suggest amount?
     balanceDue: number;
 }
 
 export default function PaymentModal({ isOpen, onClose, onSave, totalDue, balanceDue }: PaymentModalProps) {
+    const busyRef = useRef(false);
+    const pendingPaymentId = useRef<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
     const [amount, setAmount] = useState<string>('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [method, setMethod] = useState<Payment['method']>('Check');
@@ -18,16 +22,18 @@ export default function PaymentModal({ isOpen, onClose, onSave, totalDue, balanc
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if(busyRef.current) return;
         const numAmount = parseFloat(amount);
         if (isNaN(numAmount) || numAmount <= 0) {
             alert('Please enter a valid amount');
             return;
         }
 
+        if (!pendingPaymentId.current) pendingPaymentId.current = crypto.randomUUID();
         const payment: Payment = {
-            id: Math.random().toString(36).substr(2, 9),
+            id: pendingPaymentId.current,
             date,
             amount: numAmount,
             method,
@@ -35,14 +41,21 @@ export default function PaymentModal({ isOpen, onClose, onSave, totalDue, balanc
             note
         };
 
-        onSave(payment);
+        busyRef.current = true; setSaving(true); setSaveError('');
+        try {
+          const saved = await onSave(payment);
+          if (saved === false) return;
+
         // Reset form? Or just close happens parent side?
         // Let's reset for next time if component stays mounted
+        pendingPaymentId.current = null;
         setAmount('');
         setReference('');
         setNote('');
         setMethod('Check');
         setDate(new Date().toISOString().split('T')[0]);
+        } catch { setSaveError('Payment could not be saved. Your details are kept; please retry.'); }
+        finally { busyRef.current = false; setSaving(false); }
     };
 
     return (
@@ -65,7 +78,8 @@ export default function PaymentModal({ isOpen, onClose, onSave, totalDue, balanc
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit}>
+                <form aria-busy={saving} onSubmit={handleSubmit}>
+                    {saveError && <p role="alert">{saveError}</p>}
                     <div style={{ marginBottom: 12 }}>
                         <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Amount ($)</label>
                         <input

@@ -1,3 +1,4 @@
+'use client';
 /**
  * INVOICE FORM COMPONENT
  * 
@@ -5,9 +6,12 @@
  * Separated from template for clean architecture
  */
 
-'use client';
 
-import React, { useState, useEffect } from 'react';
+import {washingSummary} from '@/lib/washing-invoice.mjs';
+import ServiceTransport from './ServiceTransport';
+import {transportSummary,transportErrors} from '@/lib/service-transport.mjs';
+import ServiceProducts from './ServiceProducts';
+import React, { useState, useEffect, useRef } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency, calculateInvoice, calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
 import { getItemBySku, searchInventory, InventoryItem } from '@/lib/inventory-storage';
@@ -17,13 +21,7 @@ import { logActivity } from '@/lib/audit-logger';
 import * as XLSX from 'xlsx'; // Import SheetJS
 import dynamic from 'next/dynamic';
 
-function getNextWashSku(): string {
-  if (typeof window === 'undefined') return `MPW${Math.floor(1234 + Math.random() * 8000)}`;
-  let counter = parseInt(localStorage.getItem('mp_wash_sku_counter') || '1234', 10);
-  const sku = `MPW${counter}`;
-  localStorage.setItem('mp_wash_sku_counter', (counter + 1).toString());
-  return sku;
-}
+import {reserveWashSkuBatch} from '@/lib/wash-sku';
 
 const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
 
@@ -34,13 +32,15 @@ import styles from './InvoiceForm.module.css';
 
 interface InvoiceFormProps {
   onSubmit: (data: InvoiceData) => void;
+  saving?: boolean;
   initialData?: Partial<InvoiceData>;
   currentUser?: { username: string; fullName: string; role: string } | null;
   users?: { username: string; fullName: string; role: string }[];
 }
 
 // This form supports both creating and editing invoices. When editing, all fields (customer info, items, etc.) are pre-filled and can be updated.
-export default function InvoiceForm({ onSubmit, initialData, currentUser, users }: InvoiceFormProps) {
+export default function InvoiceForm({ onSubmit, initialData, currentUser, users, saving = false }: InvoiceFormProps) {
+  const [draftNotice, setDraftNotice] = useState('');
   const [servedBy, setServedBy] = useState(initialData?.servedBy || (currentUser?.fullName || currentUser?.username || ''));
 
   useEffect(() => {
@@ -137,6 +137,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       setDebtStats(null);
     }
   };
+  const [serviceTransport,setServiceTransport]=useState<InvoiceData['serviceTransport']>(initialData?.serviceTransport||null);
+  const [serviceProducts,setServiceProducts]=useState<any[]>(initialData?.serviceProducts||[]);
   const [items, setItems] = useState<InvoiceItem[]>(
     () => initialData?.items || [createEmptyItem()]
   );
@@ -158,31 +160,33 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const [isLumpSum, setIsLumpSum] = useState(initialData?.isLumpSum || false);
   const [lumpSumAmount, setLumpSumAmount] = useState(initialData?.lumpSumAmount || 0);
 
-  // Auto-switch to Wholesale for Consignment and auto-SKU for Wash
-  useEffect(() => {
-    if (documentType === 'CONSIGNMENT') {
-      // Only switch if not already a wholesale mode to preserve specific wholesale choices if any
-      if (!mode.includes('wholesale')) {
-        setMode('wholesale');
-      }
-    } else if (documentType === 'WASH') {
-      // Find how many items need SKUs
-      const neededCount = items.filter(i => !i.sku || !i.sku.startsWith('MPW')).length;
-      if (neededCount > 0) {
-        // Pre-generate SKUs outside the state updater to avoid React double-invocation bugs
-        const newSkus = Array.from({ length: neededCount }).map(() => getNextWashSku());
-        setItems(prev => {
-          let skuIndex = 0;
-          return prev.map(item => {
-            if (!item.sku || !item.sku.startsWith('MPW')) {
-              return { ...item, sku: newSkus[skuIndex++] };
-            }
-            return item;
-          });
-        });
-      }
-    }
-  }, [documentType]);
+  const [washSkuError,setWashSkuError]=useState('');
+  const [washSkuBusy,setWashSkuBusy]=useState(false);
+  const washRequest=useRef<{id:string;itemIds:string[]}|null>(null);
+  const washInFlight=useRef(false);
+  const documentTypeRef=useRef(documentType);documentTypeRef.current=documentType;
+  const needsWashSku=(item:InvoiceItem)=>!item.sku;
+  async function assignWashSkus(){
+    if(washInFlight.current||documentTypeRef.current!=='WASH')return;
+    const missing=items.filter(needsWashSku);
+    if(!missing.length)return;
+    if(!washRequest.current)washRequest.current={id:crypto.randomUUID(),itemIds:missing.slice(0,100).map(i=>i.id)};
+    const request=washRequest.current;
+    washInFlight.current=true;setWashSkuBusy(true);setWashSkuError('');
+    try{
+      const skus=await reserveWashSkuBatch(request.id,request.itemIds.length);
+      if(documentTypeRef.current==='WASH')setItems(previous=>previous.map(item=>{
+        const index=request.itemIds.indexOf(item.id);
+        return index>=0&&needsWashSku(item)?{...item,sku:skus[index]}:item;
+      }));
+      washRequest.current=null;
+    }catch(error){setWashSkuError(error instanceof Error?error.message:'Could not reserve wash SKUs.');}
+    finally{washInFlight.current=false;setWashSkuBusy(false);}
+  }
+  useEffect(()=>{
+    if(documentType==='CONSIGNMENT'&&!mode.includes('wholesale'))setMode('wholesale');
+    if(documentType==='WASH'&&!washSkuError)void assignWashSkus();
+  },[documentType,items]);
 
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [signature, setSignature] = useState(initialData?.signature || '');
@@ -195,7 +199,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   function createEmptyItem(): InvoiceItem {
     return {
       id: Math.random().toString(36).substr(2, 9),
-      sku: documentType === 'WASH' ? getNextWashSku() : '',
+      sku: '',
       description: '',
       shape: 'rectangle',
       widthFeet: 0,
@@ -228,11 +232,20 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
               if (draft.mode) setMode(draft.mode);
               if (draft.soldTo) setSoldTo(draft.soldTo);
               if (draft.items) setItems(draft.items);
+              setServiceProducts(draft.serviceProducts||[]);
+              setServiceTransport(draft.serviceTransport||null);
               if (draft.terms) setTerms(draft.terms);
               if (draft.additionalCharges) setAdditionalCharges(draft.additionalCharges);
               if (draft.discountValue) setDiscountValue(draft.discountValue);
               if (draft.discountType) setDiscountType(draft.discountType);
               if (draft.notes) setNotes(draft.notes);
+              if (typeof draft.downpayment === 'number') setDownpayment(draft.downpayment);
+              if (draft.date) setDate(draft.date);
+              if (typeof draft.isLumpSum === 'boolean') setIsLumpSum(draft.isLumpSum);
+              if (typeof draft.lumpSumAmount === 'number') setLumpSumAmount(draft.lumpSumAmount);
+              if (draft.signature) setSignature(draft.signature);
+              if (draft.pickupDate) setPickupDate(draft.pickupDate);
+              if (draft.servedBy) setServedBy(draft.servedBy);
             } else {
               localStorage.removeItem('mp_invoice_draft');
             }
@@ -253,17 +266,22 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           documentType,
           mode,
           soldTo,
-          items,
+          items, serviceProducts, serviceTransport,
           terms,
           additionalCharges,
           discountValue,
           discountType,
-          notes
+          notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy
         };
-        localStorage.setItem('mp_invoice_draft', JSON.stringify(draft));
+        try {
+          localStorage.setItem('mp_invoice_draft', JSON.stringify(draft));
+          setDraftNotice('Draft saved on this device. Save the invoice to sync it to your account.');
+        } catch {
+          setDraftNotice('This device could not save your draft. Keep this page open and save your invoice.');
+        }
       }
     }
-  }, [documentType, mode, soldTo, items, terms, additionalCharges, discountValue, discountType, notes, initialData]);
+  }, [documentType, mode, soldTo, items, serviceProducts, serviceTransport, terms, additionalCharges, discountValue, discountType, notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy, initialData]);
 
   // AUTOMATIC TERMS UPDATE BASED ON BALANCE
   useEffect(() => {
@@ -273,7 +291,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
 
     if (isStandardStatus) {
       const calc = calculateInvoice({
-        items,
+        items, serviceProducts, serviceTransport,
         mode: mode as InvoiceMode,
         documentType,
         invoiceNumber: '',
@@ -297,7 +315,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         setTerms(newTerms);
       }
     }
-  }, [items, mode, documentType, discountValue, discountType, additionalCharges, downpayment, initialData?.payments]);
+  }, [items, serviceProducts, serviceTransport, mode, documentType, discountValue, discountType, additionalCharges, downpayment, isLumpSum, lumpSumAmount, initialData?.payments]);
 
 
   const handleSkuChange = async (itemId: string, value: string) => {
@@ -522,6 +540,12 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if(documentType==='WASH'&&(washSkuBusy||items.some(needsWashSku))){setWashSkuError('Reserve all wash SKUs before saving. Use Retry below.');return;}
+
+    if(serviceProducts.some(p=>!p.description?.trim()||!Number.isInteger(p.quantity)||p.quantity<1||p.quantity>10000||!Number.isFinite(p.unitPrice)||p.unitPrice<0||p.unitPrice>1000000)){alert('Please enter a product name, valid quantity and unit price.');return;}
+
+    if(documentType==='WASH'){const errors=transportErrors(serviceTransport);if(errors.length){alert(errors.join('\n'));return;}}
+
     // Customer signature is now optional for admin creation
 
     const invoiceData: InvoiceData & { servedBy?: string } = {
@@ -531,7 +555,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       date,
       terms,
       soldTo,
-      items,
+      items, serviceProducts, serviceTransport,
       mode,
       additionalCharges,
       notes,
@@ -540,27 +564,26 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       discountValue,
       isLumpSum,
       lumpSumAmount,
+      downpayment,
       servedBy: servedBy || currentUser?.fullName || currentUser?.username || undefined,
       pickupDate: documentType === 'WASH' ? pickupDate : undefined,
       // Auto-calculate status if it's currently 'washing' or 'repairing' (initial states)
       // If it is already 'ready' or 'picked_up', keep it.
       status: documentType === 'WASH' ? (
+        initialData?.washingProgress ? washingSummary({...initialData,items,status}).status as InvoiceData['status'] :
         ['ready', 'picked_up'].includes(status || '') ? status :
           (items.some(i => i.serviceType?.wash) ? 'washing' : 'repairing')
       ) : undefined,
     };
 
     onSubmit(invoiceData);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('mp_invoice_draft'); // Clear draft on successful submit
-    }
-    logActivity('Invoice Saved', `${documentType} #${invoiceNumber} for ${soldTo.name} has been processed.`);
+    // The parent clears the draft only after persistence succeeds.
   };
 
   const isRetail = mode.startsWith('retail');
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
+    <form onSubmit={e => { if(saving){e.preventDefault();return;} handleSubmit(e); }} className={styles.form}>
       <div className={styles.formGroup}>
         <label>Document Type:</label>
         <select
@@ -703,7 +726,9 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       </div>
 
       {/* Sold To Section */}
-      <h3>Customer Information</h3>
+      {isWash&&washSkuBusy&&<p role="status">Reserving wash SKU numbers…</p>}
+      {isWash&&washSkuError&&<div role="alert"><p>{washSkuError}</p><button type="button" disabled={washSkuBusy} onClick={()=>void assignWashSkus()}>Retry SKU reservation</button></div>}
+      <h3>1. Customer information</h3>
       {debtStats && debtStats.totalDebt > 0 && (
         <div style={{ padding: '15px', background: '#ffe4e6', border: '1px solid #fda4af', borderRadius: '8px', marginBottom: '20px', color: '#9f1239' }}>
           <h4 style={{ margin: '0 0 5px 0' }}>⚠️ Outstanding Balance</h4>
@@ -715,9 +740,11 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       )}
       <div className={styles.row}>
         <div className={styles.formGroup} style={{ position: 'relative' }}>
-          <label>Name:*</label>
+          <label htmlFor="customer-full-name">Full name:*</label>
           <input
             type="text"
+            id="customer-full-name"
+            placeholder="First and last name"
             value={soldTo.name}
             onChange={(e) => handleCustomerNameChange(e.target.value)}
             required
@@ -834,7 +861,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
       </div>
 
       {/* Items Section */}
-      <h3>Items</h3>
+      <h3>2. Rugs and services</h3>
       <div className={styles.itemsContainer}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
           <button
@@ -1162,6 +1189,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                   </label>
                 </div>
 
+                {initialData?.washingProgress?.[item.id]&&<p style={{fontSize:13,color:'#166534'}}>Washing: {initialData.washingProgress[item.id].status} · {washingSummary({...initialData,items}).readyCount} of {washingSummary({...initialData,items}).total} rugs ready</p>}
+                {item.serviceType?.repair&&<label style={{display:'flex',gap:6,fontSize:14}}><input type="checkbox" checked={!!item.repairCompletedAt} onChange={e=>handleItemChange(item.id,'repairCompletedAt',e.target.checked?new Date().toISOString():'')}/>Required repair completed and checked</label>}
                 <div style={{ marginTop: 12 }}>
                   <span style={{ fontWeight: 600, fontSize: 13, color: '#475569', display: 'block', marginBottom: 8 }}>Conditions:</span>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
@@ -1252,13 +1281,15 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
           </div>
         ))}
 
+        {isWash&&<ServiceTransport value={serviceTransport} onChange={setServiceTransport}/>}
+        {isWash&&<ServiceProducts products={serviceProducts} onChange={setServiceProducts}/>}
         <button type="button" onClick={handleAddItem} className={styles.addBtn}>
           + Add Item
         </button>
 
         {/* Static Summary Block */}
         <div style={{ marginTop: 24, padding: 20, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-          <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16, color: '#334155' }}>Summary</h3>
+          <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16, color: '#334155' }}>3. Charges and balance</h3>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <table style={{ borderCollapse: 'collapse' }}>
               <tbody>
@@ -1319,7 +1350,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                   <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Subtotal:</td>
                   <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
                     {(() => {
-                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
+                      const calc = calculateInvoice({ items, serviceProducts, serviceTransport, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
                       return formatCurrency(calc.subtotal);
                     })()}
                   </td>
@@ -1350,13 +1381,15 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     </td>
                     <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
                       {(() => {
-                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType });
+                        const calc = calculateInvoice({ items, serviceProducts, serviceTransport, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType });
                         return `-${formatCurrency(calc.discount)}`;
                       })()}
                     </td>
                   </tr>
                 )}
 
+                {serviceProducts.length>0&&<tr><td style={{padding:'8px 24px',textAlign:'right'}}>Product sales tax (6%):</td><td style={{textAlign:'right'}}>{formatCurrency(calculateInvoice({items,serviceProducts,serviceTransport,mode:mode as InvoiceMode,documentType,invoiceNumber:'',date:'',terms:'',soldTo:{name:'',address:'',city:'',state:'',zip:'',phone:''}}).salesTax)}</td></tr>}
+                {isWash&&transportSummary(serviceTransport).rows.map(row=><tr key={'transport-'+row.label}><td style={{padding:'8px 24px',textAlign:'right'}}>{row.label}:</td><td style={{textAlign:'right'}}>{row.amount?formatCurrency(row.amount):'Free'}</td></tr>)}
                 {additionalCharges.map(charge => (
                   <tr key={charge.id}>
                     <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>{charge.description}:</td>
@@ -1372,7 +1405,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                   </td>
                   <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
                     {(() => {
-                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, additionalCharges });
+                      const calc = calculateInvoice({ items, serviceProducts, serviceTransport, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, additionalCharges });
                       return formatCurrency(calc.totalDue);
                     })()}
                   </td>
@@ -1383,7 +1416,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
                     <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Balance Due:</td>
                     <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
                       {(() => {
-                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, downpayment, additionalCharges });
+                        const calc = calculateInvoice({ items, serviceProducts, serviceTransport, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, downpayment, additionalCharges, payments:initialData?.payments||[] });
                         return formatCurrency(calc.balanceDue || 0);
                       })()}
                     </td>
@@ -1526,10 +1559,11 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users 
         </div>
       </div>
 
+      {draftNotice && <p role="status" className={styles.draftNotice}>{draftNotice}</p>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 32 }}>
 
-        <button type="submit" className={styles.submitBtn}>
-          Generate Invoice
+        <button type="submit" className={styles.submitBtn} disabled={saving || (isWash && (washSkuBusy || items.some(needsWashSku)))}>
+          {saving ? 'Saving invoice…' : 'Save and review invoice'}
         </button>
       </div>
 

@@ -7,7 +7,8 @@
  * DO NOT modify layout, spacing, or arrangement.
  */
 
-import { useStore } from "@/context/StoreContext";
+import { useOptionalStore } from "@/context/StoreContext";
+import {transportSummary} from '@/lib/service-transport.mjs';
 import React from 'react';
 import {
   InvoiceData,
@@ -36,7 +37,7 @@ interface InvoiceTemplateProps {
 }
 
 export default function InvoiceTemplate(props: any) {
-  const { shopProfile } = useStore();
+  const shopProfile = useOptionalStore()?.shopProfile;
   const {
   data,
   calculations,
@@ -87,7 +88,8 @@ export default function InvoiceTemplate(props: any) {
   // Footer weight factor
   const hasSubstantialNotes = (data.notes || '').length > 200;
   const hasManyPayments = (data.payments || []).length > 3;
-  const hasAdditionalCharges = (data.additionalCharges || []).length > 2;
+  const transport = (data.documentType==='WASH'||data.mode==='wash') ? transportSummary(data.serviceTransport) : transportSummary(null);
+  const hasAdditionalCharges = (data.additionalCharges || []).length + transport.rows.length > 2 || !!transport.label;
   const hasSignature = !!(data.signature || data.pickupSignature);
   const footerWeight = (hasSubstantialNotes || hasManyPayments || hasAdditionalCharges || hasSignature) ? 10 : 6;
 
@@ -223,10 +225,10 @@ export default function InvoiceTemplate(props: any) {
                       <td className={styles.label}>Terms:</td>
                       <td className={styles.value} style={data.terms.toLowerCase().includes('paid') ? { color: '#059669', fontWeight: 'bold' } : {}}>{data.terms}</td>
                     </tr>
-                    {(data.pickupDate || data.serviceWorkflow?.plan) && (
+                    {data.pickupDate && (
                       <tr>
-                        <td className={styles.label}>{data.serviceWorkflow?.plan.method === 'delivery' ? 'Delivery Date:' : 'Pick up Date:'}</td>
-                        <td className={styles.value} style={{ color: '#0284c7', fontWeight: 'bold' }}>{formatDateMMDDYYYY(data.serviceWorkflow?.plan.date || (data.serviceWorkflow?.plan.method === 'delivery' ? '' : data.pickupDate)) || 'To be scheduled'}</td>
+                        <td className={styles.label}>Pick up Date:</td>
+                        <td className={styles.value} style={{ color: '#0284c7', fontWeight: 'bold' }}>{formatDateMMDDYYYY(data.pickupDate)}</td>
                       </tr>
                     )}
                   </tbody>
@@ -397,6 +399,8 @@ export default function InvoiceTemplate(props: any) {
                         </tr>
                       )}
 
+                      {!!data.serviceProducts?.length&&<tr><td colSpan={2} className={styles.totalLabel}>Products included in subtotal:</td></tr>}
+                      {data.serviceProducts?.map((p:any)=><tr key={'product-'+p.id}><td className={styles.totalLabel}>{p.description} · {p.quantity} × {formatCurrency(p.unitPrice)}{p.returned?' (Returned)':''}{p.taxable===false?' (No tax)':''}:</td><td className={styles.totalValue}>{formatCurrency(p.quantity*p.unitPrice)}</td></tr>)}
                       {/* Discount Row - ALL MODES */}
                       {calculations.discount > 0 && (
                         <tr>
@@ -408,7 +412,7 @@ export default function InvoiceTemplate(props: any) {
                       )}
 
                       {/* Sales Tax - Retail Only (Never for Wash or Appraisals) */}
-                      {isRetail && data.mode !== 'wash' && !isAppraisal && (
+                      {((isRetail && data.mode !== 'wash' && !isAppraisal) || !!data.serviceProducts?.some((p:any)=>p.taxable!==false)) && (
                         <tr>
                           <td className={styles.totalLabel}>Sales Tax (6%):</td>
                           <td className={styles.totalValue}>{formatCurrency(calculations.salesTax)}</td>
@@ -422,6 +426,9 @@ export default function InvoiceTemplate(props: any) {
                           <td className={styles.totalValue}>{formatCurrency(charge.amount)}</td>
                         </tr>
                       ))}
+
+                      {transport.label&&<tr><td colSpan={2} className={styles.totalLabel}>{transport.label}</td></tr>}
+                      {transport.rows.map(row=><tr key={'transport-'+row.label}><td className={styles.totalLabel}>{row.label}:</td><td className={styles.totalValue}>{row.amount?formatCurrency(row.amount):'Free'}</td></tr>)}
 
                       {/* Retail Total Due */}
                       {data.documentType !== 'CONSIGNMENT' && (

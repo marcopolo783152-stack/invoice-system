@@ -1,0 +1,18 @@
+.overlay { position: fixed; inset: 0; z-index: 10000; overflow: hidden; }
+.positioner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; pointer-events: none; }
+.dialog { pointer-events: auto; width: 100%; max-width: 760px; height: calc(100dvh - 48px); max-height: 900px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 16px; outline: none; }
+.body { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.summary { flex-shrink: 0; max-height: 42dvh; overflow-y: auto; overscroll-behavior: contain; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+@media (max-width: 640px) { .positioner { padding: 0; } .dialog { height: 100dvh; max-height: none; border-radius: 0; } }
+
+/* Readable form controls avoid mobile input zoom and preserve wrapping. */
+.dialog input, .dialog select, .dialog textarea { font-size: 16px; }
+.dialog button { min-height: 44px; }
+.summary > div > div { gap: 12px; }
+.summary > div > div > span:last-child { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .summary { max-height: 46dvh; }
+  .dialog h5 { line-height: 1.45; }
+}
+
+.dialog{border:1px solid #e5ded1;background:#fffdf9;border-radius:24px;box-shadow:0 24px 80px #193e3430}.body{background:#fffdf9}.summary{background:#f5f1e8;border-top:1px solid #e5ded1}.dialog button{border-radius:10px}.dialog input,.dialog select,.dialog textarea{border-radius:10px;border-color:#c8cec1;min-height:46px}.dialog h2,.dialog h3{color:#193e34}.dialog img{border-radius:12px}@media(max-width:640px){.dialog{border-radius:0;border:0}.summary{max-height:44dvh}}

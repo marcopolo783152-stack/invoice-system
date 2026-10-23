@@ -1,86 +1,22 @@
-import { NextResponse } from "next/server";
-import { FieldValue } from "firebase-admin/firestore";
-import { serverDb } from "@/lib/server/firebase-admin";
-
-export const dynamic = "force-dynamic";
-
-function noStore(body: any, init?: ResponseInit) {
-  const response = NextResponse.json(body, init);
-  response.headers.set("Cache-Control", "private, no-store, max-age=0");
-  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
-  return response;
+import {serverDb} from '@/lib/server/firebase-admin';
+import {washingSummary} from '@/lib/washing-invoice.mjs';
+import {tokenHash,customerInvoice} from '@/lib/server/invoice-share.mjs';
+import {respond} from '@/lib/server/live-payment';
+export const runtime='nodejs';export const dynamic='force-dynamic';
+function result(id:string,data:any){const service=data.mode==='wash'||data.mode==='repair'||data.documentType==='WASH'||data.documentType==='REPAIR';return {...(service?{serviceProgress:((summary:any)=>({readyCount:summary.readyCount,total:summary.total}))(washingSummary(data))}:{}),invoice:{id,data:customerInvoice(data),createdAt:'',updatedAt:'',documentType:data.documentType||'INVOICE'}};}
+export async function GET(req:Request){
+ try{const hash=tokenHash(new URL(req.url).searchParams.get('token')),db=serverDb(),link=(await db.collection('invoice_customer_links').doc(hash).get()).data();
+ if(!link||link.revoked||link.expiresAt<Date.now())return respond({error:'This invoice link is unavailable or expired. Ask the showroom for a new link.'},404);
+ const invoice=(await db.collection('invoices').doc(link.invoiceId).get()).data();if(!invoice||invoice.data?.isDraft)return respond({error:'Invoice unavailable.'},404);
+ const res=respond(result(link.invoiceId,invoice.data));res.headers.set('Referrer-Policy','no-referrer');res.headers.set('X-Robots-Tag','noindex, nofollow');return res;
+ }catch{return respond({error:'Unable to open this invoice. Ask the showroom for a new secure link.'},404);}
 }
-
-export async function GET(request: Request) {
-  try {
-    const url = new URL(request.url);
-    const id = (url.searchParams.get("id") || "").trim();
-    if (!/^[A-Za-z0-9_-]{10,128}$/.test(id)) {
-      return noStore({ error: "Invalid invoice link." }, { status: 400 });
-    }
-
-    const snap = await serverDb().collection("invoices").doc(id).get();
-    if (!snap.exists) {
-      return noStore({ error: "Invoice not found." }, { status: 404 });
-    }
-
-    const record = snap.data() || {};
-    const data = record.data || {};
-    return noStore({
-      invoice: {
-        id: snap.id,
-        data,
-        documentType: data.documentType || "INVOICE",
-        createdAt: record.createdAt?.toDate?.()?.toISOString?.() || null,
-        updatedAt: (record.updatedAt || record.createdAt)?.toDate?.()?.toISOString?.() || null,
-      },
-    });
-  } catch (error) {
-    console.error("Public invoice GET failed:", error);
-    return noStore({ error: "Unable to open invoice." }, { status: 500 });
-  }
-}
-
-export async function PATCH(request: Request) {
-  try {
-    const url = new URL(request.url);
-    const id = (url.searchParams.get("id") || "").trim();
-    if (!/^[A-Za-z0-9_-]{10,128}$/.test(id)) {
-      return noStore({ error: "Invalid invoice link." }, { status: 400 });
-    }
-
-    const body = await request.json();
-    const signature = typeof body?.signature === "string" ? body.signature : "";
-    if (!signature.startsWith("data:image/") || signature.length > 1_500_000) {
-      return noStore({ error: "Invalid signature." }, { status: 400 });
-    }
-
-    const ref = serverDb().collection("invoices").doc(id);
-    const snap = await ref.get();
-    if (!snap.exists) {
-      return noStore({ error: "Invoice not found." }, { status: 404 });
-    }
-
-    const record = snap.data() || {};
-    const data = record.data || {};
-    if (data.signature) {
-      return noStore({ error: "Invoice is already signed." }, { status: 409 });
-    }
-
-    const updatedData = {
-      ...data,
-      signature,
-      signatureDate: new Date().toISOString(),
-    };
-
-    await ref.update({
-      data: updatedData,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-
-    return noStore({ ok: true, data: updatedData });
-  } catch (error) {
-    console.error("Public invoice PATCH failed:", error);
-    return noStore({ error: "Unable to save signature." }, { status: 500 });
-  }
+export async function POST(req:Request){
+ try{const raw=await req.text();if(raw.length>300000)return respond({error:'Signature too large.'},400);const {token,signature}=JSON.parse(raw);
+ if(typeof signature!=='string'||!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(signature)||signature.length<100)return respond({error:'Please draw your signature.'},400);
+ const db=serverDb(),linkRef=db.collection('invoice_customer_links').doc(tokenHash(token));
+ const data=await db.runTransaction(async tx=>{const link=(await tx.get(linkRef)).data();if(!link||link.revoked||link.expiresAt<Date.now())throw Error();const ref=db.collection('invoices').doc(link.invoiceId),invoice=(await tx.get(ref)).data();if(!invoice||invoice.data?.isDraft)throw Error();
+ if(invoice.data.signature)return result(link.invoiceId,invoice.data);
+ const date=new Date().toISOString();tx.update(ref,{'data.signature':signature,'data.signatureDate':date,updatedAt:date});tx.update(linkRef,{signedAt:date});return result(link.invoiceId,{...invoice.data,signature,signatureDate:date});});return respond(data);
+ }catch{return respond({error:'Could not save your signature. Ask the showroom to check the invoice link.'},400);}
 }

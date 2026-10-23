@@ -53,7 +53,7 @@ export default function PaymentTest() {
       <button disabled={!ready || busy} onClick={start} style={{padding: '12px 20px', borderRadius: 8, background: '#183e35', color: 'white', opacity: !ready || busy ? .5 : 1}}>{busy ? 'Opening Stripe…' : 'Start $1 test checkout'}</button>
       <button disabled={busy} onClick={() => { void check(); }} style={{padding: 12, border: '1px solid #ccc', borderRadius: 8}}>Check again</button>
     </div>
-    <p><a href="/staff-login" style={{textDecoration: 'underline'}}>Staff sign in</a> · <a href="/" style={{textDecoration: 'underline'}}>Return to showroom</a></p>
+    <p><a href="/sign-in" style={{textDecoration: 'underline'}}>Sign in</a> · <a href="/" style={{textDecoration: 'underline'}}>Return to showroom</a></p>
     <p style={{marginTop: 20, fontSize: 14}}>Customer online checkout is not enabled by this test. Never enter a real card here.</p>
   </main>;
 }

@@ -43,11 +43,11 @@ export async function generateInvoiceNumber(): Promise<string> {
     try {
       const cloudNextStr = await getNextInvoiceNumberFromCloud();
       const match = cloudNextStr.match(/^MP(\d+)$/);
-      if (match && match[1]) {
-        nextNumber = parseInt(match[1], 10);
-      }
+      if (!match) throw new Error('Invalid invoice number received from cloud.');
+      saveLastInvoiceNumber(parseInt(match[1], 10));
+      return cloudNextStr;
     } catch (e) {
-      console.warn('Failed to get number from cloud, falling back to local calculation:', e);
+      throw new Error('Could not reserve an invoice number. Check your connection and try again.');
     }
   }
 

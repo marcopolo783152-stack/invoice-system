@@ -50,10 +50,14 @@ export default function RootLayout({
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  const handleLogout=async()=>{await logout();syncLegacyStaffSession(null);window.location.assign('/staff-login');};
+  const handleLogout=async()=>{await logout();syncLegacyStaffSession(null);window.location.assign('/sign-in');};
 
   const isPrintPage = pathname?.includes('/print');
   const isPublicPage = pathname?.startsWith('/public');
+
+  if (pathname === '/admin/invoices/clock') {
+    return <html lang="en"><head><meta name="referrer" content="no-referrer" /></head><body className={inter.className}>{children}</body></html>;
+  }
 
   if (isPrintPage) {
     return (

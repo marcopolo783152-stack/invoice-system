@@ -1,178 +1,71 @@
-import { NextResponse } from "next/server";
-import { Shippo } from "shippo";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
-
+import {NextResponse} from 'next/server';
+import {createHash} from 'node:crypto';
+import {Shippo} from 'shippo';
+import {LIVE_ORDERS,validOrderId} from '@/lib/server/live-orders.mjs';
+import {labelEligibility,labelAddress} from '@/lib/server/order-label.mjs';
+import {CheckoutError} from '@/lib/server/rug-checkout.mjs';
+import {serverDb} from '@/lib/server/firebase-admin';
+import {requireStaff} from '@/lib/server/staff-permission';
 export async function POST(request: Request) {
-  // Clean up the API key to prevent any trailing spaces or duplicate prefixes
-  let rawKey = process.env.SHIPPO_API_KEY || "";
-  rawKey = rawKey.trim();
-  if (rawKey.startsWith("ShippoToken ")) {
-    rawKey = rawKey.replace("ShippoToken ", "");
-  }
-
-  const shippo = new Shippo({
-    apiKeyHeader: rawKey,
-  });
-
+  try { await requireStaff(request,'orders','write'); }
+  catch {return NextResponse.json({error:'Staff permission required.'},{status:403});}
   try {
-    const body = await request.json();
-    const { orderId, customerAddress, dimensions } = body;
-
-    if (!orderId || !customerAddress || !dimensions) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+    if(request.headers.get('origin')&&request.headers.get('origin')!==new URL(request.url).origin)return NextResponse.json({error:'Use the showroom website.'},{status:403});
+    const {orderId, dimensions, selectedRate} = await request.json();
+    if (typeof orderId !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(orderId)) return NextResponse.json({error:'Invalid order'},{status:400});
+    if (!dimensions || !['length','width','height','weight'].every(k=>Number.isFinite(Number(dimensions[k])) && Number(dimensions[k])>0 && Number(dimensions[k])<=1000))
+      return NextResponse.json({error:'Enter valid package dimensions and weight.'},{status:400});
+    const db=serverDb(),live=validOrderId(orderId),ref=db.collection(live?LIVE_ORDERS:'showroom_orders').doc(orderId),mirrorRef=db.collection('showroom_orders').doc(orderId);
+    const order=(await ref.get()).data();labelEligibility(order,live);
+    const key=process.env.SHIPPO_API_KEY?.trim().replace(/^ShippoToken /,'');
+    if(!key)return NextResponse.json({error:'Shipping is not configured.'},{status:503});
+    const shippo=new Shippo({apiKeyHeader:key}),addressTo=labelAddress(order);
+    const parcel = {length:String(dimensions.length),width:String(dimensions.width),height:String(dimensions.height),weight:String(dimensions.weight),distanceUnit:'in',massUnit:'lb'};
+    const fingerprint = createHash('sha256').update(JSON.stringify({addressTo,parcel})).digest('hex');
+    const quoteRef = db.collection('shipping_label_quotes').doc(orderId);
+    if (!selectedRate) {
+      const shipment = await shippo.shipments.create({addressFrom:{name:'Marco Polo Rugs',street1:'3260 Duke Street',city:'Alexandria',state:'VA',zip:'22314',country:'US',phone:'7034610207',email:'marcopolo783152@gmail.com'},addressTo,parcels:[parcel as any],async:false});
+      const rates = (shipment.rates || []).filter(r=>r.objectId && r.currency==='USD' && Number.isFinite(Number(r.amount))).map(r=>({id:r.objectId,provider:r.provider,amount:r.amount,currency:r.currency,service:r.servicelevel?.name || 'Shipping'})).sort((a,b)=>Number(a.amount)-Number(b.amount));
+      if (!rates.length) return NextResponse.json({error:'No rates are available. Check the address, package and carrier accounts.'},{status:400});
+      await quoteRef.set({fingerprint,rates,expiresAt:Date.now()+10*60*1000});
+      return NextResponse.json({success:true,rates});
     }
-
-    // 1. Create a shipment
-    const addressFrom = {
-      name: "Marco Polo Oriental Rugs",
-      street1: "3260 Duke Street",
-      city: "Alexandria",
-      state: "VA",
-      zip: "22314",
-      country: "US",
-      phone: "(703) 461-0207",
-      email: "support@marcopolorugs.com",
-    };
-
-    // Parse the shipping address string (e.g. "123 Main St, New York, NY 10001")
-    let parsedStreet = customerAddress.address1 || customerAddress.street || "";
-    let parsedStreet2 = customerAddress.address2 || "";
-    let parsedCity = customerAddress.city || "";
-    let parsedState = customerAddress.state || "";
-    let parsedZip = customerAddress.zip || customerAddress.zipCode || "";
-
-    if (customerAddress.shippingAddress) {
-      const parts = customerAddress.shippingAddress.split(',');
-      if (parts.length >= 3) {
-        parsedStreet = parts[0].trim();
-        parsedCity = parts[1].trim();
-        const stateZip = parts[2].trim().split(' ');
-        parsedState = stateZip[0] || "";
-        parsedZip = stateZip[1] || "";
-        
-        // Fix for "Apt/Suite" which breaks USPS validation when appended to street1
-        if (parsedStreet.includes("Apt/Suite")) {
-            const streetParts = parsedStreet.split("Apt/Suite");
-            parsedStreet = streetParts[0].trim();
-            parsedStreet2 = "Apt " + streetParts[1].trim();
-        }
-      } else {
-        // Fallback if no commas
-        parsedStreet = customerAddress.shippingAddress;
-      }
-    }
-
-    const addressTo = {
-      name: customerAddress.name || "Customer",
-      street1: parsedStreet,
-      street2: parsedStreet2,
-      city: parsedCity,
-      state: parsedState,
-      zip: parsedZip,
-      country: customerAddress.country || "US",
-    };
-
-    if (!parsedCity || !parsedState || !parsedZip) {
-      return NextResponse.json(
-        { error: `Address could not be parsed correctly. Please ensure the customer's address is formatted with commas like this: "123 Main St, City, State Zip". Current parsed values -> Street: ${parsedStreet}, City: ${parsedCity}, State: ${parsedState}, Zip: ${parsedZip}` },
-        { status: 400 }
-      );
-    }
-
-    const parcel = {
-      length: dimensions.length.toString(),
-      width: dimensions.width.toString(),
-      height: dimensions.height.toString(),
-      distanceUnit: "in",
-      weight: dimensions.weight.toString(),
-      massUnit: "lb",
-    };
-
-    console.log("Creating shipment with Shippo...");
-    
-    // Create the shipment
-    const shipment = await shippo.shipments.create({
-      addressFrom: addressFrom as any,
-      addressTo: addressTo as any,
-      parcels: [parcel as any],
-      async: false,
+    const operation = db.collection('shipping_label_operations').doc(orderId);
+    const rate = await db.runTransaction(async tx=>{
+      const [quote,op,current] = await tx.getAll(quoteRef,operation,ref);
+      const data=quote.data();
+      if(op.exists)throw Error('LABEL_OPERATION_EXISTS');
+      labelEligibility(current.data(),live);
+      if(createHash('sha256').update(JSON.stringify({addressTo:labelAddress(current.data()),parcel})).digest('hex')!==fingerprint)throw Error('QUOTE_EXPIRED');
+      if (!data || data.fingerprint!==fingerprint || data.expiresAt<Date.now()) throw Error('QUOTE_EXPIRED');
+      const chosen=data.rates.find((r:any)=>r.id===selectedRate);
+      if (!chosen) throw Error('QUOTE_EXPIRED');
+      // No automatic retry after a purchase starts: reconcile uncertain results in Shippo.
+      tx.create(operation,{phase:'purchasing',rateId:selectedRate,startedAt:new Date().toISOString()});
+      return chosen;
     });
-
-    if (!shipment.rates || shipment.rates.length === 0) {
-      const shippoMessages = shipment.messages ? shipment.messages.map((m: any) => m.text).join(" | ") : "Unknown reason";
-      return NextResponse.json(
-        { error: `No shipping rates available for this destination/package. Carrier says: ${shippoMessages}` },
-        { status: 400 }
-      );
+    const transaction = await shippo.transactions.create({rate:rate.id,labelFileType:'PDF',async:false});
+    if (transaction.status!=='SUCCESS') {
+      await operation.update({phase:'needs_review',providerStatus:transaction.status || 'unknown'});
+      return NextResponse.json({error:'Carrier purchase needs review. Check Shippo before retrying.'},{status:409});
     }
-
-    // 2. Find the cheapest rate
-    const sortedRates = shipment.rates.sort(
-      (a: any, b: any) => parseFloat(a.amount) - parseFloat(b.amount)
-    );
-    const cheapestRate = sortedRates[0];
-
-    console.log(`Purchasing label for cheapest rate: $${cheapestRate.amount} (${cheapestRate.provider})`);
-
-    // 3. Purchase the label (Transaction)
-    const transaction = await shippo.transactions.create({
-      rate: cheapestRate.objectId,
-      labelFileType: "PDF",
-      async: false,
+    const result={success:true,transactionId:transaction.objectId,trackingNumber:transaction.trackingNumber || '',labelUrl:transaction.labelUrl || '',trackingUrl:transaction.trackingUrlProvider || '',carrier:rate.provider,cost:rate.amount};
+    // Persist a purchased label even if fulfillment changes while Shippo responds.
+    await db.runTransaction(async tx=>{
+      const [current,mirror]=await tx.getAll(ref,mirrorRef);
+      const latest=current.data()||{},view=mirror.data()||{};
+      const shippingDetails={...latest.shippingDetails,transactionId:result.transactionId,trackingNumber:result.trackingNumber,labelUrl:result.labelUrl,trackingUrl:result.trackingUrl,carrier:result.carrier,cost:result.cost,labelCreatedAt:new Date().toISOString()};
+      const status=['Confirmed','Pending Confirmation','Preparing for Shipping'].includes(view.status)?'Preparing for Shipping':view.status;
+      if(live){
+        tx.update(ref,{shippingDetails,trackingNumber:latest.trackingNumber||result.trackingNumber,carrier:latest.carrier||result.carrier});
+        tx.set(mirrorRef,{...(status?{status}:{}),shippingDetails:{...view.shippingDetails,...shippingDetails}},{merge:true});
+      }else tx.update(ref,{...(status?{status}:{}),shippingDetails});
+      tx.update(operation,{phase:'complete',result});
     });
-
-    if (transaction.status !== "SUCCESS") {
-      const messages = transaction.messages?.map((m: any) => m.text).join(", ") || "Unknown error";
-      return NextResponse.json(
-        { error: `Failed to purchase label: ${messages} (Sent to Carrier: Street="${parsedStreet}", City="${parsedCity}", State="${parsedState}", Zip="${parsedZip}")` },
-        { status: 400 }
-      );
-    }
-
-    // 4. Get tracking info and label URL
-    const trackingNumber = transaction.trackingNumber;
-    const labelUrl = transaction.labelUrl;
-    const trackingUrl = transaction.trackingUrlProvider;
-
-    // 5. Update Firebase order status
-    try {
-      if (!db) throw new Error("Firebase DB not initialized");
-      const orderRef = doc(db, "showroom_orders", orderId);
-      await updateDoc(orderRef, {
-        status: "Shipped",
-        shippingDetails: {
-          trackingNumber: trackingNumber,
-          labelUrl: labelUrl,
-          trackingUrl: trackingUrl,
-          carrier: cheapestRate.provider,
-          cost: cheapestRate.amount,
-          shippedAt: new Date().toISOString()
-        }
-      });
-      console.log(`Successfully updated order ${orderId} in Firebase.`);
-    } catch (fbError) {
-      console.error("Firebase update failed, but label was created:", fbError);
-    }
-
-    return NextResponse.json({
-      success: true,
-      trackingNumber,
-      labelUrl,
-      trackingUrl,
-      carrier: cheapestRate.provider,
-      cost: cheapestRate.amount,
-      transactionId: transaction.objectId
-    });
-
-  } catch (error: any) {
-    console.error("Shipping error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to process shipping" },
-      { status: 500 }
-    );
+    return NextResponse.json(result);
+  } catch (error) {
+    if(error instanceof CheckoutError)return NextResponse.json({error:error.message},{status:error.status});
+    const code=error instanceof Error?error.message:'';
+    return NextResponse.json({error:code==='QUOTE_EXPIRED'?'Rates expired or the package changed. Request new rates.':code==='LABEL_OPERATION_EXISTS'?'A label purchase already started. Check Shippo and the order before retrying.':'Shipping could not complete. If you confirmed a purchase, check Shippo before retrying.'},{status:code==='QUOTE_EXPIRED'||code==='LABEL_OPERATION_EXISTS'?409:503});
   }
 }
