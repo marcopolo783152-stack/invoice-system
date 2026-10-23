@@ -11,6 +11,7 @@ import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-st
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
 import { logActivity } from '@/lib/audit-logger';
+import InvoiceCalls from '@/components/services/InvoiceCalls';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { ReturnedReceipt } from '@/components/ReturnedReceipt';
 import { businessConfig } from '@/config/business';
@@ -1058,6 +1059,8 @@ function InvoiceViewContent() {
                             </div>
                         </div>
                     )}
+
+                    {(invoice.data.documentType==='WASH'||invoice.data.mode==='wash'||(invoice.data.mode as string)==='repair')&&<InvoiceCalls key={invoice.id} invoiceId={invoice.id}/>}
 
                     {/* Screen Preview */}
                     <div
