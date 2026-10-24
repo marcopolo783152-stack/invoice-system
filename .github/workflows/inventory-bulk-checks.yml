@@ -1,0 +1,33 @@
+name: Inventory bulk checks
+on:
+  push:
+    branches: [main, feature/shippo-invoice-links-20260929]
+    paths:
+      - 'lib/inventory/**'
+      - 'lib/server/inventory-bulk.mjs'
+      - 'app/api/inventory/**'
+      - 'components/inventory/InventoryBulkTools*'
+      - 'components/public/AdminDashboard.tsx'
+      - 'components/public/BulkImport.tsx'
+      - 'context/StoreContext.tsx'
+      - 'types.ts'
+      - 'lib/catalog-visibility.mjs'
+      - 'lib/delivered-price.mjs'
+      - 'tests/inventory/**'
+      - '.github/workflows/inventory-bulk-checks.yml'
+permissions:
+  contents: read
+jobs:
+  inventory-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/inventory/*.test.mjs tests/access/delivered-price.test.mjs tests/access/shipping-package.test.mjs tests/access/rug-categorization.test.mjs tests/auction/catalog.test.mjs tests/auction/planning.test.mjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

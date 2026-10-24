@@ -1,3 +1,6 @@
+import InventoryBulkTools,{InventoryStamp} from '@/components/inventory/InventoryBulkTools';
+import {weightFor,matchesBatch} from '@/lib/inventory/weight.mjs';
+import {inventoryRequest} from '@/lib/inventory/bulk-client';
 import {estimateCounts} from '@/lib/estimate-inbox.mjs';
 import {suggestRugCategory,categorizeRug} from '@/lib/rug-categorization.mjs';
 import StockCheck from '@/components/inventory/StockCheck';
@@ -348,7 +351,13 @@ const AdminWorkspace: React.FC = () => {
 
   // Bulk select and promotions
   const [selectedRugIds, setSelectedRugIds] = useState<string[]>([]);
-  const [bulkDiscountPercent, setBulkDiscountPercent] = useState<number | "">("");
+  const [inventoryBatch,setInventoryBatch]=useState("all");
+  const [weightProfiles,setWeightProfiles]=useState<Record<string,number>>({});
+  const [rugWeightMode,setRugWeightMode]=useState<"manual"|"sqft">("manual");
+  const [rugWeightRate,setRugWeightRate]=useState<number|"">("");
+  const [savingRug,setSavingRug]=useState(false);
+  useEffect(()=>{inventoryRequest().then(result=>setWeightProfiles(result.profiles)).catch(()=>{});},[]);
+  useEffect(()=>{if(rugModalOpen&&rugWeightMode==="sqft"){const weight=weightFor({dimensions:rugDimensions,shape:rugShape,weightMode:"sqft",weightPerSqft:rugWeightRate||weightProfiles[rugManufacturingType]});setRugWeight(weight||"");}},[rugModalOpen,rugWeightMode,rugWeightRate,rugDimensions,rugShape,rugManufacturingType,weightProfiles]);
   const [promoModalOpen, setPromoModalOpen] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [promoType, setPromoType] = useState<"percentage" | "fixed">("percentage");
@@ -464,7 +473,9 @@ const AdminWorkspace: React.FC = () => {
       setRugAge(r.age);
       setRugCondition(r.condition);
       setRugColors(r.colors.join(", "));
-      setRugWeight(r.weightLbs || 3.5);
+      setRugWeight(r.weightLbs || 0);
+      setRugWeightMode(r.weightMode||"manual");
+      setRugWeightRate(r.weightPerSqft||"");
       setPacked({length:String(r.shippingPackage?.length||""),width:String(r.shippingPackage?.width||""),height:String(r.shippingPackage?.height||""),weight:String(r.shippingPackage?.weight||"")});
         setRugIsFreeShipping(r.isFreeShipping || false);
       setRugShape(r.shape);
@@ -489,6 +500,7 @@ const AdminWorkspace: React.FC = () => {
       setRugCondition("");
       setRugColors("");
       setRugWeight("");
+      setRugWeightMode(weightProfiles.Handmade?"sqft":"manual");setRugWeightRate("");
       setPacked({length:"",width:"",height:"",weight:""});
         setRugIsFreeShipping(false);
       setRugShape("");
@@ -502,8 +514,9 @@ const AdminWorkspace: React.FC = () => {
     setRugModalOpen(true);
   };
 
-  const handleSaveRug = (e: React.FormEvent) => {
+  const handleSaveRug = async (e: React.FormEvent) => {
     e.preventDefault();
+    if(savingRug)return;
     if(!Number.isFinite(Number(rugWeight))||Number(rugWeight)<=0){alert('Enter the rug weight in pounds.');return;}
     const colorsArr = rugColors.split(",").map(c => c.trim()).filter(Boolean);
     const finalImages = rugImages.length > 0 ? rugImages : ["https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"];
@@ -523,6 +536,7 @@ const AdminWorkspace: React.FC = () => {
       condition: rugCondition as Rug["condition"],
       colors: colorsArr,
       weightLbs: Number(rugWeight),
+      weightMode:rugWeightMode,weightPerSqft:rugWeightMode==="sqft"?Number(rugWeightRate||weightProfiles[rugManufacturingType]):null,
       shippingPackage: Object.values(packed).every(v=>Number(v)>0) ? {length:Number(packed.length),width:Number(packed.width),height:Number(packed.height),weight:Number(packed.weight)} : null,
         isFreeShipping: rugIsFreeShipping,
       shape: rugShape as Rug["shape"],
@@ -534,12 +548,13 @@ const AdminWorkspace: React.FC = () => {
 
     let categorized;
     try{categorized=categorizeRug(payload);}catch(error){alert(error instanceof Error?error.message:"Check the rug category.");return;}
-    if (editingRugId) {
-      updateRug(editingRugId, categorized);
-    } else {
-      addRug(categorized);
-    }
-    setRugModalOpen(false);
+    setSavingRug(true);
+    try{
+      if (editingRugId) await updateRug(editingRugId, categorized, true);
+      else await addRug(categorized);
+      setRugModalOpen(false);
+    }catch(error){alert(error instanceof Error?error.message:'Rug could not be saved.');}
+    finally{setSavingRug(false);}
   };
 
   const handleAddImageUrl = () => {
@@ -918,9 +933,9 @@ const AdminWorkspace: React.FC = () => {
         (qualityFilter === 'photos' && !r.images?.length) ||
         (qualityFilter === 'dimensions' && !r.dimensions?.trim()) ||
         (qualityFilter === 'description' && !r.description?.trim());
-      return matchesQuality && matchesSearch && matchesSize && matchesType && matchesAvailability;
+      return matchesBatch(r,inventoryBatch) && matchesQuality && matchesSearch && matchesSize && matchesType && matchesAvailability;
     }).sort((a, b) => listingSort === 'price-low' ? a.price - b.price : listingSort === 'price-high' ? b.price - a.price : (a.name || "").localeCompare(b.name || ""));
-  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter, listingSort, qualityFilter]);
+  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter, listingSort, qualityFilter, inventoryBatch]);
 
   return (
     <div className={portal.shell}>
@@ -1909,84 +1924,7 @@ const AdminWorkspace: React.FC = () => {
               </div>
             </div>
 
-            {/* Bulk Actions Bar */}
-              <div className={`bg-stone-50 p-4 rounded-xl border border-neutral-200 flex flex-wrap items-center justify-between gap-4 ${listingStyles.bulk}`}>
-                  <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <label className="text-sm font-bold text-neutral-700 flex items-center gap-2">
-                      <input type="checkbox" aria-label="Select all filtered rugs" checked={filteredAdminRugs.length > 0 && filteredAdminRugs.every(r => selectedRugIds.includes(r.id))} onChange={e => setSelectedRugIds(e.target.checked ? filteredAdminRugs.map(r => r.id) : [])} />
-                      {selectedRugIds.length} selected · {filteredAdminRugs.length} listings
-                    </label>
-                    {selectedRugIds.length > 0 && (
-                      <div className="flex items-center gap-2 border-l border-neutral-300 pl-4">
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            min="1" max="99"
-                            value={bulkDiscountPercent}
-                            onChange={(e) => setBulkDiscountPercent(Number(e.target.value))}
-                            placeholder="% Off"
-                            className="w-20 bg-white border border-neutral-200 rounded px-2 py-1 outline-none text-sm focus:border-editorial-accent"
-                          />
-                          <button
-                            onClick={() => {
-                              if (!bulkDiscountPercent || bulkDiscountPercent <= 0 || bulkDiscountPercent >= 100) {
-                                alert("Please enter a valid percentage between 1 and 99");
-                                return;
-                              }
-
-                              selectedRugIds.forEach(id => {
-                                const rug = rugs.find(r => r.id === id);
-                                if (rug) {
-                                  const original = rug.originalPrice || rug.price;
-                                  const discounted = Math.round(original * (1 - (Number(bulkDiscountPercent) / 100)));
-                                  updateRug(id, {
-                                    originalPrice: original,
-                                    price: discounted
-                                  });
-                                }
-                              });
-                              setSelectedRugIds([]);
-                              setBulkDiscountPercent("");
-                            }}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition"
-                          >
-                            Apply Sale
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => {
-                            selectedRugIds.forEach(id => {
-                              const rug = rugs.find(r => r.id === id);
-                              if (rug && rug.originalPrice) {
-                                updateRug(id, {
-                                  price: rug.originalPrice,
-                                  originalPrice: null
-                                });
-                              }
-                            });
-                            setSelectedRugIds([]);
-                          }}
-                          className="bg-neutral-200 hover:bg-neutral-300 text-neutral-700 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition"
-                        >
-                          Remove Sale
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to completely delete ${selectedRugIds.length} rug(s)? This will also permanently delete all associated images from storage.`)) {
-                              selectedRugIds.forEach(id => {
-                                deleteRug(id);
-                              });
-                              setSelectedRugIds([]);
-                            }
-                          }}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition ml-4"
-                        >
-                          Delete Selected
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+            <InventoryBulkTools rugs={rugs} filtered={filteredAdminRugs} selected={selectedRugIds} onSelect={setSelectedRugIds} batch={inventoryBatch} onBatch={setInventoryBatch} profiles={weightProfiles} onProfiles={setWeightProfiles}/>
 
               {/* Catalog Display */}
             <div className={listingStyles.catalog}>
@@ -2026,7 +1964,7 @@ const AdminWorkspace: React.FC = () => {
                         </a>
                         <div className="p-4 flex flex-col flex-1">
                           <div className="flex justify-between items-start mb-2 gap-2">
-                            <h3 className="font-bold text-neutral-900 text-sm leading-tight">{r.name}</h3>
+                            <h3 className="font-bold text-neutral-900 text-sm leading-tight">{r.name}</h3><InventoryStamp rug={r}/>
                             <div className="flex flex-col items-end shrink-0 text-right">
                               {r.originalPrice ? (
                                 <>
@@ -2079,7 +2017,7 @@ const AdminWorkspace: React.FC = () => {
                     <th className="py-3 px-4 w-12 text-center">
                       <input
                         type="checkbox"
-                        checked={selectedRugIds.length > 0 && selectedRugIds.length === filteredAdminRugs.length}
+                        checked={filteredAdminRugs.length > 0 && filteredAdminRugs.every(r=>selectedRugIds.includes(r.id))}
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedRugIds(filteredAdminRugs.map(r => r.id));
@@ -2133,7 +2071,7 @@ const AdminWorkspace: React.FC = () => {
                           <img src={r.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"} alt="preview" className="h-10 w-14 object-cover rounded border border-neutral-200" referrerPolicy="no-referrer" />
                         </td>
                         <td className="py-3 px-4 font-bold text-neutral-900">
-                          <div>{r.name}</div>
+                          <div>{r.name}</div><InventoryStamp rug={r}/>
                           <span className="text-sm font-mono text-neutral-400 font-semibold">SKU: {r.sku}</span>
                         </td>
                         <td className="py-3 px-4 text-neutral-600 font-semibold">{r.origin}</td>
@@ -2875,7 +2813,7 @@ const AdminWorkspace: React.FC = () => {
                   <label className="block text-neutral-500 font-semibold uppercase">Type</label>
                   <select
                     value={rugManufacturingType}
-                    onChange={(e) => setRugManufacturingType(e.target.value as any)}
+                    onChange={(e) => {setRugManufacturingType(e.target.value as any);if(!editingRugId&&weightProfiles[e.target.value]){setRugWeightMode("sqft");setRugWeightRate("");}}}
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 text-xs"
                   >
                     <option value="Handmade">Handmade</option>
@@ -3132,13 +3070,17 @@ const AdminWorkspace: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-neutral-500 font-semibold uppercase">Shipping Weight (lbs)</label>
+                  <label className="block text-neutral-500 font-semibold uppercase">Rug weight method</label>
+                  <select value={rugWeightMode} onChange={e=>setRugWeightMode(e.target.value as 'manual'|'sqft')} className="w-full border rounded p-2"><option value="manual">Manual weight override</option><option value="sqft">Calculate from square feet</option></select>
+                  {rugWeightMode==='sqft'&&<label>Weight per sq ft (lb)<input type="number" min="0.001" max="100" step="0.001" required value={rugWeightRate||weightProfiles[rugManufacturingType]||''} onChange={e=>setRugWeightRate(Number(e.target.value)||'')} className="w-full border rounded p-2"/></label>}
+                  <label className="block text-neutral-500 font-semibold uppercase">Rug weight (lb) · packing separate</label>
                   <input
                     type="number"
                     step="0.1"
                     min="0.1"
                     required
                     value={rugWeight}
+                    readOnly={rugWeightMode==='sqft'}
                     onChange={(e) => setRugWeight(parseFloat(e.target.value) || 0)}
                     placeholder="e.g. 3.5"
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 font-mono text-xs"
@@ -3353,10 +3295,10 @@ const AdminWorkspace: React.FC = () => {
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="submit" disabled={savingRug}
                   className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-850 text-amber-400 font-bold uppercase tracking-widest rounded-lg transition"
                 >
-                  Save Masterwork
+                  {savingRug?'Saving to Firebase…':'Save rug'}
                 </button>
               </div>
 

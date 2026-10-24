@@ -4,6 +4,18 @@
  */
 
 export interface Rug {
+  published?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  uploadedAt?: string;
+  publishedAt?: string;
+  firstPublishedAt?: string;
+  uploadBatchId?: string;
+  uploadBatchLabel?: string;
+  publishBatchId?: string;
+  publishBatchLabel?: string;
+  weightMode?: 'manual' | 'sqft';
+  weightPerSqft?: number | null;
   categoryMode?: "auto" | "manual";
   liveOrderId?: string | null;
   id: string;

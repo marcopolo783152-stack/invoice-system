@@ -1,3 +1,4 @@
+import {inventoryRequest} from '@/lib/inventory/bulk-client';
 import {saveEstimateStatus,saveEstimateRead} from '@/lib/estimate-inbox.mjs';
 import {categorizeRug} from '@/lib/rug-categorization.mjs';
 import { isRugOnReviewHold } from '@/lib/catalog-visibility.mjs';
@@ -100,8 +101,8 @@ interface StoreContextType {
   checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number, appliedPromo?: PromoCode, discountAmount?: number) => Promise<Order>;
   
   // Admin Operations
-  addRug: (rug: Omit<Rug, "id" | "rating">) => void;
-  updateRug: (id: string, rug: Partial<Rug>) => void;
+  addRug: (rug: Omit<Rug, "id" | "rating">) => Promise<void>;
+  updateRug: (id: string, rug: Partial<Rug>, throwOnError?: boolean) => Promise<void>;
   deleteRug: (id: string) => void;
   incrementRugViews: (id: string) => void;
   toggleRugFavorite: (id: string) => void;
@@ -559,18 +560,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- Admin Catalog Actions ---
-  const addRug = (newRug: Omit<Rug, "id" | "rating">) => {
-    const id = `rug-${Date.now()}`;
-    const rug: Rug = {
-      ...categorizeRug(newRug),
-      id,
-      rating: 5.0
-    };
-    setRugs(prev => [rug, ...prev]); // Optimistic UI
-    addShowroomDoc(SHOWROOM_RUGS, rug);
+  const addRug = async (newRug: Omit<Rug, "id" | "rating">) => {
+    const result=await inventoryRequest({id:'rug-'+crypto.randomUUID(),rug:newRug},'/api/inventory/create');
+    setRugs(previous=>[result.rug,...previous.filter(r=>r.id!==result.rug.id)]);
   };
 
-  const updateRug = async (id: string, updatedFields: Partial<Rug>) => {
+  const updateRug = async (id: string, updatedFields: Partial<Rug>, throwOnError=false) => {
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) throw new Error("Sign in to edit inventory.");
@@ -582,7 +577,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Inventory could not be updated.");
       setRugs(prev => prev.map(r => r.id === id ? {...r, ...updatedFields} : r));
-    } catch (error) { alert(error instanceof Error ? error.message : "Inventory could not be updated."); }
+    } catch (error) { if(throwOnError)throw error;alert(error instanceof Error?error.message:"Inventory could not be updated."); }
   };
 
   const recordEngagement = async (id: string, kind: 'visit' | 'favorite' | 'unfavorite') => {

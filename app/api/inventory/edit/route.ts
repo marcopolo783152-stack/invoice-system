@@ -1,10 +1,11 @@
+import {weightPatch} from '@/lib/inventory/weight.mjs';
 import {categorizeRug} from '@/lib/rug-categorization.mjs';
 import {requireStaff} from '@/lib/server/staff-permission';
 import {serverDb} from '@/lib/server/firebase-admin';
 import {CheckoutError} from '@/lib/server/rug-checkout.mjs';
 import {respond,failure,sameSite,bodyJson,ownOrder,reconcile} from '@/lib/server/live-payment';
 export const runtime='nodejs';
-const fields=new Set('name sku price originalPrice sizeCategory categoryMode dimensions origin material style age condition colors shape availability construction description images shippingPackage weightLbs isSpecialSale isFreeShipping manufacturingType type color'.split(' '));
+const fields=new Set('name sku price originalPrice sizeCategory categoryMode dimensions origin material style age condition colors shape availability construction description images shippingPackage weightLbs weightMode weightPerSqft uploadBatchId uploadBatchLabel isSpecialSale isFreeShipping manufacturingType type color'.split(' '));
 export async function POST(req:Request){
   try{
     sameSite(req);const user=await requireStaff(req,'inventory','write'),b=await bodyJson(req);
@@ -25,12 +26,14 @@ export async function POST(req:Request){
     }
     await db.runTransaction(async tx=>{
       const current=(await tx.get(ref)).data();
+      const weightSettings=await tx.get(db.doc('showroom_settings/inventoryWeights'));
       if(!current)throw new CheckoutError('Rug not found.',404);
       if(current.liveOrderId!==rug.liveOrderId&&current.liveOrderId)throw new CheckoutError('Another checkout started. Retry your edit.',409);
       // Keep the paid order intact; only an explicit inventory status change releases its catalog link.
       const classification=changes.categoryMode==='auto'||current.categoryMode==='auto'&&changes.categoryMode!=='manual'&&['dimensions','shape','name','sizeCategory'].some(k=>k in changes) ? categorizeRug({...current,...changes}) : null;
       const derived=classification?{categoryMode:'auto',sizeCategory:classification.sizeCategory,shape:classification.shape}:{};
-      const update={...changes,...derived,...('availability' in changes?{liveOrderId:null}:{})};
+      const weights=['dimensions','shape','weightLbs','weightMode','weightPerSqft'].some(k=>k in changes)?weightPatch({...current,...changes,...('weightLbs' in changes&&!('weightMode' in changes)?{weightMode:'manual'}:{})},weightSettings.data()?.profiles||{}):{};
+      const update={...changes,...derived,...weights,updatedAt:new Date().toISOString(),...('uploadBatchId' in changes?{uploadedAt:new Date().toISOString()}:{}),...('availability' in changes?{liveOrderId:null}:{})};
       tx.update(ref,update);
       tx.create(db.collection('showroom_inventory_audit').doc(),{rugId:b.id,by:user.uid,at:new Date().toISOString(),previousOrderId:current.liveOrderId||null,changes:{...changes,...derived}});
     });
