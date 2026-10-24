@@ -1,5 +1,5 @@
-import {CartView} from './CartView';
 'use client';
+import {CartView} from './CartView';
 import {salePrice,saleLabel,deliveredCents} from '@/lib/delivered-price.mjs';
 import React,{useEffect,useState} from 'react';
 import {Heart,ZoomIn} from 'lucide-react';
