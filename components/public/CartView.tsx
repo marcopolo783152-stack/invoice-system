@@ -136,6 +136,8 @@ export const CartView = ({buyNowRug,onClose,inline=false}:{buyNowRug?:Rug;onClos
     };
   }, [cartOpen, checkoutStep, setCartOpen, inline]);
 
+  useEffect(()=>{if(inline&&cartOpen)dialogRef.current?.focus();},[inline,cartOpen,checkoutStep]);
+
   if (!cartOpen) return null;
 
   const rawSubtotal = cart.reduce(
@@ -232,7 +234,7 @@ export const CartView = ({buyNowRug,onClose,inline=false}:{buyNowRug?:Rug;onClos
   };
 
   const content=(
-        <div ref={dialogRef} role={inline?undefined:"dialog"} aria-modal={inline?undefined:true} aria-labelledby={inline?undefined:"cart-window-title"} tabIndex={inline?undefined:-1} className={`${inline?styles.inlineCheckout:styles.dialog} bg-editorial-bg text-editorial-text shadow-xl`}>
+        <div ref={dialogRef} role={inline?undefined:"dialog"} aria-modal={inline?undefined:true} aria-labelledby={inline?undefined:"cart-window-title"} tabIndex={-1} className={`${inline?styles.inlineCheckout:styles.dialog} bg-editorial-bg text-editorial-text shadow-xl`}>
           {/* Header Panel */}
           <div className="shrink-0 px-4 py-3 sm:px-6 sm:py-5 bg-editorial-aside border-b border-editorial-border flex items-center justify-between">
             <div>
