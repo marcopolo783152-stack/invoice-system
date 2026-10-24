@@ -12,10 +12,12 @@ function loadStripeScript(){
   if((window as any).Stripe)return Promise.resolve();
   return stripeScript ||= new Promise<void>((resolve,reject)=>{const script=document.createElement('script');script.src='https://js.stripe.com/v3/';script.onload=()=>resolve();script.onerror=()=>{stripeScript=undefined;script.remove();reject(Error('Secure payment could not load. Please retry.'));};document.head.appendChild(script);});
 }
-export default function LiveOrderRequest({payload,onEditDetails}:{payload:any;onEditDetails?:()=>void}){
+export default function LiveOrderRequest({payload,onEditDetails,onPaid}:{payload:any;onEditDetails?:()=>void;onPaid?:()=>void}){
   const [accountOpen,setAccountOpen]=useState(false),[accountUser,setAccountUser]=useState<any>(null),[verificationNote,setVerificationNote]=useState('');
   const [signed,setSigned]=useState(false),[enabled,setEnabled]=useState(false),[payments,setPayments]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[agreed,setAgreed]=useState(false);
   const [order,setOrder]=useState<LiveOrder|null>(null),[rates,setRates]=useState<any[]>([]),[payment,setPayment]=useState<any>(null),[blocked,setBlocked]=useState<LiveOrder[]>([]);
+  const paidNotified=useRef('');
+  useEffect(()=>{if(order?.paymentStatus==='Paid'&&paidNotified.current!==order.id){paidNotified.current=order.id;onPaid?.();}},[order?.id,order?.paymentStatus,onPaid]);
   const mount=useRef<HTMLDivElement>(null),attempt=useRef({body:'',id:''}),running=useRef(false);
   useEffect(()=>onAuthStateChanged(auth,u=>{setAccountUser(u);setSigned(!!u&&(u.isAnonymous||u.emailVerified));setOrder(null);setPayment(null);setAgreed(false);}),[]);
   useEffect(()=>{void browserSessionReady.then(async()=>{if(!auth.currentUser)await signInAnonymously(auth);}).catch(()=>setError('Guest checkout could not connect. Please retry.'));},[]);
