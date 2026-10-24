@@ -26,8 +26,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/inventory/*.test.mjs tests/access/delivered-price.test.mjs tests/access/shipping-package.test.mjs tests/access/rug-categorization.test.mjs tests/auction/catalog.test.mjs tests/auction/planning.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test tests/inventory/*.test.mjs tests/access/delivered-price.test.mjs tests/access/shipping-package.test.mjs tests/access/rug-categorization.test.mjs tests/auction/catalog.test.mjs tests/auction/planning.test.mjs
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
