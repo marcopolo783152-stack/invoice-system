@@ -384,6 +384,7 @@ export const CartView = ({buyNowRug,onClose,inline=false}:{buyNowRug?:Rug;onClos
                 <h4 className="text-sm uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
                   Contact details
                 </h4>
+                <p className="text-sm text-gray-600">We use your contact details to process your order and arrange fulfillment. Read our <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>.</p>
 
                 <div className="space-y-3">
                   <div className="space-y-1">
