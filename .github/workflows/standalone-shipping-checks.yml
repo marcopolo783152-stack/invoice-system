@@ -1,0 +1,27 @@
+name: Standalone shipping checks
+on:
+  push:
+    branches: [main, feature/shippo-invoice-links-20260929]
+    paths:
+      - 'app/api/shipping/standalone/**'
+      - 'app/(public)/admin/shipping/**'
+      - 'components/shipping/**'
+      - 'lib/server/standalone-label.mjs'
+      - 'tests/shipping/**'
+      - '.github/workflows/standalone-shipping-checks.yml'
+permissions:
+  contents: read
+jobs:
+  shipping-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test tests/shipping/*.test.mjs tests/access/shipping-package.test.mjs
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

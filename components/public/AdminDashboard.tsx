@@ -2162,6 +2162,7 @@ const AdminWorkspace: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
               <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Customer Orders Fulfillment Logs</h2>
+              {canAccess(staff, "orders", "write") && <a href="/admin/shipping" className="inline-flex items-center gap-2 mt-4 px-5 py-3 rounded-lg bg-emerald-900 text-white font-semibold text-sm">Create shipping label / Shipping history</a>}
               <p className="text-xs text-neutral-400">Review client payment settlements, generate certificate files, and update freight dispatch statuses.</p>
             </div>
 
