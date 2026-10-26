@@ -7,6 +7,14 @@ on:
       - 'components/public/EstimatesAdminTab.tsx'
       - 'lib/service-estimate.mjs'
       - 'lib/estimate-inbox.mjs'
+      - 'lib/estimate-workflow*'
+      - 'lib/server/estimate-workflow.mjs'
+      - 'app/api/service-estimates/**'
+      - 'components/estimates/**'
+      - 'components/AdminOverview.tsx'
+      - 'tests/estimates/**'
+      - 'lib/firebase-storage.ts'
+      - 'app/(admin)/admin/invoices/invoices/new/page.tsx'
       - 'tests/access/estimate-inbox.test.mjs'
       - 'types.ts'
       - 'tests/access/service-estimate.test.mjs'
@@ -23,6 +31,14 @@ on:
       - 'components/public/EstimatesAdminTab.tsx'
       - 'lib/service-estimate.mjs'
       - 'lib/estimate-inbox.mjs'
+      - 'lib/estimate-workflow*'
+      - 'lib/server/estimate-workflow.mjs'
+      - 'app/api/service-estimates/**'
+      - 'components/estimates/**'
+      - 'components/AdminOverview.tsx'
+      - 'tests/estimates/**'
+      - 'lib/firebase-storage.ts'
+      - 'app/(admin)/admin/invoices/invoices/new/page.tsx'
       - 'tests/access/estimate-inbox.test.mjs'
       - 'types.ts'
       - 'tests/access/service-estimate.test.mjs'
@@ -38,7 +54,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/access/estimate-inbox.test.mjs tests/access/service-estimate.test.mjs tests/access/rug-categorization.test.mjs
+      - run: node --test tests/access/estimate-inbox.test.mjs tests/access/service-estimate.test.mjs tests/access/rug-categorization.test.mjs tests/estimates/*.test.mjs tests/invoices/service-pickups.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run build
         env:

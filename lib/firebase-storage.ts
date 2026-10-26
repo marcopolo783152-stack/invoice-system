@@ -1,3 +1,4 @@
+import {estimateRequest} from '@/lib/estimate-workflow-client';
 import {pickupRequest} from './service-pickup-client';
 import {mergeWashingProgress} from './washing-invoice.mjs';
 import { getStorePrefix } from './user-storage';
@@ -53,6 +54,7 @@ export async function saveInvoiceToCloud(
     throw new Error('Firebase not configured. Please set up your Firebase project.');
   }
 
+  if(data.sourceEstimateId){const result=await estimateRequest('',{action:'invoice',id:data.sourceEstimateId,collection:getCollectionName(),data});return result.id;}
   if(data.sourcePickupId){const result=await pickupRequest('',{action:'invoice',pickupId:data.sourcePickupId,collection:getCollectionName(),data});return result.id;}
   try {
     const now = Timestamp.now();
