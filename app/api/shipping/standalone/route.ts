@@ -3,13 +3,28 @@ import {randomUUID} from 'node:crypto';
 import {requireStaff} from '@/lib/server/staff-permission';
 import {serverDb} from '@/lib/server/firebase-admin';
 import {address,packageDetails,availableRates,selectRate,safeProviderUrl} from '@/lib/server/standalone-label.mjs';
+import {labelMatches,labelInHistory} from '@/lib/server/shipping-history.mjs';
 const collection='standalone_shipping_labels';
 async function shippo(path:string,body:unknown){
  const key=process.env.SHIPPO_API_KEY?.trim().replace(/^ShippoToken /,'');if(!key)throw Error('Shippo shipping is not configured.');
  const response=await fetch('https://api.goshippo.com/'+path,{method:'POST',headers:{Authorization:'ShippoToken '+key,'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(25000)});
  if(!response.ok)throw Error('Shippo could not complete the request. Check your addresses, package and carrier accounts.');return response.json();
 }
-export async function GET(request:Request){try{await requireStaff(request,'orders','read');const cursor=new URL(request.url).searchParams.get('before');let q=serverDb().collection(collection).orderBy('createdAt','desc').limit(31);if(cursor)q=q.startAfter(cursor);const snap=await q.get(),docs=snap.docs.slice(0,30);return NextResponse.json({labels:docs.map(d=>({id:d.id,...d.data()})),nextCursor:snap.size>30?docs[docs.length-1].data().createdAt:null});}catch{return NextResponse.json({error:'Staff permission required or shipping history unavailable.'},{status:403});}}
+export async function GET(request:Request){
+ try{await requireStaff(request,'orders','read');}catch{return NextResponse.json({error:'Staff permission required.'},{status:403});}
+ try{
+ const params=new URL(request.url).searchParams,search=(params.get('search')||'').trim().slice(0,200),mode=params.get('mode')==='review'?'review':'purchased';
+ let cursor=params.get('before')||'',scanned=0,finished=false;const labels:any[]=[];
+ // Scan existing records without requiring a new Firestore composite index.
+ while(labels.length<30&&scanned<1000&&!finished){
+ let q=serverDb().collection(collection).orderBy('createdAt','desc').limit(100);if(cursor)q=q.startAfter(cursor);
+ const snap=await q.get();if(snap.empty){finished=true;break;}
+ for(const doc of snap.docs){const data=doc.data();cursor=data.createdAt;scanned++;if(labelInHistory(data,mode)&&labelMatches(data,search))labels.push({id:doc.id,...data});if(labels.length===30||scanned===1000)break;}
+ if(labels.length<30&&scanned<1000&&snap.size<100)finished=true;
+ }
+ return NextResponse.json({labels,nextCursor:finished?null:cursor});
+ }catch{return NextResponse.json({error:'Shipping history could not load. Please retry.'},{status:503});}
+}
 export async function POST(request:Request){
  let user;try{user=await requireStaff(request,'orders','write');}catch{return NextResponse.json({error:'Staff permission required.'},{status:403});}
  if(request.headers.get('origin')&&request.headers.get('origin')!==new URL(request.url).origin)return NextResponse.json({error:'Use the showroom website.'},{status:403});

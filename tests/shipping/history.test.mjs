@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {labelMatches,labelInHistory} from '../../lib/server/shipping-history.mjs';
+const label={phase:'complete',receiver:{name:'Courtney Langford',email:'courtney@example.com',phone:'(605) 515-0688',company:'Example Company'},result:{trackingNumber:'1Z123ABC456789'}};
+test('only purchased labels enter shipping history',()=>{assert.equal(labelInHistory(label),true);for(const phase of ['quoted','purchasing','needs_review','failed',undefined])assert.equal(labelInHistory({...label,phase}),false);});
+test('uncertain purchases are separate; rate comparisons never appear',()=>{for(const phase of ['purchasing','needs_review'])assert.equal(labelInHistory({...label,phase},'review'),true);for(const phase of ['quoted','complete','failed'])assert.equal(labelInHistory({...label,phase},'review'),false);});
+test('find recipients by partial name, company and email without case sensitivity',()=>{for(const q of ['courtney','LANGFORD','example company','COURTNEY@EXAMPLE.COM','  Langford '])assert.equal(labelMatches(label,q),true);assert.equal(labelMatches(label,'someone else'),false);});
+test('phone search accepts digits or formatted numbers',()=>{for(const q of ['6055150688','605-515-0688','(605) 515','5150688'])assert.equal(labelMatches(label,q),true);assert.equal(labelMatches(label,'0000000000'),false);});
+test('tracking search supports partial and full identifiers',()=>{assert.equal(labelMatches(label,'1z123abc456789'),true);assert.equal(labelMatches(label,'ABC456'),true);assert.equal(labelMatches(label,'not-123'),false);});
+test('empty search shows all purchased labels and missing fields are safe',()=>{assert.equal(labelMatches(label,''),true);assert.equal(labelMatches({},'buyer'),false);});

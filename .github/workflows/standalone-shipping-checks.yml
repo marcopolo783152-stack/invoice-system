@@ -7,6 +7,7 @@ on:
       - 'app/(public)/admin/shipping/**'
       - 'components/shipping/**'
       - 'lib/server/standalone-label.mjs'
+      - 'lib/server/shipping-history.mjs'
       - 'tests/shipping/**'
       - '.github/workflows/standalone-shipping-checks.yml'
 permissions:
