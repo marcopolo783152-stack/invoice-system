@@ -135,6 +135,7 @@ export interface CalculatedItem extends InvoiceItem {
 }
 
 export interface InvoiceCalculations {
+  netSalesTax?: number;
   items: CalculatedItem[];
   subtotal: number;
   discount: number;
@@ -222,6 +223,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
       discount: 0,
       subtotalAfterDiscount: 0,
       salesTax: 0,
+      netSalesTax: 0,
       totalAdditionalCharges: 0,
       totalDue: 0,
       netSubtotal: 0,
@@ -381,6 +383,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     discount,
     subtotalAfterDiscount:subtotalAfterDiscount+products.subtotal,
     salesTax:salesTax+products.tax,
+    netSalesTax:netSalesTax+products.netTax,
     totalAdditionalCharges,
     totalDue:totalDue+products.total,
     netSubtotal:netSubtotal+products.netSubtotal,

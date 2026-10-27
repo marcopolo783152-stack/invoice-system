@@ -1,0 +1,33 @@
+name: Retail finance and owner security checks
+on:
+  push:
+    branches: [main, feature/shippo-invoice-links-20260929]
+    paths:
+      - 'lib/retail/**'
+      - 'lib/server/retail-reports.ts'
+      - 'lib/server/commission-ledger.mjs'
+      - 'lib/server/owner-commission.ts'
+      - 'app/api/reports/retail/**'
+      - 'app/api/owner/commission/**'
+      - 'components/retail/**'
+      - 'app/(public)/admin/retail-reports/**'
+      - 'app/(public)/owner/retail-commission/**'
+      - 'lib/auth.ts'
+      - 'tests/retail/**'
+      - '.github/workflows/retail-finance-checks.yml'
+permissions:
+  contents: read
+jobs:
+  finance-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test tests/retail/*.test.mjs tests/invoices/*.test.mjs tests/access/live-refund-request.test.mjs
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

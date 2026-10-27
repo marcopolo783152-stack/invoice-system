@@ -28,6 +28,7 @@ export default function AdminOverview(){
  <section className={styles.card}><div className={styles.header}><h2>Upcoming visits</h2><a href="/?view=admin&adminTab=appointments">View all →</a></div>
  {!upcoming.length?<p className={styles.empty}>No upcoming appointments to show.</p>:upcoming.map(a=><a className={styles.row} key={a.id} href={'/?view=admin&adminTab=appointments&appointmentId='+encodeURIComponent(a.id)}><div><strong>{a.name}</strong><div className={styles.muted}>{a.date} · {a.time}</div></div><span className={styles.badge}>{a.manager}</span></a>)}
  <div className={styles.section}><h2>Quick actions</h2><div className={styles.actions}>
+ {canAccess(staff,'reports')&&<a className={styles.button} href="/admin/retail-reports">Monthly retail sales &amp; tax</a>}
  {canAccess(staff,'messages')&&<a className={styles.button} href="/?view=admin&adminTab=messages">Customer inbox</a>}
  {canAccess(staff,'users')&&<a className={styles.secondary+' '+styles.button} href="/admin/users">Manage team</a>}
  <a className={styles.secondary+' '+styles.button} href="/">View showroom</a>
