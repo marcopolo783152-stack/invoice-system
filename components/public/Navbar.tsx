@@ -13,7 +13,7 @@ export const Navbar=({currentTab,setCurrentTab}:{currentTab:string;setCurrentTab
  const count=cart.reduce((n,i)=>n+i.quantity,0);
  const go=(tab:string)=>{setCurrentTab(tab);setMenu(false);setMore(false);if(activeView==='admin')setActiveView('customer');window.scrollTo({top:0,behavior:'auto'});};
  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){setMore(false);if(menu){setMenu(false);menuButton.current?.focus();}}};const outside=(e:PointerEvent)=>{if(!moreRef.current?.contains(e.target as Node))setMore(false);};document.addEventListener('keydown',key);document.addEventListener('pointerdown',outside);return()=>{document.removeEventListener('keydown',key);document.removeEventListener('pointerdown',outside);};},[menu]);
- const items=[['home','Home'],['shop','Shop rugs'],['book','Visit the showroom']],extra=[['track','Track your order'],['blog','Stories & rug care'],['auction','Auctions · Coming soon']];
+ const items=[['home','Home'],['shop','Shop rugs'],['book','Visit the showroom']],extra=[['track','Track your order'],['blog','Stories & rug care'],['auction','Auctions']];
  const account=async()=>{setMenu(false);if(!currentUser){setAuth(true);return;}try{window.location.assign(await signedInDestination());}catch{window.location.assign('/sign-in');}};
  return <><div className={s.utility}><span>Alexandria, Virginia · Since 1988</span><a href="tel:+17034610207"><Phone size={13}/> (703) 461-0207</a><span className={s.shipping}>Free shipping & complimentary padding</span></div>
  <nav className={s.nav} aria-label="Main navigation"><div className={s.inner}>
