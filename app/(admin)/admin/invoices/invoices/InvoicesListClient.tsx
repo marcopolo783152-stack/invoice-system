@@ -1,5 +1,6 @@
 'use client';
 
+import {washingSummary} from '@/lib/washing-invoice.mjs';
 import React, { useState, useEffect, Suspense } from 'react';
 import {
     getAllInvoices, SavedInvoice, exportAddressBook, deleteInvoice, deleteMultipleInvoices, getDeletedInvoicesAsync, permanentlyDeleteInvoices,
@@ -239,6 +240,10 @@ function InvoicesListContent() {
             statuses.push({ bg: 'rgba(168, 85, 247, 0.1)', text: 'var(--accent-neon)', label: 'Consignment Out' });
         } else if (inv.data?.documentType === 'WASH' || inv.data?.mode === 'wash') {
             const washStatus = inv.data?.status || 'washing';
+            if (inv.data?.washingProgress && washStatus !== 'picked_up') {
+                const progress = washingSummary(inv.data);
+                statuses.push({bg:'rgba(16, 185, 129, 0.1)',text:'var(--accent-emerald)',label:`${progress.readyCount} of ${progress.total} rugs ready`});
+            }
             if (washStatus === 'ready') statuses.push({ bg: 'rgba(16, 185, 129, 0.1)', text: 'var(--accent-emerald)', label: 'Ready' });
             else if (washStatus === 'picked_up') statuses.push({ bg: 'rgba(148, 163, 184, 0.1)', text: 'var(--text-muted)', label: 'Picked Up' });
             else statuses.push({ bg: 'rgba(34, 211, 238, 0.1)', text: 'var(--accent-cyber)', label: 'Wash/Repair Service' });

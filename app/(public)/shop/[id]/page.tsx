@@ -1,3 +1,4 @@
+import {salePrice,deliveredCents} from '@/lib/delivered-price.mjs';
 import { Metadata } from 'next';
 import { catalogRugForPage } from '@/lib/server/catalog';
 import {notFound} from 'next/navigation';
@@ -80,11 +81,11 @@ export default async function ProductPage({ params }: { params: { id: string } }
         "value": rug.origin
       }
     ],
-    "offers": {
+    "offers": deliveredCents(rug)===null?undefined:{
       "@type": "Offer",
       "url": `https://www.marcopolorugs.com/shop/${rug.id}`,
       "priceCurrency": "USD",
-      "price": rug.price,
+      "price": salePrice(rug),
 
       "availability": rug.availability === "In Stock" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "seller": {

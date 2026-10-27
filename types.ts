@@ -4,6 +4,19 @@
  */
 
 export interface Rug {
+  published?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  uploadedAt?: string;
+  publishedAt?: string;
+  firstPublishedAt?: string;
+  uploadBatchId?: string;
+  uploadBatchLabel?: string;
+  publishBatchId?: string;
+  publishBatchLabel?: string;
+  weightMode?: 'manual' | 'sqft';
+  weightPerSqft?: number | null;
+  categoryMode?: "auto" | "manual";
   liveOrderId?: string | null;
   id: string;
   name: string;
@@ -24,6 +37,7 @@ export interface Rug {
   description: string;
   images: string[]; // list of image URLs (up to 15)
   rating: number; // average rating
+  shippingPackage?: {length: number; width: number; height: number; weight: number} | null;
   weightLbs?: number; // shipping weight in pounds
   isSpecialSale?: boolean;
   isFreeShipping?: boolean;
@@ -135,6 +149,9 @@ export interface ShippingDetails {
 }
 
 export interface Order {
+  needsAttention?: boolean;
+  notificationAt?: string;
+  orderNumber?: string;
   customerId?: string;
   id: string;
   customerInfo: CustomerInfo;
@@ -210,7 +227,9 @@ export interface ShopProfile {
   logoUrl?: string;
 }
 
-export interface ServiceEstimate { id: string; name: string; phone: string; email: string; zip: string; service: string; rugType: string; dimensions: string; description: string; pickupPreference: string; appointmentDate: string; status: 'New' | 'Contacted' | 'Estimate Provided' | 'Pickup Scheduled' | 'In Service' | 'Ready' | 'Delivered' | 'Cancelled'; createdAt: string; images: string[]; notes?: string; }
+export interface ServiceEstimateRug { id: string; service: string; rugType: string; dimensions: string; description: string; images: string[]; widthFeet?: number; widthInches?: number; lengthFeet?: number; lengthInches?: number; }
+
+export interface ServiceEstimate { address?: string; city?: string; state?: string; workflowVersion?: number; customerId?: string; invoiceId?: string; invoiceNumber?: string; followUpDate?: string; dropoffDate?: string; dropoffTime?: string; estimateAmount?: string; pickupId?: string; pickupDate?: string; pickupTime?: string; pickupEndTime?: string; pickupState?: string; assignedTo?: string; rugs?: ServiceEstimateRug[]; rugCount?: number; id: string; name: string; phone: string; email: string; zip: string; service: string; rugType: string; dimensions: string; description: string; pickupPreference: string; appointmentDate: string; status: 'New' | 'Contacted' | 'No Answer' | 'Bringing to Showroom' | 'Pickup Requested' | 'Thinking About It' | 'On Hold' | 'Converted to Invoice' | 'Estimate Provided' | 'Pickup Scheduled' | 'In Service' | 'Ready' | 'Delivered' | 'Completed' | 'Declined' | 'Closed' | 'Cancelled'; readAt?: string; statusUpdatedAt?: string; createdAt: string; images: string[]; notes?: string; }
 
 export interface AuctionBid {
   id: string;

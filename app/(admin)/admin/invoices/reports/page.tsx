@@ -81,6 +81,7 @@ export default function ReportsPage() {
                     </div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: '#1a1f3c', margin: 0 }}>Reports</h1>
                 </div>
+                <a href="/admin/retail-reports" style={{display:'inline-block',padding:12,borderRadius:8,background:'#203e37',color:'white',marginTop:12}}>Monthly Retail Sales &amp; Tax →</a>
                 <p style={{ color: '#64748b', marginTop: 8 }}>Generate and download sales summaries.</p>
             </header>
 

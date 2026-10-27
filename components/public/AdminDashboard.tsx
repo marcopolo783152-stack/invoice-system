@@ -1,3 +1,14 @@
+import InventoryBulkTools,{InventoryStamp} from '@/components/inventory/InventoryBulkTools';
+import {weightFor,matchesBatch} from '@/lib/inventory/weight.mjs';
+import {inventoryRequest} from '@/lib/inventory/bulk-client';
+import {estimateCounts} from '@/lib/estimate-inbox.mjs';
+import {suggestRugCategory,categorizeRug} from '@/lib/rug-categorization.mjs';
+import StockCheck from '@/components/inventory/StockCheck';
+import {unreadOrderCount,needsOrderAttention} from '@/lib/order-inbox.mjs';
+import {markOrdersSeen} from '@/lib/order-inbox-client';
+import {orderReference} from '@/lib/order-reference.mjs';
+import LiveOrderAdminControls from '@/components/checkout/LiveOrderAdminControls';
+import {deliveredCents,saleLabel} from '@/lib/delivered-price.mjs';
 import {auth as firebaseAuth} from '@/lib/auth';
 import ListingStats from "@/components/ListingStats";
 import { matchesSearch as matchesInventorySearch } from "@/lib/rug-discovery.mjs";
@@ -5,6 +16,7 @@ import listingStyles from "@/components/ListingInventory.module.css";
 import OrderPaymentControls from '@/components/OrderPaymentControls';
 import {AdminChatBox} from "./AdminChatBox";
 import portal from "@/components/Portal.module.css";
+import PickupManager from '@/components/pickups/PickupManager';
 import AdminOverview from "@/components/AdminOverview";
 import { useStaffAccess } from "@/hooks/useStaffAccess";
 import { canAccess, sectionForTab } from "@/lib/access-policy";
@@ -130,7 +142,7 @@ const AdminWorkspace: React.FC = () => {
     updateOrder
   } = useStore();
 
-  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
+  const [activeTab, setActiveTabState] = useState<"analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "pickups" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm">("analytics");
 
   useEffect(() => {
     // Request notification permissions silently on mount
@@ -149,7 +161,7 @@ const AdminWorkspace: React.FC = () => {
     }
   }, []);
 
-  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm") => {
+  const setActiveTab = (tab: "analytics" | "inventory" | "bulk_import" | "orders" | "transactions" | "cleaning" | "estimates" | "pickups" | "appointments" | "appraisals" | "employees" | "loans" | "clock" | "reviews" | "messages" | "blogs" | "promotions" | "settings" | "builder" | "users" | "crm") => {
     if(!allowed(tab))return;
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
@@ -161,7 +173,7 @@ const AdminWorkspace: React.FC = () => {
   };
   useEffect(()=>{
     if(staff && !allowed(activeTab)){
-      const next=['analytics','orders','inventory','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','loans','settings','users'].find(allowed);
+      const next=['analytics','orders','inventory','pickups','appointments','messages','cleaning','crm','appraisals','reviews','blogs','promotions','employees','loans','settings','users'].find(allowed);
       if(next)setActiveTabState(next as any);
     }
   },[staff,activeTab]);
@@ -176,37 +188,13 @@ const AdminWorkspace: React.FC = () => {
 
   // Review notification alert
   const unapprovedReviewsCount = reviews.filter(r => !r.isApproved).length;
-  // Order notification alert
-  const localLastSeenOrder = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (orders.length === 0) return;
-
-    const latestOrderTime = Math.max(...orders.map(o => new Date(o.createdAt).getTime()));
-
-    const savedTime = typeof window !== "undefined" ? sessionStorage.getItem('lastSeenOrder') : null;
-    const previousTime = savedTime ? parseInt(savedTime) : 0;
-
-    if (localLastSeenOrder.current === null) {
-      localLastSeenOrder.current = previousTime;
-    }
-
-    if (latestOrderTime > localLastSeenOrder.current) {
-      if (localLastSeenOrder.current > 0 || (Date.now() - latestOrderTime < 60000)) {
-        const audio = new Audio("/coin.mp3");
-        audio.play().catch(e => {
-          console.error("Audio playback blocked by browser", e);
-          alert("🔔🔔 NEW ORDER RECEIVED! 🔔🔔 (Audio blocked by browser, please click anywhere on the page first)");
-        });
-      }
-
-      localLastSeenOrder.current = latestOrderTime;
-      if (typeof window !== "undefined") sessionStorage.setItem('lastSeenOrder', latestOrderTime.toString());
-    } else if (localLastSeenOrder.current === 0) {
-      localLastSeenOrder.current = latestOrderTime;
-      if (typeof window !== "undefined") sessionStorage.setItem('lastSeenOrder', latestOrderTime.toString());
-    }
-  }, [orders]);
+  const unreadOrders = unreadOrderCount(orders);
+  const markingOrders = useRef(false);
+  useEffect(()=>{
+    if(activeTab!=='orders'||!canAccess(staff,'orders')||ordersLoading||markingOrders.current)return;
+    const ids=orders.filter(needsOrderAttention).map(o=>o.id);if(!ids.length)return;
+    markingOrders.current=true;void markOrdersSeen(ids).catch(()=>{}).finally(()=>{markingOrders.current=false;});
+  },[activeTab,orders,ordersLoading,staff?.uid]);
 
   const prevUnapprovedCount = useRef(unapprovedReviewsCount);
 
@@ -272,12 +260,14 @@ const AdminWorkspace: React.FC = () => {
   const [rugOriginalPrice, setRugOriginalPrice] = useState<number | "">("");
   const [rugSizeCategory, setRugSizeCategory] = useState<Rug["sizeCategory"] | "">("");
   const [rugDimensions, setRugDimensions] = useState("");
+  const [autoCategory,setAutoCategory]=useState(true);
   const [rugOrigin, setRugOrigin] = useState("");
   const [rugStyle, setRugStyle] = useState<Rug["style"] | "">("");
   const [rugMaterial, setRugMaterial] = useState("");
   const [rugAge, setRugAge] = useState<Rug["age"] | "">("");
   const [rugCondition, setRugCondition] = useState<Rug["condition"] | "">("");
   const [rugColors, setRugColors] = useState("");
+  const [packed, setPacked] = useState({length:"",width:"",height:"",weight:""});
   const [rugWeight, setRugWeight] = useState<number | "">("");
     const [rugIsFreeShipping, setRugIsFreeShipping] = useState<boolean>(false);
   const [rugShape, setRugShape] = useState<Rug["shape"] | "">("");
@@ -322,7 +312,7 @@ const AdminWorkspace: React.FC = () => {
 
   // States for inventory filters
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
-  const [orderStatusFilter, setOrderStatusFilter] = useState("All");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("Active");
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [inventoryViewMode, setInventoryViewMode] = useState<"list" | "gallery">("gallery");
   const [listingSort, setListingSort] = useState("name");
@@ -361,7 +351,13 @@ const AdminWorkspace: React.FC = () => {
 
   // Bulk select and promotions
   const [selectedRugIds, setSelectedRugIds] = useState<string[]>([]);
-  const [bulkDiscountPercent, setBulkDiscountPercent] = useState<number | "">("");
+  const [inventoryBatch,setInventoryBatch]=useState("all");
+  const [weightProfiles,setWeightProfiles]=useState<Record<string,number>>({});
+  const [rugWeightMode,setRugWeightMode]=useState<"manual"|"sqft">("manual");
+  const [rugWeightRate,setRugWeightRate]=useState<number|"">("");
+  const [savingRug,setSavingRug]=useState(false);
+  useEffect(()=>{inventoryRequest().then(result=>setWeightProfiles(result.profiles)).catch(()=>{});},[]);
+  useEffect(()=>{if(rugModalOpen&&rugWeightMode==="sqft"){const weight=weightFor({dimensions:rugDimensions,shape:rugShape,weightMode:"sqft",weightPerSqft:rugWeightRate||weightProfiles[rugManufacturingType]});setRugWeight(weight||"");}},[rugModalOpen,rugWeightMode,rugWeightRate,rugDimensions,rugShape,rugManufacturingType,weightProfiles]);
   const [promoModalOpen, setPromoModalOpen] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [promoType, setPromoType] = useState<"percentage" | "fixed">("percentage");
@@ -458,7 +454,10 @@ const AdminWorkspace: React.FC = () => {
     };
   }, [orders, rugs, chatMessages]);
 
+  const suggestedCategory=suggestRugCategory({dimensions:rugDimensions,shape:rugShape,name:rugName});
+  const selectedCategory=autoCategory ? suggestedCategory.sizeCategory||"" : rugSizeCategory;
   const handleOpenRugModal = (r?: Rug) => {
+    setAutoCategory(r ? r.categoryMode==='auto' : true);
     if (r) {
       setEditingRugId(r.id);
       setRugName(r.name);
@@ -474,7 +473,10 @@ const AdminWorkspace: React.FC = () => {
       setRugAge(r.age);
       setRugCondition(r.condition);
       setRugColors(r.colors.join(", "));
-      setRugWeight(r.weightLbs || 3.5);
+      setRugWeight(r.weightLbs || 0);
+      setRugWeightMode(r.weightMode||"manual");
+      setRugWeightRate(r.weightPerSqft||"");
+      setPacked({length:String(r.shippingPackage?.length||""),width:String(r.shippingPackage?.width||""),height:String(r.shippingPackage?.height||""),weight:String(r.shippingPackage?.weight||"")});
         setRugIsFreeShipping(r.isFreeShipping || false);
       setRugShape(r.shape);
       setRugAvailability(r.availability);
@@ -498,6 +500,8 @@ const AdminWorkspace: React.FC = () => {
       setRugCondition("");
       setRugColors("");
       setRugWeight("");
+      setRugWeightMode(weightProfiles.Handmade?"sqft":"manual");setRugWeightRate("");
+      setPacked({length:"",width:"",height:"",weight:""});
         setRugIsFreeShipping(false);
       setRugShape("");
       setRugAvailability("In Stock");
@@ -510,8 +514,10 @@ const AdminWorkspace: React.FC = () => {
     setRugModalOpen(true);
   };
 
-  const handleSaveRug = (e: React.FormEvent) => {
+  const handleSaveRug = async (e: React.FormEvent) => {
     e.preventDefault();
+    if(savingRug)return;
+    if(!Number.isFinite(Number(rugWeight))||Number(rugWeight)<=0){alert('Enter the rug weight in pounds.');return;}
     const colorsArr = rugColors.split(",").map(c => c.trim()).filter(Boolean);
     const finalImages = rugImages.length > 0 ? rugImages : ["https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"];
     const payload: any = {
@@ -520,7 +526,8 @@ const AdminWorkspace: React.FC = () => {
       sku: rugSKU,
       price: Number(rugPrice),
       originalPrice: rugOriginalPrice === "" ? null : Number(rugOriginalPrice),
-      sizeCategory: rugSizeCategory as Rug["sizeCategory"],
+      sizeCategory: selectedCategory,
+      categoryMode: autoCategory ? "auto" : "manual",
       dimensions: rugDimensions,
       origin: rugOrigin,
       style: rugStyle as Rug["style"],
@@ -528,7 +535,9 @@ const AdminWorkspace: React.FC = () => {
       age: rugAge as Rug["age"],
       condition: rugCondition as Rug["condition"],
       colors: colorsArr,
-      weightLbs: Number(rugWeight) || 3.5,
+      weightLbs: Number(rugWeight),
+      weightMode:rugWeightMode,weightPerSqft:rugWeightMode==="sqft"?Number(rugWeightRate||weightProfiles[rugManufacturingType]):null,
+      shippingPackage: Object.values(packed).every(v=>Number(v)>0) ? {length:Number(packed.length),width:Number(packed.width),height:Number(packed.height),weight:Number(packed.weight)} : null,
         isFreeShipping: rugIsFreeShipping,
       shape: rugShape as Rug["shape"],
       availability: rugAvailability as Rug["availability"],
@@ -537,12 +546,15 @@ const AdminWorkspace: React.FC = () => {
       images: finalImages
     };
 
-    if (editingRugId) {
-      updateRug(editingRugId, payload);
-    } else {
-      addRug(payload);
-    }
-    setRugModalOpen(false);
+    let categorized;
+    try{categorized=categorizeRug(payload);}catch(error){alert(error instanceof Error?error.message:"Check the rug category.");return;}
+    setSavingRug(true);
+    try{
+      if (editingRugId) await updateRug(editingRugId, categorized, true);
+      else await addRug(categorized);
+      setRugModalOpen(false);
+    }catch(error){alert(error instanceof Error?error.message:'Rug could not be saved.');}
+    finally{setSavingRug(false);}
   };
 
   const handleAddImageUrl = () => {
@@ -921,9 +933,9 @@ const AdminWorkspace: React.FC = () => {
         (qualityFilter === 'photos' && !r.images?.length) ||
         (qualityFilter === 'dimensions' && !r.dimensions?.trim()) ||
         (qualityFilter === 'description' && !r.description?.trim());
-      return matchesQuality && matchesSearch && matchesSize && matchesType && matchesAvailability;
+      return matchesBatch(r,inventoryBatch) && matchesQuality && matchesSearch && matchesSize && matchesType && matchesAvailability;
     }).sort((a, b) => listingSort === 'price-low' ? a.price - b.price : listingSort === 'price-high' ? b.price - a.price : (a.name || "").localeCompare(b.name || ""));
-  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter, listingSort, qualityFilter]);
+  }, [rugs, adminSearchQuery, adminSizeFilter, adminTypeFilter, adminAvailabilityFilter, listingSort, qualityFilter, inventoryBatch]);
 
   return (
     <div className={portal.shell}>
@@ -943,7 +955,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
 
           <nav className="space-y-1.5 text-sm" aria-label="Admin sections">
-{canAccess(staff, 'orders', 'read') && <a href="/admin/online-orders" className="w-full flex items-center gap-3 py-3 px-3 font-bold text-gray-300 hover:bg-white/10"><ClipboardList className="h-4.5 w-4.5"/><span>Online orders &amp; quotes</span></a>}
+
 {canAccess(staff, 'settings', 'read') && <a href="/admin/auctions" className="w-full flex items-center gap-3 py-3 px-3 rounded-none font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10"><ClipboardList className="h-4.5 w-4.5"/><span>Auction management <small className="block normal-case font-normal tracking-normal">Lots &amp; public previews</small></span></a>}
 {(allowed('analytics') || allowed('transactions')) && <p className="pt-5 pb-1 px-3 text-xs font-semibold tracking-widest text-stone-300 uppercase">Overview</p>}
 {allowed('analytics') && (<button
@@ -955,6 +967,7 @@ const AdminWorkspace: React.FC = () => {
               <BarChart3 className="h-4.5 w-4.5" />
               <span>Overview</span>
             </button>)}
+{canAccess(staff,'reports')&&<a href="/admin/retail-reports" className="w-full flex items-center gap-3 py-3 px-3 rounded-lg text-white bg-white/10 font-semibold">Retail Sales &amp; Tax Report</a>}
 {allowed('transactions') && (<button
               onClick={() => setActiveTab("transactions")}
               className={`w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
@@ -976,8 +989,8 @@ const AdminWorkspace: React.FC = () => {
 
               <ClipboardList className="h-4.5 w-4.5" />
               <span>Customer Orders</span>
-              {dynamicAnalytics.pendingOrders > 0 && (
-                <ActivityBadge count={dynamicAnalytics.pendingOrders} />
+              {unreadOrders > 0 && (
+                <ActivityBadge count={unreadOrders} />
               )}
             </button>)}
 {allowed('crm') && (<button
@@ -1050,9 +1063,16 @@ const AdminWorkspace: React.FC = () => {
             >
               <Calculator className="h-4.5 w-4.5" />
               <span>Service Estimates</span>
-              {estimates && estimates.filter(e => e.status === "New").length > 0 && (
-                <ActivityBadge count={estimates.filter(e => e.status === "New").length} />
+              {estimates && estimateCounts(estimates).new > 0 && (
+                <ActivityBadge count={estimateCounts(estimates).new} />
               )}
+            </button>)}
+{allowed('pickups') && (<button
+              onClick={() => setActiveTab("pickups")}
+              className={`w-full flex items-center gap-3 py-2.5 px-3 font-bold uppercase tracking-wider transition cursor-pointer rounded-lg ${activeTab === "pickups" ? "bg-editorial-accent text-white" : "text-gray-300 hover:bg-white/10"}`}
+            >
+              <Truck className="h-4.5 w-4.5" />
+              <span>Customer Pickups</span>
             </button>)}
 {allowed('appointments') && (<button
               onClick={() => setActiveTab("appointments")}
@@ -1163,6 +1183,7 @@ const AdminWorkspace: React.FC = () => {
               {activeTab === "orders" && "Customer Orders & Dispatch Logs"}
               {activeTab === "cleaning" && "Cleaning & Repair Bookings"}
               {activeTab === "estimates" && "Service Estimate Requests"}
+              {activeTab === "pickups" && "Customer Pickup Scheduling"}
               {activeTab === "appraisals" && "Certificates of Authenticity & Appraisals"}
               {activeTab === "employees" && "HR & Employee Management"}
               {activeTab === "loans" && "Loans & Repayments"}
@@ -1183,6 +1204,7 @@ const AdminWorkspace: React.FC = () => {
           </div>
         </div>
 
+        {activeTab === 'pickups' && allowed('pickups') && <PickupManager />}
         {activeTab === 'users' && allowed('users') && <StaffUsers />}
         {!allowed(activeTab) && <p>Your account has no access to this section. Ask the owner or General Manager to assign permissions.</p>}
         {/* --- TAB: TRANSACTIONS --- */}
@@ -1227,7 +1249,7 @@ const AdminWorkspace: React.FC = () => {
                     orders.map(order => (
                       <tr key={order.id} className="hover:bg-neutral-50 transition-colors">
                         <td className="px-4 py-3">{new Date(order.createdAt || 0).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{order.id.split('-').pop()?.toUpperCase() || order.id}</td>
+                        <td className="px-4 py-3 font-mono text-xs">{orderReference(order)}</td>
                         <td className="px-4 py-3 font-medium text-editorial-text">{order.customerInfo?.name || 'Unknown'}</td>
                         <td className="px-4 py-3 capitalize">{order.paymentDetails?.cardBrand || 'Card'}</td>
                         <td className="px-4 py-3">
@@ -1833,6 +1855,7 @@ const AdminWorkspace: React.FC = () => {
               </div>
             </div>
 
+            <div className={listingStyles.stockTools}><StockCheck items={rugs} source="Website rug listings"/></div>
             <div className={listingStyles.searchBar}>
               <label htmlFor="admin-inventory-search" className={listingStyles.searchLabel}>Search your rug inventory</label>
               <div className={listingStyles.searchField}>
@@ -1902,84 +1925,7 @@ const AdminWorkspace: React.FC = () => {
               </div>
             </div>
 
-            {/* Bulk Actions Bar */}
-              <div className={`bg-stone-50 p-4 rounded-xl border border-neutral-200 flex flex-wrap items-center justify-between gap-4 ${listingStyles.bulk}`}>
-                  <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <label className="text-sm font-bold text-neutral-700 flex items-center gap-2">
-                      <input type="checkbox" aria-label="Select all filtered rugs" checked={filteredAdminRugs.length > 0 && filteredAdminRugs.every(r => selectedRugIds.includes(r.id))} onChange={e => setSelectedRugIds(e.target.checked ? filteredAdminRugs.map(r => r.id) : [])} />
-                      {selectedRugIds.length} selected · {filteredAdminRugs.length} listings
-                    </label>
-                    {selectedRugIds.length > 0 && (
-                      <div className="flex items-center gap-2 border-l border-neutral-300 pl-4">
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            min="1" max="99"
-                            value={bulkDiscountPercent}
-                            onChange={(e) => setBulkDiscountPercent(Number(e.target.value))}
-                            placeholder="% Off"
-                            className="w-20 bg-white border border-neutral-200 rounded px-2 py-1 outline-none text-sm focus:border-editorial-accent"
-                          />
-                          <button
-                            onClick={() => {
-                              if (!bulkDiscountPercent || bulkDiscountPercent <= 0 || bulkDiscountPercent >= 100) {
-                                alert("Please enter a valid percentage between 1 and 99");
-                                return;
-                              }
-
-                              selectedRugIds.forEach(id => {
-                                const rug = rugs.find(r => r.id === id);
-                                if (rug) {
-                                  const original = rug.originalPrice || rug.price;
-                                  const discounted = Math.round(original * (1 - (Number(bulkDiscountPercent) / 100)));
-                                  updateRug(id, {
-                                    originalPrice: original,
-                                    price: discounted
-                                  });
-                                }
-                              });
-                              setSelectedRugIds([]);
-                              setBulkDiscountPercent("");
-                            }}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition"
-                          >
-                            Apply Sale
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => {
-                            selectedRugIds.forEach(id => {
-                              const rug = rugs.find(r => r.id === id);
-                              if (rug && rug.originalPrice) {
-                                updateRug(id, {
-                                  price: rug.originalPrice,
-                                  originalPrice: null
-                                });
-                              }
-                            });
-                            setSelectedRugIds([]);
-                          }}
-                          className="bg-neutral-200 hover:bg-neutral-300 text-neutral-700 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition"
-                        >
-                          Remove Sale
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to completely delete ${selectedRugIds.length} rug(s)? This will also permanently delete all associated images from storage.`)) {
-                              selectedRugIds.forEach(id => {
-                                deleteRug(id);
-                              });
-                              setSelectedRugIds([]);
-                            }
-                          }}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition ml-4"
-                        >
-                          Delete Selected
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+            <InventoryBulkTools rugs={rugs} filtered={filteredAdminRugs} selected={selectedRugIds} onSelect={setSelectedRugIds} batch={inventoryBatch} onBatch={setInventoryBatch} profiles={weightProfiles} onProfiles={setWeightProfiles}/>
 
               {/* Catalog Display */}
             <div className={listingStyles.catalog}>
@@ -2019,7 +1965,7 @@ const AdminWorkspace: React.FC = () => {
                         </a>
                         <div className="p-4 flex flex-col flex-1">
                           <div className="flex justify-between items-start mb-2 gap-2">
-                            <h3 className="font-bold text-neutral-900 text-sm leading-tight">{r.name}</h3>
+                            <h3 className="font-bold text-neutral-900 text-sm leading-tight">{r.name}</h3><InventoryStamp rug={r}/>
                             <div className="flex flex-col items-end shrink-0 text-right">
                               {r.originalPrice ? (
                                 <>
@@ -2072,7 +2018,7 @@ const AdminWorkspace: React.FC = () => {
                     <th className="py-3 px-4 w-12 text-center">
                       <input
                         type="checkbox"
-                        checked={selectedRugIds.length > 0 && selectedRugIds.length === filteredAdminRugs.length}
+                        checked={filteredAdminRugs.length > 0 && filteredAdminRugs.every(r=>selectedRugIds.includes(r.id))}
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedRugIds(filteredAdminRugs.map(r => r.id));
@@ -2126,7 +2072,7 @@ const AdminWorkspace: React.FC = () => {
                           <img src={r.images?.[0] || "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&q=80&w=800"} alt="preview" className="h-10 w-14 object-cover rounded border border-neutral-200" referrerPolicy="no-referrer" />
                         </td>
                         <td className="py-3 px-4 font-bold text-neutral-900">
-                          <div>{r.name}</div>
+                          <div>{r.name}</div><InventoryStamp rug={r}/>
                           <span className="text-sm font-mono text-neutral-400 font-semibold">SKU: {r.sku}</span>
                         </td>
                         <td className="py-3 px-4 text-neutral-600 font-semibold">{r.origin}</td>
@@ -2217,6 +2163,7 @@ const AdminWorkspace: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-md border border-neutral-200/50 space-y-6 text-left">
             <div>
               <h2 className="font-serif text-base font-bold text-neutral-900 uppercase tracking-wider">Customer Orders Fulfillment Logs</h2>
+              {canAccess(staff, "orders", "write") && <a href="/admin/shipping" className="inline-flex items-center gap-2 mt-4 px-5 py-3 rounded-lg bg-emerald-900 text-white font-semibold text-sm">Create shipping label / Shipping history</a>}
               <p className="text-xs text-neutral-400">Review client payment settlements, generate certificate files, and update freight dispatch statuses.</p>
             </div>
 
@@ -2237,7 +2184,7 @@ const AdminWorkspace: React.FC = () => {
                     const searchLower = orderSearchQuery.toLowerCase();
                     const matchesSearch =
                       !orderSearchQuery ||
-                      o.id.toLowerCase().includes(searchLower) ||
+                      o.id.toLowerCase().includes(searchLower) || (o.orderNumber||'').toLowerCase().includes(searchLower) ||
                       o.customerInfo.name.toLowerCase().includes(searchLower) ||
                       o.customerInfo.phone.toLowerCase().includes(searchLower) ||
                       o.customerInfo.email.toLowerCase().includes(searchLower) ||
@@ -2245,7 +2192,7 @@ const AdminWorkspace: React.FC = () => {
 
                     const matchesStatus =
                       orderStatusFilter === "All" ||
-                      (orderStatusFilter === "Active" && o.status !== "Delivered" && o.status !== "Cancelled") ||
+                      (orderStatusFilter === "Active" && !["Delivered", "Cancelled", "Returned"].includes(o.status)) ||
                       (orderStatusFilter === "Shipped" && o.status === "Shipped") ||
                       (orderStatusFilter === "Delivered" && o.status === "Delivered") ||
                       (orderStatusFilter === "Cancelled" && o.status === "Cancelled");
@@ -2265,7 +2212,7 @@ const AdminWorkspace: React.FC = () => {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-amber-700 text-sm">{o.id}</span>
+                          <span className="font-mono font-bold text-amber-700 text-sm">{orderReference(o)}</span>
                           <span className="text-xs text-neutral-400">({new Date(o.createdAt).toLocaleDateString()})</span>
                         </div>
                         <p className="text-xs text-neutral-600 font-sans mt-0.5">
@@ -2364,13 +2311,14 @@ const AdminWorkspace: React.FC = () => {
                         <div className="text-xs text-neutral-500 pt-2 font-mono space-y-1">
                           <p>Payment method: {o.paymentDetails?.cardBrand || 'Confirm with showroom'}</p>
                           {o.paymentDetails?.last4 && <p>Ending in {o.paymentDetails.last4}</p>}
-                          <p className="text-neutral-400">Payment is confirmed separately by the showroom.</p>
-                          <OrderPaymentControls orderId={o.id}/>
+                          <p className="text-neutral-400">{o.id.startsWith("MPR-LIVE-")?"Payment verified by Stripe.":"Payment is confirmed separately by the showroom."}</p>
+                          {!o.id.startsWith("MPR-LIVE-")&&<OrderPaymentControls orderId={o.id}/>}
 
                         </div>
                       </div>
 
                       {/* Actions workflow */}
+                      {o.id.startsWith("MPR-LIVE-") ? <div className="bg-white p-4 rounded-xl border border-neutral-200/50"><LiveOrderAdminControls id={o.id}/><button type="button" className="mt-4 py-2 px-4 border rounded" onClick={()=>generateAndDownloadReceiptPDF(o,shopProfile,logoUrl)}>Print / download receipt PDF</button></div> : (
                       <div className="space-y-2 bg-white p-4 rounded-xl border border-neutral-200/50 flex flex-col justify-between">
                         <span className="text-sm uppercase tracking-wider text-neutral-400 font-bold block">Advisory Workflows</span>
 
@@ -2541,6 +2489,7 @@ const AdminWorkspace: React.FC = () => {
                           </button>
                         </div>
                       </div>
+                      )}
 
                     </div>
 
@@ -2866,7 +2815,7 @@ const AdminWorkspace: React.FC = () => {
                   <label className="block text-neutral-500 font-semibold uppercase">Type</label>
                   <select
                     value={rugManufacturingType}
-                    onChange={(e) => setRugManufacturingType(e.target.value as any)}
+                    onChange={(e) => {setRugManufacturingType(e.target.value as any);if(!editingRugId&&weightProfiles[e.target.value]){setRugWeightMode("sqft");setRugWeightRate("");}}}
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 text-xs"
                   >
                     <option value="Handmade">Handmade</option>
@@ -2876,11 +2825,16 @@ const AdminWorkspace: React.FC = () => {
 
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Size Category</label>
+                  <label className="flex items-center gap-2 text-sm py-2"><input type="checkbox" checked={autoCategory} onChange={e=>{if(!e.target.checked)setRugSizeCategory(selectedCategory);setAutoCategory(e.target.checked);}}/>Choose category automatically</label>
+                  {autoCategory&&<p className="text-sm text-[#203e37]">{suggestedCategory.sizeCategory ? `Automatic: ${suggestedCategory.sizeCategory} · ${suggestedCategory.shape}` : suggestedCategory.reason}</p>}
                   <select
-                    value={rugSizeCategory}
+                    value={selectedCategory}
+                    disabled={autoCategory}
                     onChange={(e) => setRugSizeCategory(e.target.value as any)}
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 text-xs max-h-48 overflow-y-auto"
                   >
+                    <option value="">Enter size or select category</option>
+                    {selectedCategory&&!ALL_SIZES.includes(selectedCategory)&&<option value={selectedCategory}>{selectedCategory}</option>}
                     <optgroup label="Rectangles">
                       <option value="1x2">1x2</option>
                       <option value="2x3">2x3</option>
@@ -3023,7 +2977,7 @@ const AdminWorkspace: React.FC = () => {
                 <div className="space-y-1">
                   <label className="block text-neutral-500 font-semibold uppercase">Shape</label>
                   <select
-                    value={rugShape}
+                    value={rugShape || (autoCategory?suggestedCategory.shape||"":"")}
                     onChange={(e) => setRugShape(e.target.value as any)}
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500"
                   >
@@ -3118,19 +3072,27 @@ const AdminWorkspace: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-neutral-500 font-semibold uppercase">Shipping Weight (lbs)</label>
+                  <label className="block text-neutral-500 font-semibold uppercase">Rug weight method</label>
+                  <select value={rugWeightMode} onChange={e=>setRugWeightMode(e.target.value as 'manual'|'sqft')} className="w-full border rounded p-2"><option value="manual">Manual weight override</option><option value="sqft">Calculate from square feet</option></select>
+                  {rugWeightMode==='sqft'&&<label>Weight per sq ft (lb)<input type="number" min="0.001" max="100" step="0.001" required value={rugWeightRate||weightProfiles[rugManufacturingType]||''} onChange={e=>setRugWeightRate(Number(e.target.value)||'')} className="w-full border rounded p-2"/></label>}
+                  <label className="block text-neutral-500 font-semibold uppercase">Rug weight (lb) · packing separate</label>
                   <input
                     type="number"
                     step="0.1"
                     min="0.1"
                     required
                     value={rugWeight}
+                    readOnly={rugWeightMode==='sqft'}
                     onChange={(e) => setRugWeight(parseFloat(e.target.value) || 0)}
                     placeholder="e.g. 3.5"
                     className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 outline-none focus:border-amber-500 font-mono text-xs"
                   />
                 </div>
                 <div className="space-y-1">
+                  <label className="block text-neutral-500 font-semibold uppercase">Packed rug + padding — UPS</label>
+                  <p>Measure the finished package. All four values are required for automatic UPS rates.</p>
+                  <p>Customer sale price: {saleLabel({price:Number(rugPrice),weightLbs:Number(rugWeight),sizeCategory:selectedCategory,dimensions:rugDimensions,name:rugName})}. Free Shipping. Rates per lb: Small/Runner $2 · Medium $3 · Large $3.50 · Extra Large/Oversize $4.50.</p>
+                  {(['length','width','height','weight'] as const).map(key=><label key={key} className="block">{key} ({key==='weight'?'lb':'in'})<input type="number" min="0.1" max="1000" step="0.1" value={packed[key]} onChange={e=>setPacked({...packed,[key]:e.target.value})} className="w-full border rounded p-2" /></label>)}
                   <label className="block text-neutral-500 font-semibold uppercase">Shipping Offer</label>
                   <label className="flex items-center gap-2 mt-2 cursor-pointer h-full pb-2">
                     <input
@@ -3335,10 +3297,10 @@ const AdminWorkspace: React.FC = () => {
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="submit" disabled={savingRug}
                   className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-850 text-amber-400 font-bold uppercase tracking-widest rounded-lg transition"
                 >
-                  Save Masterwork
+                  {savingRug?'Saving to Firebase…':'Save rug'}
                 </button>
               </div>
 

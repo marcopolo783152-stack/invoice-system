@@ -1,5 +1,7 @@
 'use client';
 
+import {createCustomerInvoiceLink} from '@/lib/invoice-share-client';
+
 import { appendInvoicePayment } from '@/lib/firebase-storage';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,6 +11,7 @@ import { getInvoiceByIdAsync, SavedInvoice, saveInvoice } from '@/lib/invoice-st
 import { calculateInvoice, InvoiceCalculations } from '@/lib/calculations';
 import { formatDateMMDDYYYY } from '@/lib/date-utils';
 import { logActivity } from '@/lib/audit-logger';
+import InvoiceCalls from '@/components/services/InvoiceCalls';
 import InvoiceTemplate from '@/components/InvoiceTemplate';
 import { ReturnedReceipt } from '@/components/ReturnedReceipt';
 import { businessConfig } from '@/config/business';
@@ -833,10 +836,13 @@ function InvoiceViewContent() {
                                             <Edit size={16} /> Edit Invoice
                                         </button>
 
-                                                                                <button onClick={() => { 
-                                            navigator.clipboard.writeText(`${window.location.origin}/tracking/${invoice.id}`);
-                                            alert('Tracking link copied to clipboard!');
-                                            setShowMoreMenu(false); 
+                                                                                <button onClick={async () => {
+                                            try {
+                                                const link = await createCustomerInvoiceLink(invoice.id, 'tracking');
+                                                await navigator.clipboard.writeText(link);
+                                                alert('Secure tracking link copied to clipboard!');
+                                                setShowMoreMenu(false);
+                                            } catch (error: any) { alert(error.message || 'Could not copy the tracking link.'); }
                                         }} className="dropdown-item">
                                             <Package size={16} /> Copy Tracking Link
                                         </button>
@@ -917,8 +923,8 @@ function InvoiceViewContent() {
                             // Generate Link
                             const isService = (invoice.data.mode as any) === 'wash' || (invoice.data.mode as any) === 'repair';
                             const link = isService 
-                                ? `${window.location.origin}/tracking/${invoice.id}`
-                                : `${window.location.origin}/public/invoice?id=${invoice.id}&pdf=true`;
+                                ? await createCustomerInvoiceLink(invoice.id, 'tracking')
+                                : await createCustomerInvoiceLink(invoice.id);
 
                             // Send Link (Client Side - Free Tier Compatible)
                             const { sendInvoiceEmail } = await import('@/lib/email-service');
@@ -1054,6 +1060,8 @@ function InvoiceViewContent() {
                         </div>
                     )}
 
+                    {(invoice.data.documentType==='WASH'||invoice.data.mode==='wash'||(invoice.data.mode as string)==='repair')&&<InvoiceCalls key={invoice.id} invoiceId={invoice.id}/>}
+
                     {/* Screen Preview */}
                     <div
                         id="invoice-view"
@@ -1087,3 +1095,4 @@ export default function InvoiceViewPage() {
         </Suspense>
     );
 }
+

@@ -1,0 +1,9 @@
+import {NextResponse} from 'next/server';
+import {serverDb} from '@/lib/server/firebase-admin';
+import {requireStaff} from '@/lib/server/staff-permission';
+import {auctionFailure} from '@/lib/server/auction-errors';
+import {DEFAULT_SHOWCASE,cleanShowcase} from '@/lib/auction/external.mjs';
+export const dynamic='force-dynamic';
+const headers={'Cache-Control':'no-store'};
+export async function GET(){try{const d=(await serverDb().doc('auction_external_showcase/current').get()).data();return NextResponse.json(d?{enabled:d.enabled,current:d.current,upcoming:d.upcoming,version:d.version}:DEFAULT_SHOWCASE,{headers});}catch{return NextResponse.json({error:'Auction information is temporarily unavailable.'},{status:503,headers});}}
+export async function POST(req:Request){try{const user=await requireStaff(req,'settings','write');if(req.headers.get('origin')&&req.headers.get('origin')!==new URL(req.url).origin)return NextResponse.json({error:'Invalid origin.'},{status:403,headers});const raw=await req.text();if(raw.length>16000)throw Error('Request too large.');const input=JSON.parse(raw),data=cleanShowcase(input);if(!Number.isInteger(input.version)||input.version<0)throw Error('Invalid version.');const db=serverDb(),ref=db.doc('auction_external_showcase/current');await db.runTransaction(async tx=>{const old=await tx.get(ref);if((old.data()?.version||0)!==input.version)throw Error('Settings changed in another window. Refresh and try again.');tx.set(ref,{...data,version:input.version+1,updatedAt:Date.now(),updatedBy:user.uid});});return NextResponse.json({...data,version:input.version+1},{headers});}catch(e){if(e instanceof Error&&['FORBIDDEN','UNAUTHENTICATED'].includes(e.message))return auctionFailure(e);return NextResponse.json({error:e instanceof Error?e.message:'Could not save settings.'},{status:400,headers});}}

@@ -1,12 +1,23 @@
+import PickupReminders from '@/components/pickups/PickupReminders';
 import { changeAppointmentStatus, deleteAppointment } from '@/lib/appointment-booking';
 import React, { useEffect, useState } from 'react';
 import { subscribeToCollection, SHOWROOM_APPOINTMENTS, updateShowroomDoc, deleteShowroomDoc } from '@/lib/showroom-firebase';
-import { Calendar, User, Clock, CheckCircle2, XCircle, Trash2, Plus } from 'lucide-react';
+import { Calendar, User, Clock, CheckCircle2, XCircle, Trash2, Plus, Mail } from 'lucide-react';
+import {auth} from '@/lib/auth';
 import AppointmentForm from './AppointmentForm';
+import CustomerEmailCenter from '@/components/customer-emails/CustomerEmailCenter';
 
 export default function AppointmentsAdminTab() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [emailingId,setEmailingId]=useState('');
+  const [emailNotice,setEmailNotice]=useState('');
+  const sendConfirmation=async(id:string)=>{
+    setEmailingId(id);setEmailNotice('');
+    try{const user=auth.currentUser;if(!user)throw Error('Please sign in again.');const r=await fetch('/api/customer-emails',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+await user.getIdToken()},body:JSON.stringify({action:'appointment_confirmation',id})});const result=await r.json();if(!r.ok)throw Error(result.error||'Email could not be prepared.');setEmailNotice(result.status==='accepted'?'The email provider accepted this confirmation. Ask the customer to check their inbox and spam folder.':result.status==='pending'?'The confirmation is queued. Use Process pending emails to finish sending it.':'Confirmation result: '+result.status+'. Check Recent email history for the next step.');}
+    catch(e){setEmailNotice(e instanceof Error?e.message:'Could not send the confirmation.');}
+    finally{setEmailingId('');}
+  };
   
   const handleStatusChange = async (id: string, newStatus: string) => {
     try { await changeAppointmentStatus(id, newStatus as 'confirmed' | 'rejected'); }
@@ -30,7 +41,9 @@ export default function AppointmentsAdminTab() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6"><PickupReminders manageHref="/?view=admin&adminTab=pickups"/>
+      <details className="rounded-xl border border-emerald-100 bg-stone-50"><summary className="cursor-pointer p-4 font-semibold text-[#183d32]">Customer emails · confirmations, reminders &amp; history</summary><CustomerEmailCenter/></details>
+      {emailNotice&&<p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 font-semibold text-emerald-950">{emailNotice}</p>}
       <div className="flex items-center justify-between">
         <div>
             <h2 className="text-xl font-serif text-neutral-900">Scheduled Appointments</h2>
@@ -94,6 +107,7 @@ export default function AppointmentsAdminTab() {
               )}
               
               <div className="mt-5 flex gap-2">
+                {appt.status==='confirmed'&&<button disabled={!!emailingId} onClick={()=>sendConfirmation(appt.id)} className="flex-1 rounded-lg bg-[#183d32] text-white px-3 py-2 text-xs font-bold flex items-center justify-center gap-1 disabled:opacity-50"><Mail size={14}/>{emailingId===appt.id?'Sending…':'Email confirmation'}</button>}
                 {appt.status !== 'confirmed' && (
                     <button onClick={() => handleStatusChange(appt.id, 'confirmed')} className="flex-1 bg-emerald-600 text-white py-2 text-xs uppercase font-bold tracking-wider rounded-sm hover:bg-emerald-700 flex items-center justify-center gap-1">
                         <CheckCircle2 size={14} /> Accept

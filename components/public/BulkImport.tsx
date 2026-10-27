@@ -86,6 +86,7 @@ export const BulkImport: React.FC = () => {
 
       if (!storage) throw new Error("Firebase storage is not available");
 
+      const uploadBatchId='upload-'+crypto.randomUUID();
       for (const item of mappedRugs) {
         const imageUrls: string[] = [];
         
@@ -102,6 +103,7 @@ export const BulkImport: React.FC = () => {
         
         const finalRug = {
           ...item.rug,
+          uploadBatchId,uploadBatchLabel:csvFile?.name||'CSV import',
           images: imageUrls
         };
 
@@ -111,7 +113,7 @@ export const BulkImport: React.FC = () => {
             finalRug.availability = 'Sold';
           }
           // Write to firestore as update
-          await updateRug(existingRug.id, finalRug);
+          await updateRug(existingRug.id, finalRug, true);
         } else {
           // Write to firestore as new
           await addRug(finalRug as Omit<Rug, "id">);

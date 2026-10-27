@@ -1,3 +1,6 @@
+import {estimateRequest} from '@/lib/estimate-workflow-client';
+import {pickupRequest} from './service-pickup-client';
+import {mergeWashingProgress} from './washing-invoice.mjs';
 import { getStorePrefix } from './user-storage';
 /**
  * FIREBASE STORAGE SERVICE
@@ -22,6 +25,7 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured, checkFirebaseQuotaError } from './firebase';
 import { InvoiceData, Payment, calculateInvoice } from './calculations';
+import {customerEmailEvent} from './customer-email-client';
 
 export interface SavedInvoice {
   id: string;
@@ -36,6 +40,8 @@ export interface SavedInvoice {
 
 const getCollectionName = () => getStorePrefix() + 'invoices';
 const getDeletedCollectionName = () => getStorePrefix() + 'deletedInvoices';
+function completedRetailInvoice(data:InvoiceData){if(!data.mode?.startsWith('retail')||(data.documentType&&data.documentType!=='INVOICE')||data.isDraft)return false;const t=calculateInvoice(data),due=Math.round(t.netTotalDue*100),paid=Math.round(t.totalPaid*100);return due===0||paid>=due-1||(data.terms?.toLowerCase()==='paid'&&paid===0);}
+
 
 /**
  * Save invoice to Firebase
@@ -50,6 +56,8 @@ export async function saveInvoiceToCloud(
     throw new Error('Firebase not configured. Please set up your Firebase project.');
   }
 
+  if(data.sourceEstimateId){const result=await estimateRequest('',{action:'invoice',id:data.sourceEstimateId,collection:getCollectionName(),data});return result.id;}
+  if(data.sourcePickupId){const result=await pickupRequest('',{action:'invoice',pickupId:data.sourcePickupId,collection:getCollectionName(),data});return result.id;}
   try {
     const now = Timestamp.now();
     const docRef = doc(collection(db, getCollectionName()));
@@ -58,8 +66,9 @@ export async function saveInvoiceToCloud(
       const reserved = await tx.get(numberRef);
       if (reserved.exists()) throw new Error(`Invoice number ${invoiceNumber} already exists. Please generate a new number.`);
       tx.set(numberRef, {invoiceId:docRef.id, invoiceNumber, createdAt:now});
-      tx.set(docRef, {invoiceNumber, customerName, date:data.date, totalAmount, data, createdAt:now, updatedAt:now});
+      tx.set(docRef, {invoiceNumber, customerName, date:data.date, totalAmount, data, createdAt:now, updatedAt:now,...(completedRetailInvoice(data)?{retailCompletedAt:now}:{})});
     });
+    if(getCollectionName()==='invoices')await customerEmailEvent('invoices',docRef.id);
     return docRef.id;
   } catch (error) {
     checkFirebaseQuotaError(error);
@@ -230,14 +239,17 @@ export async function updateInvoiceInCloud(
 
   try {
     const docRef = doc(db, getCollectionName(), id);
-    await updateDoc(docRef, {
-      invoiceNumber,
-      customerName,
-      date: data.date,
-      totalAmount,
-      data,
-      updatedAt: Timestamp.now()
+    if(getCollectionName()==='invoices')await customerEmailEvent('invoices',id,true);
+    await runTransaction(db, async transaction => {
+      const current = await transaction.get(docRef);
+      if (!current.exists()) throw new Error('Invoice not found.');
+      const merged = mergeWashingProgress(current.data().data || {}, data);
+      transaction.update(docRef, {
+        invoiceNumber, customerName, date: data.date, totalAmount,
+        data: merged, updatedAt: Timestamp.now(),...(!current.data().retailCompletedAt&&completedRetailInvoice(merged)?{retailCompletedAt:Timestamp.now()}:{})
+      });
     });
+    if(getCollectionName()==='invoices')await customerEmailEvent('invoices',id);
   } catch (error) {
     checkFirebaseQuotaError(error);
     console.error('Error updating invoice in cloud:', error);
@@ -593,7 +605,7 @@ export async function appendInvoicePayment(id:string, payment:Payment):Promise<I
     const updated = {...data, payments:[...payments,payment]};
     const totals = calculateInvoice(updated);
     updated.terms = totals.balanceDue <= 0 ? 'Paid' : 'Outstanding';
-    tx.update(ref, {data:updated, totalAmount:totals.totalDue, updatedAt:Timestamp.now()});
+    tx.update(ref, {data:updated, totalAmount:totals.totalDue, updatedAt:Timestamp.now(),...(!snap.data().retailCompletedAt&&completedRetailInvoice(updated)?{retailCompletedAt:Timestamp.now()}:{})});
     return updated;
   });
 }

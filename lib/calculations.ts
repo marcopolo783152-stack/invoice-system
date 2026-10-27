@@ -1,3 +1,5 @@
+import {transportSummary, transportErrors} from './service-transport.mjs';
+import {calculateServiceProducts} from './service-products.mjs';
 /**
  * CALCULATION ENGINE - BUSINESS LOGIC ONLY
  * 
@@ -37,6 +39,7 @@ export interface InvoiceItem {
     wash: boolean;
     repair: boolean;
   };
+  repairCompletedAt?: string;
   // Condition tracking
   conditions?: {
     used?: boolean;
@@ -79,7 +82,15 @@ export interface Payment {
   note?: string;
 }
 
+export interface ServiceProduct {id:string;description:string;quantity:number;unitPrice:number;taxable?:boolean;returned?:boolean;}
+
 export interface InvoiceData {
+  sourceEstimateId?: string;
+  sourceEstimateVersion?: number;
+  sourcePickupId?: string;
+  sourcePickupVersion?: number;
+  serviceProducts?: ServiceProduct[];
+  serviceTransport?: {method: string; pickup?: {pricing: string; amount: number}; delivery?: {pricing: string; amount: number}} | null;
   documentType?: DocumentType; // 'INVOICE' (default) or 'CONSIGNMENT'
   invoiceNumber: string;
   date: string;
@@ -108,6 +119,7 @@ export interface InvoiceData {
   // Wash/Repair specific
   pickupDate?: string;
   status?: 'washing' | 'repairing' | 'ready' | 'picked_up';
+  washingProgress?: Record<string, {sku:string;jobId:string;status:string;updatedAt:string;checkedAt?:string}>;
   pickupSignature?: string; // Signature collected at pickup
   isDraft?: boolean; // True if invoice is in draft mode
   downpayment?: number; // Optional downpayment for consignment
@@ -123,6 +135,7 @@ export interface CalculatedItem extends InvoiceItem {
 }
 
 export interface InvoiceCalculations {
+  netSalesTax?: number;
   items: CalculatedItem[];
   subtotal: number;
   discount: number;
@@ -210,6 +223,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
       discount: 0,
       subtotalAfterDiscount: 0,
       salesTax: 0,
+      netSalesTax: 0,
       totalAdditionalCharges: 0,
       totalDue: 0,
       netSubtotal: 0,
@@ -304,7 +318,7 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
 
   // Calculate Additional Charges
   const additionalCharges = data.additionalCharges || [];
-  const totalAdditionalCharges = additionalCharges.reduce((sum, c) => sum + (c.amount || 0), 0);
+  const totalAdditionalCharges = additionalCharges.reduce((sum, c) => sum + (c.amount || 0), 0) + (isWash ? transportSummary(data.serviceTransport).total : 0);
 
   // Calculate total due
   const totalDue = subtotalAfterDiscount + salesTax + totalAdditionalCharges;
@@ -362,21 +376,23 @@ export function calculateInvoice(data: InvoiceData): InvoiceCalculations {
     balanceDue = 0;
   }
 
+  const products=calculateServiceProducts(data.serviceProducts||[]);
   return {
     items: calculatedItems,
-    subtotal,
+    subtotal:subtotal+products.subtotal,
     discount,
-    subtotalAfterDiscount,
-    salesTax,
+    subtotalAfterDiscount:subtotalAfterDiscount+products.subtotal,
+    salesTax:salesTax+products.tax,
+    netSalesTax:netSalesTax+products.netTax,
     totalAdditionalCharges,
-    totalDue,
-    netSubtotal,
-    netTotalDue: netTotalDueFinal,
-    returnedAmount: totalDue - netTotalDue, // Total value of returned items including tax and discount
+    totalDue:totalDue+products.total,
+    netSubtotal:netSubtotal+products.netSubtotal,
+    netTotalDue: netTotalDueFinal+products.netTotal,
+    returnedAmount: totalDue - netTotalDue + products.total-products.netTotal, // Total value of returned items including tax and discount
     soldAmount,
     downpayment: data.downpayment || 0,
     totalPaid,
-    balanceDue
+    balanceDue:products.rows.length?netTotalDue+products.netTotal-totalPaid:balanceDue
   };
 }
 
@@ -404,6 +420,7 @@ export function formatSquareFoot(sqft: number): string {
  */
 export function validateInvoiceData(data: InvoiceData): string[] {
   const errors: string[] = [];
+  if(data.documentType==='WASH'||data.mode==='wash') errors.push(...transportErrors(data.serviceTransport));
 
   if (!data.invoiceNumber.trim()) {
     errors.push('Invoice number is required');
