@@ -40,6 +40,8 @@ export interface SavedInvoice {
 
 const getCollectionName = () => getStorePrefix() + 'invoices';
 const getDeletedCollectionName = () => getStorePrefix() + 'deletedInvoices';
+function completedRetailInvoice(data:InvoiceData){if(!data.mode?.startsWith('retail')||(data.documentType&&data.documentType!=='INVOICE')||data.isDraft)return false;const t=calculateInvoice(data),due=Math.round(t.netTotalDue*100),paid=Math.round(t.totalPaid*100);return due===0||paid>=due-1||(data.terms?.toLowerCase()==='paid'&&paid===0);}
+
 
 /**
  * Save invoice to Firebase
@@ -64,7 +66,7 @@ export async function saveInvoiceToCloud(
       const reserved = await tx.get(numberRef);
       if (reserved.exists()) throw new Error(`Invoice number ${invoiceNumber} already exists. Please generate a new number.`);
       tx.set(numberRef, {invoiceId:docRef.id, invoiceNumber, createdAt:now});
-      tx.set(docRef, {invoiceNumber, customerName, date:data.date, totalAmount, data, createdAt:now, updatedAt:now});
+      tx.set(docRef, {invoiceNumber, customerName, date:data.date, totalAmount, data, createdAt:now, updatedAt:now,...(completedRetailInvoice(data)?{retailCompletedAt:now}:{})});
     });
     if(getCollectionName()==='invoices')await customerEmailEvent('invoices',docRef.id);
     return docRef.id;
@@ -244,7 +246,7 @@ export async function updateInvoiceInCloud(
       const merged = mergeWashingProgress(current.data().data || {}, data);
       transaction.update(docRef, {
         invoiceNumber, customerName, date: data.date, totalAmount,
-        data: merged, updatedAt: Timestamp.now()
+        data: merged, updatedAt: Timestamp.now(),...(!current.data().retailCompletedAt&&completedRetailInvoice(merged)?{retailCompletedAt:Timestamp.now()}:{})
       });
     });
     if(getCollectionName()==='invoices')await customerEmailEvent('invoices',id);
@@ -603,7 +605,7 @@ export async function appendInvoicePayment(id:string, payment:Payment):Promise<I
     const updated = {...data, payments:[...payments,payment]};
     const totals = calculateInvoice(updated);
     updated.terms = totals.balanceDue <= 0 ? 'Paid' : 'Outstanding';
-    tx.update(ref, {data:updated, totalAmount:totals.totalDue, updatedAt:Timestamp.now()});
+    tx.update(ref, {data:updated, totalAmount:totals.totalDue, updatedAt:Timestamp.now(),...(!snap.data().retailCompletedAt&&completedRetailInvoice(updated)?{retailCompletedAt:Timestamp.now()}:{})});
     return updated;
   });
 }
