@@ -19,7 +19,7 @@ import portal from "@/components/Portal.module.css";
 import PickupManager from '@/components/pickups/PickupManager';
 import AdminOverview from "@/components/AdminOverview";
 import { useStaffAccess } from "@/hooks/useStaffAccess";
-import { canAccess, sectionForTab, OWNER_UID, OWNER_EMAIL } from "@/lib/access-policy";
+import { canAccess, sectionForTab } from "@/lib/access-policy";
 import StaffGate from "@/components/StaffGate";
 import StaffUsers from "@/components/StaffUsers";
 import ActivityBadge from "@/components/ActivityBadge";
@@ -968,7 +968,6 @@ const AdminWorkspace: React.FC = () => {
               <span>Overview</span>
             </button>)}
 {canAccess(staff,'reports')&&<a href="/admin/retail-reports" className="w-full flex items-center gap-3 py-3 px-3 rounded-lg text-white bg-white/10 font-semibold">Retail Sales &amp; Tax Report</a>}
-{staff?.uid===OWNER_UID&&firebaseAuth.currentUser?.email?.toLowerCase()===OWNER_EMAIL&&<a href="/owner/retail-commission" className="w-full flex items-center gap-3 py-3 px-3 mt-2 rounded-lg border border-white/20 text-white font-semibold">Private owner commission</a>}
 {allowed('transactions') && (<button
               onClick={() => setActiveTab("transactions")}
               className={`w-full flex items-center justify-between py-2.5 px-3 rounded-none font-bold uppercase tracking-wider transition cursor-pointer ${
