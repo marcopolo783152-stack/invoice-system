@@ -7,6 +7,8 @@
  */
 
 
+import {useStore} from '@/context/StoreContext';
+import {dimensions as rugDimensions} from '@/lib/rug-discovery.mjs';
 import {washingSummary} from '@/lib/washing-invoice.mjs';
 import ServiceTransport from './ServiceTransport';
 import {transportSummary,transportErrors} from '@/lib/service-transport.mjs';
@@ -40,6 +42,7 @@ interface InvoiceFormProps {
 
 // This form supports both creating and editing invoices. When editing, all fields (customer info, items, etc.) are pre-filled and can be updated.
 export default function InvoiceForm({ onSubmit, initialData, currentUser, users, saving = false }: InvoiceFormProps) {
+  const {rugs: showroomRugs}=useStore();
   const [draftNotice, setDraftNotice] = useState('');
   const [servedBy, setServedBy] = useState(initialData?.servedBy || (currentUser?.fullName || currentUser?.username || ''));
 
@@ -328,6 +331,15 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
     } else {
       setShowSkuSuggestions(prev => ({ ...prev, [itemId]: false }));
     }
+  };
+
+  const showroomMatches = (value: string) => value.trim().length<2 ? [] : showroomRugs.filter(r => r.availability === 'In Stock' && ((r.sku || '').toLowerCase().includes(value.trim().toLowerCase()) || (r.name || '').toLowerCase().includes(value.trim().toLowerCase()))).slice(0,5);
+  const selectShowroomRug = (itemId: string, rug: typeof showroomRugs[number]) => {
+    const d = rugDimensions(rug);
+    const parts = (value: number) => {const total = Math.round(value * 12); return {feet:Math.floor(total / 12),inches:total % 12};};
+    const w=d?parts(d[0]):null, l=d?parts(d[1]):null;
+    setItems(previous => previous.map(i => i.id!==itemId ? i : {...i,sku:rug.sku,description:rug.name,shape:rug.shape==='Round'?'round':'rectangle',...(w&&l?{widthFeet:w.feet,widthInches:w.inches,lengthFeet:l.feet,lengthInches:l.inches}:{}),fixedPrice:rug.price,image:rug.images?.[0]||'',origin:rug.origin||'',material:rug.material||''}));
+    setShowSkuSuggestions(prev=>({...prev,[itemId]:false}));
   };
 
   const selectSkuFromSuggestion = (itemId: string, item: InventoryItem) => {
@@ -1001,9 +1013,11 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                     📷
                   </button>
                 </div>
-                {showSkuSuggestions[item.id] && skuSuggestions[item.id]?.length > 0 && (
+                {showSkuSuggestions[item.id] && ((skuSuggestions[item.id]?.length || 0) > 0 || (documentType === 'INVOICE' && showroomMatches(item.sku || '').length > 0)) && (
                   <div className={styles.suggestionsList} style={{ top: '100%', left: 0, width: '100%', maxHeight: '200px', overflowY: 'auto' }}>
-                    {skuSuggestions[item.id].map(suggestion => (
+                    {documentType === 'INVOICE' && showroomMatches(item.sku || '').map(rug => <button type="button" key={'showroom-'+rug.id} className={styles.suggestionItem} onClick={()=>selectShowroomRug(item.id,rug)} style={{display:'flex',width:'100%',gap:10,textAlign:'left',alignItems:'center',background:'white',border:0,cursor:'pointer'}}>
+                      {rug.images?.[0]&&<img src={rug.images[0]} alt="" style={{width:54,height:54,objectFit:'contain',background:'#f3f5f1'}}/>}<span><strong>Showroom match: {rug.sku}</strong><br/>{rug.name}<br/><small>{rug.dimensions} · Select if this is the rug</small></span></button>)}
+                    {(skuSuggestions[item.id] || []).map(suggestion => (
                       <div
                         key={suggestion.id}
                         className={styles.suggestionItem}

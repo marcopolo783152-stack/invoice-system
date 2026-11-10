@@ -5,13 +5,13 @@ export const downloadCsvTemplate = () => {
   const headers = [
     "sku", "name", "type", "color", "price", "originalPrice", "sizeCategory", "dimensions",
     "origin", "material", "style", "age", "condition", "shape",
-    "availability", "weightLbs", "isSpecialSale", "description"
+    "availability", "weightLbs", "isSpecialSale", "description", "location"
   ];
 
   const exampleRow = [
-    "M. 32267", "Antique Persian Heriz", "Handmade", "Red, Blue", "4500", "5500", "8x10", "8'2 x 10'5",
-    "Persia (Iran)", "100% Kork Wool", "Antique", "Antique (100+ yrs)", "Excellent", "Rectangular",
-    "In Stock", "45", "TRUE", "A stunning example of a Persian Heriz..."
+    "M. 32267", "Heriz Design Handmade Rug", "Handmade", "Red, Blue", "4500", "5500", "8x10", "8'2 x 10'5",
+    "Afghanistan", "100% Wool", "Antique", "Antique (100+ yrs)", "Excellent", "Rectangular",
+    "In Stock", "45", "TRUE", "A handmade rug with a traditional design.", "Showroom"
   ];
 
   const csvContent = [
@@ -109,6 +109,8 @@ export const parseRugCsv = (csvText: string): Partial<Rug>[] => {
       rating: 5,
     };
 
+    // Omitted or empty location does not erase an existing inventory location.
+    if (rug.location) formattedRug.location = rug.location;
     if (formattedRug.sku && formattedRug.name && formattedRug.price) {
       parsedRugs.push(formattedRug);
     }

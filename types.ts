@@ -21,6 +21,7 @@ export interface Rug {
   id: string;
   name: string;
   sku: string;
+  location?: string; // Internal inventory location
   price: number;
   originalPrice?: number | null; // for showing discount
   sizeCategory: string; // e.g. "8x10", "9x12", "6x9", "10x13", "Runner", "Custom"
