@@ -6,3 +6,10 @@ test('measurements handle feet, inches, order and invalid labels',()=>{assert.de
 test('filters require every search word and preserve holds and stock availability',()=>{const records=[rug,{...rug,id:'held',origin:'Iran'},{...rug,id:'sold',availability:'Sold'}];assert.deepEqual(filterRugs(records,{q:'blue wool',budget:350}).map(r=>r.id),['a']);assert.equal(filterRugs(records,{q:'blue silk'}).length,0);assert.equal(filterRugs(records,{budget:200}).length,0);});
 test('recommendations prefer matching actual properties over generic NEW style',()=>{const match={...rug,id:'match'},unrelated={...rug,id:'unrelated',material:'Polyester',manufacturingType:'Machine-made',colors:['Red'],price:3000,dimensions:"8' x 10'"};assert.equal(relatedRugs([unrelated,match],rug)[0].id,'match');assert.deepEqual(relatedRugs([unrelated,match],rug,{runnersOnly:true}).map(r=>r.id),['match']);});
 test('ratings never use pending, invalid or another rug reviews',()=>{assert.equal(approvedReviews([{rugId:'a',rating:5,isApproved:false},{rugId:'a',rating:6,isApproved:true},{rugId:'b',rating:5,isApproved:true}], 'a').length,0);assert.equal(approvedReviews([{rugId:'a',rating:4,isApproved:true}],'a').length,1);});
+
+test('customer search includes items with an empty origin for the requested origin alias',()=>{
+ const blank={...rug,id:'blank',origin:'',name:'Blue wool rug'}, absent={...rug,id:'absent',origin:undefined,name:'Blue wool rug'}, other={...rug,id:'other',origin:'Turkey',name:'Blue wool rug'};
+ assert.deepEqual(filterRugs([blank,absent,other],{q:'persian blue'}).map(r=>r.id),['blank','absent']);
+ assert.equal(filterRugs([blank],{q:'persian silk'}).length,0);
+ assert.equal(filterRugs([{...blank,availability:'On Hold'}],{q:'persian'}).length,0);
+});
