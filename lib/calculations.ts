@@ -121,6 +121,7 @@ export interface InvoiceData {
   status?: 'washing' | 'repairing' | 'ready' | 'picked_up';
   washingProgress?: Record<string, {sku:string;jobId:string;status:string;updatedAt:string;checkedAt?:string}>;
   pickupSignature?: string; // Signature collected at pickup
+  pickupEvidence?: {method: 'staff_recorded_no_new_signature' | 'signed_at_pickup'; priorInvoiceSignatureReferenced?: boolean; note?: string; recordedAt: string; recordedBy: string} | null;
   isDraft?: boolean; // True if invoice is in draft mode
   downpayment?: number; // Optional downpayment for consignment
   payments?: Payment[]; // New: Track multiple payments

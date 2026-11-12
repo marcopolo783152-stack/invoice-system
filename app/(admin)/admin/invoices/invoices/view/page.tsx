@@ -1,5 +1,6 @@
 'use client';
 
+import {auth} from '@/lib/auth';
 import {createCustomerInvoiceLink} from '@/lib/invoice-share-client';
 
 import { appendInvoicePayment } from '@/lib/firebase-storage';
@@ -505,7 +506,7 @@ function InvoiceViewContent() {
         }
     };
 
-    const handleProcessPickup = async (signatureData: string) => {
+    const handleProcessPickup = async (signatureData: string, earlierSignatureNote = '') => {
         if (!invoice || !calculations) return;
 
         // Ask for payment confirmation - MANDATORY
@@ -524,14 +525,14 @@ function InvoiceViewContent() {
                     ...invoice.data,
                     status: 'picked_up' as const,
                     pickupSignature: signatureData,
-                    terms: 'Paid' // Automatically set to Paid
+                    pickupEvidence: earlierSignatureNote ? {method:'staff_recorded_no_new_signature' as const, priorInvoiceSignatureReferenced:true, note:earlierSignatureNote, recordedAt:new Date().toISOString(), recordedBy:auth.currentUser?.uid || ''} : {method:'signed_at_pickup' as const, recordedAt:new Date().toISOString(), recordedBy:auth.currentUser?.uid || ''}
                 },
                 updatedAt: new Date().toISOString()
             };
             await saveInvoice(updatedInvoice.data, invoice.id);
             await loadInvoice(invoice.id);
             setShowPickupModal(false);
-            logActivity('Wash Pickup', `Completed pickup for Invoice #${invoice.data.invoiceNumber}. Status updated to Paid.`);
+            logActivity('Wash Pickup', `Completed pickup for Invoice #${invoice.data.invoiceNumber}${earlierSignatureNote ? ' with earlier invoice signature referenced; no new pickup signature.' : ' with a new pickup signature.'}`);
         } catch (error) {
             console.error('Failed to process pickup:', error);
             alert('Failed to save pickup information.');
@@ -540,7 +541,7 @@ function InvoiceViewContent() {
 
     const handleUndoPickup = async () => {
         if (!invoice) return;
-        if (!confirm('Are you sure you want to UNDO this pickup? \n\nThe status will be reset to "Ready for Pickup" and the "Paid" status will be removed.')) return;
+        if (!confirm('Are you sure you want to UNDO this pickup? \n\nThe status will be reset to "Ready for Pickup". Payment records will remain unchanged.')) return;
 
         try {
             const updatedInvoice = {
@@ -549,7 +550,7 @@ function InvoiceViewContent() {
                     ...invoice.data,
                     status: 'ready' as const,
                     pickupSignature: '',
-                    terms: 'Due on Receipt' // Revert to unpaid
+                    pickupEvidence: null
                 },
                 updatedAt: new Date().toISOString()
             };
@@ -1016,6 +1017,10 @@ function InvoiceViewContent() {
                             <div style={{ background: 'white', padding: 24, borderRadius: 12, width: '100%', maxWidth: 600, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
                                 <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Confirm Pickup</h3>
                                 <p style={{ color: '#64748b', marginBottom: 20 }}>Please satisfy the customer signature below to confirm receipt of items.</p>
+                                {invoice.data.signature && <div style={{margin:'0 0 20px',padding:16,border:'1px solid #c8d9d0',borderRadius:8,background:'#f4f8f5'}}>
+                                    <strong>Earlier invoice signature on file</strong><p style={{fontSize:13}}>This signature was collected earlier; it does not by itself prove pickup. Record what happened if no new signature was collected.</p>
+                                    <button type="button" onClick={() => {const note=window.prompt('Record how you confirmed the customer received the rugs and why a new signature was not collected:');if(!note?.trim())return; if(window.confirm('Mark this pickup as staff-confirmed without a new pickup signature? The earlier invoice signature will be referenced only.')) void handleProcessPickup('',note.trim().slice(0,500));}} style={{padding:'10px 14px',borderRadius:8,border:'1px solid #23513d',background:'#fff',color:'#23513d',cursor:'pointer'}}>Record pickup without a new signature</button>
+                                </div>}
                                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
                                     <Suspense fallback={<div>Loading signature pad...</div>}>
                                         <SignaturePad
@@ -1062,6 +1067,7 @@ function InvoiceViewContent() {
 
                     {(invoice.data.documentType==='WASH'||invoice.data.mode==='wash'||(invoice.data.mode as string)==='repair')&&<InvoiceCalls key={invoice.id} invoiceId={invoice.id}/>}
 
+                    {invoice.data.pickupEvidence?.method === 'staff_recorded_no_new_signature' && <div role="status" style={{padding:16,margin:'16px 0',border:'1px solid #b9d2c4',borderRadius:8,background:'#f1f8f3'}}><strong>Staff-confirmed pickup — no new pickup signature</strong><p>Earlier invoice signature referenced. Note: {invoice.data.pickupEvidence.note}</p><small>Recorded {invoice.data.pickupEvidence.recordedAt} · Staff ID {invoice.data.pickupEvidence.recordedBy}</small></div>}
                     {/* Screen Preview */}
                     <div
                         id="invoice-view"

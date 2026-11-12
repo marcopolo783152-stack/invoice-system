@@ -8,6 +8,7 @@ test('invoice template renders customer, invoice number, button and copyable URL
   assert.ok(rendered.includes('Invoice #MPR-123 Dear Nazif, Nazif'));
   assert.ok(rendered.includes('href="https://www.marcopolorugs.com/?track=MPR-123"'));
   assert.equal(params.invoice_url, params.invoice_link);
+  assert.equal(params.subject, 'Your Marco Polo invoice #MPR-123');
 });
 test('missing invoice data cannot produce a successfully sent blank template', () => {
   assert.throws(() => invoiceEmailFields('Nazif', '', 'https://example.com'));

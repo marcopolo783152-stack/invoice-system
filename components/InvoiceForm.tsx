@@ -321,14 +321,23 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
   }, [items, serviceProducts, serviceTransport, mode, documentType, discountValue, discountType, additionalCharges, downpayment, isLumpSum, lumpSumAmount, initialData?.payments]);
 
 
+  const skuQuery = useRef<Record<string,string>>({});
   const handleSkuChange = async (itemId: string, value: string) => {
+    skuQuery.current[itemId] = value;
     handleItemChange(itemId, 'sku', value);
 
-    if (value.length > 1) {
-      const results = await searchInventory(value);
-      setSkuSuggestions(prev => ({ ...prev, [itemId]: results }));
+    if (value.trim().length > 1) {
+      // Show showroom matches immediately, even if the separate invoice inventory is unavailable.
       setShowSkuSuggestions(prev => ({ ...prev, [itemId]: true }));
+      setSkuSuggestions(prev => ({ ...prev, [itemId]: [] }));
+      try {
+        const results = await searchInventory(value);
+        if (skuQuery.current[itemId] === value) setSkuSuggestions(prev => ({ ...prev, [itemId]: results }));
+      } catch {
+        if (skuQuery.current[itemId] === value) setSkuSuggestions(prev => ({ ...prev, [itemId]: [] }));
+      }
     } else {
+      setSkuSuggestions(prev => ({ ...prev, [itemId]: [] }));
       setShowSkuSuggestions(prev => ({ ...prev, [itemId]: false }));
     }
   };
@@ -401,7 +410,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
         if (found) {
           setItems(currentItems =>
             currentItems.map(item => {
-              if (item.id === id) {
+              if (item.id === id && item.sku === value) {
                 // If found, auto-fill details
                 // Only overwrite if current fields are empty or user just typed SKU
                 return {
