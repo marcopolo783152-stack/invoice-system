@@ -1,10 +1,20 @@
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, sendEmailVerification, signOut, onAuthStateChanged, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, sendEmailVerification, signOut, onAuthStateChanged, fetchSignInMethodsForEmail, getMultiFactorResolver, TotpMultiFactorGenerator } from 'firebase/auth';
 import { OWNER_UID, OWNER_EMAIL } from './access-policy';
 import { app, db, browserSessionReady } from './firebase';
 import { doc, getDoc, setDoc, Firestore } from 'firebase/firestore';
 
 export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+async function completeTotpSignIn(error:any){
+ if(error.code!=='auth/multi-factor-auth-required')return null;
+ const resolver=getMultiFactorResolver(auth,error),factor=resolver.hints.find(h=>h.factorId===TotpMultiFactorGenerator.FACTOR_ID);
+ if(!factor)throw Error('Use your configured second factor to sign in.');
+ const code=window.prompt('Enter the six-digit code from your authenticator app.');
+ if(!code)throw Error('Authenticator verification was cancelled.');
+ const result=await resolver.resolveSignIn(TotpMultiFactorGenerator.assertionForSignIn(factor.uid,code.trim()));
+ return result.user;
+}
+
 
 export const loginWithEmail = async (email: string, pass: string) => {
     try {
@@ -12,6 +22,7 @@ export const loginWithEmail = async (email: string, pass: string) => {
         const userCredential = await signInWithEmailAndPassword(auth, email, pass);
         return { user: userCredential.user, error: null };
     } catch (error: any) {
+        try{const user=await completeTotpSignIn(error);if(user)return {user,error:null};}catch(e:any){return {user:null,error:e.message};}
         return { user: null, error: error.message };
     }
 };
@@ -62,6 +73,7 @@ export const loginWithGoogle = async () => {
         
         return { user, error: null };
     } catch (error: any) {
+        try{const user=await completeTotpSignIn(error);if(user)return {user,error:null};}catch(e:any){return {user:null,error:e.message};}
         if (error.code === 'auth/account-exists-with-different-credential') {
             return { user: null, error: "An account already exists with the same email address but different sign-in credentials. Please sign in using a password." };
         }

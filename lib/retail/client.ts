@@ -1,0 +1,3 @@
+import {auth} from '@/lib/auth';
+export async function financialRequest(path:string,body?:unknown){await auth.authStateReady();const u=auth.currentUser;if(!u||u.isAnonymous)throw Error('Sign in to continue.');const r=await fetch(path,{method:body?'POST':'GET',cache:'no-store',headers:{Authorization:'Bearer '+await u.getIdToken(true),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});const d=await r.json();if(auth.currentUser?.uid!==u.uid)throw Error('Your sign-in changed. Refresh this page.');if(!r.ok){const e:any=new Error(d.error||'Report unavailable.');e.status=r.status;throw e;}return d;}
+export const money=(c:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(c/100);

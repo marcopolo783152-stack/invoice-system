@@ -1,12 +1,12 @@
 import styles from '@/components/auction/Auction.module.css';
 
-export default function AuctionUnderConstruction() {
+export default function AuctionUnderConstruction({comingSoon=false}:{comingSoon?:boolean}) {
   return (
     <section className={styles.page} aria-labelledby="auction-status-title">
       <div className={styles.hero}>
         <div>
           <span className={styles.eyebrow}>Marco Polo Rugs · Since 1988</span>
-          <h1 id="auction-status-title">Auctions are under construction.</h1>
+          <h1 id="auction-status-title">{comingSoon?'Auctions are coming soon.':'Auctions are under construction.'}</h1>
           <p>We’re preparing our auction experience. Auctions, bidder registration and bidding will open when everything is ready.</p>
           <div className={styles.actions}>
             <a className={styles.button} href="/?view=shop">Shop our rug collection</a>

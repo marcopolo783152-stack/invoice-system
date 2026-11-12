@@ -1,3 +1,5 @@
+import {invoiceEmailFields} from '@/lib/invoice-email-fields.mjs';
+import {sendLiveReceipt} from '@/lib/server/live-receipt';
 import {caller,serverDb} from '@/lib/server/firebase-admin';
 import {requireStaff} from '@/lib/server/staff-permission';
 import { NextResponse } from 'next/server';
@@ -16,6 +18,10 @@ export async function POST(request: Request) {
     const order:any = snapshot.exists ? {...snapshot.data(),id:snapshot.id} : null;
     if (!order) return NextResponse.json({error:'Order not found'}, {status:404});
     if (type === 'invoice' || order.customerId !== user.uid) await requireStaff(request,'orders');
+    if(order.liveManaged){
+      const status=await sendLiveReceipt(id,true);
+      return NextResponse.json(status==='sent'?{success:true,results:{email:'sent'}}:{error:'Receipt email '+status+'. Check email configuration and retry.'},{status:status==='sent'?200:503});
+    }
     const shopProfile = {name:'Marco Polo Rugs'};
     const key = process.env.EMAILJS_PRIVATE_KEY;
     if (!key) return NextResponse.json({error:'Email service needs configuration. Your order is saved.'}, {status:503});
@@ -131,6 +137,7 @@ export async function POST(request: Request) {
             user_id: EMAILJS_PUBLIC_KEY,
             accessToken: EMAILJS_PRIVATE_KEY,
             template_params: {
+              ...invoiceEmailFields(customerInfo.name, order.id, 'https://www.marcopolorugs.com/?track=' + encodeURIComponent(order.id)),
               to_email: customerInfo.email,
               subject: subjectLine,
               message: emailHtml,

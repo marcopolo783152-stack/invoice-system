@@ -1,0 +1,5 @@
+import {NextResponse} from 'next/server';
+import {auctionStripe} from '@/lib/server/auction-live';
+import {reconcileAuctionPayment} from '@/lib/server/auction-charge';
+export const dynamic='force-dynamic';
+export async function POST(req:Request){try{const secret=process.env.STRIPE_AUCTION_LIVE_WEBHOOK_SECRET;if(!secret?.startsWith('whsec_'))return NextResponse.json({error:'Webhook not configured.'},{status:503});const event=auctionStripe().webhooks.constructEvent(await req.text(),req.headers.get('stripe-signature')||'',secret);if(!event.livemode||!['payment_intent.succeeded','payment_intent.payment_failed','payment_intent.processing','payment_intent.requires_action'].includes(event.type))return NextResponse.json({received:true});const pi:any=event.data.object;if(pi.metadata?.purpose!=='marcopolo_auction_live')return NextResponse.json({received:true});await reconcileAuctionPayment(pi);return NextResponse.json({received:true});}catch(e:any){return NextResponse.json({error:'Webhook could not be processed.'},{status:e?.type==='StripeSignatureVerificationError'?400:503});}}

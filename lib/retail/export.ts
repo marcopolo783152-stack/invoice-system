@@ -1,0 +1,9 @@
+'use client';
+export type ReportColumn={label:string;key:string;money?:boolean};
+export async function reportPdf(title:string,columns:ReportColumn[],rows:any[],notes:string[],filename:string){const {jsPDF}=await import('jspdf');const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'}),width=277/columns.length;let y=15;
+ const header=()=>{pdf.setFontSize(16);pdf.setTextColor(32,62,55);pdf.text(title,10,15);pdf.setFontSize(8);pdf.text('Marco Polo Oriental Rugs, Inc. · Generated '+new Date().toLocaleString(),10,21);y=29;};
+ header();pdf.setFontSize(9);for(const note of notes){const lines=pdf.splitTextToSize(note,275);for(const line of lines){if(y>190){pdf.addPage();header();}pdf.text(line,10,y);y+=4.5;}}y+=4;
+ const tableHead=()=>{if(y>185){pdf.addPage();header();}pdf.setFillColor(32,62,55);pdf.rect(10,y-4,277,8,'F');pdf.setTextColor(255);pdf.setFontSize(8);columns.forEach((c,i)=>pdf.text(c.label,11+i*width,y));pdf.setTextColor(30);y+=8;};tableHead();
+ for(const row of rows){if(y>195){pdf.addPage();header();tableHead();}columns.forEach((c,i)=>{const value=c.money?'$'+(Number(row[c.key]||0)/100).toFixed(2):String(row[c.key]??'');const clipped=pdf.splitTextToSize(value,width-3)[0]||'';pdf.text(clipped,11+i*width,y);});pdf.setDrawColor(220);pdf.line(10,y+2,287,y+2);y+=7;}
+ const pages=pdf.getNumberOfPages();for(let p=1;p<=pages;p++){pdf.setPage(p);pdf.setFontSize(8);pdf.text('Page '+p+' of '+pages,265,205);}pdf.save(filename+'.pdf');}
+export async function reportExcel(title:string,columns:ReportColumn[],rows:any[],notes:string[],filename:string){const XLSX=await import('xlsx');const sheet=XLSX.utils.aoa_to_sheet([[title],...notes.map(n=>[n]),[],columns.map(c=>c.label),...rows.map(r=>columns.map(c=>c.money?Number(r[c.key]||0)/100:r[c.key]??''))]);sheet['!cols']=columns.map(c=>({wch:c.money?18:26}));const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,sheet,'Retail report');XLSX.writeFile(book,filename+'.xlsx');}

@@ -1,3 +1,4 @@
+'use client';
 /**
  * INVOICE FORM COMPONENT
  * 
@@ -5,8 +6,13 @@
  * Separated from template for clean architecture
  */
 
-'use client';
 
+import {useStore} from '@/context/StoreContext';
+import {dimensions as rugDimensions} from '@/lib/rug-discovery.mjs';
+import {washingSummary} from '@/lib/washing-invoice.mjs';
+import ServiceTransport from './ServiceTransport';
+import {transportSummary,transportErrors} from '@/lib/service-transport.mjs';
+import ServiceProducts from './ServiceProducts';
 import React, { useState, useEffect, useRef } from 'react';
 import { InvoiceData, InvoiceItem, InvoiceMode, RugShape, DocumentType, formatCurrency, calculateInvoice, calculateSquareFoot, formatSquareFoot } from '@/lib/calculations';
 import { generateInvoiceNumber, getCurrentCounter, setInvoiceCounter } from '@/lib/invoice-number';
@@ -36,6 +42,7 @@ interface InvoiceFormProps {
 
 // This form supports both creating and editing invoices. When editing, all fields (customer info, items, etc.) are pre-filled and can be updated.
 export default function InvoiceForm({ onSubmit, initialData, currentUser, users, saving = false }: InvoiceFormProps) {
+  const {rugs: showroomRugs}=useStore();
   const [draftNotice, setDraftNotice] = useState('');
   const [servedBy, setServedBy] = useState(initialData?.servedBy || (currentUser?.fullName || currentUser?.username || ''));
 
@@ -133,6 +140,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       setDebtStats(null);
     }
   };
+  const [serviceTransport,setServiceTransport]=useState<InvoiceData['serviceTransport']>(initialData?.serviceTransport||null);
+  const [serviceProducts,setServiceProducts]=useState<any[]>(initialData?.serviceProducts||[]);
   const [items, setItems] = useState<InvoiceItem[]>(
     () => initialData?.items || [createEmptyItem()]
   );
@@ -226,6 +235,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
               if (draft.mode) setMode(draft.mode);
               if (draft.soldTo) setSoldTo(draft.soldTo);
               if (draft.items) setItems(draft.items);
+              setServiceProducts(draft.serviceProducts||[]);
+              setServiceTransport(draft.serviceTransport||null);
               if (draft.terms) setTerms(draft.terms);
               if (draft.additionalCharges) setAdditionalCharges(draft.additionalCharges);
               if (draft.discountValue) setDiscountValue(draft.discountValue);
@@ -258,7 +269,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
           documentType,
           mode,
           soldTo,
-          items,
+          items, serviceProducts, serviceTransport,
           terms,
           additionalCharges,
           discountValue,
@@ -273,7 +284,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
         }
       }
     }
-  }, [documentType, mode, soldTo, items, terms, additionalCharges, discountValue, discountType, notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy, initialData]);
+  }, [documentType, mode, soldTo, items, serviceProducts, serviceTransport, terms, additionalCharges, discountValue, discountType, notes, downpayment, date, isLumpSum, lumpSumAmount, signature, pickupDate, servedBy, initialData]);
 
   // AUTOMATIC TERMS UPDATE BASED ON BALANCE
   useEffect(() => {
@@ -283,7 +294,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
 
     if (isStandardStatus) {
       const calc = calculateInvoice({
-        items,
+        items, serviceProducts, serviceTransport,
         mode: mode as InvoiceMode,
         documentType,
         invoiceNumber: '',
@@ -307,19 +318,37 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
         setTerms(newTerms);
       }
     }
-  }, [items, mode, documentType, discountValue, discountType, additionalCharges, downpayment, initialData?.payments]);
+  }, [items, serviceProducts, serviceTransport, mode, documentType, discountValue, discountType, additionalCharges, downpayment, isLumpSum, lumpSumAmount, initialData?.payments]);
 
 
+  const skuQuery = useRef<Record<string,string>>({});
   const handleSkuChange = async (itemId: string, value: string) => {
+    skuQuery.current[itemId] = value;
     handleItemChange(itemId, 'sku', value);
 
-    if (value.length > 1) {
-      const results = await searchInventory(value);
-      setSkuSuggestions(prev => ({ ...prev, [itemId]: results }));
+    if (value.trim().length > 1) {
+      // Show showroom matches immediately, even if the separate invoice inventory is unavailable.
       setShowSkuSuggestions(prev => ({ ...prev, [itemId]: true }));
+      setSkuSuggestions(prev => ({ ...prev, [itemId]: [] }));
+      try {
+        const results = await searchInventory(value);
+        if (skuQuery.current[itemId] === value) setSkuSuggestions(prev => ({ ...prev, [itemId]: results }));
+      } catch {
+        if (skuQuery.current[itemId] === value) setSkuSuggestions(prev => ({ ...prev, [itemId]: [] }));
+      }
     } else {
+      setSkuSuggestions(prev => ({ ...prev, [itemId]: [] }));
       setShowSkuSuggestions(prev => ({ ...prev, [itemId]: false }));
     }
+  };
+
+  const showroomMatches = (value: string) => value.trim().length<2 ? [] : showroomRugs.filter(r => r.availability === 'In Stock' && ((r.sku || '').toLowerCase().includes(value.trim().toLowerCase()) || (r.name || '').toLowerCase().includes(value.trim().toLowerCase()))).slice(0,5);
+  const selectShowroomRug = (itemId: string, rug: typeof showroomRugs[number]) => {
+    const d = rugDimensions(rug);
+    const parts = (value: number) => {const total = Math.round(value * 12); return {feet:Math.floor(total / 12),inches:total % 12};};
+    const w=d?parts(d[0]):null, l=d?parts(d[1]):null;
+    setItems(previous => previous.map(i => i.id!==itemId ? i : {...i,sku:rug.sku,description:rug.name,shape:rug.shape==='Round'?'round':'rectangle',...(w&&l?{widthFeet:w.feet,widthInches:w.inches,lengthFeet:l.feet,lengthInches:l.inches}:{}),fixedPrice:rug.price,image:rug.images?.[0]||'',origin:rug.origin||'',material:rug.material||''}));
+    setShowSkuSuggestions(prev=>({...prev,[itemId]:false}));
   };
 
   const selectSkuFromSuggestion = (itemId: string, item: InventoryItem) => {
@@ -381,7 +410,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
         if (found) {
           setItems(currentItems =>
             currentItems.map(item => {
-              if (item.id === id) {
+              if (item.id === id && item.sku === value) {
                 // If found, auto-fill details
                 // Only overwrite if current fields are empty or user just typed SKU
                 return {
@@ -534,6 +563,10 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
 
     if(documentType==='WASH'&&(washSkuBusy||items.some(needsWashSku))){setWashSkuError('Reserve all wash SKUs before saving. Use Retry below.');return;}
 
+    if(serviceProducts.some(p=>!p.description?.trim()||!Number.isInteger(p.quantity)||p.quantity<1||p.quantity>10000||!Number.isFinite(p.unitPrice)||p.unitPrice<0||p.unitPrice>1000000)){alert('Please enter a product name, valid quantity and unit price.');return;}
+
+    if(documentType==='WASH'){const errors=transportErrors(serviceTransport);if(errors.length){alert(errors.join('\n'));return;}}
+
     // Customer signature is now optional for admin creation
 
     const invoiceData: InvoiceData & { servedBy?: string } = {
@@ -543,7 +576,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       date,
       terms,
       soldTo,
-      items,
+      items, serviceProducts, serviceTransport,
       mode,
       additionalCharges,
       notes,
@@ -558,6 +591,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
       // Auto-calculate status if it's currently 'washing' or 'repairing' (initial states)
       // If it is already 'ready' or 'picked_up', keep it.
       status: documentType === 'WASH' ? (
+        initialData?.washingProgress ? washingSummary({...initialData,items,status}).status as InvoiceData['status'] :
         ['ready', 'picked_up'].includes(status || '') ? status :
           (items.some(i => i.serviceType?.wash) ? 'washing' : 'repairing')
       ) : undefined,
@@ -988,9 +1022,11 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                     📷
                   </button>
                 </div>
-                {showSkuSuggestions[item.id] && skuSuggestions[item.id]?.length > 0 && (
+                {showSkuSuggestions[item.id] && ((skuSuggestions[item.id]?.length || 0) > 0 || (documentType === 'INVOICE' && showroomMatches(item.sku || '').length > 0)) && (
                   <div className={styles.suggestionsList} style={{ top: '100%', left: 0, width: '100%', maxHeight: '200px', overflowY: 'auto' }}>
-                    {skuSuggestions[item.id].map(suggestion => (
+                    {documentType === 'INVOICE' && showroomMatches(item.sku || '').map(rug => <button type="button" key={'showroom-'+rug.id} className={styles.suggestionItem} onClick={()=>selectShowroomRug(item.id,rug)} style={{display:'flex',width:'100%',gap:10,textAlign:'left',alignItems:'center',background:'white',border:0,cursor:'pointer'}}>
+                      {rug.images?.[0]&&<img src={rug.images[0]} alt="" style={{width:54,height:54,objectFit:'contain',background:'#f3f5f1'}}/>}<span><strong>Showroom match: {rug.sku}</strong><br/>{rug.name}<br/><small>{rug.dimensions} · Select if this is the rug</small></span></button>)}
+                    {(skuSuggestions[item.id] || []).map(suggestion => (
                       <div
                         key={suggestion.id}
                         className={styles.suggestionItem}
@@ -1176,6 +1212,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                   </label>
                 </div>
 
+                {initialData?.washingProgress?.[item.id]&&<p style={{fontSize:13,color:'#166534'}}>Washing: {initialData.washingProgress[item.id].status} · {washingSummary({...initialData,items}).readyCount} of {washingSummary({...initialData,items}).total} rugs ready</p>}
+                {item.serviceType?.repair&&<label style={{display:'flex',gap:6,fontSize:14}}><input type="checkbox" checked={!!item.repairCompletedAt} onChange={e=>handleItemChange(item.id,'repairCompletedAt',e.target.checked?new Date().toISOString():'')}/>Required repair completed and checked</label>}
                 <div style={{ marginTop: 12 }}>
                   <span style={{ fontWeight: 600, fontSize: 13, color: '#475569', display: 'block', marginBottom: 8 }}>Conditions:</span>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
@@ -1266,6 +1304,8 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
           </div>
         ))}
 
+        {isWash&&<ServiceTransport value={serviceTransport} onChange={setServiceTransport}/>}
+        {isWash&&<ServiceProducts products={serviceProducts} onChange={setServiceProducts}/>}
         <button type="button" onClick={handleAddItem} className={styles.addBtn}>
           + Add Item
         </button>
@@ -1333,7 +1373,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                   <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>Subtotal:</td>
                   <td style={{ padding: '8px 0', color: '#1e293b', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
                     {(() => {
-                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
+                      const calc = calculateInvoice({ items, serviceProducts, serviceTransport, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' } });
                       return formatCurrency(calc.subtotal);
                     })()}
                   </td>
@@ -1364,13 +1404,15 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                     </td>
                     <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 600, textAlign: 'right', minWidth: 100 }}>
                       {(() => {
-                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType });
+                        const calc = calculateInvoice({ items, serviceProducts, serviceTransport, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType });
                         return `-${formatCurrency(calc.discount)}`;
                       })()}
                     </td>
                   </tr>
                 )}
 
+                {serviceProducts.length>0&&<tr><td style={{padding:'8px 24px',textAlign:'right'}}>Product sales tax (6%):</td><td style={{textAlign:'right'}}>{formatCurrency(calculateInvoice({items,serviceProducts,serviceTransport,mode:mode as InvoiceMode,documentType,invoiceNumber:'',date:'',terms:'',soldTo:{name:'',address:'',city:'',state:'',zip:'',phone:''}}).salesTax)}</td></tr>}
+                {isWash&&transportSummary(serviceTransport).rows.map(row=><tr key={'transport-'+row.label}><td style={{padding:'8px 24px',textAlign:'right'}}>{row.label}:</td><td style={{textAlign:'right'}}>{row.amount?formatCurrency(row.amount):'Free'}</td></tr>)}
                 {additionalCharges.map(charge => (
                   <tr key={charge.id}>
                     <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right' }}>{charge.description}:</td>
@@ -1386,7 +1428,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                   </td>
                   <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
                     {(() => {
-                      const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, additionalCharges });
+                      const calc = calculateInvoice({ items, serviceProducts, serviceTransport, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, additionalCharges });
                       return formatCurrency(calc.totalDue);
                     })()}
                   </td>
@@ -1397,7 +1439,7 @@ export default function InvoiceForm({ onSubmit, initialData, currentUser, users,
                     <td style={{ padding: '8px 24px', color: '#64748b', textAlign: 'right', fontSize: 18, fontWeight: 700 }}>Balance Due:</td>
                     <td style={{ padding: '8px 0', color: '#dc2626', fontWeight: 800, textAlign: 'right', fontSize: 18 }}>
                       {(() => {
-                        const calc = calculateInvoice({ items, mode: mode as InvoiceMode, documentType, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, downpayment, additionalCharges });
+                        const calc = calculateInvoice({ items, serviceProducts, serviceTransport, mode: mode as InvoiceMode, documentType, isLumpSum, lumpSumAmount, invoiceNumber: '', date: '', terms: '', soldTo: { name: '', address: '', city: '', state: '', zip: '', phone: '' }, discountValue, discountType, downpayment, additionalCharges, payments:initialData?.payments||[] });
                         return formatCurrency(calc.balanceDue || 0);
                       })()}
                     </td>

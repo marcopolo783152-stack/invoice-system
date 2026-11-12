@@ -20,3 +20,23 @@
 }
 
 html { font-size: 16.5px; }
+
+/* Shared customer surfaces; administrative workspaces retain their own styles. */
+.customer-showroom,.customer-surface{background:#fcfaf6;color:#193e34}
+.customer-surface{font-size:15px;line-height:1.7}
+.customer-surface h1,.customer-surface h2,.customer-surface h3{font-family:Georgia,serif;font-weight:400;line-height:1.25;letter-spacing:-.02em}
+.customer-surface :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px;border-radius:10px;min-height:46px;background:#fffdf9;color:#193e34}
+.customer-surface :is(button,a):focus-visible{outline:3px solid #b38a4a;outline-offset:3px}
+.customer-surface :is(button,input,select,textarea):focus-visible{outline:3px solid #b38a4a;outline-offset:2px}
+.customer-surface :is(button,.rounded-none){border-radius:12px}
+.customer-surface :is(article,form.bg-white,div.bg-white.border){border-radius:22px;border-color:#e5ded1;box-shadow:0 8px 28px #193e3406}
+.customer-surface .text-xs{font-size:13px;line-height:1.65}
+.customer-surface :is(button,input[type=submit]){min-height:44px}
+.customer-booking{padding:32px;background:#fffdf9;border-radius:24px;border:1px solid #e5ded1;box-shadow:0 10px 36px #193e3408}
+.customer-footer{border-top:5px solid #d2b783;background:#193e34;font:14px/1.8 Arial,sans-serif;padding-top:52px;padding-bottom:30px}
+.customer-footer a{color:#f1ede3;text-decoration:none;text-underline-offset:5px}.customer-footer a:hover{text-decoration:underline}.customer-footer a:focus-visible{outline:3px solid #d2b783;outline-offset:4px}.customer-footer h2{font-size:29px}.customer-footer h3{color:#e7cea0}
+.customer-skip{position:fixed;top:12px;left:16px;z-index:20000;transform:translateY(-200%);background:#193e34;color:white;padding:12px 20px;border-radius:12px}.customer-skip:focus{transform:translateY(0);outline:3px solid #d2b783}
+@media(max-width:540px){.customer-booking{padding:24px 18px}.customer-footer{padding:36px 20px}.customer-surface h1{font-size:34px}.customer-surface .tracking-widest{letter-spacing:.06em}}
+@media(prefers-reduced-motion:reduce){.customer-showroom *,.customer-surface *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.customer-loading{min-height:50vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;background:#fcfaf6;color:#193e34;font:15px/1.6 Arial,sans-serif}.customer-loading-mark{width:48px;height:48px;border:2px solid #e5d9c3;border-top-color:#193e34;border-radius:50%;animation:showroom-spin 1.2s linear infinite}.customer-loading a{text-decoration:underline;text-underline-offset:4px;color:#193e34}@keyframes showroom-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.customer-loading-mark{animation:none}}
+.customer-surface a.group.bg-white{border-radius:22px;border-color:#e5ded1;background:#fffdf9}.customer-service .sticky.bg-white{border-radius:22px;border-color:#e5ded1}.customer-service a.flex.items-center{border-radius:12px}

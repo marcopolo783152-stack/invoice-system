@@ -51,7 +51,7 @@ export default function PaymentSetup() {
       <p className={styles.brand}>Marco Polo Rugs · Owner settings</p>
       <h1>Payment connection</h1>
       <p className={styles.intro}>Check the Stripe account connected to this website. This check does not charge a card or change orders or inventory.</p>
-      {!loaded ? <p>Checking your sign-in…</p> : !owner ? <p>Sign in with the owner account to check payment setup. <a href="/staff-login?next=%2Fpayment-setup">Staff sign in</a></p> : <>
+      {!loaded ? <p>Checking your sign-in…</p> : !owner ? <p>Sign in with the owner account to check payment setup. <a href="/sign-in?next=%2Fpayment-setup">Sign in</a></p> : <>
         <button onClick={check} disabled={busy} className={styles.button}>{busy ? 'Checking Stripe…' : 'Check live connection'}</button>
         {error && <p className={styles.error} role="alert">{error}</p>}
         {connection && <div aria-live="polite">

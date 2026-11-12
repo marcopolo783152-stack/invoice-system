@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getEmployees, getTimeLogs, getEmployeePayments, Employee, TimeLog, EmployeePayment } from '@/lib/employee-storage';
-import { getCurrentStoreId } from '@/lib/user-storage';
+import { kioskQr } from '@/lib/employee-clock-client';
 import { Loader2 } from 'lucide-react';
 import { generatePDFBlobUrl, generateReportPDFBlobUrl } from '@/lib/pdf-utils';
 import { HistoryReportTemplate } from '@/components/HistoryReportTemplate';
@@ -21,6 +21,7 @@ function EmployeePrintContent() {
     const [receiptPayment, setReceiptPayment] = useState<EmployeePayment | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [qrUrl, setQrUrl] = useState('');
+    const [error,setError]=useState('');
     const [imageLoaded, setImageLoaded] = useState(false);
     const printRef = useRef<HTMLDivElement>(null);
 
@@ -28,19 +29,14 @@ function EmployeePrintContent() {
         const load = async () => {
             const baseUrl = window.location.origin;
             if (type === 'poster') {
-                const storeId = getCurrentStoreId() || '';
-                const clockUrl = `${baseUrl}/admin/invoices/clock${storeId ? `?storeId=${storeId}` : ''}`;
-                setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(clockUrl)}`);
+                setQrUrl(await kioskQr());
                 setIsLoading(false);
             } else if (type === 'badge' && id) {
-                const storeId = getCurrentStoreId() || '';
                 const emps = await getEmployees();
                 const emp = emps.find(e => e.empId === id);
                 if (emp) {
                     setEmployee(emp);
-                    const clockUrl = `${baseUrl}/admin/invoices/clock?id=${emp.empId}${storeId ? `&storeId=${storeId}` : ''}`;
-                    // Higher resolution and error correction (ecc=H) for better scan-ability
-                    setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(clockUrl)}&ecc=H&margin=0`);
+                    setQrUrl(await kioskQr(emp.empId));
                 }
                 setIsLoading(false);
             } else if (type === 'history' && id) {
@@ -97,7 +93,7 @@ function EmployeePrintContent() {
                 setIsLoading(false);
             }
         };
-        load();
+        load().catch(e=>{setError(e.message||'Could not prepare the QR.');setIsLoading(false);});
     }, [type, id]);
 
     useEffect(() => {
@@ -124,6 +120,7 @@ function EmployeePrintContent() {
         }
     }, [isLoading, imageLoaded, employee, type, id]);
 
+    if(error)return <p role="alert" style={{padding:30}}>{error}</p>;
     if (isLoading) {
         return (
             <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>

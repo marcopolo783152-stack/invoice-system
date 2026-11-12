@@ -1,0 +1,7 @@
+'use client';
+import {useStore} from '@/context/StoreContext';
+import {useStaffAccess} from '@/hooks/useStaffAccess';
+import {canAccess} from '@/lib/access-policy';
+import {estimateReminders} from '@/lib/estimate-workflow.mjs';
+import styles from './Estimates.module.css';
+export default function EstimateReminders(){const {estimates}=useStore(),{staff}=useStaffAccess();if(!canAccess(staff,'services'))return null;const r=estimateReminders(estimates||[]);return <section className={styles.panel}><div className={styles.header}><div><h3>Estimate follow-ups and showroom arrivals</h3><p>{r.overdue.length} overdue · {r.today.length} due today · {r.dropoffs.length} expected drop-offs · {r.pickup.length} pickups to schedule</p></div><a className={styles.button} href="/?view=admin&adminTab=estimates">Manage estimates</a></div>{[['Overdue follow-ups',r.overdue],['Follow-ups today',r.today],['Expected showroom drop-offs',r.dropoffs],['Pickup requested — needs scheduling',r.pickup]].map(([title,list]:any)=><div key={title}><h4>{title}</h4>{!list.length&&<p>None waiting.</p>}{list.slice(0,5).map((e:any)=><p key={e.id}><a href={'/?view=admin&adminTab=estimates&estimateId='+encodeURIComponent(e.id)}><strong>{e.name}</strong> · {e.phone} · {e.status==='Bringing to Showroom'?e.dropoffDate+' '+e.dropoffTime:e.followUpDate||'Schedule pickup'}</a></p>)}{list.length>5&&<p>{list.length-5} more in Service Estimates.</p>}</div>)}</section>;}

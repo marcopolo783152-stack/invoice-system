@@ -1,3 +1,4 @@
+import {baselineCustomerSource,notifyCustomerSource} from '@/lib/server/customer-emails';
 import {NextResponse} from 'next/server';
 import {Shippo} from 'shippo';
 import {serverDb} from '@/lib/server/firebase-admin';
@@ -31,11 +32,13 @@ export async function POST(request: Request) {
       const status = verified.trackingStatus?.status;
       const next = status === 'DELIVERED' ? 'Delivered' : status === 'RETURNED' ? 'Returned' : status === 'TRANSIT' ? 'Shipped' : null;
       if (!next) continue;
+      await baselineCustomerSource('showroom_orders',order.id);
       await db.runTransaction(async tx => {
         const current = (await tx.get(order.ref)).data();
         if (!current || current.shippingDetails?.trackingNumber !== tracking || !['Preparing for Shipping','Shipped'].includes(current.status)) return;
         tx.update(order.ref, {status:next, 'shippingDetails.verifiedAt':new Date().toISOString()});
       });
+      await notifyCustomerSource('showroom_orders',order.id);
     }
     return NextResponse.json({received:true});
   } catch { return NextResponse.json({error:'Tracking update could not be verified'}, {status:503}); }

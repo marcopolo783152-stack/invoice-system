@@ -7,8 +7,9 @@
 
 .workspace { display:grid; grid-template-columns:minmax(0,1fr) 230px; gap:20px; align-items:start; }
 .heading { grid-column:1 / -1; }
+.stockTools { grid-column:1 / -1; min-width:0; }
 .explanation { grid-column:1 / -1; }
-.filters { grid-column:2; grid-row:3 / span 3; display:grid; gap:18px; padding:16px; border:1px solid #e7e5e4; background:#fafaf9; }
+.filters { grid-column:2; grid-row:4 / span 2; display:grid; gap:18px; padding:16px; border:1px solid #e7e5e4; background:#fafaf9; }
 .bulk { grid-column:1; min-width:0; }
 .catalog { grid-column:1; min-width:0; overflow-x:auto; }
 @media(max-width:1000px) { .workspace { grid-template-columns:minmax(0,1fr); } .filters { grid-column:1; grid-row:auto; grid-template-columns:repeat(2,minmax(0,1fr)); } }

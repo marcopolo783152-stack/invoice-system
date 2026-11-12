@@ -152,6 +152,8 @@ export default function Sidebar({
         { label: 'Outstanding', href: '/admin/invoices/outstanding', icon: DollarSign, badge: outstandingBalances.length > 0 ? outstandingBalances.length : undefined },
         { label: 'Reports', href: '/admin/invoices/reports', icon: BarChart },
         { label: 'Recycle Bin', href: '/admin/invoices/invoices?view=bin', icon: Trash2, activeCondition: isRecycleBin },
+        { label: 'Customer Pickups', href: '/admin/invoices/pickups', icon: Truck },
+        { label: 'Washing Tracker', href: '/admin/invoices/washing', icon: Truck },
         { label: 'Service Tracking', href: '/admin/invoices/service-tracking', icon: Truck },
         { label: 'Service Vendors', href: '/admin/invoices/service-vendors', icon: Wrench },
         { label: 'Settings', href: '/admin/invoices/settings', icon: Settings },

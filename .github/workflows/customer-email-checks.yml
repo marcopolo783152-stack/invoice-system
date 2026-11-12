@@ -1,0 +1,44 @@
+name: Customer email checks
+on:
+  push:
+    branches: [main, feature/shippo-invoice-links-20260929]
+    paths:
+      - 'lib/customer-email*'
+      - 'lib/appointment-email-feedback.mjs'
+      - 'components/public/AppointmentForm.tsx'
+      - 'tests/access/appointment-email-feedback.test.mjs'
+      - 'lib/email-service.ts'
+      - 'lib/server/customer-emails.ts'
+      - 'lib/server/live-receipt.ts'
+      - 'lib/server/live-refund.ts'
+      - 'app/api/customer-emails/**'
+      - 'app/api/live-orders/manage/route.ts'
+      - 'app/api/service-pickups/route.ts'
+      - 'app/api/washing/route.ts'
+      - 'app/api/shipping/webhook/route.ts'
+      - 'lib/appointment-booking.ts'
+      - 'lib/firebase-storage.ts'
+      - 'components/customer-emails/**'
+      - 'components/public/AppointmentsAdminTab.tsx'
+      - 'context/StoreContext.tsx'
+      - 'tests/access/customer-email*'
+      - 'vercel.json'
+      - '.github/workflows/customer-email-checks.yml'
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  email-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/access/customer-email-queue.test.mjs tests/access/appointment-email-feedback.test.mjs tests/access/customer-email.test.mjs tests/access/service-estimate.test.mjs tests/access/rug-categorization.test.mjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
