@@ -116,3 +116,19 @@ test('saved invoice long descriptions and numeric invoice numbers do not prevent
  assert.throws(()=>invoiceRug({...invoice,items:[{...invoice.items[0],description:'x'.repeat(10001)}]},'r1'),/rug description/);
  assert.throws(()=>invoiceRug({...invoice,invoiceNumber:{bad:true}},'r1'),/invoice number/);
 });
+
+test('undo mistaken handoff releases only its rug and keeps invoice payments and history',async()=>{
+ const item=washItem('i1','MPW1234'),inv=washInvoice([item]);inv.data.washingProgress={i1:{sku:'MPW1234',jobId:'j1',status:'At company'}};
+ const receipt=intake.intakeItem('invoices','invoice1','i1');
+ const d=database({'invoices/invoice1':inv,'wash_tracking_jobs/j1':{...job,id:'j1',invoiceCollection:'invoices',invoiceId:'invoice1',itemId:'i1'},'wash_tracking_active/MPW1234':{jobId:'j1'},[receipt]:{jobId:'j1'}});
+ await washing.undoHandoff(d,{id:'j1',version:1,reason:'Selected by mistake',uid:'staff',now:'2026-11-19T12:00:00Z'});
+ assert.equal(d.read('wash_tracking_jobs/j1').status,'Handoff undone');assert.equal(d.read('wash_tracking_jobs/j1').closed,true);assert.equal(d.read('wash_tracking_active/MPW1234'),undefined);assert.equal(d.read(receipt),undefined);assert.equal(d.read('invoices/invoice1').data.washingProgress.i1,undefined);assert.deepEqual(d.read('invoices/invoice1').data.payments,[{id:'p',amount:90}]);
+});
+test('undo is denied after company acknowledgement or for stale changes',async()=>{
+ const d=database({'wash_tracking_jobs/j1':{...job,acknowledgedAt:'2026-11-19'}});
+ await assert.rejects(washing.undoHandoff(d,{id:'j1',version:1,reason:'Mistake',uid:'s',now:'2026-11-19T12:00:00Z'}),/company activity/);
+ await assert.rejects(washing.undoHandoff(d,{id:'j1',version:2,reason:'Mistake',uid:'s',now:'2026-11-19T12:00:00Z'}),/changed/);
+ assert.equal(d.read('wash_tracking_jobs/j1').closed,false);
+});
+
+test('undone handoffs do not appear as received rugs',()=>{assert.equal(priority.inWashingFolder({status:'Handoff undone',closed:true},'received'),false);});

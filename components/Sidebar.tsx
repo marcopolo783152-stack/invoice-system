@@ -144,6 +144,7 @@ export default function Sidebar({
         { label: 'Dashboard', href: '/admin/invoices', icon: LayoutDashboard, exact: true },
         { label: 'Invoices', href: '/admin/invoices/invoices', icon: FileText, activeCondition: pathname === '/admin/invoices/invoices' && !isRecycleBin },
         { label: 'New Invoice', href: '/admin/invoices/invoices/new', icon: PlusCircle },
+        { label: 'Buying & Packing', href: '/admin/business-documents', icon: FileText },
         { label: 'Inventory DB', href: '/admin/invoices/inventory', icon: Package },
         { label: 'Address Book', icon: Users, type: 'button' as const, onClick: onShowAddressBook },
         { label: 'Backup', icon: isBackingUp ? RefreshCw : DatabaseBackup, type: 'button' as const, onClick: handleBackupClick, className: isBackingUp ? styles.spin : '' },

@@ -3,7 +3,7 @@ import {NextResponse} from 'next/server';
 import {randomBytes,createHash} from 'node:crypto';
 import {serverDb} from '@/lib/server/firebase-admin';
 import {requireStaff} from '@/lib/server/staff-permission';
-import {WashError,text,date,today,tokenHash,schedule,invoiceRug,vendorJob,transition,photo,resolveCompanyLink,createHandoff,updateJob,updateJobs,addCompany,cleanupCompanies,archiveCompany,planReturns} from '@/lib/server/washing.mjs';
+import {WashError,text,date,today,tokenHash,schedule,invoiceRug,vendorJob,transition,photo,resolveCompanyLink,createHandoff,undoHandoff,updateJob,updateJobs,addCompany,cleanupCompanies,archiveCompany,planReturns} from '@/lib/server/washing.mjs';
 import {washingSummary} from '@/lib/washing-invoice.mjs';
 import {initializeIntake,handoffCandidates,rememberLink,savedLink} from '@/lib/server/washing-intake.mjs';
 import {priorityInfo,priorityOrder} from '@/lib/washing-priority.mjs';
@@ -27,7 +27,7 @@ async function list(companyId:string,vendor:boolean){
  const invoiceSummaries=new Map();
  if(!vendor){const paths=[...new Set([...open.docs,...closed.docs].map(d=>{const j=d.data();return j.invoiceId&&/^([a-zA-Z0-9_-]+_)?invoices$/.test(j.invoiceCollection||'')?j.invoiceCollection+'/'+j.invoiceId:'';}).filter(Boolean))];await Promise.all(paths.map(async path=>{const s=await serverDb().doc(path).get();if(s.exists)invoiceSummaries.set(path,washingSummary(s.data()?.data||s.data()));}));}
  const invoiceProgress=(j:any)=>{const summary=invoiceSummaries.get(j.invoiceCollection+'/'+j.invoiceId);return summary?{invoiceReadyCount:summary.readyCount,invoiceRugCount:summary.total,invoiceStatus:summary.status}:{};};
- return [...open.docs,...closed.docs].map(d=>vendor?vendorJob({...d.data(),id:d.id,...priorityInfo(d.data(),today())}):{...d.data(),id:d.id,...priorityInfo(d.data(),today()),...invoiceProgress(d.data())}).sort((a:any,b:any)=>priorityOrder(a,b));
+ return [...open.docs,...closed.docs].filter(d=>!vendor||d.data().status!=='Handoff undone').map(d=>vendor?vendorJob({...d.data(),id:d.id,...priorityInfo(d.data(),today())}):{...d.data(),id:d.id,...priorityInfo(d.data(),today()),...invoiceProgress(d.data())}).sort((a:any,b:any)=>priorityOrder(a,b));
 }
 export async function GET(request:Request){try{
  const a=await access(request),url=new URL(request.url),companyId=a.vendor?a.companyId:url.searchParams.get('company')||'';if(companyId)id(companyId);
@@ -48,6 +48,7 @@ export async function POST(request:Request){try{
  if(b.action==='initializeIntake'){if(a.vendor)throw new WashError('Staff access required.',403);await requireStaff(request,'invoices','read');return reply(await initializeIntake(db,invoiceCol(b.invoiceCollection),a.uid,now));}
  if(b.action==='getLink'){if(a.vendor)throw new WashError('Staff access required.',403);return reply({token:await savedLink(db,id(b.companyId))});}
  if(b.action==='rememberLink'){const companyId=a.vendor?a.companyId:id(b.companyId),token=a.vendor?request.headers.get('x-wash-link'):b.token;await rememberLink(db,companyId,token);return reply({});}
+ if(b.action==='undoHandoff'){if(a.vendor)throw new WashError('Staff access required.',403);await requireStaff(request,'invoices','write');return reply(await undoHandoff(db,{id:id(b.id),version:b.version,reason:b.reason,uid:a.uid,now}));}
  if(b.action==='bulk'){
   if(!['acknowledge','start','ready','delay','receive','accept','rewash'].includes(b.bulkAction))throw new WashError('Choose a supported bulk action.');
   const rugs=Array.isArray(b.rugs)?b.rugs.map((r:any)=>({id:id(r.id),version:r.version})):[];
