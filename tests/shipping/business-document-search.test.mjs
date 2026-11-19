@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {documentMatches} from '../../lib/business-document-search.mjs';
+const doc={kind:'packing',name:'Sam Brown',phone:'(703) 555-0123',email:'sam@example.com',reference:'MP-123',date:'2026-11-19',items:[{sku:'A-55',description:'Blue runner',dimensions:'2 × 8',packageType:'Roll'}]};
+test('finds names, email, reference, date, rug and normalized phone',()=>{for(const q of ['sam','SAM BROWN','sam@example.com','MP-123','2026-11','a-55','blue runner','7035550123'])assert.equal(documentMatches(doc,q),true,q);});
+test('requires every term and correct document type',()=>{assert.equal(documentMatches(doc,'sam blue','packing'),true);assert.equal(documentMatches(doc,'sam blue','purchase'),false);assert.equal(documentMatches(doc,'sam red'),false);});
+test('handles old, incomplete records safely',()=>{assert.equal(documentMatches({kind:'purchase',items:undefined},'missing'),false);assert.equal(documentMatches({kind:'purchase'},'','all'),true);});

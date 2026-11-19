@@ -8,6 +8,8 @@ on:
       - 'app/(public)/admin/business-documents/**'
       - 'components/business-documents/**'
       - 'lib/packing-from-invoice.mjs'
+      - 'lib/business-document-search.mjs'
+      - 'lib/packing-weight.mjs'
       - 'tests/access/packing-from-invoice.test.mjs'
       - 'app/(admin)/admin/invoices/invoices/view/page.tsx'
       - 'app/(public)/admin/shipping/**'
