@@ -645,7 +645,8 @@ function InvoiceViewContent() {
                                 <p style={{ color: '#64748b', marginTop: 4 }}>Created on {formatDateMMDDYYYY(invoice.createdAt)}</p>
                             </div>
 
-                            <div style={{ display: 'flex', gap: 12 }}>
+                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                <Link href={'/admin/business-documents?invoice='+encodeURIComponent(invoice.id)} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 20px',background:'#1c483b',color:'white',borderRadius:8,fontWeight:600,textDecoration:'none'}}><Package size={18}/> Create packing list</Link>
                                 <button
                                     onClick={() => setShowPaymentModal(true)}
                                     style={{

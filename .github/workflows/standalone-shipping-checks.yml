@@ -4,6 +4,12 @@ on:
     branches: [main, feature/shippo-invoice-links-20260929]
     paths:
       - 'app/api/shipping/standalone/**'
+      - 'app/api/business-documents/**'
+      - 'app/(public)/admin/business-documents/**'
+      - 'components/business-documents/**'
+      - 'lib/packing-from-invoice.mjs'
+      - 'tests/access/packing-from-invoice.test.mjs'
+      - 'app/(admin)/admin/invoices/invoices/view/page.tsx'
       - 'app/(public)/admin/shipping/**'
       - 'components/shipping/**'
       - 'lib/server/standalone-label.mjs'
@@ -22,7 +28,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: node --test tests/shipping/*.test.mjs tests/access/shipping-package.test.mjs
+      - run: node --test tests/shipping/*.test.mjs tests/access/shipping-package.test.mjs tests/access/packing-from-invoice.test.mjs
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
