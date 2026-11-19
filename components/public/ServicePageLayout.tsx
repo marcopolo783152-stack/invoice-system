@@ -11,7 +11,7 @@ interface ServicePageLayoutProps {
 
 export default function ServicePageLayout({ title, subtitle, heroImage, children }: ServicePageLayoutProps) {
   return (
-    <div className="min-h-screen bg-stone-50 text-editorial-text selection:bg-editorial-accent/20">
+    <div className="customer-surface customer-service min-h-screen bg-stone-50 text-editorial-text selection:bg-editorial-accent/20">
       
       {/* Hero Section */}
       <div className="relative w-full h-[40vh] md:h-[50vh] bg-neutral-900 flex items-center justify-center overflow-hidden">

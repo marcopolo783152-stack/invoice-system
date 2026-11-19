@@ -1,0 +1,13 @@
+# Estimate customer workflow
+
+Open Showroom Admin → Service Estimates. Requests are separated into New, Contacting / No answer, Bringing to showroom, Pickup requested, Pickup scheduled, Thinking about it, On hold / Waiting, Declined, Converted to invoice, and existing service / completed sections. All requests remain searchable. Reading alone does not move New requests.
+
+Open a request, review all rugs/photos, and log the customer contact and outcome. The server records staff identity and time. Thinking, waiting and unanswered calls need follow-up dates; declines and holds need reasons. Showroom arrivals need a date and time. The overview shows due and overdue follow-ups, expected arrivals, and pickups needing scheduling.
+
+Customer records are saved in the existing Firebase customers collection. Exact phone AND email matches reuse a record. Partial or multiple matches require staff selection. Existing customer fields are preserved; missing fields can be filled from the request. No marketing subscription is inferred. Request links and internal contact history remain in Firebase, with history paginated 50 at a time. Existing customers are searched up to 1,000 records per operation; larger lists show a review notice.
+
+Schedule pickup confirms name, contact details, full address, date, time window and employee. It writes one linked booking to the existing service_pickup_bookings collection. Existing pickup reminders and management show it. Collected/cancelled/rescheduled pickups synchronize the request state. Moving a request away from a scheduled pickup cancels its uncollected booking; collected bookings remain intact.
+
+Create invoice opens the current service invoice form with customer details, one item per requested rug, dimensions and photos. Prices are zero and SKUs blank until staff confirms actual charges and assigns service rug references; an indicative estimate is not a final invoice price. Review service type, return/pickup date, transport arrangements and charges before saving. Saving atomically links one invoice to the request and its pickup, clears follow-ups, and moves the request to Converted to invoice. Repeated saves cannot create another invoice. Subsequent changes use the linked invoice's normal editing controls. Financial formulas and existing service/sale tax logic are unchanged.
+
+Permissions: Services read for request/history access; Services + Customers write to save outcomes/customer records; Appointments write to schedule pickups; Invoices write as well to convert. Internal contact notes are not copied onto customer invoices. Staff action logs do not themselves call or text customers. Scheduled pickups use the existing notification mechanism.

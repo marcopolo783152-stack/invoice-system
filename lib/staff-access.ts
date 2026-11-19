@@ -26,7 +26,13 @@ export async function acceptStaffInvitation(user: User) {
 export function subscribeStaff(callback: (staff: StaffAccess | null, user: User | null, error?: string, loading?: boolean) => void) {
  let stopRole = () => {};
  let generation = 0;
+ let identityKey: string | null = null;
  const stopAuth = onIdTokenChanged(auth, user => {
+  // Token renewal keeps the same live role subscription and mounted workspace.
+  // Verification, identity changes and sign-out still recheck access immediately.
+  const nextIdentity=user?JSON.stringify([user.uid,user.isAnonymous,user.emailVerified,user.email?.toLowerCase()]):'signed-out';
+  if(nextIdentity===identityKey)return;
+  identityKey=nextIdentity;
   const ticket = ++generation;
   stopRole();
   callback(null, user, undefined, true);

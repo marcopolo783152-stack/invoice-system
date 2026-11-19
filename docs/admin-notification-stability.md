@@ -1,0 +1,9 @@
+# Quiet washing reminders and stable staff sessions
+
+Routine Firebase ID-token renewals used to publish staff=null/loading=true and restart the role listener, even for the same verified user. StaffGate temporarily replaced its children, which can discard unsaved component state. The role listener now stays attached when UID, anonymous status, verification and email are unchanged. Sign-out, user/verification changes, invalid roles and live role permission/active changes still go through the existing access checks. Idle timeout and security connection guards are unchanged.
+
+Washing priority and delivery counts refresh quietly in a compact summary. No return/delivery popup or sound is generated, including on first load, repeated polls or browser focus. Hide for today remembers dismissal for that staff user and New York date in the current tab's session storage. Counts remain available in Washing Tracker; no alerts or rug data are deleted. Schedule and notification details open in another tab so clicking them preserves work in the current workspace.
+
+New-order notifications play the existing public/coin.mp3 cash-register audio. The existing order toast and attention badge logic are retained. Browser autoplay restrictions are handled without a blocking alert. Other notification sounds remain separate.
+
+Regression tests execute staff subscription callbacks for repeated token renewal, identity changes, email verification, revocation and invalid/stale roles. Provider tests execute repeated washing fetches and verify silent count updates, then verify a new order plays coin.mp3 and retains its toast. Verify after deploying that an open draft remains mounted across token renewal, washing counts remain quiet, Hide for today persists and a genuinely new order uses the cash audio after browser interaction.

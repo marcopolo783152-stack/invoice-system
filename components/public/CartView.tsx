@@ -1,9 +1,13 @@
+import {Rug} from '@/types';
+import {checkoutContact} from '@/lib/checkout-contact.mjs';
+import {auth} from "@/lib/auth";
+import {salePrice,saleLabel,deliveredCents} from '@/lib/delivered-price.mjs';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "@/context/StoreContext";
 import RugCheckoutButton from "./RugCheckoutButton";
 import LiveOrderRequest from "@/components/checkout/LiveOrderRequest";
@@ -28,12 +32,12 @@ import {
 import styles from "./CartView.module.css";
 import { jsPDF } from "jspdf";
 
-export const CartView: React.FC = () => {
+export const CartView = ({buyNowRug,onClose,inline=false}:{buyNowRug?:Rug;onClose?:()=>void;inline?:boolean} = {}) => {
   const {
-    cart,
-    cartOpen,
-    setCartOpen,
-    removeFromCart,
+    cart:storedCart,
+    cartOpen:storedCartOpen,
+    setCartOpen:openStoredCart,
+    removeFromCart:removeStoredItem,
     updateCartQuantity,
     checkout,
     promoCodes,
@@ -41,9 +45,13 @@ export const CartView: React.FC = () => {
     logoUrl,
   } = useStore();
 
+  const cart=buyNowRug?[{rug:buyNowRug,quantity:1}]:storedCart;
+  const cartOpen=!!buyNowRug||storedCartOpen;
+  const setCartOpen=useCallback((open:boolean)=>{if(buyNowRug){if(!open)onClose?.();}else openStoredCart(open);},[buyNowRug?.id,onClose,openStoredCart]);
+  const removeFromCart=(id:string)=>{if(buyNowRug)onClose?.();else removeStoredItem(id);};
   const [checkoutStep, setCheckoutStep] = useState<
     "cart" | "shipping" | "payment" | "success"
-  >("cart");
+  >(buyNowRug?"shipping":"cart");
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
 
@@ -73,6 +81,8 @@ export const CartView: React.FC = () => {
       ? "Alexandria Showroom Pickup: 3260 Duke St, Alexandria, VA 22314"
       : `${shippingStreet}${shippingApt.trim() ? " " + shippingApt.trim() : ""}, ${shippingCity}, ${shippingState} ${shippingZip}`.trim();
 
+  const [contactError,setContactError]=useState('');
+
   const [printFeedback, setPrintFeedback] = useState<string | null>(null);
 
   const downloadReceiptAsPDF = (order: any) => {
@@ -101,7 +111,7 @@ export const CartView: React.FC = () => {
 
   const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!cartOpen) return;
+    if (!cartOpen || inline) return;
     const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -112,7 +122,7 @@ export const CartView: React.FC = () => {
         if (checkoutStep === 'success') { setCheckoutStep('cart'); setCreatedOrder(null); }
       }
       if (event.key !== 'Tab') return;
-      const nodes = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') || []).filter(el => el.getClientRects().length > 0);
+      const nodes = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"], iframe') || []).filter(el => el.getClientRects().length > 0);
       const first = nodes[0], last = nodes[nodes.length - 1];
       if (!first) { event.preventDefault(); return; }
       if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) { event.preventDefault(); last.focus(); }
@@ -124,12 +134,14 @@ export const CartView: React.FC = () => {
       document.removeEventListener('keydown', onKeyDown);
       previousFocus?.focus();
     };
-  }, [cartOpen, checkoutStep, setCartOpen]);
+  }, [cartOpen, checkoutStep, setCartOpen, inline]);
+
+  useEffect(()=>{if(inline&&cartOpen)dialogRef.current?.focus();},[inline,cartOpen,checkoutStep]);
 
   if (!cartOpen) return null;
 
   const rawSubtotal = cart.reduce(
-    (sum, item) => sum + item.rug.price * item.quantity,
+    (sum, item) => sum + salePrice(item.rug) * item.quantity,
     0,
   );
 
@@ -142,17 +154,21 @@ export const CartView: React.FC = () => {
     }
   }
 
+  discount = Math.min(rawSubtotal, Math.round(discount * 100) / 100);
   const subtotal = Math.max(0, rawSubtotal - discount);
 
-  // Delivery and destination tax are quoted by the showroom before payment.
+  // Show the same 6% sales tax as the server-authoritative checkout.
   const totalWeightLbs = 0;
   const shipping = 0;
-  const tax = deliveryOption === "Pickup" ? Math.round(subtotal * 100 * 0.06) / 100 : 0;
+  const tax = Math.round(subtotal * 100 * 0.06) / 100;
   const total = subtotal + tax;
 
   const handleNextStep = () => {
     if (checkoutStep === "cart") setCheckoutStep("shipping");
     else if (checkoutStep === "shipping") {
+      try { checkoutContact({name,phone,email,shippingAddress:derivedShippingAddress,billingAddress:billingSameAsShipping && deliveryOption==='Delivery'?derivedShippingAddress:billingAddress,notes,deliveryAddress:deliveryOption==='Delivery'?{street1:shippingStreet,street2:shippingApt,city:shippingCity,state:shippingState,zip:shippingZip}:undefined}); }
+      catch(error){setContactError(error instanceof Error?error.message:'Check your contact details.');return;}
+      setContactError('');
       if (billingSameAsShipping && deliveryOption === "Delivery") {
         setBillingAddress(derivedShippingAddress);
       }
@@ -217,12 +233,8 @@ export const CartView: React.FC = () => {
     setCartOpen(false);
   };
 
-  return (
-    <div className={`${styles.overlay} font-sans`}>
-      <div className="absolute inset-0 bg-editorial-text/40 backdrop-blur-xs transition-opacity" onClick={handleClose} />
-
-      <div className={styles.positioner}>
-        <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="cart-window-title" tabIndex={-1} className={`${styles.dialog} bg-editorial-bg text-editorial-text shadow-xl`}>
+  const content=(
+        <div ref={dialogRef} role={inline?undefined:"dialog"} aria-modal={inline?undefined:true} aria-labelledby={inline?undefined:"cart-window-title"} tabIndex={-1} className={`${inline?styles.inlineCheckout:styles.dialog} bg-editorial-bg text-editorial-text shadow-xl`}>
           {/* Header Panel */}
           <div className="shrink-0 px-4 py-3 sm:px-6 sm:py-5 bg-editorial-aside border-b border-editorial-border flex items-center justify-between">
             <div>
@@ -230,9 +242,9 @@ export const CartView: React.FC = () => {
                 Marco Polo Oriental Rugs
               </span>
               <h2 id="cart-window-title" className="font-serif text-lg font-light text-editorial-text flex items-center gap-2">
-                {checkoutStep === "cart" && "Your cart"}
+                {checkoutStep === "cart" && (buyNowRug?"Your rug":"Your cart")}
                 {checkoutStep === "shipping" && "Delivery details"}
-                {checkoutStep === "payment" && "Review your order"}
+                {checkoutStep === "payment" && "Review & payment"}
                 {checkoutStep === "success" && "Order Submitted!"}
               </h2>
             </div>
@@ -253,7 +265,7 @@ export const CartView: React.FC = () => {
                 onClick={() => setCheckoutStep("cart")}
                 className={`py-3.5 border-r border-editorial-border transition-colors cursor-pointer ${checkoutStep === "cart" ? "bg-editorial-accent text-white" : "text-gray-600 bg-editorial-aside hover:bg-neutral-100"}`}
               >
-                1. Review Cart
+                1. Review {buyNowRug?'rug':'cart'}
               </button>
               <button
                 type="button"
@@ -270,7 +282,7 @@ export const CartView: React.FC = () => {
                 disabled
                 className={`py-3.5 transition-colors cursor-default ${checkoutStep === "payment" ? "bg-editorial-accent text-white" : "text-gray-600 bg-editorial-aside"}`}
               >
-                3. Review & Reserve
+                3. Review & Payment
               </button>
             </div>
           )}
@@ -345,7 +357,7 @@ export const CartView: React.FC = () => {
                                 Quantity: {item.quantity}
                               </span>
                               <span className="font-sans text-base font-semibold text-editorial-text">
-                                ${item.rug.price.toLocaleString()}
+                                {saleLabel(item.rug)}
                               </span>
                             </div>
                           </div>
@@ -364,12 +376,15 @@ export const CartView: React.FC = () => {
               </>
             )}
 
+            {buyNowRug&&checkoutStep==='shipping'&&<div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><strong>{buyNowRug.name}</strong><p>SKU {buyNowRug.sku} · {buyNowRug.dimensions} · {saleLabel(buyNowRug)}</p><p>Free shipping and padding included. Complete your details, then pay here by card or an available wallet such as Apple Pay or Google Pay.</p></div>}
             {/* --- STEP 2: SHIPPING FORM --- */}
             {checkoutStep === "shipping" && (
               <div className="space-y-4 text-sm">
+                {contactError&&<p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">{contactError}</p>}
                 <h4 className="text-sm uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">
                   Contact details
                 </h4>
+                <p className="text-sm text-gray-600">We use your contact details to process your order and arrange fulfillment. Read our <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>.</p>
 
                 <div className="space-y-3">
                   <div className="space-y-1">
@@ -535,8 +550,8 @@ export const CartView: React.FC = () => {
                         </div>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        Shipping and applicable tax: <strong>quoted before payment</strong>.
-                        Our showroom will confirm delivery arrangements before payment.
+                        Shipping: <strong>Free</strong>. Sales tax (6%) is included in the total below.
+                        Free shipping is included in each displayed sale price.
                       </p>
                     </div>
                   ) : (
@@ -610,13 +625,13 @@ export const CartView: React.FC = () => {
             {/* Review the server-priced order before any payment. */}
             {checkoutStep === "payment" && (
               <div className="space-y-4 text-sm text-left">
-                <LiveOrderRequest payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
+                <LiveOrderRequest onPaid={buyNowRug?()=>removeStoredItem(buyNowRug.id):undefined} onEditDetails={()=>setCheckoutStep("shipping")} key={JSON.stringify([cart.map(i=>[i.rug.id,i.quantity]),deliveryOption,appliedPromo?.code,name,phone,email,derivedShippingAddress,billingAddress,notes])} payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
                     billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress,
-                    notes}}} />
-                <RugCheckoutButton payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
+                    notes, deliveryAddress: deliveryOption === 'Delivery' ? {street1:shippingStreet,street2:shippingApt,city:shippingCity,state:shippingState,zip:shippingZip,country:'US'} : undefined}}} />
+                {!buyNowRug&&<RugCheckoutButton payload={{items: cart.map(item => ({id: item.rug.id, quantity: item.quantity})), deliveryOption,
                   promoCode: appliedPromo?.code || '', customerInfo: {name, phone, email, shippingAddress: derivedShippingAddress,
-                    billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress, notes}}} />
+                    billingAddress: billingSameAsShipping && deliveryOption === 'Delivery' ? derivedShippingAddress : billingAddress, notes}}} />}
               </div>
             )}
 
@@ -784,9 +799,9 @@ export const CartView: React.FC = () => {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>{deliveryOption === "Pickup" ? "Sales tax (6%):" : "Applicable sales tax:"}</span>
+                  <span>Sales tax (6%):</span>
                   <span className="font-sans font-medium text-editorial-text">
-                    {deliveryOption === "Pickup" ? `$${tax.toFixed(2)}` : "Quoted before payment"}
+                    {`$${tax.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -800,13 +815,13 @@ export const CartView: React.FC = () => {
                         Free Pickup
                       </span>
                     ) : (
-                      "Quoted before payment"
+                      "Free Shipping"
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-editorial-border pt-3 text-sm font-light">
                   <span className="text-editorial-text uppercase tracking-wider">
-                    {deliveryOption === "Pickup" ? "Pickup total:" : "Rugs subtotal (before quote):"}
+                    Total including sales tax:
                   </span>
                   <span className="font-sans text-xl font-bold text-editorial-text">
                     ${total.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -827,15 +842,22 @@ export const CartView: React.FC = () => {
                       className="w-full bg-white border border-editorial-border py-2 px-3 text-sm outline-none focus:border-editorial-accent uppercase"
                     />
                     <button
-                      onClick={() => {
-                        const promo = promoCodes?.find(
-                          (p) => p.code === promoInput && p.isActive,
-                        );
-                        if (promo) {
-                          setAppliedPromo(promo);
-                          setPromoError("");
-                        } else {
-                          setPromoError("Invalid or expired promo code");
+                      onClick={async () => {
+                        setPromoError("");
+                        try {
+                          const user=auth.currentUser;
+                          if(!user) throw new Error("Checkout is loading. Please try again.");
+                          const token=await user.getIdToken();
+                          const response=await fetch('/api/checkout-promo', {
+                            method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+                            body:JSON.stringify({code:promoInput.trim()})
+                          });
+                          const result=await response.json();
+                          if(!response.ok) throw new Error(result.error||"Could not check this promo code.");
+                          setAppliedPromo(result.promo);
+                        } catch(error) {
+                          setAppliedPromo(null);
+                          setPromoError(error instanceof Error?error.message:"Could not check this promo code.");
                         }
                       }}
                       className="bg-[#1A1A1A] text-white px-4 text-sm font-bold uppercase tracking-widest cursor-pointer hover:bg-[#333]"
@@ -882,15 +904,14 @@ export const CartView: React.FC = () => {
                   }
                   className="w-full py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest text-sm rounded-none shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Proceed to Final Review</span>
+                  <span>Continue to payment</span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
               )}
             </div>
           )}
         </div>
-      </div>
-    </div>
   );
+  return inline?content:<div className={`${styles.overlay} font-sans`}><div className="absolute inset-0 bg-editorial-text/40 backdrop-blur-xs transition-opacity" onClick={handleClose}/><div className={styles.positioner}>{content}</div></div>;
 };
 

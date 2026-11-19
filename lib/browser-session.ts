@@ -33,7 +33,7 @@ export function installBrowserSession(auth: Auth) {
       const style = document.createElement('style');
       style.textContent = 'body > * {visibility:hidden!important} body > #session-security-lock {visibility:visible!important}';
       document.head.appendChild(style); document.body.appendChild(shield);
-      const redirect = () => window.location.replace('/staff-login?reason=session-ended');
+      const redirect = () => window.location.replace('/sign-in?reason=session-ended');
       if (!navigator.onLine) window.addEventListener('online', redirect, {once:true});
       void signOut(auth).then(() => { if (navigator.onLine) redirect(); }).catch(() => {
         shield.textContent = 'Session locked. Close this tab and reconnect before signing in again.';

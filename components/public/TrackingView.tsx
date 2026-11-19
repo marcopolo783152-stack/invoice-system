@@ -1,3 +1,7 @@
+import {auth} from "@/lib/auth";
+import {carrierTrackingUrl,shipmentCarrierName} from "@/lib/shipment-tracking.mjs";
+import {useRef} from "react";
+import {orderReference} from '@/lib/order-reference.mjs';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -11,6 +15,9 @@ import LiveTrackingButton from "./LiveTrackingButton";
 
 export const TrackingView: React.FC = () => {
   const { orders, cleaningBookings, sendChatMessage, shopProfile, logoUrl, updateOrderStatus } = useStore();
+  const [checkoutEmail,setCheckoutEmail]=useState("");
+  const [lookupBusy,setLookupBusy]=useState(false),[lookupError,setLookupError]=useState("");
+  const lookupSequence=useRef(0);
   const [searchId, setSearchId] = useState("");
   const [activeOrder, setActiveOrder] = useState<any>(null);
   const [activeCleaning, setActiveCleaning] = useState<any>(null);
@@ -21,20 +28,34 @@ export const TrackingView: React.FC = () => {
   const [recoveredOrders, setRecoveredOrders] = useState<any[]>([]);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && orders && orders.length > 0) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const trackId = urlParams.get("track");
-      if (trackId && !searched) {
-        setSearchId(trackId);
-        setSearched(true);
-        const idClean = trackId.trim().toUpperCase();
-        const foundOrder = orders.find((o: any) => o.id === idClean);
-        const foundCleaning = cleaningBookings.find((b: any) => b.id === idClean);
-        setActiveOrder(foundOrder || null);
-        setActiveCleaning(foundCleaning || null);
-      }
-    }
-  }, [orders, cleaningBookings, searched]);
+    const reference=new URLSearchParams(window.location.search).get('track');
+    if(reference)setSearchId(reference);
+  }, []);
+
+  const loadTracking=async(reference:string)=>{
+    const sequence=++lookupSequence.current;
+    setLookupBusy(true);setLookupError('');setActiveOrder(null);setActiveCleaning(null);setRecoveredOrders([]);setSearched(false);
+    try{
+      const headers:Record<string,string>={'Content-Type':'application/json'};
+      const user=auth.currentUser;if(user&&!user.isAnonymous&&user.emailVerified)headers.Authorization='Bearer '+await user.getIdToken();
+      const r=await fetch('/api/order-tracking',{method:'POST',headers,body:JSON.stringify({reference,email:checkoutEmail}),cache:'no-store',signal:AbortSignal.timeout(15000)});
+      const data=await r.json();if(!r.ok)throw Error(data.error||'Unable to load your order.');
+      if(sequence===lookupSequence.current){setActiveOrder(data.order);setSearched(true);}
+    }catch(e){if(sequence===lookupSequence.current){setLookupError((e as Error).message);setSearched(true);}}
+    finally{if(sequence===lookupSequence.current)setLookupBusy(false);}
+  };
+
+  useEffect(()=>{
+    if(!activeOrder?.id)return;
+    let stopped=false;
+    const refresh=async()=>{if(document.visibilityState!=='visible')return;try{
+      const headers:Record<string,string>={'Content-Type':'application/json'},user=auth.currentUser;
+      if(user&&!user.isAnonymous&&user.emailVerified)headers.Authorization='Bearer '+await user.getIdToken();
+      const r=await fetch('/api/order-tracking',{method:'POST',headers,body:JSON.stringify({reference:activeOrder.orderNumber||activeOrder.id,email:checkoutEmail}),cache:'no-store',signal:AbortSignal.timeout(15000)});
+      if(r.ok){const d=await r.json();if(!stopped)setActiveOrder(d.order);}
+    }catch{}};
+    const timer=setInterval(refresh,60000);return()=>{stopped=true;clearInterval(timer);};
+  },[activeOrder?.id,checkoutEmail]);
 
   const handleRecovery = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,22 +78,18 @@ export const TrackingView: React.FC = () => {
   
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearched(true);
-    const idClean = searchId.trim().toUpperCase();
-    
-    const foundOrder = orders.find((o) => o.id === idClean);
-    const foundCleaning = cleaningBookings.find((b) => b.id === idClean);
-    
-    setActiveOrder(foundOrder || null);
-    setActiveCleaning(foundCleaning || null);
+    const idClean=searchId.trim().toUpperCase();
+    const cleaning=cleaningBookings.find(b=>b.id===idClean);
+    if(cleaning){setActiveCleaning(cleaning);setActiveOrder(null);setLookupError('');setSearched(true);return;}
+    void loadTracking(searchId);
   };
 
   const orderStatuses = [
-    { label: "Pending Confirmation", desc: "Showroom curator reviewing inventory holds" },
-    { label: "Confirmed", desc: "Order approved & authenticity certificates generated" },
-    { label: "Preparing for Shipping", desc: "Delicately cleaned & bound in weather sleeves" },
-    { label: "Shipped", desc: "Handed to secure premium freight carriers" },
-    { label: "Delivered", desc: "Safely unrolled with white-glove signature" }
+    { label: "Pending Confirmation", desc: "We have received your order" },
+    { label: "Confirmed", desc: "Your order is confirmed" },
+    { label: "Preparing for Shipping", desc: "We are preparing your shipment" },
+    { label: "Shipped", desc: "Your shipment has been handed to the carrier" },
+    { label: "Delivered", desc: "The carrier has confirmed delivery" }
   ];
 
   const getStatusIndex = (status: string) => {
@@ -92,25 +109,29 @@ export const TrackingView: React.FC = () => {
 
   const handleContactSupport = () => {
     if (!activeOrder) return;
-    const inquiryText = `Hi! I am asking about my order tracking ID ${activeOrder.id}. Is there any update on shipping?`;
+    const inquiryText = `Hi! I am asking about my order tracking ID ${orderReference(activeOrder)}. Is there any update on shipping?`;
     window.dispatchEvent(new CustomEvent("open-marcopolo-chat", {
       detail: { initialMessage: inquiryText }
     }));
   };
 
   return (
-    <div className="bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
+    <div className="customer-surface bg-[#F9F7F5] min-h-screen py-12 font-sans text-xs">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 text-left">
         
         {/* Title */}
         <div className="text-center space-y-2">
-          <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-bold block">Live Freight Logistics</span>
-          <h1 className="font-serif text-3xl font-light text-editorial-text tracking-tight">Track Your Masterpiece</h1>
+          <span className="text-xs uppercase tracking-[0.3em] text-editorial-accent font-bold block">Your order, at a glance</span>
+          <h1 className="font-serif text-3xl font-light text-editorial-text tracking-tight">Track your order</h1>
           <p className="text-xs text-gray-500 max-w-md mx-auto font-light">
-            Input your purchase tracking ID (e.g., MPR-10294) to monitor hand-knotted authenticity approvals, packaging logs, and freight delivery.
+            Enter your order number and the email used at checkout. No account needed. Follow shipment updates from the carrier handling your delivery.
           </p>
         </div>
 
+        <label className="block bg-white p-5 rounded-xl border border-editorial-border text-sm font-semibold">Checkout email
+          <input type="email" autoComplete="email" value={checkoutEmail} onChange={e=>setCheckoutEmail(e.target.value)} placeholder="The email on your receipt" className="mt-2 w-full border border-editorial-border rounded-lg p-3 font-normal"/>
+          <span className="block mt-2 text-xs text-gray-500 font-normal">Use the same email you entered when buying. Signed-in customers can also track their own orders.</span>
+        </label>
         {/* Input box */}
         <form onSubmit={handleTrack} className="bg-white p-6 rounded-none border border-editorial-border shadow-sm flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -122,27 +143,28 @@ export const TrackingView: React.FC = () => {
               required
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
-              placeholder="Enter Order ID (e.g., MPR-49204)"
+              placeholder="Order number from your receipt"
               className="w-full bg-editorial-aside border border-editorial-border rounded-none py-3.5 pl-11 pr-4 outline-none text-xs focus:border-editorial-accent text-editorial-text tracking-widest uppercase font-mono"
             />
           </div>
           <button
+            disabled={lookupBusy}
             type="submit"
             className="px-6 py-3.5 bg-editorial-accent hover:bg-[#8E7453] text-white font-bold uppercase tracking-widest rounded-none transition cursor-pointer text-xs"
           >
-            Monitor Delivery
+            {lookupBusy?"Loading your order…":"Track order"}
           </button>
         </form>
 
-        <div className="text-center mt-2">
+        {orders.length>0 && <div className="text-center mt-2">
           <button 
             type="button"
             onClick={() => setShowRecovery(!showRecovery)}
             className="text-editorial-accent font-bold tracking-wider uppercase text-[10px] hover:underline cursor-pointer"
           >
-            Lost your receipt? Click here to find your order by Email or Phone.
+            Find a purchase in your signed-in account
           </button>
-        </div>
+        </div>}
 
         {showRecovery && (
           <form onSubmit={handleRecovery} className="bg-white p-6 rounded-none border border-editorial-border shadow-sm flex flex-col sm:flex-row gap-3 animate-fadeIn mt-2">
@@ -184,14 +206,14 @@ export const TrackingView: React.FC = () => {
                     {recoveredOrders.map((ro) => (
                       <div key={ro.id} className="p-4 border border-editorial-border bg-editorial-aside flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
-                          <p className="font-mono text-xs font-bold text-editorial-text">Order: {ro.id}</p>
+                          <p className="font-mono text-xs font-bold text-editorial-text">Order: {orderReference(ro)}</p>
                           <p className="text-xs text-gray-500 mt-1">Status: {ro.status}</p>
                           <p className="text-xs text-gray-500">Date: {new Date(ro.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                           <button 
                             onClick={() => {
-                              setSearchId(ro.id);
+                              setSearchId(orderReference(ro));
                               setActiveOrder(ro);
                               setRecoveredOrders([]);
                             }}
@@ -224,9 +246,9 @@ export const TrackingView: React.FC = () => {
             {!activeOrder && !activeCleaning && recoveredOrders.length === 0 ? (
               <div className="bg-white p-10 rounded-none border border-editorial-border shadow-sm text-center space-y-3">
                 <AlertCircle className="h-10 w-10 text-editorial-accent/60 mx-auto" />
-                <h3 className="font-serif text-base font-light text-editorial-text">Reference Number Not Found</h3>
+                <h3 className="font-serif text-base font-light text-editorial-text">{lookupError?"Check your order details":"Order not found"}</h3>
                 <p className="text-xs text-gray-500 max-w-sm mx-auto leading-relaxed font-light">
-                  We could not locate a registered invoice or booking matching "{searchId.toUpperCase()}". Please verify the code on your success screen or contact concierge support.
+                  {lookupError||`Check the order number and checkout email on your receipt. For help call (703) 461-0207.`}
                 </p>
                 <button
                   onClick={() => {
@@ -250,8 +272,8 @@ export const TrackingView: React.FC = () => {
                   
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-editorial-border pb-4 gap-2">
                     <div>
-                      <span className="text-sm uppercase tracking-wider text-gray-400 font-semibold block">Active Invoice Registry</span>
-                      <h3 className="font-serif text-base font-light text-editorial-text">{activeOrder.id}</h3>
+                      <span className="text-sm uppercase tracking-wider text-gray-400 font-semibold block">Your order</span>
+                      <h3 className="font-serif text-base font-light text-editorial-text">{orderReference(activeOrder)}</h3>
                     </div>
                     <div className="text-left sm:text-right">
                       <span className="text-sm uppercase tracking-wider text-gray-400 font-semibold block">Current Status</span>
@@ -277,7 +299,7 @@ export const TrackingView: React.FC = () => {
                     </div>
                   ) : (
                     <div className="py-4 space-y-6">
-                      <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold">Curated Progress</h4>
+                      <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold">Order progress</h4>
                       
                       <div className="relative pl-6 space-y-6 border-l border-editorial-border">
                         {orderStatuses.map((step, idx) => {
@@ -316,42 +338,43 @@ export const TrackingView: React.FC = () => {
                   )}
 
                   {/* Freight shipping tracking details if available */}
-                  {activeOrder.shippingDetails && (
-                    <div className="p-5 bg-editorial-text rounded-none text-white border border-editorial-border space-y-3">
+                  {(activeOrder.shippingDetails?.trackingNumber || activeOrder.shippingDetails?.carrier) && (
+                    <div className="p-5 bg-[#f7f4ed] rounded-2xl text-[#203e37] border border-[#e5ddcf] space-y-3">
                       <div className="flex items-center gap-2 text-editorial-accent font-bold uppercase tracking-wider text-xs">
                         <Truck className="h-4.5 w-4.5" />
-                        <span>Insured Carrier Dispatch Documents</span>
+                        <span>Shipment tracking</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs border-t border-gray-700 pt-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-xs border-t border-[#e5ddcf] pt-4">
                         <div>
-                          <span className="text-gray-400 block uppercase font-light">Carrier Partner:</span>
-                          <span className="font-semibold text-white">{activeOrder.shippingDetails.carrier}</span>
+                          <span className="text-[#817666] block uppercase tracking-wider text-[10px] font-semibold">Carrier:</span>
+                          <span className="font-semibold text-[#203e37]">{shipmentCarrierName(activeOrder.shippingDetails.carrier,activeOrder.shippingDetails.trackingNumber,activeOrder.shippingDetails.trackingUrl)}</span>
                         </div>
                         <div>
-                          <span className="text-gray-400 block uppercase font-light">Tracking Number:</span>
-                          {activeOrder.shippingDetails.trackingUrl ? (
+                          <span className="text-[#817666] block uppercase tracking-wider text-[10px] font-semibold">Tracking Number:</span>
+                          {carrierTrackingUrl(activeOrder.shippingDetails.carrier,activeOrder.shippingDetails.trackingNumber,activeOrder.shippingDetails.trackingUrl) ? (
                             <a 
-                              href={activeOrder.shippingDetails.trackingUrl} 
+                              href={carrierTrackingUrl(activeOrder.shippingDetails.carrier,activeOrder.shippingDetails.trackingNumber,activeOrder.shippingDetails.trackingUrl)||undefined} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="font-mono font-bold text-[#C2B29F] hover:text-white transition underline"
+                              className="font-mono font-semibold text-[#203e37] hover:text-[#927951] transition underline break-all"
                             >
                               {activeOrder.shippingDetails.trackingNumber}
                             </a>
                           ) : (
-                            <span className="font-mono font-bold text-[#C2B29F]">{activeOrder.shippingDetails.trackingNumber}</span>
+                            <span className="font-mono font-semibold text-[#203e37] break-all">{activeOrder.shippingDetails.trackingNumber}</span>
                           )}
                         </div>
                         <div className="col-span-2">
-                          <span className="text-gray-400 block uppercase font-light">Estimated Delivery:</span>
-                          <span className="font-semibold text-white">{activeOrder.shippingDetails.estimatedDelivery || "Showroom pending verification"}</span>
+                          <span className="text-[#817666] block uppercase tracking-wider text-[10px] font-semibold">Estimated Delivery:</span>
+                          <span className="font-semibold text-[#203e37]">{activeOrder.shippingDetails.estimatedDelivery || "See carrier updates below"}</span>
                         </div>
                         
                         {/* Live Tracking Feature */}
-                        {activeOrder.shippingDetails.carrier && activeOrder.shippingDetails.trackingNumber && (
+                        {activeOrder.shippingDetails.trackingNumber && (
                           <div className="col-span-2 pt-2 border-t border-gray-700/50 mt-1">
                             <LiveTrackingButton 
-                              carrier={activeOrder.shippingDetails.carrier} 
+                              carrier={activeOrder.shippingDetails.carrier||''} 
+                              trackingUrl={activeOrder.shippingDetails.trackingUrl} 
                               trackingNumber={activeOrder.shippingDetails.trackingNumber} 
                             />
                           </div>
@@ -376,7 +399,7 @@ export const TrackingView: React.FC = () => {
                       >
                         Download PDF
                       </button>
-                      {activeOrder.status === "Pending Confirmation" && (
+                      {!activeOrder.trackingReadOnly && activeOrder.status === "Pending Confirmation" && (
                         <button
                           onClick={() => handleCancelOrder(activeOrder.id)}
                           className="px-4 py-2 bg-red-800 hover:bg-red-900 text-white font-bold uppercase tracking-wider rounded-none text-[10px] transition cursor-pointer"
@@ -391,7 +414,7 @@ export const TrackingView: React.FC = () => {
 
                 {/* Invoice contents */}
                 <div className="bg-white p-6 rounded-none border border-editorial-border shadow-sm space-y-4">
-                  <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Itemized Curation Invoice</h4>
+                  <h4 className="text-xs uppercase tracking-widest text-editorial-accent font-bold border-b border-editorial-border pb-2">Order summary</h4>
                   
                   <div className="space-y-3">
                     {activeOrder.cartItems.map((item: any) => (
@@ -415,22 +438,22 @@ export const TrackingView: React.FC = () => {
 
                   <div className="text-xs text-gray-500 space-y-1 bg-editorial-aside p-4 rounded-none border border-editorial-border text-left">
                     <div className="flex justify-between">
-                      <span>Showroom Sum:</span>
+                      <span>Subtotal:</span>
                       <span className="font-light font-serif text-editorial-text">${activeOrder.subtotal.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Insured Freight Transport:</span>
+                      <span>Shipping:</span>
                       <span className="font-light font-serif text-editorial-text">${activeOrder.shipping.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between border-t border-editorial-border pt-2 text-xs font-semibold">
-                      <span className="uppercase text-editorial-text">Total Authorized Value:</span>
+                      <span className="uppercase text-editorial-text">Order total:</span>
                       <span className="font-serif text-sm text-editorial-text">${activeOrder.total.toLocaleString()}</span>
                     </div>
                   </div>
 
                   <div className="text-sm text-gray-400 space-y-1 border-t border-editorial-border pt-3 text-left font-light">
                     <p>• <strong>Consignee Name:</strong> {activeOrder.customerInfo.name}</p>
-                    <p>• <strong>Shipping Coordinates:</strong> {activeOrder.customerInfo.shippingAddress}</p>
+                    {activeOrder.customerInfo.shippingAddress && <p>• <strong>Delivery address:</strong> {activeOrder.customerInfo.shippingAddress}</p>}
                     {activeOrder.customerInfo.notes && <p>• <strong>Curator instructions:</strong> "{activeOrder.customerInfo.notes}"</p>}
                   </div>
 

@@ -1,3 +1,6 @@
+import {inventoryRequest} from '@/lib/inventory/bulk-client';
+import {saveEstimateStatus,saveEstimateRead} from '@/lib/estimate-inbox.mjs';
+import {categorizeRug} from '@/lib/rug-categorization.mjs';
 import { isRugOnReviewHold } from '@/lib/catalog-visibility.mjs';
 import {recordListingActivity} from "@/lib/record-listing-activity";
 import {chatRequest} from "@/lib/chat-client";
@@ -84,7 +87,8 @@ interface StoreContextType {
   updateCleaningBookingStatus: (id: string, status: CleaningBooking["status"]) => void;
   deleteCleaningBooking: (id: string) => void;
   estimates: any[];
-  updateEstimateStatus: (id: string, status: string) => void;
+  updateEstimateStatus: (id: string, status: string) => Promise<void>;
+  markEstimateRead: (id: string) => Promise<void>;
   deleteEstimate: (id: string) => void;
   
   // Cart operations
@@ -97,8 +101,8 @@ interface StoreContextType {
   checkout: (customer: CustomerInfo, payment: PaymentDetails, deliveryOption: "Pickup" | "Delivery", shipping: number, tax: number, totalWeightLbs?: number, appliedPromo?: PromoCode, discountAmount?: number) => Promise<Order>;
   
   // Admin Operations
-  addRug: (rug: Omit<Rug, "id" | "rating">) => void;
-  updateRug: (id: string, rug: Partial<Rug>) => void;
+  addRug: (rug: Omit<Rug, "id" | "rating">) => Promise<void>;
+  updateRug: (id: string, rug: Partial<Rug>, throwOnError?: boolean) => Promise<void>;
   deleteRug: (id: string) => void;
   incrementRugViews: (id: string) => void;
   toggleRugFavorite: (id: string) => void;
@@ -145,7 +149,6 @@ interface StoreContextType {
 
   // Analytics
   referrers: Record<string, number>;
-  incrementReferrer: (source: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -313,33 +316,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [referrers, setReferrers] = useState<Record<string, number>>({});
 
-  const incrementReferrer = (source: string) => {
-    setReferrers(prev => {
-      const updated = { ...prev, [source]: (prev[source] || 0) + 1 };
-      updateSettingDoc("referrers", { sources: updated });
-      return updated;
-    });
-  };
-
-  // Track global referrer on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const hasTracked = sessionStorage.getItem("mp_tracked_referrer");
-      if (!hasTracked) {
-        sessionStorage.setItem("mp_tracked_referrer", "true");
-        let source = "Direct";
-        if (document.referrer) {
-          try {
-            const url = new URL(document.referrer);
-            source = url.hostname;
-          } catch (e) {
-            source = document.referrer;
-          }
-        }
-        incrementReferrer(source);
-      }
-    }
-  }, []);
+  // Keep historical referrer totals readable, but never write admin settings
+  // from a public page visit. Visitor analytics needs a separate ingestion path.
 
   // Public data and private data have separate subscriptions.
   useEffect(() => {
@@ -360,13 +338,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if(firebaseUser && !firebaseUser.isAnonymous && firebaseUser.emailVerified){
       let stopped=false;
       const controller=new AbortController();
+      const locallySeen=new Set<string>();
       const loadOrders=async()=>{try{
         const token=await firebaseUser.getIdToken();
         const response=await fetch('/api/account-orders',{headers:{Authorization:'Bearer '+token},signal:controller.signal});
         const data=await response.json();
         if(!response.ok)throw Error(data.error||'Orders could not load.');
-        if(!stopped){setOrders(data.orders||[]);setOrderLoadError('');}
-      }catch(error){if(!stopped){setOrders([]);setOrderLoadError('Orders could not load. Please try again or contact the showroom.');}}finally{if(!stopped)setOrdersLoading(false);}};
+        if(!stopped){setOrders((data.orders||[]).map((o:Order)=>locallySeen.has(o.id)?{...o,needsAttention:false}:o));setOrderLoadError('');}
+      }catch(error){if(!stopped){setOrderLoadError('Orders could not load. Please try again or contact the showroom.');}}finally{if(!stopped)setOrdersLoading(false);}};
+      const seen=(event:Event)=>{const d=(event as CustomEvent).detail;if(d?.uid===firebaseUser.uid&&Array.isArray(d.ids)){d.ids.forEach((id:string)=>locallySeen.add(id));setOrders(v=>v.map(o=>d.ids.includes(o.id)?{...o,needsAttention:false}:o));}};
+      const refreshOrders=()=>{if(!stopped)void loadOrders();};
+      window.addEventListener('marcopolo-orders-seen',seen);window.addEventListener('focus',refreshOrders);window.addEventListener('marcopolo-order-updated',refreshOrders);
+      unsubs.push(()=>{window.removeEventListener('marcopolo-orders-seen',seen);window.removeEventListener('focus',refreshOrders);window.removeEventListener('marcopolo-order-updated',refreshOrders);});
       loadOrders();const timer=setInterval(loadOrders,15000);
       unsubs.push(()=>{stopped=true;controller.abort();clearInterval(timer);});
     }else setOrdersLoading(false);
@@ -569,10 +552,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     }
     
-    // Mark checked out rugs as "Reserved" (pending confirmation) in Firebase
-    cart.forEach(item => {
-      updateShowroomDoc(SHOWROOM_RUGS, item.rug.id, { availability: "Reserved" });
-    });
+    // An unpaid request must not take a rug off sale. Live payments are settled by the server.
 
     // Empty the cart
     clearCart();
@@ -580,21 +560,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- Admin Catalog Actions ---
-  const addRug = (newRug: Omit<Rug, "id" | "rating">) => {
-    const id = `rug-${Date.now()}`;
-    const rug: Rug = {
-      ...newRug,
-      id,
-      rating: 5.0
-    };
-    setRugs(prev => [rug, ...prev]); // Optimistic UI
-    addShowroomDoc(SHOWROOM_RUGS, rug);
+  const addRug = async (newRug: Omit<Rug, "id" | "rating">) => {
+    const result=await inventoryRequest({id:'rug-'+crypto.randomUUID(),rug:newRug},'/api/inventory/create');
+    setRugs(previous=>[result.rug,...previous.filter(r=>r.id!==result.rug.id)]);
   };
 
-  const updateRug = (id: string, updatedFields: Partial<Rug>) => {
-    if (rugs.find(r => r.id === id)?.liveOrderId) { alert("This rug belongs to an online payment order. Open Online orders & quotes to manage it."); return; }
-    setRugs(prev => prev.map(r => r.id === id ? { ...r, ...updatedFields } : r)); // Optimistic UI
-    updateShowroomDoc(SHOWROOM_RUGS, id, updatedFields);
+  const updateRug = async (id: string, updatedFields: Partial<Rug>, throwOnError=false) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("Sign in to edit inventory.");
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/api/inventory/edit', {
+        method: 'POST', headers: {'Content-Type':'application/json', Authorization:'Bearer '+token},
+        body: JSON.stringify({id, fields:updatedFields})
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Inventory could not be updated.");
+      setRugs(prev => prev.map(r => r.id === id ? {...r, ...updatedFields} : r));
+    } catch (error) { if(throwOnError)throw error;alert(error instanceof Error?error.message:"Inventory could not be updated."); }
   };
 
   const recordEngagement = async (id: string, kind: 'visit' | 'favorite' | 'unfavorite') => {
@@ -656,7 +639,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     shipping?: ShippingDetails,
     cancellationReason?: string
   ) => {
-    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
+    if (orderId.startsWith("MPR-LIVE-")) { alert("Use the payment and order controls in this Customer Orders card."); return; }
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
@@ -684,19 +667,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteOrderPaymentDetails = (orderId: string) => {
-    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
+    if (orderId.startsWith("MPR-LIVE-")) { alert("Use the payment and order controls in this Customer Orders card."); return; }
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, paymentDetails: undefined as any } : o));
     updateShowroomDoc(SHOWROOM_ORDERS, orderId, { paymentDetails: null });
   };
 
   const updateOrder = (orderId: string, updates: Partial<Order>) => {
-    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
+    if (orderId.startsWith("MPR-LIVE-")) { alert("Use the payment and order controls in this Customer Orders card."); return; }
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updates } : o));
     updateShowroomDoc(SHOWROOM_ORDERS, orderId, updates);
   };
 
   const deleteOrder = (orderId: string) => {
-    if (orderId.startsWith("MPR-LIVE-")) { window.location.assign("/admin/online-orders?order=" + encodeURIComponent(orderId)); return; }
+    if (orderId.startsWith("MPR-LIVE-")) { alert("Use the payment and order controls in this Customer Orders card."); return; }
     setOrders(prev => prev.filter(o => o.id !== orderId)); // Optimistic UI
     deleteShowroomDoc(SHOWROOM_ORDERS, orderId);
   };
@@ -845,8 +828,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  const updateEstimateStatus = (id: string, status: string) => {
-    updateShowroomDoc(SHOWROOM_ESTIMATES, id, { status });
+  const updateEstimateStatus = async (id: string, status: string) => {
+    await saveEstimateStatus({id,status,write:(requestId:string,patch:any)=>updateShowroomDoc(SHOWROOM_ESTIMATES,requestId,patch)});
+  };
+  const markEstimateRead = async (id:string) => {
+    await saveEstimateRead({id,write:(requestId:string,patch:any)=>updateShowroomDoc(SHOWROOM_ESTIMATES,requestId,patch)});
   };
 
   const deleteEstimate = (id: string) => {
@@ -911,6 +897,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteCleaningBooking,
         estimates,
         updateEstimateStatus,
+        markEstimateRead,
         deleteEstimate,
         addToCart,
         removeFromCart,
@@ -951,7 +938,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deletePromoCode,
         deleteOrder,
         referrers,
-        incrementReferrer
       }}
     >
       {isHydrated ? children : null}

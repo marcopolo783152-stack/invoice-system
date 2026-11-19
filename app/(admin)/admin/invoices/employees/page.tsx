@@ -30,6 +30,7 @@ import {
 import EmployeeModal from '@/components/EmployeeModal';
 import Link from 'next/link';
 import FaceRegistrationModal from '@/components/FaceRegistrationModal';
+import EmployeeKioskAccess from '@/components/EmployeeKioskAccess';
 
 interface PayrollSummary {
     employeeId: string;
@@ -97,6 +98,9 @@ export default function EmployeesPage() {
     const handleFaceSuccess = async (descriptor: number[]) => {
         if (!faceModalEmployee) return;
         try {
+            if(descriptor.length!==128||descriptor.some(x=>!Number.isFinite(x)))throw Error('Capture a clear face again.');
+            const duplicate=employees.find(e=>e.id!==faceModalEmployee.id&&e.faceDescriptor?.length===128&&Math.sqrt(descriptor.reduce((sum,x,i)=>sum+(x-e.faceDescriptor![i])**2,0))<0.50);
+            if(duplicate)throw Error('This face is too similar to the registration for '+duplicate.name+'. Verify both employees and register each separately in good lighting.');
             await saveEmployee({
                 ...faceModalEmployee,
                 faceDescriptor: descriptor
@@ -437,6 +441,7 @@ export default function EmployeesPage() {
                     >
                         ➕ Add Staff
                     </button>
+                    <EmployeeKioskAccess/>
                     <Link href="/admin/invoices/clock" target="_blank" className="luxury-button" style={{
                         padding: '12px 24px', borderRadius: 12, border: '1px solid #e2e8f0',
                         background: '#fff', color: '#1e293b', fontWeight: 700, textDecoration: 'none',

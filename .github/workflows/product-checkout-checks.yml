@@ -1,0 +1,27 @@
+name: Product checkout checks
+on:
+  push:
+    branches: [main, feature/shippo-invoice-links-20260929]
+    paths:
+      - 'components/public/ProductDetail.tsx'
+      - 'components/public/CartView*'
+      - 'components/public/ShoppingTools.tsx'
+      - 'components/checkout/LiveOrderRequest.tsx'
+      - 'tests/checkout/**'
+      - '.github/workflows/product-checkout-checks.yml'
+permissions:
+  contents: read
+jobs:
+  checkout-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test tests/checkout/*.test.mjs tests/access/checkout-contact.test.mjs tests/access/checkout-identity.test.mjs tests/access/live-orders.test.mjs tests/access/delivered-price.test.mjs
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

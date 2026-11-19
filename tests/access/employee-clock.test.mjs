@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import crypto from 'node:crypto';
+import ts from 'typescript';
+import {database} from '../auction/helpers/database.mjs';
+import * as matching from '../../lib/employee-clock.mjs';
+const descriptor=v=>Array(128).fill(v),location={lat:38.808028,lng:-77.087056,accuracy:10};
+test('face matching refuses invalid, uncertain and ambiguous samples',()=>{const e=[{id:'a',faceDescriptor:descriptor(0)}];assert.equal(matching.matchFace(descriptor(0),e).employee.id,'a');assert.equal(matching.matchFace(descriptor(.05),e),null);assert.equal(matching.matchFace(descriptor(0),[...e,{id:'b',faceDescriptor:descriptor(.001)}]),null);assert.equal(matching.matchFace([NaN],e),null);assert.equal(matching.matchFace(descriptor(0),[{...e[0],active:false}]),null);});
+test('ID lookup uses exact unique ID or PIN and never a name, phone or numeric approximation',()=>{const e=[{id:'one',empId:'EMP-001',name:'Nazif',phone:'001',pin:'1234'},{id:'two',empId:'EMP-002',pin:'1234'}];assert.equal(matching.exactEmployee('EMP-001',e).id,'one');for(const s of ['001','Nazif','1234','one'])assert.equal(matching.exactEmployee(s,e),null);});
+test('location validates showroom radius and accuracy',()=>{assert.equal(matching.checkLocation(location).accuracy,10);for(const v of [{...location,lat:40},{...location,accuracy:200},{...location,accuracy:NaN},{...location,lng:500}])assert.throws(()=>matching.checkLocation(v));});
+function api(seed={},allowed=true){const db=database({'employee_clock_keys/key':{active:true},...seed}),exports={};const json=(body,init)=>({body,status:init?.status||200});const digest=v=>crypto.createHash('sha256').update(v).digest('hex');const helper={clockHeaders:{},digest,clockAccess:async()=>{if(!allowed)throw Error('INVALID_KIOSK');return {db,key:'key',prefix:''};},clockFailure:()=>json({error:'Invalid QR'},{status:403})};vm.runInNewContext(ts.transpileModule(fs.readFileSync('app/api/employee-clock/record/route.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports,Error,Date,URL,Promise,require:n=>n==='next/server'?{NextResponse:{json}}:n==='firebase-admin/firestore'?{Timestamp:{fromMillis:v=>({seconds:Math.floor(v/1000)})}}:n.includes('server/employee-clock')?helper:matching});const post=b=>exports.POST(new Request('https://example.test/api/employee-clock/record',{method:'POST',body:JSON.stringify(b)}));return {db,post};}
+const employee={name:'Employee A',empId:'EMP-001',status:'OUT',faceDescriptor:descriptor(0)};
+const request=()=>({requestId:crypto.randomUUID(),method:'pin',identifier:'EMP-001',type:'IN',location});
+test('QR authorization is required; attendance cannot be saved through an invalid QR',async()=>{const s=api({'employees/a':employee},false);assert.equal((await s.post(request())).status,403);assert.equal(s.db.read('employees/a').status,'OUT');});
+test('clock saves log and status atomically; identical retry creates one log and conflicting or repeated actions fail',async()=>{const s=api({'employees/a':employee}),b=request();assert.equal((await s.post(b)).status,200);assert.equal((await s.post(b)).status,200);assert.equal(s.db.keys().filter(k=>k.startsWith('timelogs/')).length,1);assert.equal(s.db.read('employees/a').status,'IN');assert.equal((await s.post({...b,type:'OUT'})).status,409);assert.equal((await s.post(request())).status,409);});
+test('concurrent submissions produce one clock-in and never toggle back out',async()=>{const s=api({'employees/a':employee});const r=await Promise.all([s.post(request()),s.post(request())]);assert.equal(r.filter(x=>x.status===200).length,1);assert.equal(s.db.keys().filter(k=>k.startsWith('timelogs/')).length,1);assert.equal(s.db.read('employees/a').status,'IN');});
+test('face record must match both confirmed employee and badge identity',async()=>{const s=api({'employees/a':employee});let b={...request(),method:'face',descriptor:descriptor(0),employeeId:'other',expectedEmpId:'EMP-001'};assert.equal((await s.post(b)).status,400);b={...b,employeeId:'a',expectedEmpId:'EMP-002',requestId:crypto.randomUUID()};assert.equal((await s.post(b)).status,400);assert.equal(s.db.read('employees/a').status,'OUT');});
+test('only exact kiosk route bypasses staff gate and QR creation stays local',()=>{const layout=fs.readFileSync('app/(admin)/layout.tsx','utf8');assert.ok(layout.includes("pathname === '/admin/invoices/clock'"));assert.ok(layout.includes('<StaffGate>'));assert.equal(fs.readFileSync('app/(admin)/admin/invoices/employees/print/page.tsx','utf8').includes('api.qrserver.com'),false);assert.ok(fs.readFileSync('components/EmployeeClock.tsx','utf8').includes('stable.current.count>=4'));});
+test('real kiosk authorization rejects missing/revoked keys and scopes roster without payroll or PINs',async()=>{
+ const token='a'.repeat(64),hash=crypto.createHash('sha256').update(token).digest('hex');
+ const db=database({['employee_clock_keys/'+hash]:{active:true,storeId:'shop'},'shop_employees/a':{...employee,pin:'1234',dailyRate:100,email:'private@example.test',phone:'private'},'employees/other':{...employee,name:'Other store'}});
+ const json=(body,init)=>({body,status:init?.status||200});const helper={};
+ vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/server/employee-clock.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports:helper,Error,require:n=>n==='crypto'?crypto:n==='next/server'?{NextResponse:{json}}:{serverDb:()=>db}});
+ await assert.rejects(()=>helper.clockAccess(new Request('https://example.test')));
+ const exports={};vm.runInNewContext(ts.transpileModule(fs.readFileSync('app/api/employee-clock/session/route.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports,Error,require:n=>n==='next/server'?{NextResponse:{json}}:n.includes('server/employee-clock')?helper:matching});
+ const req=new Request('https://example.test',{headers:{'x-clock-key':token}}),r=await exports.GET(req);
+ assert.equal(r.status,200);assert.equal(r.body.employees.length,1);assert.equal(r.body.employees[0].name,employee.name);for(const k of ['pin','dailyRate','email','phone'])assert.equal(r.body.employees[0][k],undefined);
+ db.change('employee_clock_keys/'+hash,{active:false});assert.equal((await exports.GET(req)).status,403);
+});

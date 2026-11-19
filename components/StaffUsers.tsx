@@ -20,10 +20,10 @@ export default function StaffUsers() {
   return ()=>{a();b();};
  },[staff?.uid,staff?.role,staff?.active]);
  if(loading) return <p>Checking access…</p>;
- if(!canAccess(staff,'users','write')) return <section className={styles.panel}><p>{error||'Only the owner and General Managers can manage staff.'}</p><a href="/staff-login">Staff sign in</a></section>;
+ if(!canAccess(staff,'users','write')) return <section className={styles.panel}><p>{error||'Only the owner and General Managers can manage staff.'}</p><a href="/sign-in">Sign in</a></section>;
  const reset=()=>{setEditUid(null);setEmail('');setName('');setRole('seller');setPermissions({});};
  const change=async(action:()=>Promise<void>)=>{setBusy(true);setStatus('');try{await action();}catch(e){setStatus(e instanceof Error?e.message:'Could not save changes.');}finally{setBusy(false);}};
- const inviteUrl=(address:string)=>window.location.origin+'/staff-login?email='+encodeURIComponent(address);
+ const inviteUrl=(address:string)=>window.location.origin+'/sign-in?email='+encodeURIComponent(address);
  return <section className={styles.panel}>
  <h1>Users & Permissions</h1>
  <p>Each staff member uses their own verified account. The General Manager has full administrative access. The owner account is protected from staff changes.</p>

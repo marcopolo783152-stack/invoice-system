@@ -3,6 +3,7 @@ import {createHash} from 'crypto';
 import {requireStaff} from '@/lib/server/staff-permission';
 import {serverDb} from '@/lib/server/firebase-admin';
 import {auctionFailure} from '@/lib/server/auction-errors';
+import {SANDBOX_SALES} from '@/lib/auction/settlement.mjs';
 import {prepareAuction} from '@/lib/auction/planning.mjs';
 import {check,validateLot} from '@/lib/auction/engine.mjs';
 import {eligibleRug,rugSnapshot} from '@/lib/auction/catalog.mjs';
@@ -20,9 +21,9 @@ export async function POST(req:Request){try{
  docs.forEach((doc:any,i:number)=>{check(doc.exists,'An inventory rug no longer exists.');const rug={...(doc.data().data||doc.data()),id:doc.id};check(eligibleRug(rug),'An inventory rug is unavailable or held for review.');const row=linked[i];const snap=rugSnapshot(rug);check(row.origin===snap.origin&&row.sku===snap.sku,'Inventory origin or SKU changed. Re-add the rug from inventory.');});
  tx.set(ref,{...plan,version:(old?.version||0)+1,updatedAt:Date.now(),updatedBy:user.uid,createdAt:old?.createdAt||Date.now(),publicEnabled:false});
  }else{
- check(stored.exists&&Number.isInteger(input.index),'Choose a saved lot.');const row=old!.rows[input.index];check(row?.rugId,'Link this lot to showroom inventory first.');const doc=await tx.get(db.doc('showroom_rugs/'+row.rugId));const rug={...(doc.data()?.data||doc.data()),id:doc.id};check(doc.exists&&eligibleRug(rug),'This rug is unavailable or held for review.');
+ check(!(await tx.get(db.doc(SANDBOX_SALES+'/'+input.id))).exists,'This test auction was consolidated. Create a new auction to test more lots.');check(stored.exists&&Number.isInteger(input.index),'Choose a saved lot.');const row=old!.rows[input.index];check(row?.rugId,'Link this lot to showroom inventory first.');const doc=await tx.get(db.doc('showroom_rugs/'+row.rugId));const rug={...(doc.data()?.data||doc.data()),id:doc.id};check(doc.exists&&eligibleRug(rug),'This rug is unavailable or held for review.');
  const now=Date.now(),lot=validateLot({title:row.title,condition:row.condition,startingCents:Math.round(row.starting*100),reserveCents:Math.round(row.reserve*100),loadingCents:Math.round(row.loading*100),startAt:now,endAt:now+15*60000},now);
- tx.create(db.doc('auction_sandbox_lots/'+input.requestId),{...lot,createdAt:now,createdBy:user.uid,sourceAuction:input.id,snapshot:{rugId:doc.id,name:rug.name||'',sku:rug.sku||'',origin:rug.origin||'',size:rug.dimensions||'',image:rugSnapshot(rug).images[0]||''}});
+ tx.create(db.doc('auction_sandbox_lots/'+input.requestId),{...lot,createdAt:now,createdBy:user.uid,sourceAuction:input.id,sourceLotIndex:input.index,snapshot:{rugId:doc.id,name:rug.name||'',sku:rug.sku||'',origin:rug.origin||'',size:rug.dimensions||'',image:rugSnapshot(rug).images[0]||''}});
  }
  tx.create(event,{actor:user.uid,at:Date.now(),action:input.action,fingerprint});
  });return NextResponse.json({saved:true,id:input.id,testId:input.action==='test'?input.requestId:null});

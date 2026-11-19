@@ -1,3 +1,4 @@
-import AuctionUnderConstruction from '@/components/auction/AuctionUnderConstruction';
-export const metadata = {title: 'Auctions under construction | Marco Polo Rugs', robots: {index: false, follow: false}};
-export default function Page() { return <AuctionUnderConstruction/>; }
+import ExternalAuction from '@/components/auction/ExternalAuction';
+export const dynamic='force-dynamic';
+export const metadata={title:'Rug auctions | Marco Polo Rugs',description:'Explore Marco Polo Rugs auctions on LiveAuctioneers.'};
+export default function Page(){return <ExternalAuction/>;}

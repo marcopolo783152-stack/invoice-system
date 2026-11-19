@@ -107,3 +107,107 @@ test('refunds are monotonic, block fulfillment and require explicit restocking',
 test('fulfillment cannot happen before payment or move backwards after completion',async()=>{
  const d=db(),o=await reserved(d);await assert.rejects(fulfillOrder(d,o.id,'staff',{fulfillment:'Collected'}));await settleSession(d,o.id,session(o),'webhook',now+2);await fulfillOrder(d,o.id,'staff',{fulfillment:'Collected'},now+3);await assert.rejects(fulfillOrder(d,o.id,'staff',{fulfillment:'Ready for pickup'}),/backwards/);
 });
+
+test('UPS payment accepts only the saved shipping and verified Stripe automatic tax; settlement saves final total',async()=>{
+ const d=db(),o=await quote(d,'Delivery');
+ d.change('showroom_rugs/rug-1',{shippingPackage:{length:26,width:6,height:6,weight:8}});
+ const parcels=[{length:'26',width:'6',height:'6',weight:'8',distance_unit:'in',mass_unit:'lb'}];
+ d.change(LIVE_ORDERS+'/'+o.id,{automaticTax:true,shipping:1200,shippingService:'Ground',shippingParcels:parcels,status:'Ready for payment'});
+ const r=await reservePayment(d,o.id,'customer',1,now+10),params=liveSessionParams(r,'https://www.marcopolorugs.com');
+ assert.equal(params.automatic_tax.enabled,true);assert.equal(params.shipping_options[0].shipping_rate_data.fixed_amount.amount,1200);assert.equal(params.line_items.length,1);
+ const s=session(r,{amount_total:11873,automatic_tax:{enabled:true,status:'complete'},total_details:{amount_tax:672,amount_discount:0,amount_shipping:1200}});
+ await assert.rejects(settleSession(d,o.id,{...s,total_details:{...s.total_details,amount_shipping:0}},'test',now+20),/does not match/);
+ await assert.rejects(settleSession(d,o.id,{...s,automatic_tax:{enabled:true,status:'failed'}},'test',now+20),/does not match/);
+ const paid=await settleSession(d,o.id,s,'test',now+30);assert.equal(paid.total,11873);assert.equal(paid.tax,672);assert.equal(d.read('showroom_orders/'+o.id).total,118.73);
+});
+test('UPS package edits invalidate payment reservation',async()=>{
+ const d=db(),o=await quote(d,'Delivery');d.change(LIVE_ORDERS+'/'+o.id,{automaticTax:true,shipping:1200,status:'Ready for payment',shippingParcels:[]});
+ d.change('showroom_rugs/rug-1',{shippingPackage:{length:26,width:6,height:6,weight:8}});
+ await assert.rejects(reservePayment(d,o.id,'customer',1,now+10),/measurements changed/);assert.equal(d.read('showroom_rugs/rug-1').availability,'In Stock');
+});
+test('shipping included prices preserve exact total without a separate Stripe shipping charge',async()=>{
+ const d=db(),o=await quote(d);const bundled={...o,automaticTax:true,shippingIncluded:true,shipping:1234,shippingService:'Ground'};const p=liveSessionParams(bundled,'https://www.marcopolorugs.com');
+ assert.equal(p.line_items.reduce((n,i)=>n+i.price_data.unit_amount,0),o.subtotal-o.discount+1234);assert.equal(p.shipping_options[0].shipping_rate_data.fixed_amount.amount,0);assert.match(p.line_items[0].price_data.product_data.description,/delivery included/);
+});
+
+test('embedded checkout stays on page and retries preserve the original UI mode',async()=>{
+ const d=db(),o=await quote(d);
+ const r=await reservePayment(d,o.id,'customer',o.version,now+10,'embedded');
+ const p=liveSessionParams(r,'https://www.marcopolorugs.com');
+ assert.equal(p.ui_mode,'embedded_page');assert.equal(p.redirect_on_completion,'never');
+ assert.equal(p.success_url,undefined);assert.equal(p.cancel_url,undefined);
+ const retry=await reservePayment(d,o.id,'customer',o.version,now+20,'hosted');
+ assert.equal(retry.paymentUi,'embedded');
+});
+
+test('inclusive sale price needs no shipping quote and weight changes invalidate payment',async()=>{
+ const d=db();d.change('showroom_rugs/rug-1',{price:100,weightLbs:10,sizeCategory:'Small'});
+ const o=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now,true);
+ assert.equal(o.subtotal,12000);assert.equal(o.shipping,0);assert.equal(o.status,'Ready for payment');
+ assert.equal(o.automaticTax,false);assert.equal(o.tax,720);assert.equal(o.total,12720);assert.equal(o.pricingPolicy,'weight-inclusive-v1');
+ const r=await reservePayment(d,o.id,'customer',1,now+10,'embedded');
+ const p=liveSessionParams(r,'https://www.marcopolorugs.com');
+ assert.equal(p.line_items[0].price_data.unit_amount,12000);assert.equal(p.shipping_options,undefined);assert.equal(p.automatic_tax,undefined);assert.equal(p.line_items.at(-1).price_data.unit_amount,720);assert.equal(p.line_items.reduce((sum,l)=>sum+l.price_data.unit_amount*l.quantity,0),12720);
+ const changed=db();changed.change('showroom_rugs/rug-1',{price:100,weightLbs:10,sizeCategory:'Small'});
+ const q=await createQuote(changed,'customer','customer@example.com',body('Delivery'),attempt,now,true);
+ changed.change('showroom_rugs/rug-1',{weightLbs:20});await assert.rejects(reservePayment(changed,q.id,'customer',1,now+10),/price changed/);
+});
+
+test('same customer can resume reserved checkout after reopening cart without duplicating it',async()=>{
+ const d=db(),o=await reserved(d);
+ const resumed=await createQuote(d,'customer','customer@example.com',body(),'87654321-1234-1234-1234-123456789012',now+2000);
+ assert.equal(resumed.id,o.id);assert.equal(resumed.status,'Payment pending');assert.equal(d.count(LIVE_ORDERS),1);
+ await assert.rejects(createQuote(d,'other','customer@example.com',body(),'87654321-1234-1234-1234-123456789012',now+2000),/reserved/);
+ await assert.rejects(createQuote(d,'customer','customer@example.com',body('Delivery'),'87654321-1234-1234-1234-123456789012',now+2000),/reserved/);
+});
+
+test('new checkouts allow Stripe dynamic methods while legacy attempts retain their card parameters',async()=>{
+ const d=db(),o=await reserved(d);assert.equal(liveSessionParams(o,'https://www.marcopolorugs.com').payment_method_types,undefined);
+ assert.deepEqual(liveSessionParams({...o,paymentMethods:undefined},'https://www.marcopolorugs.com').payment_method_types,['card']);
+});
+
+test('new checkout requests a Stripe email receipt without changing older saved requests',async()=>{
+ const d=db(),o=await reserved(d);
+ assert.equal(liveSessionParams({...o,receiptEmail:true},'https://www.marcopolorugs.com').payment_intent_data.receipt_email,'customer@example.com');
+ assert.equal(liveSessionParams({...o,receiptEmail:false},'https://www.marcopolorugs.com').payment_intent_data.receipt_email,undefined);
+});
+test('pending refund cannot restock a rug even if an earlier total appears fully refunded',async()=>{
+ const d=db(),o=await reserved(d);await settleSession(d,o.id,session(o),'test',now+2);
+ d.change(LIVE_ORDERS+'/'+o.id,{refundedAmount:o.total,refundPending:true});
+ await assert.rejects(restockRefund(d,o.id,'staff'),/full Stripe refund/);
+ assert.equal(d.read('showroom_rugs/rug-1').availability,'Sold');
+});
+
+test('fulfillment updates preserve purchased label metadata',async()=>{
+ const d=db(),o=await reserved(d);await settleSession(d,o.id,session(o),'webhook',now+2);
+ const label={labelUrl:'https://carrier.example/label',transactionId:'shippo-transaction',cost:'20'};
+ d.change('showroom_orders/'+o.id,{shippingDetails:label});
+ await fulfillOrder(d,o.id,'staff',{fulfillment:'Collected'},now+3);
+ const saved=d.read('showroom_orders/'+o.id).shippingDetails;
+ assert.equal(saved.labelUrl,label.labelUrl);assert.equal(saved.transactionId,label.transactionId);assert.equal(saved.cost,'20');
+});
+
+
+test('inclusive delivery collects 6% from the start and rejects a payment omitting tax',async()=>{
+ const d=db();d.change('showroom_rugs/rug-1',{price:101,weightLbs:9,sizeCategory:'Small'});
+ const o=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now,true);
+ assert.equal(o.subtotal,11900);assert.equal(o.tax,714);assert.equal(o.total,12614);
+ const r=await reservePayment(d,o.id,'customer',o.version,now+10,'embedded');
+ const params=liveSessionParams(r,'https://www.marcopolorugs.com');
+ assert.equal(params.automatic_tax,undefined);assert.equal(params.line_items.reduce((sum,l)=>sum+l.price_data.unit_amount*l.quantity,0),12614);
+ await assert.rejects(settleSession(d,o.id,session(r,{amount_total:11900}),'webhook',now+20),/does not match/);
+ await settleSession(d,o.id,session(r),'webhook',now+21);
+ assert.equal(d.read('showroom_orders/'+o.id).tax,7.14);assert.equal(d.read('showroom_orders/'+o.id).total,126.14);
+});
+
+test('old unstarted inclusive quote upgrades to visible tax; existing payment session stays immutable',async()=>{
+ const d=db();d.change('showroom_rugs/rug-1',{price:101,weightLbs:9,sizeCategory:'Small'});
+ const o=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now,true);
+ d.change(LIVE_ORDERS+'/'+o.id,{tax:null,total:null,automaticTax:true,taxPolicy:null});
+ const updated=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now+1,true);
+ assert.equal(updated.tax,714);assert.equal(updated.total,12614);assert.equal(updated.version,2);assert.equal(updated.automaticTax,false);
+ const r=await reservePayment(d,o.id,'customer',updated.version,now+2,'embedded');
+ d.change(LIVE_ORDERS+'/'+o.id,{tax:null,total:null,automaticTax:true,taxPolicy:null});
+ const legacy=await createQuote(d,'customer','customer@example.com',body('Delivery'),attempt,now+3,true);
+ assert.equal(legacy.automaticTax,true);assert.equal(legacy.tax,null);assert.equal(legacy.sessionAttemptedAt,r.sessionAttemptedAt);
+});

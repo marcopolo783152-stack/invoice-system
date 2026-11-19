@@ -1,3 +1,4 @@
+import {orderReference} from '@/lib/order-reference.mjs';
 import { jsPDF } from "jspdf";
 
 const loadImage = (url: string): Promise<HTMLImageElement> => {
@@ -73,7 +74,7 @@ if (!order) return;
 
       doc.setTextColor(45, 42, 38);
       doc.setFont("Helvetica", "bold");
-      doc.text(`${order.id || "N/A"}`, 55, 68);
+      doc.text(`${orderReference(order) || "N/A"}`, 55, 68);
       doc.text(`${new Date(order.createdAt || Date.now()).toLocaleString()}`, 55, 75);
       doc.text(`${order.customerInfo?.name || "N/A"}`, 55, 82);
       doc.text(`${order.customerInfo?.email || "N/A"}`, 55, 89);
@@ -185,18 +186,18 @@ if (!order) return;
       doc.setTextColor(130, 125, 120);
       doc.text("AUTHENTIC HAND-LOOMED ORIENTAL RUG HOLDING PLATFORM  •  SECURED CLIENT GATEWAY", 105, 281, { align: "center" });
 
-      doc.save(`Receipt-${order.id}.pdf`);
+      doc.save(`Receipt-${orderReference(order)}.pdf`);
     } catch (err) {
       console.error("Failed to generate PDF:", err);
       // Fallback to basic text file download if PDF rendering fails
       const text = `MARCO POLO ESCROW RECEIPT
-Order Reference: ${order.id}
+Order Reference: ${orderReference(order)}
 Total Secured: $${order.total.toLocaleString()}`;
       const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Receipt-${order.id}.txt`;
+      link.download = `Receipt-${orderReference(order)}.txt`;
       link.click();
       URL.revokeObjectURL(url);
     }
